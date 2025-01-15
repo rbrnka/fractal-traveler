@@ -7,10 +7,10 @@ let headerMinimizeTimeout = null;
 let resizeTimeout;
 let initTimeout;
 
-const header = document.getElementById('headerContainer');
-const infoText = document.getElementById('infoText');
-const resetButton = document.getElementById('reset');
-const randomizeColorsButton = document.getElementById('randomize');
+let header;
+let infoText;
+let resetButton;
+let randomizeColorsButton;
 
 
 function initHeaderEvents() {
@@ -142,6 +142,11 @@ function initInfoText() {
 export function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
+
+    header = document.getElementById('headerContainer');
+    infoText = document.getElementById('infoText');
+    resetButton = document.getElementById('reset');
+    randomizeColorsButton = document.getElementById('randomize');
 
     initWindowEvents();
     initHeaderEvents();
