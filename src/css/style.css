@@ -1,0 +1,130 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: sans-serif;
+    color: #fff;
+    cursor: crosshair;
+    text-align: center;
+}
+
+#headerContainer {
+    position: relative;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.6);
+    width: 390px;
+    margin: 0 auto;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    cursor: auto;
+    height: 170px;
+    max-height: 170px;
+    overflow: hidden;
+    transition: height 0.2s ease; /* Smooth animation */
+    border: 1px solid #222;
+    border-top: none;
+}
+
+#headerContainer.minimized {
+    height: 20px;
+}
+
+#fractalCanvas {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    flex: 1;
+}
+
+button {
+    position: relative;
+    z-index: 10;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+h1 {
+    padding: 0 10px 5px 10px;
+    margin: 0;
+    color: #fff;
+    z-index: 1000;
+    font-size: 16px;
+}
+
+p {
+    margin: 3px 5px 5px 5px;
+    color: #888;
+    z-index: 1000;
+    font-size: 12px;
+}
+
+a {
+    color: #ccc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+#infoLabel {
+    width: 370px;
+    height: 14px;
+    padding: 5px 10px;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 9999; /* On top of the canvas */
+    border: 1px solid #222;
+    cursor: text;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    overflow: hidden;
+    border-bottom: none;
+    position: absolute;
+    bottom: 0;
+    right: 25%;
+    left: 50%;
+    margin-left: -195px;
+}
+
+#infoText {
+    color: #ccc;
+    font-family: sans-serif;
+    width: 100%;
+    font-size: 11px;
+    background: transparent;
+    border: none;
+    text-align: center;
+}
+
+#infoText:focus {
+    outline: none !important;
+}
+
+/* Center guideline styles with dashed borders */
+.centerLine {
+    position: absolute;
+    pointer-events: none;
+    z-index: 1000;
+    display: none; /* Initially hidden */
+}
+
+.verticalLine {
+    height: 100vh;
+    left: 50%;
+    top: 0;
+    transform: translateX(-50%);
+    border-left: 2px dashed white;
+    background: transparent;
+}
+
+.horizontalLine {
+    width: 100vw;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    border-top: 2px dashed white;
+    background: transparent;
+}

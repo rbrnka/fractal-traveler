@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Synaptory Fractal Traveler</title>
+    <meta charset="UTF-8">
+    <meta name="author" content="Radim Brnka (c) 2025">
+    <meta name="description"
+          content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot set fractal may look like today, travel the set using your mouse or touch.">
+    <meta property="og:title" content="Synaptory: Fractal Traveler">
+    <meta property="og:description"
+          content="Mandelbrot Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot set with mouse or touch.">
+    <meta property="og:image" content="https://fractal.brnka.com/fractal.png">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+
+    <link rel="image_src" href="https://fractal.brnka.com/fractal.png">
+    <link rel="icon" href="./img/fractal.png" type="image/png">
+
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZDM1T1PJ2"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+
+        function gtag() {
+            dataLayer.push(arguments);
+        }
+
+        gtag('js', new Date());
+        gtag('config', 'G-DZDM1T1PJ2');
+    </script>
+
+    <link rel="stylesheet" media="all" href="./css/style.css" type="text/css">
+
+</head>
+<body>
+<div id="headerContainer">
+    <b>&#8801;</b>
+    <h1>Synaptory Fractal Traveler<sup>1.3</sup></h1>
+    <p>Developed for the <a
+            target="_blank"
+            title="Unmasking Chaos: Synaptory blog"
+            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
+        Chaos article</a>, by Radim Brnka &copy; 2025</p>
+    <p>Controls: Drag: pan, Wheel: zoom, Click: center &amp; URL link, <br/>Double click: zoom-in/out &amp; center |
+        F11: fullscreen</p>
+    <button id="reset">Reset</button>
+    <button id="randomize">Randomize Colors</button>
+    <!--    <button id="test">Test</button>-->
+    <br/>
+    <p>Presets:
+        <button id="preset1">1</button>
+        <button id="preset2">2</button>
+        <button id="preset3">3</button>
+        <button id="preset4">4</button>
+        <button id="preset5">5</button>
+        <button id="preset6">6</button>
+        <button id="preset7">7</button>
+        <button id="preset8">8</button>
+        <button id="preset9">9</button>
+        <!--        <button id="preset10"10</button>-->
+    </p>
+</div>
+<div id="infoLabel">
+    <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
+</div>
+<canvas id="fractalCanvas"></canvas>
+<div id="verticalLine" class="centerLine verticalLine"></div>
+<div id="horizontalLine" class="centerLine horizontalLine"></div>
+
+<script src="./js/bundle.js"></script>
+</body>
+</html>
