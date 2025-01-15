@@ -1,6 +1,6 @@
 {
-  "name": "fractravel",
-  "version": "1.0.0",
+  "name": "fractal-traveler",
+  "version": "1.3.0",
   "description": "Fractal Traveler App",
   "main": "src/scripts.js",
   "scripts": {
