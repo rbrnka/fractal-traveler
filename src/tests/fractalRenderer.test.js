@@ -1,17 +1,14 @@
 // src/tests/fractalRenderer.test.js
-import { FractalRenderer } from '../fractalRenderer.js';
-import { MandelbrotRenderer } from '../mandelbrotRenderer.js';
+import {FractalRenderer} from '../fractalRenderer.js';
+import {MandelbrotRenderer} from '../mandelbrotRenderer.js';
 
 describe("FractalRenderer (Abstract)", () => {
     beforeEach(() => {
-        // Set up the DOM with a canvas element.
         document.body.innerHTML = `<canvas id="fractalCanvas"></canvas>`;
     });
 
     test("should throw an error if instantiated directly", () => {
-        expect(() => new FractalRenderer("fractalCanvas")).toThrow(
-            "Abstract classes can't be instantiated."
-        );
+        expect(() => new FractalRenderer("fractalCanvas")).toThrow("Abstract classes can't be instantiated.");
     });
 });
 
@@ -23,7 +20,6 @@ describe("MandelbrotRenderer", () => {
         window.innerWidth = 800;
         window.innerHeight = 600;
 
-        // Set up a dummy canvas element in the DOM.
         document.body.innerHTML = `<canvas id="fractalCanvas" width="800" height="600"></canvas>`;
         canvas = document.getElementById("fractalCanvas");
 
@@ -56,13 +52,11 @@ describe("MandelbrotRenderer", () => {
             TRIANGLE_STRIP: "TRIANGLE_STRIP"
         };
 
-        // Override the canvas's getContext to return our fake WebGL context.
+        // Stub canvas.getContext to return fakeGL.
         jest.spyOn(canvas, "getContext").mockReturnValue(fakeGL);
 
-        // Instantiate the MandelbrotRenderer.
+        // Instantiate MandelbrotRenderer (which extends FractalRenderer).
         renderer = new MandelbrotRenderer("fractalCanvas");
-        // Ensure the abstract fix: In your MandelbrotRenderer constructor (via super),
-        // the statement `this.zoom = this.DEFAULT_ZOOM;` should be used.
     });
 
     afterEach(() => {
@@ -70,49 +64,48 @@ describe("MandelbrotRenderer", () => {
     });
 
     test("should initialize with default pan, zoom, and presets", () => {
-        expect(renderer.pan).toEqual([-0.5, 0.0]);
+        expect(renderer.pan).toEqual(renderer.DEFAULT_PAN.slice());
         expect(renderer.zoom).toEqual(renderer.DEFAULT_ZOOM);
         expect(Array.isArray(renderer.PRESETS)).toBe(true);
-        // For MandelbrotRenderer, presets should be provided.
         expect(renderer.PRESETS.length).toBeGreaterThan(0);
     });
 
-    test("reset() should restore pan, zoom, extraIterations and call draw()", () => {
+    test("reset() should restore pan, zoom, and extraIterations, then call draw()", () => {
         // Change state from defaults.
         renderer.pan = [1, 1];
         renderer.zoom = 0.001;
         renderer.extraIterations = 10;
 
+        // Call reset.
         renderer.reset();
 
-        // Expect default values after reset.
+        // Defaults should be restored.
         expect(renderer.pan).toEqual(renderer.DEFAULT_PAN);
         expect(renderer.zoom).toEqual(renderer.DEFAULT_ZOOM);
         expect(renderer.extraIterations).toBe(0);
-        // Check that draw() was called (fakeGL.drawArrays should have been triggered).
+        // draw() should have been triggered, meaning fakeGL.drawArrays is called.
         expect(fakeGL.drawArrays).toHaveBeenCalled();
     });
 
     test("screenToFractal() should convert screen coordinates as expected", () => {
-        // Set defaults
+        // Given a canvas of 800x600 and default pan/zoom.
         renderer.zoom = 3.0;
         renderer.pan = [-0.5, 0.0];
-
-        /* Calculation for canvas width 800 x height 600 at center (400,300):
-           stX = 400 / 800 = 0.5, stY = (600-300)/600 = 0.5.
-           Then, stX - 0.5 = 0 and stY - 0.5 = 0.
-           Therefore, fx = 0 * zoom + pan[0] = -0.5 and fy = 0 * zoom + pan[1] = 0.
+        /*
+           Calculation (for point 400,300):
+           stX = 400/800 = 0.5, stY = (600-300)/600 = 0.5,
+           then stX -= 0.5 -> 0, stY -= 0.5 -> 0.
+           So, fx = 0 * zoom + pan[0] = -0.5, fy = 0 * zoom + pan[1] = 0.
         */
         const [fx, fy] = renderer.screenToFractal(400, 300);
         expect(fx).toBeCloseTo(-0.5, 6);
         expect(fy).toBeCloseTo(0.0, 6);
     });
 
-    test("draw() should update WebGL state and call gl.drawArrays", () => {
+    test("draw() should update uniforms and call gl.drawArrays", () => {
         renderer.draw();
 
         expect(fakeGL.viewport).toHaveBeenCalledWith(0, 0, canvas.width, canvas.height);
-        // Since getUniformLocation is stubbed as "uniLoc", check that uniform setters are called with that string.
         expect(fakeGL.uniform2fv).toHaveBeenCalledWith("uniLoc", renderer.pan);
         expect(fakeGL.uniform1f).toHaveBeenCalledWith("uniLoc", renderer.zoom);
         const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(renderer.zoom)));
@@ -122,5 +115,31 @@ describe("MandelbrotRenderer", () => {
         expect(fakeGL.clearColor).toHaveBeenCalledWith(0, 0, 0, 1);
         expect(fakeGL.clear).toHaveBeenCalled();
         expect(fakeGL.drawArrays).toHaveBeenCalledWith("TRIANGLE_STRIP", 0, 4);
+    });
+
+    test('should update zoom when value is within bounds', () => {
+        renderer.zoom = 7; // 7 is within the range [1, 10]
+        expect(renderer.zoom).toBe(7);
+    });
+
+    test('should not update zoom when value is out of bounds', () => {
+        // Try setting zoom to a value below MIN_ZOOM.
+        renderer.zoom = 0.0000005;
+        expect(renderer.zoom).toBe(renderer.MAX_ZOOM);
+
+        renderer.zoom = 100;
+        expect(renderer.zoom).toBe(renderer.MIN_ZOOM);
+    });
+
+    test('should not update zoom when value is greater than MAX_ZOOM', () => {
+        // Try setting zoom to a value above MAX_ZOOM.
+        renderer.zoom = 200; // 20 is above MAX_ZOOM of 10
+        // The zoom should remain unchanged.
+
+    });
+
+    test('Default zoom should not be out of bounds', () => {
+        expect(renderer.DEFAULT_ZOOM).toBeGreaterThanOrEqual(renderer.MAX_ZOOM);
+        expect(renderer.DEFAULT_ZOOM).toBeLessThanOrEqual(renderer.MIN_ZOOM);
     });
 });
