@@ -12,6 +12,7 @@ let infoText;
 let resetButton;
 let randomizeColorsButton;
 
+let lastUpdateTime = 0;
 
 function initHeaderEvents() {
     // Use pointer events to handle hover/focus on the header.
@@ -158,7 +159,13 @@ export function initUI(fractalRenderer) {
 
 
 export function updateInfo(event, traveling = false) {
-    // Ensure that the canvas and fractalApp state are defined.
+    const now = performance.now();
+    if (now - lastUpdateTime < 100) {
+        return; // Skip updates if called too soon
+    }
+    lastUpdateTime = now;
+
+    // The rest of your updateInfo logic
     if (!canvas || !fractalApp || !fractalApp.pan || !fractalApp.zoom) {
         return;
     }
@@ -166,21 +173,17 @@ export function updateInfo(event, traveling = false) {
     const rect = canvas.getBoundingClientRect();
     let text = traveling ? 'Traveling: ' : '';
 
-    // Only try to compute mouse coordinates if event exists and has clientX
     if (event && typeof event.clientX === 'number' && !traveling) {
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
         const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
-        // Assuming isMobile() has been imported from utils.js
         text = isMobile() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
     }
 
-    // Use safe default values when calling toFixed.
-    const panX = (fractalApp.pan[0] !== undefined) ? fractalApp.pan[0] : 0;
-    const panY = (fractalApp.pan[1] !== undefined) ? fractalApp.pan[1] : 0;
-    const currentZoom = (fractalApp.zoom !== undefined) ? fractalApp.zoom : 0;
+    const panX = fractalApp.pan[0] ?? 0;
+    const panY = fractalApp.pan[1] ?? 0;
+    const currentZoom = fractalApp.zoom ?? 0;
 
     text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-
     infoText.textContent = text;
 }
