@@ -1,4 +1,4 @@
-// src/__tests__/utils.test.js
+// src/tests/utils.test.js
 import { updateURLParams, loadFractalParamsFromURL, clearURLParams, isMobile } from '../utils.js';
 
 describe('Utils Module', () => {

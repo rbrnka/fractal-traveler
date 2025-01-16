@@ -1,4 +1,4 @@
-// src/__tests__/ui.test.js
+// src/tests/ui.test.js
 import { initUI, updateInfo } from '../ui.js';
 
 describe('UI Module', () => {

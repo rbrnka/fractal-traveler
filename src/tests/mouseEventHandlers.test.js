@@ -1,6 +1,7 @@
-// src/__tests__/mouseEventHandlers.test.js
+// src/tests/mouseEventHandlers.test.js
 
 import { registerMouseEventHandlers } from '../mouseEventHandlers.js';
+import {clearURLParams} from "../utils";
 
 beforeAll(() => {
     // If clipboard isn't defined, set up a mock implementation.
