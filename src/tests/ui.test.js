@@ -21,7 +21,7 @@ describe('UI Module', () => {
             pan: [-0.5, 0.0],
             zoom: 3.0,
             headerMinimizeTimeout: null,
-            reset: jest.fn(),
+            reset: jest.mock((fractalApp) => {fractalApp.pan = [-0.5, 0.0]; fractalApp.zoom = 3.0;}),
             draw: jest.fn(),
             animateTravelToPreset: jest.fn(),
             screenToFractal: (x, y) => {
@@ -36,17 +36,16 @@ describe('UI Module', () => {
 
         // Get DOM elements for testing if needed.
         canvas = fractalApp.canvas;
-        header = document.getElementById('headerContainer');
+        header = document.getElementById('hweaderContainer');
         infoText = document.getElementById('infoText');
         resetButton = document.getElementById('reset');
         randomizeColorsButton = document.getElementById('randomize');
     });
 
-    test('updateInfo displays default values when event is null', () => {
-        fractalApp.pan = [-0.5, 0.0];
-        fractalApp.zoom = 3.0;
-        updateInfo(null, false);
+    test('updateInfo displays default values on reset', () => {
+        fractalApp.reset();
         expect(infoText.textContent).toContain('cx=-0.500000');
+        expect(infoText.textContent).toContain('cy=-0.000000');
         expect(infoText.textContent).toContain('zoom=3.000000');
     });
 
