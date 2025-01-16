@@ -78,7 +78,7 @@ module.exports = {
         },
         compress: true,
         port: 8080,
-        open: true,  // Automatically open the browser
+        open: false,  // Automatically open the browser
         hot: false,         // Enable HMR
         client: {
             overlay: {

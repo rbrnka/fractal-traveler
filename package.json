@@ -5,8 +5,9 @@
   "main": "src/scripts.js",
   "scripts": {
     "build": "webpack --mode production",
-    "dev": "webpack --mode development --watch",
-    "start": "webpack serve --mode development --open",
+    "dev-nowatch": "webpack --mode development",
+    "dev-watch": "webpack --mode development --watch",
+    "start": "webpack serve",
     "test": "jest"
   },
   "author": "Radim Brnka",
