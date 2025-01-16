@@ -1,7 +1,6 @@
 /**
  * FractalRenderer
  * @author Radim Brnka
- * @
  * @abstract
  */
 export class FractalRenderer {
@@ -22,8 +21,10 @@ export class FractalRenderer {
         // Default values:
         this.DEFAULT_ZOOM = 3.0;
         this.DEFAULT_PAN = [-0.5, 0.0];
+        // TODO make dynamic by screen resolution and apply when zoom is changing
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
+        // Interesting zoom-ins
         this.PRESETS = [];
 
         this.zoom = self.DEFAULT_ZOOM;
@@ -42,6 +43,16 @@ export class FractalRenderer {
 
         // Bind resize event
         window.addEventListener('resize', () => this.resizeCanvas());
+
+        // Init
+        this.initGLProgram();
+
+        // Cache uniform locations
+        this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
+        this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
+        this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
+        this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
+
         this.resizeCanvas();
     }
 
@@ -109,28 +120,32 @@ export class FractalRenderer {
         this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
     }
 
+    /**
+     * Draws the fractal
+     */
     draw() {
-        this.initGLProgram();
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        //this.initGLProgram();
+        if (this.program) {
 
-        const panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
-        const zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
-        const iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
-        const colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
+        }
+            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
 
-        this.gl.uniform2fv(panLoc, this.pan);
-        this.gl.uniform1f(zoomLoc, this.zoom);
+        this.gl.uniform2fv(this.panLoc, this.pan);
+        this.gl.uniform1f(this.zoomLoc, this.zoom);
 
         const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(this.zoom)));
         const iters = Math.min(10000, baseIters + this.extraIterations);
 
-        this.gl.uniform1f(iterLoc, iters);
-        this.gl.uniform3fv(colorLoc, this.colorPalette);
+        this.gl.uniform1f(this.iterLoc, iters);
+        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
+    /**
+     * Resets the fractal to its initial state (default pan, zoom) and redraws
+     */
     reset() {
         this.pan = this.DEFAULT_PAN.slice();
         this.zoom = this.DEFAULT_ZOOM;
@@ -139,6 +154,12 @@ export class FractalRenderer {
         this.draw();
     }
 
+    /**
+     * Calculates coordinates from screen to fx/fy in the fractal scale (matches complex number x+yi)
+     * @param screenX
+     * @param screenY
+     * @returns {number[]}
+     */
     screenToFractal(screenX, screenY) {
         const w = this.canvas.width;
         const h = this.canvas.height;
@@ -154,12 +175,20 @@ export class FractalRenderer {
         const fx = stX * this.zoom + this.pan[0];
         const fy = stY * this.zoom + this.pan[1];
 
-        return [fx, fy];
+        return [fx, fy]; // x+yi
     }
 
-    // ----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
     // Animation methods
-    // ----------------------------------------------------------------------------------------------------------------
+    // -----------------------------------------------------------------------------------------------------------------
+    /**
+     * Animates sequential pan and then zoom into target location.
+     * @param targetPan
+     * @param targetZoom
+     * @param panDuration
+     * @param zoomDuration
+     * @param startPan Defaults to current location
+     */
     animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration, startPan = this.pan.slice()) {
         const startStatePan = startPan; // current pan
         const self = this;
@@ -168,12 +197,15 @@ export class FractalRenderer {
 
         function stepPan(timestamp) {
             if (!startTime) startTime = timestamp;
+
             const elapsed = timestamp - startTime;
             let progress = elapsed / panDuration;
             if (progress > 1) progress = 1;
+
             self.pan[0] = startStatePan[0] + (targetPan[0] - startStatePan[0]) * progress;
             self.pan[1] = startStatePan[1] + (targetPan[1] - startStatePan[1]) * progress;
             self.draw();
+
             if (progress < 1) {
                 requestAnimationFrame(stepPan);
             } else {
@@ -184,6 +216,11 @@ export class FractalRenderer {
         requestAnimationFrame(stepPan);
     }
 
+    /**
+     * Animates zoom without pan
+     * @param targetZoom
+     * @param duration
+     */
     animateZoom(targetZoom, duration) {
         const startZoom = this.zoom;
         const self = this;
@@ -192,8 +229,10 @@ export class FractalRenderer {
 
         function stepZoom(timestamp) {
             if (!startTime) startTime = timestamp;
+
             let elapsed = timestamp - startTime;
             let progress = elapsed / duration;
+
             if (progress > 1) progress = 1;
 
             self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
@@ -207,6 +246,12 @@ export class FractalRenderer {
         requestAnimationFrame(stepZoom);
     }
 
+    /**
+     * Animates pan and zoom to/from location simultaneously
+     * @param targetPan
+     * @param targetZoom
+     * @param duration
+     */
     animatePanAndZoomTo(targetPan, targetZoom, duration = 500) {
         // Capture the starting state.
         const startPan = [this.pan[0], this.pan[1]];
@@ -217,8 +262,10 @@ export class FractalRenderer {
 
         function step(timestamp) {
             if (!startTime) startTime = timestamp;
+
             const elapsed = timestamp - startTime;
             let progress = elapsed / duration;
+
             if (progress > 1) {
                 progress = 1;
             }
@@ -229,6 +276,7 @@ export class FractalRenderer {
             // And interpolate zoom exponentially (for a smooth effect):
             self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
             self.draw();
+            // TODO update the info
             //updateInfo(null, true);
 
             if (progress < 1) {
@@ -240,7 +288,7 @@ export class FractalRenderer {
     }
 
     /**
-     * Zooms to preset by zooming out to default, panning and then zooming in
+     * Pans and zooms to preset by zooming out to default, panning and then zooming in
      * @param preset Array [[panX, panY], zoom]
      * @param zoomOutDuration
      * @param panDuration
@@ -265,7 +313,6 @@ export class FractalRenderer {
 
             // Exponential interpolation for zoom-out:
             self.zoom = startZoom * Math.pow(self.DEFAULT_ZOOM / startZoom, progress);
-
             self.draw();  // Use self.draw() instead of this.draw()
 
             // TODO: update info if needed, e.g., updateInfo(null, true);
