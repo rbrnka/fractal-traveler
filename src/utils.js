@@ -1,6 +1,16 @@
-// utils.js
+/**
+ * @module utils.js
+ * @author Radim Brnka
+ */
+
 let urlParamsSet = false;
 
+/**
+ * Updates browser URL with params of the selected point and zoom in the fractal
+ * @param cx
+ * @param cy
+ * @param zoom
+ */
 export function updateURLParams(cx, cy, zoom) {
     const params = new URLSearchParams(window.location.search);
 
@@ -13,6 +23,11 @@ export function updateURLParams(cx, cy, zoom) {
     urlParamsSet = true;
 }
 
+/**
+ * Fethches and recalculates coords and zoom from URL and sets them to the fractalApp instance
+ * @TODO this should be handled differently, without need for referencing the fractalApp
+ * @param fractalApp
+ */
 export function loadFractalParamsFromURL(fractalApp) {
     const params = new URLSearchParams(window.location.search);
     const cx = params.get('cx');
@@ -30,6 +45,9 @@ export function loadFractalParamsFromURL(fractalApp) {
     }
 }
 
+/**
+ * Clears browser URL, usually when it stops correspond with the position/zoom in the fractal
+ */
 export function clearURLParams() {
     if (!urlParamsSet) return;
 
@@ -42,6 +60,10 @@ export function clearURLParams() {
     urlParamsSet = false;
 }
 
+/**
+ * Detects mobile device
+ * @returns {boolean} if the user device is mobile
+ */
 export function isMobile() {
     const toMatch = [
         /Android/i,

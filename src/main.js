@@ -1,18 +1,21 @@
-// main.js
+/**
+ * @module main
+ * @author Radim Brnka
+ */
 import './css/style.css';
 
 import {MandelbrotRenderer} from './mandelbrotRenderer.js';
 import {initUI} from './ui.js';
 
-// TODO device selection - if (isMobile()) {
+// TODO only register events based on the device - if (isMobile())...
 import {registerTouchEventHandlers} from './touchEventHandlers.js';
 import {registerMouseEventHandlers} from './mouseEventHandlers.js';
-import {loadFractalParamsFromURL} from "./utils.js";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Create the fractal application instance.
     const fractalApp = new MandelbrotRenderer('fractalCanvas');
 
+    // Register control events
     registerTouchEventHandlers(fractalApp);
     registerMouseEventHandlers(fractalApp);
 

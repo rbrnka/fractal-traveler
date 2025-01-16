@@ -52,7 +52,7 @@ function initHeaderEvents() {
         header.classList.remove('minimized');
     });
 
-// When the pointer leaves the header, set a long delay (e.g., 2000ms) before minimizing.
+    // When the pointer leaves the header, set a long delay (e.g., 2000ms) before minimizing.
     header.addEventListener('mouseleave', () => {
         headerMinimizeTimeout = setTimeout(() => {
             header.classList.add('minimized');
@@ -64,12 +64,14 @@ function initHeaderEvents() {
     canvas.addEventListener('click', () => {
         header.classList.add('minimized');
     });
+
     canvas.addEventListener('touchstart', () => {
         header.classList.add('minimized');
     });
 }
 
 function initControlButtonEvents() {
+
     resetButton.addEventListener('click', () => {
         // Clear the URL parameters.
         clearURLParams();
@@ -136,7 +138,6 @@ function initInfoText() {
             console.error('Not copied to clipboard! ' + err.toString());
         });
     });
-
 }
 
 export function initUI(fractalRenderer) {

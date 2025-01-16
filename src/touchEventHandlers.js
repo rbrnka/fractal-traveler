@@ -1,4 +1,7 @@
-// touchEventHandlers.js
+/**
+ * @module TouchEventhandlers
+ * @author Radim Brnka
+ */
 import {updateURLParams, clearURLParams} from './utils.js';
 import {updateInfo} from './ui.js';
 

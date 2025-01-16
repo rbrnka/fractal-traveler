@@ -1,3 +1,7 @@
+/**
+ * @module MouseEventhandlers
+ * @author Radim Brnka
+ */
 import {updateURLParams, clearURLParams} from './utils.js';
 import {updateInfo} from './ui.js';
 
@@ -25,7 +29,6 @@ export function registerMouseEventHandlers(fractalApp) {
         const [fxOld, fyOld] = fractalApp.screenToFractal(mouseX, mouseY);
 
         // 3) Update the zoom
-        //    For "zoom in" if scrolling up, "zoom out" if scrolling down, or vice versa
         const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
         if (fractalApp.zoom * zoomFactor > 0.000017 && fractalApp.zoom * zoomFactor < 50) {
             fractalApp.zoom *= zoomFactor;
@@ -56,22 +59,28 @@ export function registerMouseEventHandlers(fractalApp) {
         if (event.buttons === 1) {
             const dx = event.clientX - mouseDownX;
             const dy = event.clientY - mouseDownY;
+
             if (!isDragging && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
                 isDragging = true;
             }
+
             if (isDragging) {
                 if (clickTimeout) {
                     clearTimeout(clickTimeout);
                     clickTimeout = null;
                 }
+
                 clearURLParams();
+
                 const rect = canvas.getBoundingClientRect();
                 const moveX = event.clientX - lastX;
                 const moveY = event.clientY - lastY;
+
                 fractalApp.pan[0] -= (moveX / rect.width) * fractalApp.zoom;
                 fractalApp.pan[1] += (moveY / rect.height) * fractalApp.zoom;
                 lastX = event.clientX;
                 lastY = event.clientY;
+
                 fractalApp.draw();
             }
         }

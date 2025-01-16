@@ -1,5 +1,7 @@
 /**
  * Mandelbrot set renderer
+ * @author Radim Brnka
+ * @extends FractalRenderer
  */
 
 import {FractalRenderer} from './fractalRenderer.js';
