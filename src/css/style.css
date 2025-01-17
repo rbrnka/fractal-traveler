@@ -12,14 +12,14 @@ html, body {
 #headerContainer {
     position: relative;
     z-index: 9999;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.75);
     width: 390px;
     margin: 0 auto;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 170px;
-    max-height: 170px;
+    height: 190px;
+    max-height: 190px;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
@@ -44,6 +44,46 @@ button {
     z-index: 10;
     margin: 4px 2px;
     cursor: pointer;
+    align-items: center;
+    background-color: initial;
+    background-image: linear-gradient(#464d55, #25292e);
+    border-radius: 3px;
+    border-width: 0;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    box-sizing: border-box;
+    color: #ccc;
+    display: inline-flex;
+    flex-direction: column;
+    font-size: 12px;
+    height: 18px;
+    justify-content: center;
+    line-height: 1;
+    outline: none;
+    overflow: hidden;
+    padding: 0 8px;
+    text-align: center;
+    text-decoration: none;
+    transform: translate3d(0, 0, 0);
+    transition: all 150ms;
+    vertical-align: baseline;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+button:hover {
+    box-shadow: rgba(0, 0, 0, .8) 0 1px 2px;
+    opacity: .85;
+    color: #fff;
+}
+
+button:active {
+    outline: 0;
+}
+
+button:focus {
+    box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
 }
 
 h1 {
@@ -59,6 +99,15 @@ p {
     color: #888;
     z-index: 1000;
     font-size: 12px;
+    line-height: 14px;
+}
+
+b {
+    cursor: pointer;
+}
+
+p#controls {
+    font-size: 11px;
 }
 
 a {
@@ -74,8 +123,8 @@ a:hover {
     width: 370px;
     height: 14px;
     padding: 5px 10px;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 9999; /* On top of the canvas */
+    background: rgba(0, 0, 0, 0.75);
+    z-index: 9999;
     border: 1px solid #222;
     cursor: text;
     border-top-left-radius: 15px;

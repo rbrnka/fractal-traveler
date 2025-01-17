@@ -6,12 +6,12 @@ import { updateInfo } from "./ui";
  * @abstract
  */
 export class FractalRenderer {
-    constructor(canvasId) {
+    constructor(canvas) {
         if (this.constructor === FractalRenderer) {
             throw new Error("Abstract classes can't be instantiated.");
         }
 
-        this.canvas = document.getElementById(canvasId);
+        this.canvas = canvas;
         this.gl = this.canvas.getContext('webgl');
 
         if (!this.gl) {
@@ -30,20 +30,22 @@ export class FractalRenderer {
         // Use the setter so that if DEFAULT_ZOOM is out of bounds it’s clamped.
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
+        this.rotation = 0;
 
+        this.currentAnimationFrame = null;
         this.extraIterations = 0;
         this.colorPalette = [1.0, 1.0, 1.0];
 
         // Initialize shaders
         this.vertexShaderSource = `
+            precision mediump float;
             attribute vec4 a_position;
+            uniform float u_rotation;
+       
             void main() {
                 gl_Position = a_position;
             }
         `;
-
-        // Bind resize event
-        window.addEventListener('resize', () => this.resizeCanvas());
 
         // Initialize WebGL program and uniforms
         this.initGLProgram();
@@ -66,6 +68,7 @@ export class FractalRenderer {
     // }
 
     resizeCanvas() {
+        console.log("Resizing canvas");
         this.canvas.width = window.innerWidth;
         this.canvas.height = window.innerHeight;
 
@@ -133,6 +136,7 @@ export class FractalRenderer {
         this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
         this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
+        this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation'); // Add rotation
     }
 
     /**
@@ -144,6 +148,7 @@ export class FractalRenderer {
 
         this.gl.uniform2fv(this.panLoc, this.pan);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
+        this.gl.uniform1f(this.rotationLoc, this.rotation);
 
         const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(this.zoom)));
         const iters = Math.min(10000, baseIters + this.extraIterations);
@@ -159,9 +164,13 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom) and redraws.
      */
     reset() {
+        this.stopCurrentAnimation();
         this.pan = this.DEFAULT_PAN.slice();
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
+        this.rotation = 0; // Reset rotation
         this.extraIterations = 0;
+        updateInfo(null, false);
+
         this.draw();
     }
 
@@ -176,22 +185,78 @@ export class FractalRenderer {
         const h = this.canvas.height;
         const aspect = w / h;
 
-        let stX = screenX / w;
-        let stY = (h - screenY) / h;
-
-        stX -= 0.5;
-        stY -= 0.5;
+        // Normalize screen coordinates to [-0.5, 0.5]
+        let stX = screenX / w - 0.5;
+        let stY = (h - screenY) / h - 0.5;
         stX *= aspect;
 
-        const fx = stX * this.zoom + this.pan[0];
-        const fy = stY * this.zoom + this.pan[1];
+        // Apply rotation correction
+        const cosR = Math.cos(this.rotation);
+        const sinR = Math.sin(this.rotation);
 
-        return [fx, fy]; // x+yi
+        const rotatedX = cosR * stX - sinR * stY;
+        const rotatedY = sinR * stX + cosR * stY;
+
+        // Map normalized coordinates to fractal coordinates
+        const fx = rotatedX * this.zoom + this.pan[0];
+        const fy = rotatedY * this.zoom + this.pan[1];
+
+        return [fx, fy];
     }
 
     // -----------------------------------------------------------------------------------------------------------------
     // Animation Methods
     // -----------------------------------------------------------------------------------------------------------------
+    /**
+     * Stops currently running animation
+     */
+    stopCurrentAnimation() {
+        if (this.currentAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentAnimationFrame);
+            this.currentAnimationFrame = null;
+            this.animatePanAndZoomTo(this.DEFAULT_PAN.slice(), this.DEFAULT_ZOOM);
+        }
+    }
+
+    setRotation(angleInDegrees) {
+        this.rotation = (angleInDegrees * Math.PI) / 180; // Convert degrees to radians
+        this.draw(); // Redraw with the new rotation
+    }
+
+    onAnimationFinished() {
+        setTimeout(() => {
+            updateInfo(null, false);
+        }, 200);
+    }
+
+    /**
+     * Animates zoom without panning.
+     * @param targetZoom
+     * @param duration in milliseconds
+     */
+    animateZoom(targetZoom, duration) {
+        const startZoom = this.zoom;
+        const self = this;
+        let startTime = null;
+
+        function stepZoom(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+            self.draw();
+
+            if (progress < 1) {
+                requestAnimationFrame(stepZoom);
+                updateInfo(null, true);
+            } else {
+                self.onAnimationFinished();
+            }
+        }
+        requestAnimationFrame(stepZoom);
+    }
+
     /**
      * Animates sequential pan and then zooms into the target location.
      * @param targetPan Array [x, y]
@@ -201,6 +266,8 @@ export class FractalRenderer {
      * @param startPan Defaults to current pan
      */
     animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration, startPan = this.pan.slice()) {
+        this.stopCurrentAnimation();
+
         const startStatePan = startPan; // current pan
         const self = this;
         let startTime = null;
@@ -225,38 +292,14 @@ export class FractalRenderer {
     }
 
     /**
-     * Animates zoom without panning.
-     * @param targetZoom
-     * @param duration in milliseconds
-     */
-    animateZoom(targetZoom, duration) {
-        const startZoom = this.zoom;
-        const self = this;
-        let startTime = null;
-
-        function stepZoom(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
-
-            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-            self.draw();
-            updateInfo(null, true);
-
-            if (progress < 1) {
-                requestAnimationFrame(stepZoom);
-            }
-        }
-        requestAnimationFrame(stepZoom);
-    }
-
-    /**
      * Animates pan and zoom simultaneously.
      * @param targetPan Array [x, y]
      * @param targetZoom
      * @param duration in milliseconds
      */
     animatePanAndZoomTo(targetPan, targetZoom, duration = 500) {
+        this.stopCurrentAnimation();
+
         const startPan = this.pan.slice();
         const startZoom = this.zoom;
         const self = this;
@@ -275,6 +318,44 @@ export class FractalRenderer {
 
             if (progress < 1) {
                 requestAnimationFrame(step);
+            } else {
+                self.onAnimationFinished();
+            }
+        }
+        requestAnimationFrame(step);
+    }
+
+    /**
+     *
+     * @param targetPan
+     * @param targetZoom
+     * @param targetRotation
+     * @param duration
+     */
+    animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500) {
+        this.stopCurrentAnimation();
+
+        const startPan = this.pan.slice();
+        const startZoom = this.zoom;
+        const startRotation = this.rotation;
+        const self = this;
+        let startTime = null;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            self.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
+            self.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
+            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+            self.rotation = startRotation + (targetRotation - startRotation) * progress;
+            self.draw();
+
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                self.onAnimationFinished();
             }
         }
         requestAnimationFrame(step);
@@ -289,7 +370,10 @@ export class FractalRenderer {
      * @param zoomDuration in milliseconds
      */
     animateTravelToPreset(preset, zoomOutDuration, panDuration, zoomDuration) {
+        this.stopCurrentAnimation();
+
         const self = this;
+
         if (this.zoom === this.DEFAULT_ZOOM) {
             this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomDuration);
             return;

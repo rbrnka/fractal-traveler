@@ -3,88 +3,101 @@ const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
-module.exports = {
-    entry: './src/main.js',
-    output: {
-        filename: 'js/bundle.js',
-        path: path.resolve(__dirname, 'dist'),
-        // Set publicPath to an empty string (or './') so that generated HTML references are relative.
-        publicPath: ''
-    },
-    mode: 'production', // or 'development'
-    module: {
-        rules: [
-            {
-                test: /\.js$/,
-                exclude: /node_modules/,
-                use: {
-                    loader: 'babel-loader',
-                    options: {
-                        presets: ['@babel/preset-env']
-                    }
-                }
-            },
-            {
-                test: /\.css$/,
-                use: [
-                    MiniCssExtractPlugin.loader,
-                    'css-loader'
-                ]
-            }
-        ]
-    },
-    plugins: [
-        new MiniCssExtractPlugin({
-            filename: 'css/style.css'
-        }),
-        new HtmlWebpackPlugin({
-            template: './index.html', // your source HTML
-            minify: {
-                removeComments: true,
-                collapseWhitespace: true,
-                removeAttributeQuotes: true
-            }
-        }),
-        // Copy all files from src/img to dist/img.
-        new CopyWebpackPlugin({
-            patterns: [
+module.exports = (env, argv) => {
+    const isProduction = argv.mode === 'production';
+
+    return {
+        entry: './src/main.js',
+        output: {
+            filename: 'js/bundle.js',
+            path: path.resolve(__dirname, 'dist'),
+            publicPath: ''
+        },
+        mode: isProduction ? 'production' : 'development',
+        module: {
+            rules: [
                 {
-                    from: path.resolve(__dirname, 'src/img'),
-                    to: 'img' // This will place files in dist/img
+                    test: /\.js$/,
+                    exclude: /node_modules/,
+                    use: {
+                        loader: 'babel-loader',
+                        options: {
+                            presets: ['@babel/preset-env']
+                        }
+                    }
+                },
+                {
+                    test: /\.css$/,
+                    use: [
+                        MiniCssExtractPlugin.loader,
+                        'css-loader'
+                    ]
                 }
             ]
-        })
-    ],
-    optimization: {
-        minimize: true,
-        minimizer: [new TerserPlugin({
-            terserOptions: {
-                compress: true,
-                output: {
-                    comments: false,
-                },
-            },
-            extractComments: false,
-        })],
-    },
-    resolve: {
-        extensions: ['.js']
-    },
-    devtool: 'source-map',
-    devServer: {
-        static: {
-            directory: path.join(__dirname, 'dist'),
         },
-        compress: true,
-        port: 8080,
-        open: false,  // Automatically open the browser
-        hot: false,         // Enable HMR
-        client: {
-            overlay: {
-                warnings: false,
-                errors: true,
+        plugins: [
+            new MiniCssExtractPlugin({
+                filename: 'css/style.css'
+            }),
+            new HtmlWebpackPlugin({
+                template: './index.html',
+                minify: isProduction
+                    ? {
+                        removeComments: true,
+                        collapseWhitespace: true,
+                        removeAttributeQuotes: true
+                    }
+                    : false
+            }),
+            new CopyWebpackPlugin({
+                patterns: [
+                    {
+                        from: path.resolve(__dirname, 'src/img'),
+                        to: 'img'
+                    }
+                ]
+            })
+        ],
+        optimization: {
+            minimize: isProduction,
+            minimizer: isProduction
+                ? [
+                    new TerserPlugin({
+                        terserOptions: {
+                            compress: {
+                                drop_console: true, // Remove console.* in production
+                                drop_debugger: true // Remove debugger in production
+                            },
+                            output: {
+                                comments: false // Remove comments
+                            }
+                        },
+                        extractComments: false
+                    }),
+                    new CssMinimizerPlugin()
+                ]
+                : []
+        },
+        resolve: {
+            extensions: ['.js']
+        },
+        devtool: isProduction ? 'source-map' : 'eval-source-map', // Faster source maps in development
+        devServer: {
+            static: {
+                directory: path.join(__dirname, 'dist')
             },
+            compress: true,
+            port: 8080,
+            open: false,
+            hot: true, // Enable Hot Module Replacement in development
+            client: {
+                overlay: {
+                    warnings: false,
+                    errors: true
+                }
+            }
         }
-    }
+    };
 };

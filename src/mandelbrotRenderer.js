@@ -8,8 +8,8 @@ import {FractalRenderer} from './fractalRenderer.js';
 
 export class MandelbrotRenderer extends FractalRenderer {
 
-    constructor(canvasId) {
-        super(canvasId);
+    constructor(canvas) {
+        super(canvas);
 
         this.PRESETS = [
             {pan: [0.351424, 0.063866], zoom: 0.000049},
@@ -35,16 +35,26 @@ export class MandelbrotRenderer extends FractalRenderer {
             uniform float u_zoom;
             uniform float u_iterations;
             uniform vec3 u_colorPalette;
+            uniform float u_rotation; // Rotation in radians
             
             void main() {
                 float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
                 vec2 st = gl_FragCoord.xy / vec2(${w.toFixed(1)}, ${h.toFixed(1)});
-                st -= 0.5;
-                st.x *= aspect;
-            
-                vec2 c = st * u_zoom + u_pan;
-            
-                // Simple Mandelbrot
+                st -= 0.5; // Center
+                st.x *= aspect; // Adjust aspect ratio
+    
+                // Apply rotation matrix
+                float cosR = cos(u_rotation);
+                float sinR = sin(u_rotation);
+                vec2 rotated = vec2(
+                    st.x * cosR - st.y * sinR,
+                    st.x * sinR + st.y * cosR
+                );
+    
+                // Scale and translate
+                vec2 c = rotated * u_zoom + u_pan;
+    
+                // Fractal computation (e.g., Mandelbrot set)
                 vec2 z = vec2(0.0, 0.0);
                 float i;
                 for (float n = 0.0; n < 10000.0; n++) {

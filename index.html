@@ -26,24 +26,22 @@
         gtag('js', new Date());
         gtag('config', 'G-DZDM1T1PJ2');
     </script>
-
-    <link rel="stylesheet" media="all" href="./css/style.css" type="text/css">
-
 </head>
 <body>
 <div id="headerContainer">
     <b>&#8801;</b>
-    <h1>Synaptory Fractal Traveler<sup>1.3</sup></h1>
+    <h1>Synaptory Fractal Traveler<sup>1.4</sup></h1>
     <p>Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
             href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
-        Chaos article</a>, by Radim Brnka &copy; 2025</p>
-    <p>Controls: Drag: pan, Wheel: zoom, Click: center &amp; URL link, <br/>Double click: zoom-in/out &amp; center |
-        F11: fullscreen</p>
+        Chaos</a> article, <br/>by Radim Brnka &copy; 2025 (<a
+            target="_blank"
+            title="Github Repository"
+            href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
     <button id="reset">Reset</button>
     <button id="randomize">Randomize Colors</button>
-    <!--    <button id="test">Test</button>-->
+<!--    <button id="demo">Demo</button>-->
     <br/>
     <p>Presets:
         <button id="preset1">1</button>
@@ -57,6 +55,8 @@
         <button id="preset9">9</button>
         <!--        <button id="preset10"10</button>-->
     </p>
+    <p id="controls">Controls: Left Drag: Pan, Right Drag: Rotate, Wheel: Zoom, <br/>Left Click: Center &amp; URL link, Double click:
+        Zoom-in/out &amp; center, <br/>Middle Click: guiding lines, F11: fullscreen</p>
 </div>
 <div id="infoLabel">
     <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
@@ -64,7 +64,5 @@
 <canvas id="fractalCanvas"></canvas>
 <div id="verticalLine" class="centerLine verticalLine"></div>
 <div id="horizontalLine" class="centerLine horizontalLine"></div>
-
-<script src="./js/bundle.js"></script>
 </body>
 </html>

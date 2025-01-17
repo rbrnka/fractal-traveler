@@ -1,11 +1,11 @@
-import {isMobile, clearURLParams, loadFractalParamsFromURL} from './utils.js';
+import {isMobile, clearURLParams, hsbToRgb} from './utils.js';
 
 let canvas;
 let fractalApp;
 
 let headerMinimizeTimeout = null;
+let headerToggled = false;
 let resizeTimeout;
-let initTimeout;
 
 let header;
 let infoText;
@@ -15,37 +15,8 @@ let randomizeColorsButton;
 let lastUpdateTime = 0;
 
 function initHeaderEvents() {
-    // Use pointer events to handle hover/focus on the header.
+
     header.addEventListener('pointerenter', () => {
-        if (fractalApp.headerMinimizeTimeout) {
-            clearTimeout(fractalApp.headerMinimizeTimeout);
-            fractalApp.headerMinimizeTimeout = null;
-        }
-        header.classList.remove('minimized');
-    });
-
-    header.addEventListener('pointerleave', () => {
-        // Use a delay to avoid accidental minimization.
-        fractalApp.headerMinimizeTimeout = setTimeout(() => {
-            header.classList.add('minimized');
-            fractalApp.headerMinimizeTimeout = null;
-        }, 1000);
-    });
-
-    // Toggle header state when header is clicked/tapped if target is not a button.
-    header.addEventListener('pointerdown', (event) => {
-        let el = event.target;
-        while (el && el !== header) {
-            if (el.tagName && el.tagName.toLowerCase() === 'button') {
-                return;
-            }
-            el = el.parentNode;
-        }
-        event.stopPropagation();
-        header.classList.toggle('minimized');
-    });
-
-    header.addEventListener('mouseenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
@@ -53,21 +24,41 @@ function initHeaderEvents() {
         header.classList.remove('minimized');
     });
 
-    // When the pointer leaves the header, set a long delay (e.g., 2000ms) before minimizing.
-    header.addEventListener('mouseleave', () => {
+    header.addEventListener('pointerleave', () => {
+        // Only minimize if it hasn't been toggled manually
         headerMinimizeTimeout = setTimeout(() => {
-            header.classList.add('minimized');
+            if (!headerToggled) {
+                header.classList.add('minimized');
+            }
             headerMinimizeTimeout = null;
         }, 1000);
     });
 
-    // When user clicks/taps the fractal, minimize the header
-    canvas.addEventListener('click', () => {
-        header.classList.add('minimized');
+    // Toggle header state when header is clicked/tapped and stop auto-close
+    header.addEventListener('pointerdown', (event) => {
+        let el = event.target;
+        while (el && el !== header) {
+            if (el.tagName && el.tagName.toLowerCase() === 'button') {
+                return; // Ignore button clicks
+            }
+            el = el.parentNode;
+        }
+        event.stopPropagation();
+
+        // Toggle header and mark it as manually toggled
+        const isMinimized = header.classList.toggle('minimized');
+        headerToggled = !isMinimized;
+
+        if (headerMinimizeTimeout) {
+            clearTimeout(headerMinimizeTimeout);
+            headerMinimizeTimeout = null;
+        }
     });
 
-    canvas.addEventListener('touchstart', () => {
+    // When user clicks/taps outside of the header
+    canvas.addEventListener('pointerdown', () => {
         header.classList.add('minimized');
+        headerToggled = false;
     });
 }
 
@@ -80,8 +71,19 @@ function initControlButtonEvents() {
     });
 
     randomizeColorsButton.addEventListener('click', () => {
-        fractalApp.colorPalette = [Math.random(), Math.random(), Math.random()];
+        // Generate a bright random color palette
+        // Generate colors with better separation and higher brightness
+        const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
+        const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
+        const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
+
+        // Convert HSB/HSV to RGB
+        const newPalette = hsbToRgb(hue, saturation, brightness);
+
+        fractalApp.colorPalette = newPalette;
         fractalApp.draw();
+
+        updateColorSchema(); // Update app colors
     });
 }
 
@@ -99,27 +101,6 @@ function initPresetButtonEvents() {
 }
 
 function initWindowEvents() {
-    // Initial render
-    window.addEventListener('load', () => {
-        // Get the URL params.
-        const params = new URLSearchParams(window.location.search);
-
-        // If the URL contains the required parameters, load them.
-        if (params.has('cx') && params.has('cy') && params.has('zoom')) {
-            fractalApp.reset();
-            clearTimeout(initTimeout);
-            initTimeout = setTimeout(() => {
-                loadFractalParamsFromURL(fractalApp);
-                fractalApp.animatePanAndZoomTo(fractalApp.pan, fractalApp.zoom, 500);
-            }, 1000); // Adjust delay as needed
-
-        } else {
-            // Otherwise, clear any invalid URL parameters and reset to default.
-            clearURLParams();
-            fractalApp.reset();
-        }
-    });
-
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
@@ -157,32 +138,74 @@ export function initUI(fractalRenderer) {
     initInfoText();
 }
 
+function updateColorSchema() {
+    const root = document.documentElement;
+    const palette = fractalApp.colorPalette;
+    // Convert the palette into RGB values for the primary color
+    const primaryColor = `rgb(${Math.floor(palette[0] * 255)}, ${Math.floor(palette[1] * 255)}, ${Math.floor(palette[2] * 255)}, 0.1)`;
 
-export function updateInfo(event, traveling = false) {
+    // Adjust border colors based on the primary color
+    const borderColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.4)`; // Slightly dimmed for borders
+
+    // Update header border and background color
+    const header = document.getElementById('headerContainer');
+    if (header) {
+        header.style.borderColor = borderColor;
+    }
+
+    // Update infoText border and background color
+    const infoLabel = document.getElementById('infoLabel');
+    if (infoLabel) {
+        infoLabel.style.borderColor = borderColor;
+    }
+
+    // Optional: Update other UI elements using CSS variables or inline styles
+    //root.style.setProperty('--app-primary-color', primaryColor);
+    //root.style.setProperty('--app-border-color', borderColor);
+}
+
+export function updateInfo(inputEvent, traveling = false) {
     const now = performance.now();
-    if (now - lastUpdateTime < 100) {
+    if (now - lastUpdateTime < 50) {
         return; // Skip updates if called too soon
     }
     lastUpdateTime = now;
 
-    // The rest of your updateInfo logic
     if (!canvas || !fractalApp || !fractalApp.pan || !fractalApp.zoom) {
         return;
     }
 
-    const rect = canvas.getBoundingClientRect();
-    let text = traveling ? 'Traveling: ' : '';
+    let text = '';
 
-    if (event && typeof event.clientX === 'number' && !traveling) {
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+    if (traveling) {
+        text = 'Traveling to: ';
+    } else if (inputEvent && typeof inputEvent.clientX === 'number') {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = inputEvent.clientX - rect.left;
+        const mouseY = inputEvent.clientY - rect.top;
+
+        // Apply rotation to screen coordinates before converting to fractal coordinates
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const offsetX = mouseX - centerX;
+        const offsetY = mouseY - centerY;
+
+        const cosR = Math.cos(-fractalApp.rotation); // Negative for counterclockwise rotation
+        const sinR = Math.sin(-fractalApp.rotation);
+
+        const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
+        const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
+
+        const [fx, fy] = fractalApp.screenToFractal(rotatedX, rotatedY);
+
         text = isMobile() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
     }
 
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
     const currentZoom = fractalApp.zoom ?? 0;
+    //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
 
     text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
     infoText.textContent = text;

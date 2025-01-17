@@ -43,8 +43,19 @@ The architecture supports additional fractal types (e.g., Julia sets) and furthe
 - `npm run test` to run test suites
 
 ## Changelog
-### v1.3 (latest)
-- This version contains the directory and build structure, previous versions were plain apps
+### v1.4
+- Added support for rotating the fractal
+- Stops current animation when a new one is invoked
+- CSS minification on prod build
+- Nicer buttons
+
+- Bugs fixed:
+  - Double initialization of event listeners
+  - infoText not updating properly
+  - Header closing on click
+
+### v1.3
+- This version contains the directory and build structure, previous versions were simple PoCs
 
 ## Structure
 - fractalRenderer.js:
@@ -69,12 +80,13 @@ Contains helper functions for working with URL parameters, etc.
 The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), registers events, initializes the UI and the fractal.
 
 ## Controls:
-- Drag: pan
-- Wheel: zoom
-- Left Click: center & URL link
-- Right Click: Guiding lines
-- Double click: zoom-in/out & center
-- F11: fullscreen
+- Left Drag: Pan
+- Right Drag: Rotate
+- Wheel: Zoom
+- Left Single Click: Center & Generate URL link
+- Double click: Zoom-in/out & Center, 
+- Middle Click: Toggle guiding lines
+- F11: Toggle fullscreen
 
 ## License
 This project is licensed under the MIT License. See  for details.

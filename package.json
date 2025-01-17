@@ -7,7 +7,7 @@
     "build": "webpack --mode production",
     "dev-nowatch": "webpack --mode development",
     "dev-watch": "webpack --mode development --watch",
-    "start": "webpack serve",
+    "start": "webpack serve --open",
     "test": "jest"
   },
   "author": "Radim Brnka",
@@ -19,6 +19,7 @@
     "babel-loader": "^9.2.1",
     "copy-webpack-plugin": "^12.0.2",
     "css-loader": "^7.1.2",
+    "css-minimizer-webpack-plugin": "^7.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
@@ -34,7 +35,9 @@
   },
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFiles": ["<rootDir>/jest.setup.js"],
+    "setupFiles": [
+      "<rootDir>/jest.setup.js"
+    ],
     "moduleFileExtensions": [
       "js",
       "json"
