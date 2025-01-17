@@ -8,6 +8,7 @@ let headerToggled = false;
 let resizeTimeout;
 
 let header;
+let handle;
 let infoText;
 let resetButton;
 let randomizeColorsButton;
@@ -26,28 +27,26 @@ function initHeaderEvents() {
 
     header.addEventListener('pointerleave', () => {
         // Only minimize if it hasn't been toggled manually
-        headerMinimizeTimeout = setTimeout(() => {
-            if (!headerToggled) {
+        if (!headerToggled) {
+            headerMinimizeTimeout = setTimeout(() => {
                 header.classList.add('minimized');
-            }
-            headerMinimizeTimeout = null;
-        }, 1000);
+                headerMinimizeTimeout = null;
+            }, 1000);
+        }
     });
 
     // Toggle header state when header is clicked/tapped and stop auto-close
-    header.addEventListener('pointerdown', (event) => {
-        let el = event.target;
-        while (el && el !== header) {
-            if (el.tagName && el.tagName.toLowerCase() === 'button') {
-                return; // Ignore button clicks
-            }
-            el = el.parentNode;
-        }
-        event.stopPropagation();
+    handle.addEventListener('pointerdown', (event) => {
 
-        // Toggle header and mark it as manually toggled
-        const isMinimized = header.classList.toggle('minimized');
-        headerToggled = !isMinimized;
+        console.log("pointerdown " + headerToggled);
+
+        if (!headerToggled) {
+            header.classList.remove('minimized');
+        } else {
+            header.classList.add('minimized');
+        }
+
+        headerToggled = !headerToggled;
 
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
@@ -127,6 +126,7 @@ export function initUI(fractalRenderer) {
     canvas = fractalApp.canvas;
 
     header = document.getElementById('headerContainer');
+    handle = document.getElementById('handle'); // Header click icon
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
     randomizeColorsButton = document.getElementById('randomize');

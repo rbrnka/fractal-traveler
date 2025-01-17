@@ -102,8 +102,17 @@ p {
     line-height: 14px;
 }
 
-b {
+#handle {
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Standard syntax */
     cursor: pointer;
+    padding: 2px 150px 2px 150px;
+}
+
+#handle.toggled {
+    font-weight: bold;
 }
 
 p#controls {
