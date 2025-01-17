@@ -87,6 +87,7 @@ export function registerTouchEventHandlers(fractalApp) {
                 lastTouchY = touch.clientY;
 
                 fractalApp.draw();
+                updateInfo(null, false);
             }
             return;
         }
@@ -124,13 +125,13 @@ export function registerTouchEventHandlers(fractalApp) {
             // Update rotation only if there is a significant angle change
             const angleDifference = currentAngle - pinchStartAngle;
             if (Math.abs(angleDifference) > 0.01) { // Apply a threshold to ignore minor angle changes
-                const rotationSpeed = 0.5; // Adjust sensitivity for rotation
+                const rotationSpeed = 0.75; // Adjust sensitivity for rotation
                 fractalApp.rotation += angleDifference * rotationSpeed;
                 pinchStartAngle = currentAngle; // Reset the start angle to avoid compounding rotation
             }
 
             fractalApp.draw();
-            updateInfo(event);
+            updateInfo(null, false);
         }
     }, { passive: false });
 
