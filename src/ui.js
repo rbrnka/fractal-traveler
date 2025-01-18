@@ -5,6 +5,7 @@ let fractalApp;
 
 let headerMinimizeTimeout = null;
 let headerToggled = false;
+let demoActive = false;
 let resizeTimeout;
 
 let header;
@@ -12,7 +13,11 @@ let handle;
 let infoText;
 let resetButton;
 let randomizeColorsButton;
+let demoButton;
+let presetButtons = [];
 
+let currentDemoPresetIndex = 0; // Keep track of the current preset
+let activeTimers = []; // Store all active demo timers
 let lastUpdateTime = 0;
 
 function initHeaderEvents() {
@@ -66,6 +71,7 @@ function initControlButtonEvents() {
     resetButton.addEventListener('click', () => {
         // Clear the URL parameters.
         clearURLParams();
+        stopDemo();
         fractalApp.reset();
     });
 
@@ -84,15 +90,67 @@ function initControlButtonEvents() {
 
         updateColorSchema(); // Update app colors
     });
+
+    demoButton.addEventListener('click', () => {
+        if (demoActive) {
+            // Stop the demo
+            stopDemo();
+            //enableControls(true, true, true, true);
+            return;
+        }
+
+        const presets = fractalApp.PRESETS;
+        if (!presets || presets.length === 0) {
+            console.warn("No presets available for demo mode.");
+            demoActive = false;
+            demoButton.innerText = "Demo";
+            return;
+        }
+
+        // Start the demo
+        demoActive = true;
+        demoButton.innerText = "Stop Demo";
+        //disableControls(true, false, false, false);
+
+        function runPresets() {
+            if (!demoActive) {
+                // If demo is inactive, reset and stop
+                fractalApp.reset();
+                return;
+            }
+
+            const currentPreset = presets[currentDemoPresetIndex];
+            console.log("Animating to preset:", currentPreset);
+
+            // Animate to the current preset
+            //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
+            fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
+
+            // Schedule the next animation
+            // Schedule the next preset animation
+            const timer = setTimeout(() => {
+                activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
+                currentDemoPresetIndex = (currentDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
+                runPresets(currentDemoPresetIndex);
+            }, 9000); // Adjust timing to match animation duration + pause
+
+            activeTimers.push(timer); // Track this timer
+        }
+
+        runPresets();
+    });
 }
 
 function initPresetButtonEvents() {
     let presets = fractalApp.PRESETS.slice();
+    presetButtons.length = 0;
 
     presets.forEach((preset, index) => {
         const btn = document.getElementById('preset' + (index + 1));
+        presetButtons.push(btn);
         if (btn != null) {
             btn.addEventListener('click', () => {
+                stopDemo();
                 fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
             });
         }
@@ -130,12 +188,25 @@ export function initUI(fractalRenderer) {
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
     randomizeColorsButton = document.getElementById('randomize');
+    demoButton = document.getElementById('demo');
 
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
     initPresetButtonEvents();
     initInfoText();
+}
+
+function stopDemo() {
+    demoActive = false;
+    currentDemoPresetIndex = 0;
+    fractalApp.stopCurrentAnimation();
+    demoButton.innerText = "Demo";
+
+    // Clear all active timers
+    activeTimers.forEach(timer => clearTimeout(timer));
+    activeTimers = []; // Reset the timer list
+    // enableControls();
 }
 
 function updateColorSchema() {
@@ -162,6 +233,52 @@ function updateColorSchema() {
     // Optional: Update other UI elements using CSS variables or inline styles
     //root.style.setProperty('--app-primary-color', primaryColor);
     //root.style.setProperty('--app-border-color', borderColor);
+}
+
+export function disableControls(presets = true, reset = true, randomize = true, demo = true) {
+    if (presets) {
+        presetButtons.forEach(button => {
+            button.disabled = true;
+        });
+    }
+
+    if (reset) {
+        const button = document.getElementById("reset");
+        button.disabled = true;
+    }
+
+    if (randomize) {
+        const button = document.getElementById("randomize");
+        button.disabled = true;
+    }
+
+    if (demo) {
+        const button = document.getElementById("demo");
+        button.disabled = true;
+    }
+}
+
+export function enableControls(presets = true, reset = true, randomize = true, demo = true) {
+    if (presets) {
+        presetButtons.forEach(button => {
+            button.disabled = false;
+        });
+    }
+
+    if (reset) {
+        const button = document.getElementById("reset");
+        button.disabled = false;
+    }
+
+    if (randomize) {
+        const button = document.getElementById("randomize");
+        button.disabled = false;
+    }
+
+    if (demo) {
+        const button = document.getElementById("demo");
+        button.disabled = false;
+    }
 }
 
 export function updateInfo(inputEvent, traveling = false) {
