@@ -1,4 +1,4 @@
-import { updateInfo } from "./ui";
+import {updateInfo} from "./ui";
 
 /**
  * FractalRenderer
@@ -169,6 +169,7 @@ export class FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = 0; // Reset rotation
         this.extraIterations = 0;
+        this.resizeCanvas();
         updateInfo(null, false);
 
         this.draw();
@@ -214,16 +215,20 @@ export class FractalRenderer {
         if (this.currentAnimationFrame !== null) {
             cancelAnimationFrame(this.currentAnimationFrame);
             this.currentAnimationFrame = null;
-            this.animatePanAndZoomTo(this.DEFAULT_PAN.slice(), this.DEFAULT_ZOOM);
         }
     }
 
+    /**
+     * Sets fractal rotation and rotates it immediately
+     * @param angleInDegrees
+     */
     setRotation(angleInDegrees) {
         this.rotation = (angleInDegrees * Math.PI) / 180; // Convert degrees to radians
         this.draw(); // Redraw with the new rotation
     }
 
     onAnimationFinished() {
+        //this.currentAnimationFrame = null;
         setTimeout(() => {
             updateInfo(null, false);
         }, 200);
@@ -248,13 +253,14 @@ export class FractalRenderer {
             self.draw();
 
             if (progress < 1) {
-                requestAnimationFrame(stepZoom);
+                self.currentAnimationFrame = requestAnimationFrame(stepZoom);
                 updateInfo(null, true);
             } else {
                 self.onAnimationFinished();
             }
         }
-        requestAnimationFrame(stepZoom);
+
+        this.currentAnimationFrame = requestAnimationFrame(stepZoom);
     }
 
     /**
@@ -283,12 +289,13 @@ export class FractalRenderer {
             updateInfo(null, true);
 
             if (progress < 1) {
-                requestAnimationFrame(stepPan);
+                self.currentAnimationFrame = requestAnimationFrame(stepPan);
             } else {
                 self.animateZoom(targetZoom, zoomDuration);
             }
         }
-        requestAnimationFrame(stepPan);
+
+        this.currentAnimationFrame = requestAnimationFrame(stepPan);
     }
 
     /**
@@ -317,12 +324,13 @@ export class FractalRenderer {
             updateInfo(null, true);
 
             if (progress < 1) {
-                requestAnimationFrame(step);
+                self.currentAnimationFrame = requestAnimationFrame(step);
             } else {
                 self.onAnimationFinished();
             }
         }
-        requestAnimationFrame(step);
+
+        this.currentAnimationFrame = requestAnimationFrame(step);
     }
 
     /**
@@ -353,12 +361,13 @@ export class FractalRenderer {
             self.draw();
 
             if (progress < 1) {
-                requestAnimationFrame(step);
+                self.currentAnimationFrame = requestAnimationFrame(step);
             } else {
                 self.onAnimationFinished();
             }
         }
-        requestAnimationFrame(step);
+
+        this.currentAnimationFrame = requestAnimationFrame(step);
     }
 
     /**
@@ -367,20 +376,21 @@ export class FractalRenderer {
      * @param preset Object { pan: [x, y], zoom: number }
      * @param zoomOutDuration in milliseconds
      * @param panDuration in milliseconds
-     * @param zoomDuration in milliseconds
+     * @param zoomInDuration in milliseconds
      */
-    animateTravelToPreset(preset, zoomOutDuration, panDuration, zoomDuration) {
+    animateTravelToPreset(preset, zoomOutDuration, panDuration, zoomInDuration) {
         this.stopCurrentAnimation();
 
         const self = this;
 
         if (this.zoom === this.DEFAULT_ZOOM) {
-            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomDuration);
+            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration);
             return;
         }
 
         const startZoom = this.zoom;
         let startTime = null;
+
         function stepZoomOut(timestamp) {
             if (!startTime) startTime = timestamp;
             let progress = (timestamp - startTime) / zoomOutDuration;
@@ -391,11 +401,121 @@ export class FractalRenderer {
             updateInfo(null, true);
 
             if (progress < 1) {
-                requestAnimationFrame(stepZoomOut);
+                self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
             } else {
-                self.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomDuration, self.pan.slice());
+                self.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration, self.pan.slice());
             }
         }
-        requestAnimationFrame(stepZoomOut);
+
+        this.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
+    }
+
+    /**
+     * Demo traveling through presets
+     * @param preset
+     * @param zoomOutDuration
+     * @param panDuration
+     * @param zoomInDuration
+     */
+    animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
+        this.stopCurrentAnimation();
+
+        if (this.zoom === this.DEFAULT_ZOOM) {
+            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration);
+            return;
+        }
+
+        const startZoom = this.zoom;
+        const startPan = this.pan.slice();
+        const startRotation = this.rotation;
+
+        // Adjust rotation ranges for more noticeable and random effects
+        const zoomOutRotation = startRotation + (Math.random() * Math.PI * 2 - Math.PI);
+        const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
+
+        const self = this;
+
+        function animateZoomOut(callback) {
+            let startTime = null;
+
+            function stepZoomOut(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min(1, (timestamp - startTime) / zoomOutDuration);
+
+                // Zoom out
+                self.zoom = startZoom * Math.pow(self.DEFAULT_ZOOM / startZoom, progress);
+
+                // Rotate during zoom-out
+                self.rotation = startRotation + (zoomOutRotation - startRotation) * progress;
+
+                self.draw();
+                updateInfo(null, true, true);
+
+                if (progress < 1) {
+                    self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
+                } else if (callback) {
+                    callback();
+                }
+            }
+
+            self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
+        }
+
+        function animatePan(callback) {
+            let startTime = null;
+
+            function stepPan(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min(1, (timestamp - startTime) / panDuration);
+
+                // Pan without rotation
+                self.pan[0] = startPan[0] + (preset.pan[0] - startPan[0]) * progress;
+                self.pan[1] = startPan[1] + (preset.pan[1] - startPan[1]) * progress;
+
+                self.draw();
+                updateInfo(null, true, true);
+
+                if (progress < 1) {
+                    self.currentAnimationFrame = requestAnimationFrame(stepPan);
+                } else if (callback) {
+                    callback();
+                }
+            }
+
+            self.currentAnimationFrame = requestAnimationFrame(stepPan);
+        }
+
+        function animateZoomInWithRotation() {
+            let startTime = null;
+
+            function stepZoomInRotate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min(1, (timestamp - startTime) / zoomInDuration);
+
+                // Zoom in
+                self.zoom = self.DEFAULT_ZOOM * Math.pow(preset.zoom / self.DEFAULT_ZOOM, progress);
+
+                // Rotate during zoom-in
+                self.rotation = zoomOutRotation + (zoomInRotation - zoomOutRotation) * progress;
+
+                self.draw();
+                updateInfo(null, true, true);
+
+                if (progress < 1) {
+                    self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);
+                } else {
+                    self.onAnimationFinished();
+                }
+            }
+
+            self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);
+        }
+
+        // Execute zoom-out, then pan, then zoom-in with rotation
+        animateZoomOut(() => {
+            animatePan(() => {
+                animateZoomInWithRotation();
+            });
+        });
     }
 }
