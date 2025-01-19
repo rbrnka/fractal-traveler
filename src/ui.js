@@ -1,4 +1,5 @@
 import {isMobile, clearURLParams, hsbToRgb} from './utils.js';
+import {registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 
 let canvas;
 let fractalApp;
@@ -96,6 +97,7 @@ function initControlButtonEvents() {
             // Stop the demo
             stopDemo();
             //enableControls(true, true, true, true);
+            registerMouseEventHandlers();
             return;
         }
 
@@ -103,6 +105,7 @@ function initControlButtonEvents() {
         if (!presets || presets.length === 0) {
             console.warn("No presets available for demo mode.");
             demoActive = false;
+            registerMouseEventHandlers();
             demoButton.innerText = "Demo";
             return;
         }
@@ -110,6 +113,7 @@ function initControlButtonEvents() {
         // Start the demo
         demoActive = true;
         demoButton.innerText = "Stop Demo";
+        unregisterMouseEventHandlers();
         //disableControls(true, false, false, false);
 
         function runPresets() {
@@ -179,6 +183,10 @@ function initInfoText() {
     });
 }
 
+/**
+ * Initializes the UI and registers UI event handlers
+ * @param fractalRenderer
+ */
 export function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
@@ -235,6 +243,13 @@ function updateColorSchema() {
     //root.style.setProperty('--app-border-color', borderColor);
 }
 
+/**
+ * Disables button sets
+ * @param presets
+ * @param reset
+ * @param randomize
+ * @param demo
+ */
 export function disableControls(presets = true, reset = true, randomize = true, demo = true) {
     if (presets) {
         presetButtons.forEach(button => {
@@ -258,6 +273,13 @@ export function disableControls(presets = true, reset = true, randomize = true, 
     }
 }
 
+/**
+ * Enables button sets
+ * @param presets
+ * @param reset
+ * @param randomize
+ * @param demo
+ */
 export function enableControls(presets = true, reset = true, randomize = true, demo = true) {
     if (presets) {
         presetButtons.forEach(button => {
@@ -281,7 +303,13 @@ export function enableControls(presets = true, reset = true, randomize = true, d
     }
 }
 
-export function updateInfo(inputEvent, traveling = false) {
+/**
+ * Updates the bottom info bar
+ * @param inputEvent mouse event
+ * @param traveling {boolean} if inside animation
+ * @param demo {boolean} if demo mode
+ */
+export function updateInfo(inputEvent, traveling = false, demo = false) {
     const now = performance.now();
     if (now - lastUpdateTime < 50) {
         return; // Skip updates if called too soon
@@ -295,7 +323,9 @@ export function updateInfo(inputEvent, traveling = false) {
     let text = '';
 
     if (traveling) {
-        text = 'Traveling to: ';
+        if (demo) {
+            text = 'DEMO: Traveling to: ';
+        }
     } else if (inputEvent && typeof inputEvent.clientX === 'number') {
         const rect = canvas.getBoundingClientRect();
         const mouseX = inputEvent.clientX - rect.left;

@@ -9,6 +9,11 @@ const doubleClickThreshold = 300;
 const dragThreshold = 5;
 
 let mouseHandlersRegistered = false; // Global variable to track registration
+// Store references to event handler functions
+let handleWheelEvent;
+let handleMouseDownEvent;
+let handleMouseMoveEvent;
+let handleMouseUpEvent;
 
 let canvas;
 let fractalApp;
@@ -22,21 +27,47 @@ let isDragging = false;
 let isRightDragging = false;
 let startX = 0;
 
-export function registerMouseEventHandlers(app) {
+export function initMouseHandlers(app) {
+    fractalApp = app;
+    canvas = fractalApp.canvas;
+    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+    registerMouseEventHandlers(app);
+}
+
+export function registerMouseEventHandlers() {
     if (mouseHandlersRegistered) {
         console.warn('Mouse event handlers already registered.');
         return; // Prevent duplicate registration
     }
     mouseHandlersRegistered = true;
 
-    fractalApp = app;
-    canvas = fractalApp.canvas;
+    // Define event handler functions
+    handleWheelEvent = (event) => handleWheel(event, fractalApp);
+    handleMouseDownEvent = (event) => handleMouseDown(event, fractalApp);
+    handleMouseMoveEvent = (event) => handleMouseMove(event, fractalApp);
+    handleMouseUpEvent = (event) => handleMouseUp(event, fractalApp);
 
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-    canvas.addEventListener('wheel', (event) => handleWheel(event, fractalApp), {passive: false});
-    canvas.addEventListener('mousedown', (event) => handleMouseDown(event, fractalApp));
-    canvas.addEventListener('mousemove', (event) => handleMouseMove(event, fractalApp));
-    canvas.addEventListener('mouseup', (event) => handleMouseUp(event, fractalApp));
+    // Add event listeners using stored references
+    canvas.addEventListener('wheel', handleWheelEvent, { passive: false });
+    canvas.addEventListener('mousedown', handleMouseDownEvent);
+    canvas.addEventListener('mousemove', handleMouseMoveEvent);
+    canvas.addEventListener('mouseup', handleMouseUpEvent);
+}
+
+
+export function unregisterMouseEventHandlers() {
+    if (!mouseHandlersRegistered) {
+        console.warn('Mouse event handlers are not registered.');
+        return;
+    }
+
+    canvas.removeEventListener('wheel', handleWheelEvent, { passive: false });
+    canvas.removeEventListener('mousedown', handleMouseDownEvent);
+    canvas.removeEventListener('mousemove', handleMouseMoveEvent);
+    canvas.removeEventListener('mouseup', handleMouseUpEvent);
+
+    mouseHandlersRegistered = false;
 }
 
 function handleWheel(event, fractalApp) {

@@ -9,7 +9,7 @@ import {initUI} from './ui.js';
 
 // TODO only register events based on the device - if (isMobile())...
 import {registerTouchEventHandlers} from './touchEventHandlers.js';
-import {registerMouseEventHandlers} from './mouseEventHandlers.js';
+import {initMouseHandlers} from './mouseEventHandlers.js';
 import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Register control events
     registerTouchEventHandlers(fractalApp);
-    registerMouseEventHandlers(fractalApp);
+    initMouseHandlers(fractalApp);
     console.log('Event handlers registered.');
 
     // If the URL contains the required parameters, load them.
