@@ -8,9 +8,7 @@ import {MandelbrotRenderer} from './mandelbrotRenderer.js';
 import {initUI} from './ui.js';
 
 // TODO only register events based on the device - if (isMobile())...
-import {initTouchHandlers} from './touchEventHandlers.js';
-import {initMouseHandlers} from './mouseEventHandlers.js';
-import {clearURLParams, isTouchDevice, loadFractalParamsFromURL} from "./utils";
+import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Create the fractal application instance.
@@ -25,16 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initUI(fractalApp);
     console.log('UI initialized');
 
-    // Register control events
-    if (isTouchDevice()) {
-        initTouchHandlers(fractalApp);
-        console.log('Touch event handlers registered.');
-    } else {
-        initMouseHandlers(fractalApp);
-        console.log('Mouse event handlers registered.');
-    }
-
-    // If the URL contains the required parameters, load them.
+     // If the URL contains the required parameters, load them.
     const params = new URLSearchParams(window.location.search);
     if (params.has('cx') && params.has('cy') && params.has('zoom')) {
         loadFractalParamsFromURL(fractalApp);

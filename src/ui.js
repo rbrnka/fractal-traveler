@@ -1,11 +1,12 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
-import {registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
-import {registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
+import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
+import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 
 let canvas;
 let fractalApp;
 
 let headerMinimizeTimeout = null;
+let uiInitialized = false;
 let headerToggled = false;
 let demoActive = false;
 let resizeTimeout;
@@ -15,11 +16,12 @@ let handle;
 let infoText;
 let resetButton;
 let randomizeColorsButton;
+//let fullscreenButton;
 let demoButton;
 let presetButtons = [];
 
 let currentDemoPresetIndex = 0; // Keep track of the current preset
-let activeTimers = []; // Store all active demo timers
+export let activeTimers = []; // Store all active demo timers
 let lastUpdateTime = 0;
 
 function initHeaderEvents() {
@@ -68,7 +70,9 @@ function initHeaderEvents() {
     });
 }
 
-function stopDemo() {
+export function stopDemo() {
+    if (!demoActive) return;
+
     demoActive = false;
     currentDemoPresetIndex = 0;
     fractalApp.stopCurrentAnimation();
@@ -85,9 +89,12 @@ function stopDemo() {
     activeTimers.forEach(timer => clearTimeout(timer));
     activeTimers = []; // Reset the timer list
     // enableControls();
+
 }
 
-function startDemo() {
+export function startDemo() {
+    if (demoActive) return;
+
     // Start the demo
     const presets = fractalApp.PRESETS.slice();
     demoActive = true;
@@ -176,6 +183,16 @@ function initControlButtonEvents() {
 
         startDemo();
     });
+
+    // fullscreenButton.addEventListener('click', () => {
+    //     if (!isFullscreen) {
+    //         enterFullScreen();
+    //         fractalApp.reset();
+    //     } else {
+    //         stopFullScreen();
+    //     }
+    //     isFullscreen = !isFullscreen;
+    // });
 }
 
 function initPresetButtonEvents() {
@@ -221,6 +238,11 @@ function initInfoText() {
  * @param fractalRenderer
  */
 export function initUI(fractalRenderer) {
+    if (uiInitialized) {
+        console.warn("UI already initialized!");
+        return;
+    }
+
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
 
@@ -229,6 +251,7 @@ export function initUI(fractalRenderer) {
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
     randomizeColorsButton = document.getElementById('randomize');
+    //fullscreenButton = document.getElementById('fullscreen');
     demoButton = document.getElementById('demo');
 
     initWindowEvents();
@@ -237,7 +260,18 @@ export function initUI(fractalRenderer) {
     initPresetButtonEvents();
     initInfoText();
 
+    // Register control events
+    if (isTouchDevice()) {
+        initTouchHandlers(fractalApp);
+        console.log('Touch event handlers registered.');
+    } else {
+        initMouseHandlers(fractalApp);
+        console.log('Mouse event handlers registered.');
+    }
+
     updateColorSchema();
+
+    uiInitialized = true;
 }
 
 function updateColorSchema() {
@@ -248,7 +282,7 @@ function updateColorSchema() {
     const primaryColor = `rgb(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])})`;
 
     // Adjust border colors based on the primary color
-    const borderColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.4)`; // Slightly dimmed for borders
+    const borderColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.3)`; // Slightly dimmed for borders
 
     // Update header border and background color
     const header = document.getElementById('headerContainer');
@@ -261,6 +295,12 @@ function updateColorSchema() {
     if (infoLabel) {
         infoLabel.style.borderColor = borderColor;
     }
+
+    // Update header border and background color
+    // const controls = document.getElementById('controlArea');
+    // if (controls) {
+    //     controls.style.borderColor = borderColor;
+    // }
 
     // Update infoText border and background color
     const colorableElements = document.getElementsByClassName('colorable');
