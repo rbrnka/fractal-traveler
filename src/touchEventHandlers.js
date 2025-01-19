@@ -140,7 +140,7 @@ function handleTouchMove(event) {
     }
 
     if (event.touches.length === 2) {
-        // Handle pinch-to-zoom and rotate
+        // Handle pinch-to-zoom, rotate, and pan
         event.preventDefault();
         isPinching = true;
 
@@ -157,26 +157,41 @@ function handleTouchMove(event) {
             touch1.clientX - touch0.clientX
         );
 
-        if (!pinchStartDistance || !pinchStartAngle) {
+        // Calculate the midpoint of the two touch points (screen space)
+        const centerScreenX = (touch0.clientX + touch1.clientX) / 2;
+        const centerScreenY = (touch0.clientY + touch1.clientY) / 2;
+
+        if (!pinchStartDistance || !pinchStartAngle || !pinchStartCenterFractal) {
             // Initialize pinch state
             pinchStartDistance = currentDistance;
             pinchStartZoom = fractalApp.zoom;
             pinchStartAngle = currentAngle;
+            pinchStartPan = fractalApp.pan.slice();
+            pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
             return;
         }
 
-        // Update zoom
+        // Update zoom based on pinch distance
         const zoomFactor = pinchStartDistance / currentDistance;
         fractalApp.zoom = pinchStartZoom * zoomFactor;
 
-        // Update rotation only if there is a significant angle change
+        // Update rotation based on pinch angle
         const angleDifference = currentAngle - pinchStartAngle;
-        if (Math.abs(angleDifference) > 0.01) { // Apply a threshold to ignore minor angle changes
-            const rotationSpeed = 0.75; // Adjust sensitivity for rotation
+        const rotationSpeed = 1; // Adjust sensitivity for rotation
+        if (Math.abs(angleDifference) > 0.05) { // Larger threshold
             fractalApp.rotation += angleDifference * rotationSpeed;
-            pinchStartAngle = currentAngle; // Reset the start angle to avoid compounding rotation
         }
 
+        // Recalculate the pan to keep the fractal's center consistent
+        const newCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
+        fractalApp.pan[0] += pinchStartCenterFractal[0] - newCenterFractal[0];
+        fractalApp.pan[1] += pinchStartCenterFractal[1] - newCenterFractal[1];
+
+        // Update the starting angle and center for the next movement
+        pinchStartAngle = currentAngle;
+        pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
+
+        // Redraw fractal with the updated transformations
         fractalApp.draw();
         updateInfo(null, false);
     }
@@ -208,15 +223,20 @@ function handleTouchEnd(event) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
 
-                // --- Double-tap logic ---
+                // --- Double-tap logic with smooth animation ---
                 const targetZoom = fractalApp.zoom * 0.05;
                 if (targetZoom > 0.000017) {
-                    // Adjust pan to keep the tapped point at the same screen position
                     const zoomFactor = targetZoom / fractalApp.zoom;
-                    fractalApp.pan[0] = fx - (fx - fractalApp.pan[0]) * zoomFactor;
-                    fractalApp.pan[1] = fy - (fy - fractalApp.pan[1]) * zoomFactor;
 
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000);
+                    // Smoothly animate to the new position and zoom
+                    fractalApp.animatePanAndZoomTo(
+                        [
+                            fx - (fx - fractalApp.pan[0]) * zoomFactor,
+                            fy - (fy - fractalApp.pan[1]) * zoomFactor,
+                        ],
+                        targetZoom,
+                        1000 // Animation duration
+                    );
                 }
             } else {
                 // --- Single-tap logic ---

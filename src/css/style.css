@@ -18,8 +18,8 @@ html, body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 205px;
-    max-height: 205px;
+    height: 210px;
+    max-height: 210px;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
@@ -125,8 +125,22 @@ p {
     font-weight: bold;
 }
 
+#controlArea {
+    background: rgba(64, 64, 64, 0.3);
+    border-radius: 5px;
+    width: 340px;
+    position: relative;
+    margin: 0 auto;
+    padding: 2px;
+    cursor: auto;
+}
+
 p.small {
     font-size: 11px;
+}
+
+#controls {
+    color: #ccc;
 }
 
 a {

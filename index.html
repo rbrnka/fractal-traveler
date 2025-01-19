@@ -31,12 +31,14 @@
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
     <h1 class="colorable">Synaptory Fractal Traveler<sup>1.41</sup></h1>
-    <p>An interactive, WebGL-powered fractal explorer that lets you pan, zoom, and explore the Mandelbrot set (<a
+    <p>An interactive, WebGL-powered app that lets you pan, zoom, and explore the Mandelbrot set (<a
             target="_blank"
             title="Github Repository"
             href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
+    <div id="controlArea">
     <button id="reset" class="colorable">Reset</button>
     <button id="randomize" class="colorable">Randomize Colors</button>
+<!--    <button id="fullscreen" class="colorable">Fullscreen</button>-->
     <button id="demo" class="colorable">Demo</button>
     <br/>
     <p>Presets:
@@ -51,13 +53,14 @@
         <button id="preset9" class="colorable">9</button>
         <!--        <button id="preset10"10</button>-->
     </p>
+    </div>
     <p class="small">Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
             href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
         Chaos</a> article &copy; Radim Brnka 2025</p>
-    <p class="small">Controls: Left Drag: Pan, Right Drag: Rotate, Wheel: Zoom, <br/>Left Click: Center &amp; URL link, Double click:
-        Zoom-in/out &amp; center, <br/>Middle Click: guiding lines, F11: fullscreen</p>
+    <p class="small"><span id="controls">Controls:</span> Left Drag: Pan &#124; Right Drag: Rotate &#124; Wheel: Zoom, <br/>Left Click: Center &amp; URL link &#124; Double click:
+        Zoom-in/out &amp; center &#124;<br/> Middle Click: guiding lines &#124; F11: Fullscreen</p>
 </div>
 <div id="infoLabel">
     <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
