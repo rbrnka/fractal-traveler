@@ -22,6 +22,7 @@ export class FractalRenderer {
         // Default values:
         this.DEFAULT_ZOOM = 3.0;
         this.DEFAULT_PAN = [-0.5, 0.0];
+        this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
         // Interesting zoom-ins
@@ -34,7 +35,7 @@ export class FractalRenderer {
 
         this.currentAnimationFrame = null;
         this.extraIterations = 0;
-        this.colorPalette = [1.0, 1.0, 1.0];
+        this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         // Initialize shaders
         this.vertexShaderSource = `

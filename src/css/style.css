@@ -18,8 +18,8 @@ html, body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 190px;
-    max-height: 190px;
+    height: 205px;
+    max-height: 205px;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
@@ -42,7 +42,7 @@ html, body {
 button {
     position: relative;
     z-index: 10;
-    margin: 4px 2px;
+    margin: 2px 2px;
     cursor: pointer;
     align-items: center;
     background-color: initial;
@@ -95,13 +95,17 @@ button[disabled] {
 h1 {
     padding: 0 10px 5px 10px;
     margin: 0;
-    color: #fff;
+    color: #30AF5E;
     z-index: 1000;
     font-size: 16px;
 }
 
+h1 sup {
+    color: #fff;
+}
+
 p {
-    margin: 3px 5px 5px 5px;
+    margin: 5px 5px 3px 5px;
     color: #888;
     z-index: 1000;
     font-size: 12px;
@@ -121,7 +125,7 @@ p {
     font-weight: bold;
 }
 
-p#controls {
+p.small {
     font-size: 11px;
 }
 
@@ -161,6 +165,11 @@ a:hover {
     background: transparent;
     border: none;
     text-align: center;
+    -webkit-user-select: none; /* Safari */
+    -moz-user-select: none; /* Firefox */
+    -ms-user-select: none; /* IE 10+ */
+    user-select: none; /* Standard syntax */
+    cursor: pointer;
 }
 
 #infoText:focus {
