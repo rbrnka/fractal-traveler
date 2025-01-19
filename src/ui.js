@@ -1,5 +1,6 @@
-import {isMobile, clearURLParams, hsbToRgb} from './utils.js';
+import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
+import {registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 
 let canvas;
 let fractalApp;
@@ -73,6 +74,13 @@ function stopDemo() {
     fractalApp.stopCurrentAnimation();
     demoButton.innerText = "Demo";
 
+    if (isTouchDevice()) {
+        console.log("Registering touch events");
+        registerTouchEventHandlers();
+    } else {
+        registerMouseEventHandlers();
+    }
+
     // Clear all active timers
     activeTimers.forEach(timer => clearTimeout(timer));
     activeTimers = []; // Reset the timer list
@@ -84,7 +92,13 @@ function startDemo() {
     const presets = fractalApp.PRESETS.slice();
     demoActive = true;
     demoButton.innerText = "Stop Demo";
-    unregisterMouseEventHandlers();
+    // Register control events
+    if (isTouchDevice()) {
+        console.log("Unregistering touch events");
+        unregisterTouchEventHandlers();
+    } else {
+        unregisterMouseEventHandlers();
+    }
 
     //disableControls(true, false, false, false);
     clearURLParams();
@@ -154,17 +168,8 @@ function initControlButtonEvents() {
     });
 
     demoButton.addEventListener('click', () => {
-        if (demoActive) {
-            // Stop the demo
-            stopDemo();
-            //enableControls(true, true, true, true);
-            registerMouseEventHandlers();
-            return;
-        }
-
         const presets = fractalApp.PRESETS;
-        if (!presets || presets.length === 0) {
-            console.warn("No presets available for demo mode.");
+        if (!presets || presets.length === 0 || demoActive) {
             stopDemo();
             return;
         }
@@ -374,7 +379,7 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
 
         const [fx, fy] = fractalApp.screenToFractal(rotatedX, rotatedY);
 
-        text = isMobile() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
+        text = isTouchDevice() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
     }
 
     const panX = fractalApp.pan[0] ?? 0;

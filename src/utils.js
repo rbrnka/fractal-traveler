@@ -61,10 +61,18 @@ export function clearURLParams() {
 }
 
 /**
+ * Detects touch device
+ * @returns {boolean}
+ */
+export function isTouchDevice() {
+    return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
+}
+
+/**
  * Detects mobile device
  * @returns {boolean} if the user device is mobile
  */
-export function isMobile() {
+export function isMobileDevice() {
     const toMatch = [
         /Android/i,
         /webOS/i,
