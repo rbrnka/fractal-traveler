@@ -7,12 +7,10 @@ import {updateInfo} from "./ui";
  */
 export class FractalRenderer {
     constructor(canvas) {
-        if (this.constructor === FractalRenderer) {
-            throw new Error("Abstract classes can't be instantiated.");
-        }
+
 
         this.canvas = canvas;
-        this.gl = this.canvas.getContext('webgl');
+        this.gl = this.canvas.getContext('webgl', { antialias: true });
 
         if (!this.gl) {
             alert('WebGL is not supported by your browser.');
@@ -47,14 +45,6 @@ export class FractalRenderer {
                 gl_Position = a_position;
             }
         `;
-
-        // Initialize WebGL program and uniforms
-        this.initGLProgram();
-
-        // Cache uniform locations
-        this.updateUniforms();
-
-        this.resizeCanvas();
     }
 
     // // Zoom getter and setter with clamping.
@@ -68,18 +58,36 @@ export class FractalRenderer {
     //     return this._zoom;
     // }
 
+    init() {
+        // Initialize WebGL program and uniforms
+        this.initGLProgram();
+
+        // Cache uniform locations
+        this.updateUniforms();
+
+        this.resizeCanvas();
+    }
+
     resizeCanvas() {
         console.log("Resizing canvas");
-        this.canvas.width = window.innerWidth;
-        this.canvas.height = window.innerHeight;
+
+        const dpr = Math.max(1, Math.min(3, 1 / this.zoom));
+        this.canvas.width = Math.floor(window.innerWidth * dpr);
+        this.canvas.height = Math.floor(window.innerHeight * dpr);
+
+        this.canvas.style.width = `${window.innerWidth}px`;
+        this.canvas.style.height = `${window.innerHeight}px`;
 
         if (this.gl) {
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         }
     }
 
+    /**
+     * @abstract
+     */
     createFragmentShaderSource() {
-        throw new Error("Method not implemented!");
+        throw new Error('The draw method must be implemented in child classes');
     }
 
     compileShader(source, type) {
@@ -142,23 +150,10 @@ export class FractalRenderer {
 
     /**
      * Draws the fractal.
+     * @abstract
      */
     draw() {
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        this.updateUniforms();
-
-        this.gl.uniform2fv(this.panLoc, this.pan);
-        this.gl.uniform1f(this.zoomLoc, this.zoom);
-        this.gl.uniform1f(this.rotationLoc, this.rotation);
-
-        const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(this.zoom)));
-        const iters = Math.min(10000, baseIters + this.extraIterations);
-
-        this.gl.uniform1f(this.iterLoc, iters);
-        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
-        this.gl.clearColor(0, 0, 0, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        throw new Error('The draw method must be implemented in child classes');
     }
 
     /**
@@ -318,9 +313,12 @@ export class FractalRenderer {
             let progress = (timestamp - startTime) / duration;
             if (progress > 1) progress = 1;
 
-            self.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
-            self.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
-            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+            const lerp = (a, b, t) => a + (b - a) * t;
+
+            // In animatePanAndZoomTo or other animations:
+            self.pan[0] = lerp(startPan[0], targetPan[0], progress);
+            self.pan[1] = lerp(startPan[1], targetPan[1], progress);
+            self.zoom = lerp(startZoom, targetZoom, progress);
             self.draw();
             updateInfo(null, true);
 

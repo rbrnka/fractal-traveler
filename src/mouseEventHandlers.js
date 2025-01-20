@@ -85,7 +85,7 @@ function handleWheel(event, fractalApp) {
     // 3) Update the zoom
     const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
 
-    if (fractalApp.zoom * zoomFactor > 0.000017 && fractalApp.zoom * zoomFactor < 50) {
+    //if (fractalApp.zoom * zoomFactor > 0.000017 && fractalApp.zoom * zoomFactor < 50) {
         fractalApp.zoom *= zoomFactor;
 
         // 4) Convert that same screen point to fractal coords AFTER zooming
@@ -97,7 +97,7 @@ function handleWheel(event, fractalApp) {
 
         updateInfo(event);
         fractalApp.draw();
-    }
+    //}
 }
 
 function handleMouseDown(event) {
@@ -211,9 +211,9 @@ function handleMouseUp(event) {
             console.log("Double Click: Centering on", fx, fy);
 
             const targetZoom = fractalApp.zoom * 0.05;
-            if (targetZoom > 0.000017) {
+            //if (targetZoom > 0.000017) {
                 fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000);
-            }
+            //}
         } else {
             // Set a timeout for the single-click action.
             clickTimeout = setTimeout(() => {

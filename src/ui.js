@@ -95,8 +95,24 @@ export function stopDemo() {
 export function startDemo() {
     if (demoActive) return;
 
+    let time = 0;
+
+    function animate() {
+        const c = [
+            Math.sin(time) * 0.5, // Oscillate real part
+            Math.cos(time) * 0.5  // Oscillate imaginary part
+        ];
+        fractalApp.c = c;
+        fractalApp.draw();
+        time += 0.005;
+
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
     // Start the demo
-    const presets = fractalApp.PRESETS.slice();
+    /*const presets = fractalApp.PRESETS.slice();
     demoActive = true;
     demoButton.innerText = "Stop Demo";
     // Register control events
@@ -135,7 +151,7 @@ export function startDemo() {
         activeTimers.push(timer); // Track this timer
     }
 
-    runPresets();
+    runPresets();*/
 }
 
 function initControlButtonEvents() {
