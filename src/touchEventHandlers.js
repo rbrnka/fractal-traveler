@@ -127,8 +127,13 @@ function handleTouchMove(event) {
             const moveX = touch.clientX - lastTouchX;
             const moveY = touch.clientY - lastTouchY;
 
-            fractalApp.pan[0] -= (moveX / rect.width) * fractalApp.zoom;
-            fractalApp.pan[1] += (moveY / rect.height) * fractalApp.zoom;
+            const cosR = Math.cos(-fractalApp.rotation);
+            const sinR = Math.sin(-fractalApp.rotation);
+            const rotatedMoveX = cosR * moveX - sinR * moveY; // Apply rotation matrix
+            const rotatedMoveY = sinR * moveX + cosR * moveY;
+
+            fractalApp.pan[0] -= (rotatedMoveX / rect.width) * fractalApp.zoom;
+            fractalApp.pan[1] += (rotatedMoveY / rect.height) * fractalApp.zoom;
 
             lastTouchX = touch.clientX;
             lastTouchY = touch.clientY;

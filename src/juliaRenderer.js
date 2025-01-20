@@ -25,13 +25,13 @@ export class JuliaRenderer extends FractalRenderer {
 
         this.PRESETS = [
             {c: [0.34, -0.05], zoom: 1, rotation: this.DEFAULT_ROTATION},
-            {c: [-0.4, 0.6], zoom: 1, rotation: 120 * (Math.PI / 180)},
             {c: [0.285, 0.01], zoom: 0.02, rotation: this.DEFAULT_ROTATION}, // Near Julia set border
-            {c: [-0.70176, -0.3842], zoom: 1, rotation: 45 * (Math.PI / 180)},
             {c: [0.45, 0.1428], zoom: 1, rotation: this.DEFAULT_ROTATION},
+            {c: [-0.4, 0.6], zoom: 1, rotation: 120 * (Math.PI / 180)},
+            {c: [-0.70176, -0.3842], zoom: 1, rotation: 150 * (Math.PI / 180)},
+            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)}, // Spiral structure
             {c: [-0.75, 0.1], zoom: 0.05, rotation: 150 * (Math.PI / 180)}, // Main cardioid
             {c: [-0.1, 0.651], zoom: 0.01, rotation: 150 * (Math.PI / 180)}, // Seahorse Valley
-            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)}, // Spiral structure
             {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)} // Deep zoom
         ];
 

@@ -18,8 +18,7 @@ html, body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 240px;
-    max-height: 240px;
+    height: 100%;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;

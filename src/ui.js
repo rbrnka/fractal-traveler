@@ -172,8 +172,6 @@ function initHeaderEvents() {
     // Toggle header state when header is clicked/tapped and stop auto-close
     handle.addEventListener('pointerdown', (event) => {
 
-        console.log("pointerdown " + headerToggled);
-
         if (!headerToggled) {
             header.classList.remove('minimized');
         } else {
@@ -272,7 +270,12 @@ function initControlButtonEvents() {
         ctx.drawImage(canvas, 0, 0);
 
         // Define the watermark text and style
-        const watermarkText = 'Created by Synaptory Fractal Traveler []';
+        let watermarkText = `Created by Synaptory Fractal Traveler, `;
+        watermarkText += (
+            fractalMode === MODE_MANDELBROT
+                ? `(Mandelbrot: z=[${fractalApp.pan[0].toFixed(6)}, ${fractalApp.pan[1].toFixed(6)}i], Z=${fractalApp.zoom.toFixed(6)})`
+                : `(Julia: c=[${fractalApp.c[0]}, =${fractalApp.c[1]}i], x=${fractalApp.pan[0].toFixed(6)}, y=${fractalApp.pan[1].toFixed(6)}, Z=${fractalApp.zoom.toFixed(6)})`
+        );
         const fontSize = 12;
         const padding = 6;
         const borderWidth = 1;
@@ -376,9 +379,6 @@ function initSliders() {
 
     let sliderContainer = document.getElementById('sliders');
     sliderContainer.style.display = 'flex';
-
-    header.style.height = '280px';
-    header.style.maxHeight = '280px';
 }
 
 function initWindowEvents() {
