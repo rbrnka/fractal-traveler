@@ -3,27 +3,33 @@
  * @author Radim Brnka
  */
 import './css/style.css';
-
-import {MandelbrotRenderer} from './mandelbrotRenderer.js';
-import {initUI} from './ui.js';
-import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 import {JuliaRenderer} from "./juliaRenderer";
+import {fractalMode, initUI, MODE_MANDELBROT} from "./ui";
+import {MandelbrotRenderer} from "./mandelbrotRenderer";
+import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
+    console.log('Basic test: DOMContentLoaded triggered');
 
     // Create the fractal application instance.
     const canvas = document.getElementById('fractalCanvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    const fractalApp = new JuliaRenderer(canvas);
-    fractalApp.init();
+    let fractalApp;
 
-    // Now that fractalApp is initialized, set up UI and event handlers.
+    if (fractalMode === MODE_MANDELBROT) {
+        fractalApp = new MandelbrotRenderer(canvas);
+    } else {
+        fractalApp = new JuliaRenderer(canvas);
+    }
+    fractalApp.init();
+    console.log('Fractal initialized');
+
     initUI(fractalApp);
     console.log('UI initialized');
 
-     // If the URL contains the required parameters, load them.
+    // If the URL contains the required parameters, load them.
     const params = new URLSearchParams(window.location.search);
     if (params.has('cx') && params.has('cy') && params.has('zoom')) {
         loadFractalParamsFromURL(fractalApp);
@@ -34,28 +40,5 @@ document.addEventListener('DOMContentLoaded', () => {
         fractalApp.reset();
     }
 
-    // Get sliders
-    const realSlider = document.getElementById('realSlider');
-    const imagSlider = document.getElementById('imagSlider');
-
-    // Initial Julia constant
-    let c = [parseFloat(realSlider.value), parseFloat(imagSlider.value)];
-fractalApp.c = c;
-    fractalApp.draw();
-
-    // Update `c` dynamically when sliders are moved
-    realSlider.addEventListener('input', () => {
-        c[0] = parseFloat(realSlider.value);
-        fractalApp.c = c;
-        fractalApp.draw(c);
-    });
-
-    imagSlider.addEventListener('input', () => {
-        c[1] = parseFloat(imagSlider.value);
-        fractalApp.c = c;
-        fractalApp.draw(c);
-    });
-
-    // Kick off the initial render.
     console.log('Init complete.');
 }, {once: true});

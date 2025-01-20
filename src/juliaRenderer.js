@@ -4,8 +4,8 @@
  * @extends FractalRenderer
  */
 
-import {FractalRenderer} from './fractalRenderer.js';
 import {updateInfo, updateJuliaSliders} from "./ui";
+import {FractalRenderer} from "./fractalRenderer";
 
 export class JuliaRenderer extends FractalRenderer {
 
@@ -23,15 +23,15 @@ export class JuliaRenderer extends FractalRenderer {
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         this.PRESETS = [
-            {c: [0.355, 0.355], zoom: 1, rotation: this.DEFAULT_ROTATION},
+            {c: [0.34, -0.05], zoom: 1, rotation: this.DEFAULT_ROTATION},
             {c: [-0.4, 0.6], zoom: 1, rotation: 120 * (Math.PI / 180)},
-            {c: [0.285, 0.01], zoom: 0.02, rotation: this.DEFAULT_ROTATION},          // Near Julia set border
+            {c: [0.285, 0.01], zoom: 0.02, rotation: this.DEFAULT_ROTATION}, // Near Julia set border
             {c: [-0.70176, -0.3842], zoom: 1, rotation: 45 * (Math.PI / 180)},
             {c: [0.45, 0.1428], zoom: 1, rotation: this.DEFAULT_ROTATION},
-            {c: [-0.75, 0.1], zoom: 0.05, rotation: 150 * (Math.PI / 180)},           // Main cardioid
-            {c: [-0.1, 0.651], zoom: 0.01, rotation: 150 * (Math.PI / 180)},          // Seahorse Valley
-            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)},      // Spiral structure
-            {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)}   // Deep zoom
+            {c: [-0.75, 0.1], zoom: 0.05, rotation: 150 * (Math.PI / 180)}, // Main cardioid
+            {c: [-0.1, 0.651], zoom: 0.01, rotation: 150 * (Math.PI / 180)}, // Seahorse Valley
+            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)}, // Spiral structure
+            {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)} // Deep zoom
         ];
 
         this.c = [0.355, 0.355];
@@ -50,6 +50,14 @@ export class JuliaRenderer extends FractalRenderer {
             uniform vec3 u_colorPalette;
             uniform float u_rotation; // Rotation in radians
             uniform vec2 u_c; // Julia set constant
+            
+            // Color constants (customizable for more variation)
+            const vec3 C1 = vec3(1.0, 0.0, 0.0); // Red
+            const vec3 C2 = vec3(0.0, 1.0, 0.0); // Green
+            const vec3 C3 = vec3(0.0, 0.0, 1.0); // Blue
+            const vec3 C4 = vec3(1.0, 1.0, 0.0); // Yellow
+            const vec3 C5 = vec3(0.0, 1.0, 1.0); // Cyan
+            const vec3 C6 = vec3(1.0, 0.0, 1.0); // Magenta
             
             void main() {
                 float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
@@ -93,6 +101,43 @@ export class JuliaRenderer extends FractalRenderer {
                 }
             }
         `;
+
+        /*
+         // Color logic
+                if (i >= u_iterations) {
+                    // Points inside the set
+                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+                } else {
+                    // Normalize the escape value
+                    float value = i / u_iterations;
+
+                    // Apply a sine wave function for cyclic transitions
+                    float t = sin(value * 3.14159 * 6.0); // 6 cycles
+                    t = 0.5 + 0.5 * t; // Map to [0, 1]
+
+                    float smoothColor = i - log2(log2(dot(z, z))) + 4.0;
+                    smoothColor = fract(smoothColor * 0.01); // Normalize for smooth color transitions
+
+                    // Segment-based color transitions
+                    vec3 color;
+                    if (t < 0.2) {
+                        color = mix(C1, C2, t / 0.2); // Red to Green
+                    } else if (t < 0.4) {
+                        color = mix(C2, C3, (t - 0.2) / 0.2); // Green to Blue
+                    } else if (t < 0.6) {
+                        color = mix(C3, C4, (t - 0.4) / 0.2); // Blue to Yellow
+                    } else if (t < 0.8) {
+                        color = mix(C4, C5, (t - 0.6) / 0.2); // Yellow to Cyan
+                    } else {
+                        color = mix(C5, C6, (t - 0.8) / 0.2); // Cyan to Magenta
+                    }
+
+                    // Apply user-defined palette multiplier
+                    color *= smoothColor;
+
+                    // Final color
+                    gl_FragColor = vec4(color, 1.0);
+         */
     }
 
     draw() {
@@ -248,5 +293,4 @@ export class JuliaRenderer extends FractalRenderer {
             startTransition();
         }
     }
-
 }

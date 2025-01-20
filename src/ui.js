@@ -1,9 +1,17 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
+import {MandelbrotRenderer} from "./mandelbrotRenderer";
+import {JuliaRenderer} from "./juliaRenderer";
 
 let canvas;
 let fractalApp;
+// 0..Mandelbrot, 1..Julia
+export const MODE_MANDELBROT = 0;
+export const MODE_JULIA = 1;
+export let fractalMode = MODE_MANDELBROT;
+let mandelbrotRadio;
+let juliaRadio;
 
 let headerMinimizeTimeout = null;
 let uiInitialized = false;
@@ -19,6 +27,13 @@ let randomizeColorsButton;
 let screenshotButton;
 let demoButton;
 let presetButtons = [];
+
+// Julia sliders
+let realSlider;
+let imagSlider;
+let realSliderValue;
+let imagSliderValue;
+
 
 let currentDemoPresetIndex = 0; // Keep track of the current preset
 export let activeTimers = []; // Store all active demo timers
@@ -94,6 +109,20 @@ export function stopDemo() {
 
 export function startDemo() {
     if (demoActive) return;
+    demoActive = true;
+
+    demoButton.innerText = "Stop Demo";
+    // Register control events
+    if (isTouchDevice()) {
+        console.log("Unregistering touch events");
+        unregisterTouchEventHandlers();
+    } else {
+        unregisterMouseEventHandlers();
+    }
+
+    //disableControls(true, false, false, false);
+    clearURLParams();
+
 
     let time = 0;
 
@@ -110,48 +139,36 @@ export function startDemo() {
     }
 
     animate();
+    /*
+        // Start the demo
+        const presets = fractalApp.PRESETS.slice();
 
-    // Start the demo
-    /*const presets = fractalApp.PRESETS.slice();
-    demoActive = true;
-    demoButton.innerText = "Stop Demo";
-    // Register control events
-    if (isTouchDevice()) {
-        console.log("Unregistering touch events");
-        unregisterTouchEventHandlers();
-    } else {
-        unregisterMouseEventHandlers();
-    }
+        function runPresets() {
+            if (!demoActive) {
+                // If demo is inactive, reset and stop
+                fractalApp.reset();
+                return;
+            }
 
-    //disableControls(true, false, false, false);
-    clearURLParams();
+            const currentPreset = presets[currentDemoPresetIndex];
+            console.log("Animating to preset:", currentPreset);
 
-    function runPresets() {
-        if (!demoActive) {
-            // If demo is inactive, reset and stop
-            fractalApp.reset();
-            return;
+            // Animate to the current preset
+            //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
+            fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
+
+            // Schedule the next animation
+            // Schedule the next preset animation
+            const timer = setTimeout(() => {
+                activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
+                currentDemoPresetIndex = (currentDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
+                runPresets(currentDemoPresetIndex);
+            }, 9000); // Adjust timing to match animation duration + pause
+
+            activeTimers.push(timer); // Track this timer
         }
 
-        const currentPreset = presets[currentDemoPresetIndex];
-        console.log("Animating to preset:", currentPreset);
-
-        // Animate to the current preset
-        //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
-        fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
-
-        // Schedule the next animation
-        // Schedule the next preset animation
-        const timer = setTimeout(() => {
-            activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
-            currentDemoPresetIndex = (currentDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
-            runPresets(currentDemoPresetIndex);
-        }, 9000); // Adjust timing to match animation duration + pause
-
-        activeTimers.push(timer); // Track this timer
-    }
-
-    runPresets();*/
+        runPresets();*/
 }
 
 function initControlButtonEvents() {
@@ -292,6 +309,55 @@ function initPresetButtonEvents() {
     });
 }
 
+function initFractalSwitchRadios() {
+    mandelbrotRadio.addEventListener('click', (event) => {
+        console.log("Switching to Mandelbrot mode");
+        fractalMode = MODE_MANDELBROT;
+        fractalApp.reset();
+        fractalApp = new MandelbrotRenderer(canvas);
+        fractalApp.init();
+
+        let sliderContainer = document.getElementById('sliders');
+        sliderContainer.style.display = 'none';
+    });
+
+    juliaRadio.addEventListener('click', (event) => {
+        console.log("Switching to Juila mode");
+        fractalMode = MODE_JULIA;
+        fractalApp.reset();
+        fractalApp = new JuliaRenderer(canvas);
+        fractalApp.init();
+
+        let sliderContainer = document.getElementById('sliders');
+        sliderContainer.style.display = 'flex';
+    });
+
+    fractalApp.reset();
+}
+
+function initSliders() {
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+    realSliderValue.innerText = realSlider.value;
+    imagSliderValue.innerText = imagSlider.value;
+
+    // Update `c` dynamically when sliders are moved
+    realSlider.addEventListener('input', () => {
+        fractalApp.c[0] = parseFloat(realSlider.value);
+        realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+        fractalApp.draw();
+    });
+
+    imagSlider.addEventListener('input', () => {
+        fractalApp.c[1] = parseFloat(imagSlider.value);
+        imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+        fractalApp.draw();
+    });
+
+    let sliderContainer = document.getElementById('sliders');
+    sliderContainer.style.display = 'block';
+}
+
 function initWindowEvents() {
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
@@ -335,11 +401,23 @@ export function initUI(fractalRenderer) {
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
 
+    mandelbrotRadio = document.getElementById('mandelbrotRadio');
+    juliaRadio = document.getElementById('juliaRadio');
+
+    realSlider = document.getElementById('realSlider');
+    realSliderValue = document.getElementById('realSliderValue');
+    imagSlider = document.getElementById('imagSlider');
+    imagSliderValue = document.getElementById('imagSliderValue');
+
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
     initPresetButtonEvents();
     initInfoText();
+    initFractalSwitchRadios();
+    if (fractalMode === MODE_JULIA) {
+        initSliders();
+    }
 
     // Register control events
     if (isTouchDevice()) {
@@ -377,11 +455,10 @@ function updateColorSchema() {
         infoLabel.style.borderColor = borderColor;
     }
 
-    // Update header border and background color
-    // const controls = document.getElementById('controlArea');
-    // if (controls) {
-    //     controls.style.borderColor = borderColor;
-    // }
+    realSlider.style.setProperty('--thumb-color', borderColor);
+    realSlider.style.setProperty('--slider-color', primaryColor);
+    imagSlider.style.setProperty('--thumb-color', borderColor);
+    imagSlider.style.setProperty('--slider-color', primaryColor);
 
     // Update infoText border and background color
     const colorableElements = document.getElementsByClassName('colorable');
@@ -510,4 +587,19 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
 
     text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
     infoText.textContent = text;
+}
+
+/**
+ * Updates the real/imaginary sliders appropriately
+ */
+export function updateJuliaSliders() {
+    const now = performance.now();
+    if (now - lastUpdateTime < 100) {
+        return; // Skip updates if called too soon
+    }
+    lastUpdateTime = now;
+    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+    imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
 }

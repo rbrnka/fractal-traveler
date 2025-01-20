@@ -18,8 +18,8 @@ html, body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 210px;
-    max-height: 210px;
+    height: 280px;
+    max-height: 280px;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
@@ -112,6 +112,81 @@ p {
     line-height: 14px;
 }
 
+#sliders {
+    text-align: center;
+    flex-direction: column; /* Stack children vertically */
+    align-items: center; /* Center the slider-container */
+    gap: 5px; /* Add spacing between sliders */
+    margin: 5px 0 0 0;
+    display: none;
+}
+
+.slider-container {
+    display: flex;
+    flex-direction: row; /* Align label and slider horizontally */
+    align-items: center; /* Vertically align label and slider */
+    gap: 0; /* Add spacing between label and slider */
+    width: 300px; /* Ensure consistent width for sliders */
+}
+
+label, .sliderValue {
+    color: #ccc;
+    font-size: 11px;
+    flex: 0 0 30px; /* Fix the width of the label */
+    text-align: right; /* Align text to the right */
+}
+
+.slider {
+    flex: 1; /* Allow the slider to take remaining space */
+    height: 10px;
+    -webkit-appearance: none;
+    background: #222;
+    outline: none;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 1);
+    --slider-color: #fff; /* Default thumb color */
+    --thumb-color: #aaa; /* Default thumb color */
+}
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--slider-color);
+    cursor: pointer;
+    border: 2px solid #ccc;
+    box-shadow: -287px 0 0 280px var(--thumb-color);
+}
+
+input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    border: 1px solid #ccc;
+    border-radius: 50%;
+    margin-left: 10px;
+    background-color: transparent;
+    position: relative;
+    top: 3px;
+    cursor: pointer;
+}
+
+input[type="radio"]:checked::before {
+    content: "";
+    display: block;
+    width: 8px;
+    height: 8px;
+    background-color: #ccc;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
 #handle {
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -131,7 +206,7 @@ p {
     width: 340px;
     position: relative;
     margin: 0 auto;
-    padding: 2px;
+    padding: 4px 2px 2px 2px;
     cursor: auto;
 }
 
