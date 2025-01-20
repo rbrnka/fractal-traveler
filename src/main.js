@@ -4,7 +4,7 @@
  */
 import './css/style.css';
 import {JuliaRenderer} from "./juliaRenderer";
-import {fractalMode, initUI, MODE_MANDELBROT} from "./ui";
+import {enableJuliaMode, initUI, MODE_JULIA} from "./ui";
 import {MandelbrotRenderer} from "./mandelbrotRenderer";
 import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
@@ -18,11 +18,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let fractalApp;
 
-    if (fractalMode === MODE_MANDELBROT) {
-        fractalApp = new MandelbrotRenderer(canvas);
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('mode')) {
+        const mode = params.get('mode');
+
+        if (parseInt(mode) === MODE_JULIA) {
+            enableJuliaMode();
+            fractalApp = new JuliaRenderer(canvas);
+
+            let sliderContainer = document.getElementById('sliders');
+            sliderContainer.style.display = 'flex';
+        } else {
+            fractalApp = new MandelbrotRenderer(canvas);
+        }
     } else {
-        fractalApp = new JuliaRenderer(canvas);
+        fractalApp = new MandelbrotRenderer(canvas);
     }
+
     fractalApp.init();
     console.log('Fractal initialized');
 
@@ -30,7 +42,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('UI initialized');
 
     // If the URL contains the required parameters, load them.
-    const params = new URLSearchParams(window.location.search);
     if (params.has('cx') && params.has('cy') && params.has('zoom')) {
         loadFractalParamsFromURL(fractalApp);
         fractalApp.animatePanAndZoomTo(fractalApp.pan, fractalApp.zoom, 500);

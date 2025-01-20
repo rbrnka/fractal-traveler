@@ -18,8 +18,8 @@ html, body {
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
-    height: 280px;
-    max-height: 280px;
+    height: 240px;
+    max-height: 240px;
     overflow: hidden;
     transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
@@ -37,6 +37,16 @@ html, body {
     width: 100%;
     height: 100%;
     flex: 1;
+}
+
+hr {
+    width: 90%;
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #222;
+    padding: 0;
+    margin: 5px auto 1px auto;
 }
 
 button {
@@ -112,6 +122,11 @@ p {
     line-height: 14px;
 }
 
+span {
+    font-size: 12px;
+    color: #fff;
+}
+
 #sliders {
     text-align: center;
     flex-direction: column; /* Stack children vertically */
@@ -126,13 +141,12 @@ p {
     flex-direction: row; /* Align label and slider horizontally */
     align-items: center; /* Vertically align label and slider */
     gap: 0; /* Add spacing between label and slider */
-    width: 300px; /* Ensure consistent width for sliders */
+    width: 310px; /* Ensure consistent width for sliders */
 }
 
 label, .sliderValue {
     color: #ccc;
-    font-size: 11px;
-    flex: 0 0 30px; /* Fix the width of the label */
+    font-size: 12px;
     text-align: right; /* Align text to the right */
 }
 
@@ -168,7 +182,7 @@ input[type="radio"] {
     border: 1px solid #ccc;
     border-radius: 50%;
     margin-left: 10px;
-    background-color: transparent;
+    background-color: var(--slider-color);
     position: relative;
     top: 3px;
     cursor: pointer;
@@ -215,7 +229,7 @@ p.small {
 }
 
 .highlight {
-    color: #ccc;
+    color: #fff;
 }
 
 a {

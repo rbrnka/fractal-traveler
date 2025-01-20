@@ -31,7 +31,7 @@
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
     <h1 class="colorable">Synaptory Fractal Traveler<sup>1.5</sup></h1>
-    <p>An interactive, WebGL-powered app that lets you pan, zoom, and explore the Mandelbrot set (<a
+    <p>An interactive, WebGL-powered app that lets you pan, zoom, and explore Mandelbrot and Julia sets (<a
             target="_blank"
             title="Github Repository"
             href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
@@ -40,10 +40,10 @@
         <button id="randomize" class="colorable">Random Colors</button>
         <button id="screenshot" class="colorable">Save Image</button>
         <button id="demo" class="colorable">Demo</button>
-        <p><span class="highlight">Fractal:</span>
+        <hr/>
+        <span>Fractal type:</span>
             <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
             <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
-        </p>
         <div id="sliders">
             <div class="slider-container">
                 <label for="realSlider">x:</label>
@@ -74,7 +74,7 @@
             title="Unmasking Chaos: Synaptory blog"
             href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
         Chaos</a> article &copy; Radim Brnka 2025</p>
-    <p class="small"><span class="highlight">Controls:</span> Left Drag: Pan &#124; Right Drag: Rotate &#124; Wheel:
+    <p class="small"><span>Controls:</span> Left Drag: Pan &#124; Right Drag: Rotate &#124; Wheel:
         Zoom,
         <br/>Left Click: Center &amp; URL link &#124; Double click:
         Zoom-in/out &amp; center &#124;<br/> Middle Click: guiding lines &#124; F11: Fullscreen</p>

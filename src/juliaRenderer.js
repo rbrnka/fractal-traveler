@@ -16,6 +16,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.DEFAULT_ZOOM = 3.5;
         this.DEFAULT_PAN = [0.0, 0.0];
         this.DEFAULT_PALETTE = [1.0, 0.5, 0.8];
+        this.DEFAULT_C = [0.355, 0.355];
 
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
@@ -34,7 +35,7 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)} // Deep zoom
         ];
 
-        this.c = [0.355, 0.355];
+        this.c = this.DEFAULT_C.slice();
     }
 
     createFragmentShaderSource() {
@@ -171,6 +172,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.pan = this.DEFAULT_PAN.slice();
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = this.DEFAULT_ROTATION; // Reset rotation
+        this.c = this.DEFAULT_C.slice();
         this.extraIterations = 0;
         this.resizeCanvas();
         updateInfo(null, false);
