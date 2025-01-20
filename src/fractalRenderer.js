@@ -6,9 +6,8 @@ import {updateInfo} from "./ui";
  * @abstract
  */
 export class FractalRenderer {
+
     constructor(canvas) {
-
-
         this.canvas = canvas;
         this.gl = this.canvas.getContext('webgl', { antialias: true });
 
@@ -18,6 +17,7 @@ export class FractalRenderer {
         }
 
         // Default values:
+        this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
         this.DEFAULT_PAN = [-0.5, 0.0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
@@ -29,7 +29,7 @@ export class FractalRenderer {
         // Use the setter so that if DEFAULT_ZOOM is out of bounds it’s clamped.
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
-        this.rotation = 0;
+        this.rotation = this.DEFAULT_ROTATION;
 
         this.currentAnimationFrame = null;
         this.extraIterations = 0;

@@ -5,17 +5,33 @@
  */
 
 import {FractalRenderer} from './fractalRenderer.js';
+import {updateInfo, updateJuliaSliders} from "./ui";
 
 export class JuliaRenderer extends FractalRenderer {
 
     constructor(canvas) {
         super(canvas);
 
-        this.pan = [0, 5];
-        this.colorPalette = [1.0, 0.5, 0.8];
+        this.DEFAULT_ROTATION = 90 * (Math.PI / 180);
+        this.DEFAULT_ZOOM = 3.5;
+        this.DEFAULT_PAN = [0.0, 0.0];
+        this.DEFAULT_PALETTE = [1.0, 0.5, 0.8];
+
+        this.zoom = this.DEFAULT_ZOOM;
+        this.pan = this.DEFAULT_PAN.slice(); // Copy
+        this.rotation = this.DEFAULT_ROTATION;
+        this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         this.PRESETS = [
-            {pan: [0.351424, 0.063866], zoom: 0.000049}
+            {c: [0.355, 0.355], zoom: 1, rotation: this.DEFAULT_ROTATION},
+            {c: [-0.4, 0.6], zoom: 1, rotation: 120 * (Math.PI / 180)},
+            {c: [0.285, 0.01], zoom: 0.02, rotation: this.DEFAULT_ROTATION},          // Near Julia set border
+            {c: [-0.70176, -0.3842], zoom: 1, rotation: 45 * (Math.PI / 180)},
+            {c: [0.45, 0.1428], zoom: 1, rotation: this.DEFAULT_ROTATION},
+            {c: [-0.75, 0.1], zoom: 0.05, rotation: 150 * (Math.PI / 180)},           // Main cardioid
+            {c: [-0.1, 0.651], zoom: 0.01, rotation: 150 * (Math.PI / 180)},          // Seahorse Valley
+            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)},      // Spiral structure
+            {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)}   // Deep zoom
         ];
 
         this.c = [0.355, 0.355];
@@ -101,5 +117,136 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+
+        updateJuliaSliders();
     }
+
+    reset() {
+        this.stopCurrentAnimation();
+        this.pan = this.DEFAULT_PAN.slice();
+        this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
+        this.rotation = this.DEFAULT_ROTATION; // Reset rotation
+        this.extraIterations = 0;
+        this.resizeCanvas();
+        updateInfo(null, false);
+        updateJuliaSliders();
+
+        this.draw();
+    }
+
+    animateZoom(targetZoom, duration, callback) {
+        const startZoom = this.zoom;
+        const self = this;
+        let startTime = null;
+
+        function stepZoom(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+            self.draw();
+
+            if (progress < 1) {
+                self.currentAnimationFrame = requestAnimationFrame(stepZoom);
+                updateInfo(null, true);
+            } else if (callback) {
+                callback(); // Execute callback after zoom finishes
+            }
+        }
+
+        this.currentAnimationFrame = requestAnimationFrame(stepZoom);
+    }
+
+    animateTravelToPreset(preset, transitionDuration) {
+        this.stopCurrentAnimation();
+
+        const self = this;
+
+        // Helper function for ease-in-out timing
+        function easeInOut(t) {
+            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        }
+
+        // Helper function for linear interpolation
+        function lerp(start, end, t) {
+            return start + (end - start) * t;
+        }
+
+        // Adjust to default zoom and pan
+        function adjustToDefault(callback) {
+            const startZoom = self.zoom;
+            const startPan = self.pan.slice();
+
+            const targetPan = self.DEFAULT_PAN.slice();
+            const duration = 500; // Zoom-out duration
+            let startTime = null;
+
+            function stepAdjust(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let progress = (timestamp - startTime) / duration;
+                if (progress > 1) progress = 1;
+
+                // Interpolate zoom and pan
+                self.zoom = lerp(startZoom, self.DEFAULT_ZOOM, progress);
+                self.pan[0] = lerp(startPan[0], targetPan[0], progress);
+                self.pan[1] = lerp(startPan[1], targetPan[1], progress);
+
+                // Redraw during the adjustment
+                self.draw();
+
+                if (progress < 1) {
+                    self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
+                    updateInfo(null, true);
+                } else if (callback) {
+                    callback(); // Proceed to preset transition
+                }
+            }
+
+            self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
+        }
+
+        // Transition logic after adjusting to default zoom and pan
+        function startTransition() {
+            const startC = self.c.slice(); // Copy current `c`
+            const startRotation = self.rotation;
+            let startTime = null;
+
+            function stepTransition(timestamp) {
+                if (!startTime) startTime = timestamp;
+                let progress = (timestamp - startTime) / transitionDuration;
+                if (progress > 1) progress = 1;
+
+                // Apply eased progress
+                const easedProgress = easeInOut(progress);
+
+                // Interpolate `c`, `pan`, and rotation smoothly
+                self.c[0] = lerp(startC[0], preset.c[0], easedProgress);
+                self.c[1] = lerp(startC[1], preset.c[1], easedProgress);
+                self.rotation = lerp(startRotation, preset.rotation, progress);
+
+                // Redraw with updated values
+                self.draw();
+
+                if (progress < 1) {
+                    self.currentAnimationFrame = requestAnimationFrame(stepTransition);
+                    updateInfo(null, true);
+                } else {
+                    // Ensure exact final values
+                    self.c = preset.c.slice();
+                    self.onAnimationFinished();
+                }
+            }
+
+            self.currentAnimationFrame = requestAnimationFrame(stepTransition);
+        }
+
+        // Adjust to default if needed, then start preset transition
+        if (this.zoom < this.DEFAULT_ZOOM || this.pan[0] !== this.DEFAULT_PAN[0] || this.pan[1] !== this.DEFAULT_PAN[1]) {
+            adjustToDefault(startTransition);
+        } else {
+            startTransition();
+        }
+    }
+
 }
