@@ -6,14 +6,11 @@ import './css/style.css';
 
 import {MandelbrotRenderer} from './mandelbrotRenderer.js';
 import {initUI} from './ui.js';
-
-// TODO only register events based on the device - if (isMobile())...
 import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
     // Create the fractal application instance.
     const canvas = document.getElementById('fractalCanvas');
-    // Explicitly set canvas size
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 

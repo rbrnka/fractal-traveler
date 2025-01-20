@@ -43,6 +43,13 @@ The architecture supports additional fractal types (e.g., Julia sets) and furthe
 - `npm run test` to run test suites
 
 ## Changelog
+### v1.4.2
+- Screenshot button added
+
+### v1.4.1
+- Touch device optimizations for simultaneous pan, zoom and rotate
+- Added demo mode that takes you through all the presets in a loop
+
 ### v1.4
 - Added support for rotating the fractal
 - Stops current animation when a new one is invoked
