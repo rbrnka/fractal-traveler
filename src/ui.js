@@ -1,9 +1,16 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
+import {JuliaRenderer} from "./juliaRenderer";
 
 let canvas;
 let fractalApp;
+// 0..Mandelbrot, 1..Julia
+export const MODE_MANDELBROT = 0;
+export const MODE_JULIA = 1;
+export let fractalMode = MODE_MANDELBROT;
+let mandelbrotRadio;
+let juliaRadio;
 
 let headerMinimizeTimeout = null;
 let uiInitialized = false;
@@ -20,9 +27,127 @@ let screenshotButton;
 let demoButton;
 let presetButtons = [];
 
-let currentDemoPresetIndex = 0; // Keep track of the current preset
+// Julia sliders
+let realSlider;
+let imagSlider;
+let realSliderValue;
+let imagSliderValue;
+
+
+let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
+let currentJuliaAnimationFrame = null;
 export let activeTimers = []; // Store all active demo timers
 let lastUpdateTime = 0;
+
+function switchFractalMode(mode) {
+    clearURLParams();
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', mode);
+
+    window.history.replaceState(null, '', url.toString());
+    window.location.reload();
+}
+
+export function enableJuliaMode() {
+    fractalMode = MODE_JULIA;
+}
+
+function stopDemo() {
+    if (!demoActive) return;
+
+    demoActive = false;
+    currentMandelbrotDemoPresetIndex = 0;
+    fractalApp.stopCurrentAnimation();
+    demoButton.innerText = "Demo";
+
+    if (isTouchDevice()) {
+        console.log("Registering touch events");
+        registerTouchEventHandlers();
+    } else {
+        registerMouseEventHandlers();
+    }
+
+    if (currentJuliaAnimationFrame !== null) {
+        cancelAnimationFrame(currentJuliaAnimationFrame);
+        currentJuliaAnimationFrame = null;
+    }
+    // Clear all active timers
+    activeTimers.forEach(timer => clearTimeout(timer));
+    activeTimers = []; // Reset the timer list
+    // enableControls();
+}
+
+
+function startDemo() {
+    demoActive = true;
+    demoButton.innerText = "Stop Demo";
+    // Register control events
+    if (isTouchDevice()) {
+        console.log("Unregistering touch events");
+        unregisterTouchEventHandlers();
+    } else {
+        unregisterMouseEventHandlers();
+    }
+
+    //disableControls(true, false, false, false);
+    clearURLParams();
+}
+
+function startMandelbrotDemo() {
+    if (demoActive) return;
+    startDemo();
+
+    // Start the demo
+    const presets = fractalApp.PRESETS.slice();
+
+    function runPresets() {
+        if (!demoActive) {
+            // If demo is inactive, reset and stop
+            fractalApp.reset();
+            return;
+        }
+
+        const currentPreset = presets[currentMandelbrotDemoPresetIndex];
+        console.log("Animating to preset:", currentPreset);
+
+        // Animate to the current preset
+        //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
+        fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
+
+        // Schedule the next animation
+        // Schedule the next preset animation
+        const timer = setTimeout(() => {
+            activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
+            currentMandelbrotDemoPresetIndex = (currentMandelbrotDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
+            runPresets(currentMandelbrotDemoPresetIndex);
+        }, 9000); // Adjust timing to match animation duration + pause
+
+        activeTimers.push(timer); // Track this timer
+    }
+
+    runPresets();
+}
+
+function startJuliaDemo() {
+    if (demoActive) return;
+    startDemo();
+
+    let time = 0;
+
+    function animate() {
+        fractalApp.c = [
+            Math.sin(time) * 0.5, // Oscillate real part
+            Math.cos(time) * 0.5  // Oscillate imaginary part
+        ];
+        fractalApp.draw();
+        time += 0.005;
+
+        currentJuliaAnimationFrame = requestAnimationFrame(animate);
+    }
+
+    animate();
+}
 
 function initHeaderEvents() {
 
@@ -47,8 +172,6 @@ function initHeaderEvents() {
     // Toggle header state when header is clicked/tapped and stop auto-close
     handle.addEventListener('pointerdown', (event) => {
 
-        console.log("pointerdown " + headerToggled);
-
         if (!headerToggled) {
             header.classList.remove('minimized');
         } else {
@@ -68,74 +191,6 @@ function initHeaderEvents() {
         header.classList.add('minimized');
         headerToggled = false;
     });
-}
-
-export function stopDemo() {
-    if (!demoActive) return;
-
-    demoActive = false;
-    currentDemoPresetIndex = 0;
-    fractalApp.stopCurrentAnimation();
-    demoButton.innerText = "Demo";
-
-    if (isTouchDevice()) {
-        console.log("Registering touch events");
-        registerTouchEventHandlers();
-    } else {
-        registerMouseEventHandlers();
-    }
-
-    // Clear all active timers
-    activeTimers.forEach(timer => clearTimeout(timer));
-    activeTimers = []; // Reset the timer list
-    // enableControls();
-
-}
-
-export function startDemo() {
-    if (demoActive) return;
-
-    // Start the demo
-    const presets = fractalApp.PRESETS.slice();
-    demoActive = true;
-    demoButton.innerText = "Stop Demo";
-    // Register control events
-    if (isTouchDevice()) {
-        console.log("Unregistering touch events");
-        unregisterTouchEventHandlers();
-    } else {
-        unregisterMouseEventHandlers();
-    }
-
-    //disableControls(true, false, false, false);
-    clearURLParams();
-
-    function runPresets() {
-        if (!demoActive) {
-            // If demo is inactive, reset and stop
-            fractalApp.reset();
-            return;
-        }
-
-        const currentPreset = presets[currentDemoPresetIndex];
-        console.log("Animating to preset:", currentPreset);
-
-        // Animate to the current preset
-        //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
-        fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
-
-        // Schedule the next animation
-        // Schedule the next preset animation
-        const timer = setTimeout(() => {
-            activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
-            currentDemoPresetIndex = (currentDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
-            runPresets(currentDemoPresetIndex);
-        }, 9000); // Adjust timing to match animation duration + pause
-
-        activeTimers.push(timer); // Track this timer
-    }
-
-    runPresets();
 }
 
 function initControlButtonEvents() {
@@ -175,13 +230,25 @@ function initControlButtonEvents() {
     });
 
     demoButton.addEventListener('click', () => {
-        const presets = fractalApp.PRESETS;
-        if (!presets || presets.length === 0 || demoActive) {
+        console.log('Starting demo for mode ' + fractalMode);
+
+        if (demoActive) {
             stopDemo();
             return;
         }
 
-        startDemo();
+        if (fractalMode === MODE_MANDELBROT) {
+            const presets = fractalApp.PRESETS;
+            if (!presets || presets.length === 0) {
+                console.warn('No presets defined for Mandelbrot mode ');
+                return;
+            }
+            startMandelbrotDemo();
+        } else if (fractalMode === MODE_JULIA) {
+            startJuliaDemo();
+        } else {
+            console.warn('No demo defined for mode ' + fractalMode);
+        }
     });
 
     screenshotButton.addEventListener('click', () => {
@@ -203,7 +270,12 @@ function initControlButtonEvents() {
         ctx.drawImage(canvas, 0, 0);
 
         // Define the watermark text and style
-        const watermarkText = 'Created by Synaptory Fractal Traveler';
+        let watermarkText = `Created by Synaptory Fractal Traveler, `;
+        watermarkText += (
+            fractalMode === MODE_MANDELBROT
+                ? `(Mandelbrot: z=[${fractalApp.pan[0].toFixed(6)}, ${fractalApp.pan[1].toFixed(6)}i], Z=${fractalApp.zoom.toFixed(6)})`
+                : `(Julia: c=[${fractalApp.c[0]}, =${fractalApp.c[1]}i], x=${fractalApp.pan[0].toFixed(6)}, y=${fractalApp.pan[1].toFixed(6)}, Z=${fractalApp.zoom.toFixed(6)})`
+        );
         const fontSize = 12;
         const padding = 6;
         const borderWidth = 1;
@@ -276,6 +348,39 @@ function initPresetButtonEvents() {
     });
 }
 
+function initFractalSwitchRadios() {
+    mandelbrotRadio.addEventListener('click', (event) => {
+        switchFractalMode(MODE_MANDELBROT);
+    });
+
+    juliaRadio.addEventListener('click', (event) => {
+        switchFractalMode(MODE_JULIA);
+    });
+}
+
+function initSliders() {
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+    realSliderValue.innerText = realSlider.value;
+    imagSliderValue.innerText = imagSlider.value;
+
+    // Update `c` dynamically when sliders are moved
+    realSlider.addEventListener('input', () => {
+        fractalApp.c[0] = parseFloat(realSlider.value);
+        realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+        fractalApp.draw();
+    });
+
+    imagSlider.addEventListener('input', () => {
+        fractalApp.c[1] = parseFloat(imagSlider.value);
+        imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+        fractalApp.draw();
+    });
+
+    let sliderContainer = document.getElementById('sliders');
+    sliderContainer.style.display = 'flex';
+}
+
 function initWindowEvents() {
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
@@ -319,11 +424,25 @@ export function initUI(fractalRenderer) {
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
 
+    mandelbrotRadio = document.getElementById('mandelbrotRadio');
+    juliaRadio = document.getElementById('juliaRadio');
+
+    realSlider = document.getElementById('realSlider');
+    realSliderValue = document.getElementById('realSliderValue');
+    imagSlider = document.getElementById('imagSlider');
+    imagSliderValue = document.getElementById('imagSliderValue');
+
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
     initPresetButtonEvents();
     initInfoText();
+    initFractalSwitchRadios();
+
+    if (fractalRenderer instanceof JuliaRenderer) {
+        initSliders();
+        juliaRadio.checked = true;
+    }
 
     // Register control events
     if (isTouchDevice()) {
@@ -361,11 +480,10 @@ function updateColorSchema() {
         infoLabel.style.borderColor = borderColor;
     }
 
-    // Update header border and background color
-    // const controls = document.getElementById('controlArea');
-    // if (controls) {
-    //     controls.style.borderColor = borderColor;
-    // }
+    realSlider.style.setProperty('--thumb-color', borderColor);
+    realSlider.style.setProperty('--slider-color', primaryColor);
+    imagSlider.style.setProperty('--thumb-color', borderColor);
+    imagSlider.style.setProperty('--slider-color', primaryColor);
 
     // Update infoText border and background color
     const colorableElements = document.getElementsByClassName('colorable');
@@ -454,7 +572,7 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
     }
     lastUpdateTime = now;
 
-    if (!canvas || !fractalApp || !fractalApp.pan || !fractalApp.zoom) {
+    if (!canvas || !fractalApp) {
         return;
     }
 
@@ -487,11 +605,37 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
         text = isTouchDevice() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
     }
 
-    const panX = fractalApp.pan[0] ?? 0;
-    const panY = fractalApp.pan[1] ?? 0;
     const currentZoom = fractalApp.zoom ?? 0;
-    //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
+    if (fractalMode === MODE_MANDELBROT) {
+        const panX = fractalApp.pan[0] ?? 0;
+        const panY = fractalApp.pan[1] ?? 0;
+        //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
 
-    text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-    infoText.textContent = text;
+        text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
+        infoText.textContent = text;
+    } else if (fractalMode === MODE_JULIA) {
+        const cx = fractalApp.c[0] ?? 0;
+        const cy = fractalApp.c[1] ?? 0;
+
+        text += `cx=${cx.toFixed(6)}, cy=${cy.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
+        infoText.textContent = text;
+
+    } else {
+        console.warn('Unknown mode');
+    }
+}
+
+/**
+ * Updates the real/imaginary sliders appropriately
+ */
+export function updateJuliaSliders() {
+    const now = performance.now();
+    if (now - lastUpdateTime < 100) {
+        return; // Skip updates if called too soon
+    }
+    lastUpdateTime = now;
+    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+    imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
 }

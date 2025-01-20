@@ -43,6 +43,13 @@ The architecture supports additional fractal types (e.g., Julia sets) and furthe
 - `npm run test` to run test suites
 
 ## Changelog
+### v1.5
+- Julia set support
+- Presets with transitions
+- Sliders to control the Julia fractal added and updated with changing the set
+- Screenshot adds fractal coords and settings into watermark
+- Responsive header height
+
 ### v1.4.2
 - Screenshot button added
 

@@ -80,4 +80,24 @@ export class MandelbrotRenderer extends FractalRenderer {
             }
         `;
     }
+
+    draw() {
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.updateUniforms();
+
+        this.gl.uniform2fv(this.panLoc, this.pan);
+        this.gl.uniform1f(this.zoomLoc, this.zoom);
+        this.gl.uniform1f(this.rotationLoc, this.rotation);
+
+        // const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(this.zoom)));
+        // const iters = Math.min(10000, baseIters + this.extraIterations);
+        const baseIters = Math.floor(1000 * Math.pow(2, -Math.log2(this.zoom)));
+        const iters = Math.min(50000, baseIters + this.extraIterations);
+
+        this.gl.uniform1f(this.iterLoc, iters);
+        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        this.gl.clearColor(0, 0, 0, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+    }
 }

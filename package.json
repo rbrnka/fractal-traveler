@@ -1,8 +1,8 @@
 {
   "name": "fractal-traveler",
-  "version": "1.3.0",
-  "description": "Fractal Traveler App",
-  "main": "src/scripts.js",
+  "version": "1.5.0",
+  "description": "Synaptory Fractal Traveler",
+  "main": "src/main.js",
   "scripts": {
     "build": "webpack --mode production",
     "dev-nowatch": "webpack --mode development",
