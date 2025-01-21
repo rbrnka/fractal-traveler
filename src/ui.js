@@ -1,4 +1,4 @@
-import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
+import {clearURLParams, hsbToRgb, isTouchDevice, getRotatedFractalCoords} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 import {JuliaRenderer} from "./juliaRenderer";
@@ -33,11 +33,12 @@ let imagSlider;
 let realSliderValue;
 let imagSliderValue;
 
+let isUpdatingSliders = false; // To prevent multiple animation frame requests
+let isUpdatingInfo = false; // Prevent overlapping animation frame calls
 
 let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
 let currentJuliaAnimationFrame = null;
 export let activeTimers = []; // Store all active demo timers
-let lastUpdateTime = 0;
 
 function switchFractalMode(mode) {
     clearURLParams();
@@ -62,7 +63,7 @@ function stopDemo() {
     demoButton.innerText = "Demo";
 
     if (isTouchDevice()) {
-        console.log("Registering touch events");
+        console.log("Registering touch events after demo");
         registerTouchEventHandlers();
     } else {
         registerMouseEventHandlers();
@@ -79,7 +80,7 @@ function stopDemo() {
 }
 
 
-function startDemo() {
+function enterDemoMode() {
     demoActive = true;
     demoButton.innerText = "Stop Demo";
     // Register control events
@@ -96,7 +97,7 @@ function startDemo() {
 
 function startMandelbrotDemo() {
     if (demoActive) return;
-    startDemo();
+    enterDemoMode();
 
     // Start the demo
     const presets = fractalApp.PRESETS.slice();
@@ -131,7 +132,7 @@ function startMandelbrotDemo() {
 
 function startJuliaDemo() {
     if (demoActive) return;
-    startDemo();
+    enterDemoMode();
 
     let time = 0;
 
@@ -143,6 +144,8 @@ function startJuliaDemo() {
         fractalApp.draw();
         time += 0.005;
 
+        updateJuliaSliders();
+        updateInfo(false, false, true);
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
     }
 
@@ -196,6 +199,7 @@ function initHeaderEvents() {
 function initControlButtonEvents() {
 
     resetButton.addEventListener('click', () => {
+        console.log("Reset button hit");
         // Clear the URL parameters.
         clearURLParams();
         stopDemo();
@@ -364,16 +368,19 @@ function initSliders() {
     realSliderValue.innerText = realSlider.value;
     imagSliderValue.innerText = imagSlider.value;
 
+    // TODO make more granular, currently sliders change the set too roughly
     // Update `c` dynamically when sliders are moved
     realSlider.addEventListener('input', () => {
         fractalApp.c[0] = parseFloat(realSlider.value);
         realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+        updateInfo(false, false, false);
         fractalApp.draw();
     });
 
     imagSlider.addEventListener('input', () => {
         fractalApp.c[1] = parseFloat(imagSlider.value);
         imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+        updateInfo(false, false, false);
         fractalApp.draw();
     });
 
@@ -561,81 +568,82 @@ export function enableControls(presets = true, reset = true, randomize = true, d
 
 /**
  * Updates the bottom info bar
- * @param inputEvent mouse event
+ * @param inputEvent mouse event (optional)
  * @param traveling {boolean} if inside animation
  * @param demo {boolean} if demo mode
  */
 export function updateInfo(inputEvent, traveling = false, demo = false) {
-    const now = performance.now();
-    if (now - lastUpdateTime < 100) {
-        return; // Skip updates if called too soon
-    }
-    lastUpdateTime = now;
+    if (isUpdatingInfo) return;
 
-    if (!canvas || !fractalApp) {
-        return;
-    }
+    isUpdatingInfo = true;
 
-    let text = '';
-
-    if (traveling) {
-        if (demo) {
-            text = 'DEMO: Traveling to: ';
+    requestAnimationFrame(() => {
+        if (!canvas || !fractalApp) {
+            isUpdatingInfo = false;
+            return;
         }
-    } else if (inputEvent && typeof inputEvent.clientX === 'number') {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = inputEvent.clientX - rect.left;
-        const mouseY = inputEvent.clientY - rect.top;
 
-        // Apply rotation to screen coordinates before converting to fractal coordinates
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+        // Determine base text
+        let text = traveling
+            ? `${demo ? 'DEMO: ' : ''}Traveling to: `
+            : demo
+                ? 'DEMO: '
+                : '';
 
-        const offsetX = mouseX - centerX;
-        const offsetY = mouseY - centerY;
+        // Add mouse coordinates if inputEvent exists
+        if (inputEvent && inputEvent.clientX !== undefined) {
+            const rect = canvas.getBoundingClientRect();
+            const [fx, fy] = getRotatedFractalCoords(
+                fractalApp,
+                inputEvent.clientX - rect.left,
+                inputEvent.clientY - rect.top,
+                rect
+            );
 
-        const cosR = Math.cos(-fractalApp.rotation); // Negative for counterclockwise rotation
-        const sinR = Math.sin(-fractalApp.rotation);
+            if (!isTouchDevice()) {
+                text += `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
+            }
+        }
 
-        const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
-        const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
+        // Append fractal-specific information
+        const zoom = fractalApp.zoom?.toFixed(6) || '0';
+        if (fractalMode === MODE_MANDELBROT) {
+            const [panX, panY] = fractalApp.pan || [0, 0];
+            text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${zoom}`;
+        } else if (fractalMode === MODE_JULIA) {
+            const [cx, cy] = fractalApp.c || [0, 0];
+            text += `cx=${cx.toFixed(6)}, cy=${cy.toFixed(6)}, zoom=${zoom}`;
+        } else {
+            console.warn('Unknown fractal mode');
+        }
 
-        const [fx, fy] = fractalApp.screenToFractal(rotatedX, rotatedY);
+        // Update the info text content
+        infoText.value = text;
 
-        text = isTouchDevice() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
-    }
-
-    const currentZoom = fractalApp.zoom ?? 0;
-    if (fractalMode === MODE_MANDELBROT) {
-        const panX = fractalApp.pan[0] ?? 0;
-        const panY = fractalApp.pan[1] ?? 0;
-        //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
-
-        text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-        infoText.textContent = text;
-    } else if (fractalMode === MODE_JULIA) {
-        const cx = fractalApp.c[0] ?? 0;
-        const cy = fractalApp.c[1] ?? 0;
-
-        text += `cx=${cx.toFixed(6)}, cy=${cy.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-        infoText.textContent = text;
-
-    } else {
-        console.warn('Unknown mode');
-    }
+        isUpdatingInfo = false; // Allow next update
+    });
 }
 
 /**
  * Updates the real/imaginary sliders appropriately
  */
 export function updateJuliaSliders() {
-    const now = performance.now();
-    if (now - lastUpdateTime < 100) {
-        return; // Skip updates if called too soon
+    if (isUpdatingSliders) {
+        return; // Prevent overlapping animation frame calls
     }
-    lastUpdateTime = now;
-    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+
+    isUpdatingSliders = true;
+
+    requestAnimationFrame(() => {
+        const cx = fractalApp.c[0].toFixed(2);
+        const cy = fractalApp.c[1].toFixed(2);
+
+        realSliderValue.innerText = cx;
+        imagSliderValue.innerText = cy;
+        realSlider.value = parseFloat(cx);
+        imagSlider.value = parseFloat(cy);
+
+        isUpdatingSliders = false; // Allow the next update
+        console.log("Sliders updated via animation frame");
+    });
 }

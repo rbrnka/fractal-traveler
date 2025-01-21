@@ -163,8 +163,6 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-
-        updateJuliaSliders();
     }
 
     reset() {
@@ -244,7 +242,7 @@ export class JuliaRenderer extends FractalRenderer {
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
-                    updateInfo(null, true);
+                    updateInfo(null, true, false);
                 } else if (callback) {
                     callback(); // Proceed to preset transition
                 }
@@ -277,7 +275,8 @@ export class JuliaRenderer extends FractalRenderer {
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepTransition);
-                    updateInfo(null, true);
+                    updateJuliaSliders();
+                    updateInfo(null, true, false);
                 } else {
                     // Ensure exact final values
                     self.c = preset.c.slice();
