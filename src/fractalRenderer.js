@@ -342,7 +342,7 @@ export class FractalRenderer {
      * @param targetRotation
      * @param duration
      */
-    animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500) {
+    animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500, callback = null) {
         this.stopCurrentAnimation();
 
         const startPan = this.pan.slice();
@@ -366,6 +366,7 @@ export class FractalRenderer {
                 self.currentAnimationFrame = requestAnimationFrame(step);
             } else {
                 self.onAnimationFinished();
+                if (callback) callback();
             }
         }
 

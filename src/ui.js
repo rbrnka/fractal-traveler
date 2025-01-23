@@ -143,8 +143,7 @@ function startJuliaDemo() {
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
     }
 
-    fractalApp.reset();
-    animate();
+    fractalApp.animatePanZoomRotate(fractalApp.DEFAULT_PAN.slice(), fractalApp.DEFAULT_ZOOM, fractalApp.DEFAULT_ROTATION, 500, animate);
 }
 
 function initHeaderEvents() {
