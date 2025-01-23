@@ -70,6 +70,7 @@ export class FractalRenderer {
 
     resizeCanvas() {
         console.log("Resizing canvas");
+        // TODO https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 
         const dpr = Math.max(1, Math.min(3, 1 / this.zoom));
         this.canvas.width = Math.floor(window.innerWidth * dpr);
@@ -299,8 +300,9 @@ export class FractalRenderer {
      * @param targetPan Array [x, y]
      * @param targetZoom
      * @param duration in milliseconds
+     * @param callback Function called when animation is finished
      */
-    animatePanAndZoomTo(targetPan, targetZoom, duration = 500) {
+    animatePanAndZoomTo(targetPan, targetZoom, duration = 500, callback = null) {
         this.stopCurrentAnimation();
 
         const startPan = this.pan.slice();
@@ -326,6 +328,7 @@ export class FractalRenderer {
                 self.currentAnimationFrame = requestAnimationFrame(step);
             } else {
                 self.onAnimationFinished();
+                if (callback) callback();
             }
         }
 
