@@ -257,6 +257,7 @@ export class JuliaRenderer extends FractalRenderer {
         function startTransition() {
             const startC = self.c.slice(); // Copy current `c`
             const startZoom = self.zoom;
+            const startPan = self.pan.slice();
             const startRotation = self.rotation;
             let startTime = null;
 
@@ -272,6 +273,8 @@ export class JuliaRenderer extends FractalRenderer {
                 self.c[0] = lerp(startC[0], preset.c[0], easedProgress);
                 self.c[1] = lerp(startC[1], preset.c[1], easedProgress);
                 self.rotation = lerp(startRotation, preset.rotation, progress);
+                self.pan[0] = lerp(startPan[0], preset.pan[0], progress);
+                self.pan[1] = lerp(startPan[1], preset.pan[1], progress);
                 self.zoom = lerp(startZoom, preset.zoom, progress);
 
                 // Redraw with updated values
