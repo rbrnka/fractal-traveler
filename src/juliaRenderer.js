@@ -24,15 +24,15 @@ export class JuliaRenderer extends FractalRenderer {
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         this.PRESETS = [
-            {c: [0.34, -0.05], zoom: 1, rotation: this.DEFAULT_ROTATION},
-            {c: [0.285, 0.01], zoom: 0.02, rotation: this.DEFAULT_ROTATION}, // Near Julia set border
-            {c: [0.45, 0.1428], zoom: 1, rotation: this.DEFAULT_ROTATION},
-            {c: [-0.4, 0.6], zoom: 1, rotation: 120 * (Math.PI / 180)},
-            {c: [-0.70176, -0.3842], zoom: 1, rotation: 150 * (Math.PI / 180)},
-            {c: [-0.835, -0.232], zoom: 0.008, rotation: 150 * (Math.PI / 180)}, // Spiral structure
-            {c: [-0.75, 0.1], zoom: 0.05, rotation: 150 * (Math.PI / 180)}, // Main cardioid
-            {c: [-0.1, 0.651], zoom: 0.01, rotation: 150 * (Math.PI / 180)}, // Seahorse Valley
-            {c: [-1.25066, 0.02012], zoom: 0.0005, rotation: 150 * (Math.PI / 180)} // Deep zoom
+            {c: [0.34, -0.05], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]},
+            {c: [0.285, 0.01], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]}, // Near Julia set border
+            {c: [0.45, 0.1428], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]},
+            {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0]},
+            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]},
+            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Spiral structure
+            {c: [-0.75, 0.1], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Main cardioid
+            {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Seahorse Valley
+            {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]} // Deep zoom
         ];
 
         this.c = this.DEFAULT_C.slice();
@@ -256,6 +256,7 @@ export class JuliaRenderer extends FractalRenderer {
         // Transition logic after adjusting to default zoom and pan
         function startTransition() {
             const startC = self.c.slice(); // Copy current `c`
+            const startZoom = self.zoom;
             const startRotation = self.rotation;
             let startTime = null;
 
@@ -271,6 +272,7 @@ export class JuliaRenderer extends FractalRenderer {
                 self.c[0] = lerp(startC[0], preset.c[0], easedProgress);
                 self.c[1] = lerp(startC[1], preset.c[1], easedProgress);
                 self.rotation = lerp(startRotation, preset.rotation, progress);
+                self.zoom = lerp(startZoom, preset.zoom, progress);
 
                 // Redraw with updated values
                 self.draw();
@@ -289,7 +291,7 @@ export class JuliaRenderer extends FractalRenderer {
         }
 
         // Adjust to default if needed, then start preset transition
-        if (this.zoom < this.DEFAULT_ZOOM || this.pan[0] !== this.DEFAULT_PAN[0] || this.pan[1] !== this.DEFAULT_PAN[1]) {
+        if (this.zoom !== this.DEFAULT_ZOOM || this.pan[0] !== this.DEFAULT_PAN[0] || this.pan[1] !== this.DEFAULT_PAN[1]) {
             adjustToDefault(startTransition);
         } else {
             startTransition();
