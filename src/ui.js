@@ -1,7 +1,6 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
-import {JuliaRenderer} from "./juliaRenderer";
 
 let canvas;
 let fractalApp;
@@ -42,10 +41,8 @@ let lastUpdateTime = 0;
 function switchFractalMode(mode) {
     clearURLParams();
 
-    const url = new URL(window.location.href);
-    url.searchParams.set('mode', mode);
-
-    window.history.replaceState(null, '', url.toString());
+    const path = mode === MODE_JULIA ? '#julia' : '';
+    window.location.hash = path; // Update URL hash
     window.location.reload();
 }
 
@@ -146,6 +143,7 @@ function startJuliaDemo() {
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
     }
 
+    fractalApp.reset();
     animate();
 }
 
@@ -439,7 +437,7 @@ export function initUI(fractalRenderer) {
     initInfoText();
     initFractalSwitchRadios();
 
-    if (fractalRenderer instanceof JuliaRenderer) {
+    if (fractalMode === MODE_JULIA) {
         initSliders();
         juliaRadio.checked = true;
     }
@@ -611,7 +609,7 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
         const panY = fractalApp.pan[1] ?? 0;
         //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
 
-        text += `cx=${panX.toFixed(6)}, cy=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
+        text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
         infoText.textContent = text;
     } else if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;

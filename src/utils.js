@@ -3,45 +3,94 @@
  * @author Radim Brnka
  */
 
+import {fractalMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+
 let urlParamsSet = false;
 
 /**
  * Updates browser URL with params of the selected point and zoom in the fractal
- * @param cx
- * @param cy
+ * @param mode {(MODE_JULIA|MODE_MANDELBROT)} number
+ * @param px panX
+ * @param py panY
+ * @param cx Julia only
+ * @param cy Julia only
  * @param zoom
+ * @param rotation
  */
-export function updateURLParams(cx, cy, zoom) {
-    const params = new URLSearchParams(window.location.search);
+export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
+    const params = {
+        mode: mode != null ? mode.toFixed(0) : null,
+        px: px != null ? px.toFixed(6) : null,
+        py: py != null ? py.toFixed(6) : null,
+        zoom: zoom != null ? zoom.toFixed(6) : null,
+        r: rotation != null ? rotation.toFixed(6) : null,
+        cx: cx != null ? cx.toFixed(6) : null,
+        cy: cy != null ? cy.toFixed(6) : null,
+    };
 
-    params.set('cx', cx.toFixed(6));
-    params.set('cy', cy.toFixed(6));
-    params.set('zoom', zoom.toFixed(6));
+    console.log("URL: " + JSON.stringify(params));
 
-    window.history.pushState({}, '', '?' + params.toString());
+    if ([px, py, zoom, rotation].some(el => el == null)) {
+        console.error("Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
+        return;
+    }
+
+    if (fractalMode === MODE_JULIA && [cx, cy].some(el => el == null)) {
+        console.error("Julia params incomplete, can't generate URL!");
+        return;
+    }
+
+    // Convert to Base64 for compact representation
+    const encodedParams = btoa(JSON.stringify(params));
+
+    // Update the URL with a single "params" field
+    const hashPath = fractalMode === MODE_JULIA ? '#julia' : '#';
+    window.history.pushState({}, '', `${hashPath}?view=${encodedParams}`);
 
     urlParamsSet = true;
 }
 
 /**
- * Fethches and recalculates coords and zoom from URL and sets them to the fractalApp instance
- * @TODO this should be handled differently, without need for referencing the fractalApp
- * @param fractalApp
+ * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
  */
-export function loadFractalParamsFromURL(fractalApp) {
-    const params = new URLSearchParams(window.location.search);
-    const cx = params.get('cx');
-    const cy = params.get('cy');
-    const zoom = params.get('zoom');
+export function loadFractalParamsFromURL() {
+    const url = new URL(window.location.href);
+    const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
-    if (cx !== null && cy !== null && zoom !== null) {
+    if (!hash) {
+        console.log("No hash found in the URL");
+        return {mode: MODE_MANDELBROT}; // Return default if no hash is present
+    }
+
+    // Split the hash to separate the mode and parameters
+    const [mode, queryString] = hash.slice(1).split('?'); // Remove the '#' and split by '?'
+
+    if (!queryString) {
+        return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
+    }
+
+    // Parse the query parameters
+    const hashParams = new URLSearchParams(queryString);
+    const encodedParams = hashParams.get('view');
+
+    try {
+        // Decode the Base64 string and parse the JSON object
+        const decodedParams = JSON.parse(atob(encodedParams));
+
         urlParamsSet = true;
-
-        fractalApp.pan[0] = parseFloat(cx);
-        fractalApp.pan[1] = parseFloat(cy);
-        fractalApp.zoom = parseFloat(zoom);
-
-        console.log("Loaded fractal params from URL:", cx, cy, zoom);
+        // Return the parsed parameters
+        return {
+            mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT,
+            px: parseFloat(decodedParams.px) || null,
+            py: parseFloat(decodedParams.py) || null,
+            zoom: parseFloat(decodedParams.zoom) || null,
+            r: parseFloat(decodedParams.r) || null,
+            cx: parseFloat(decodedParams.cx) || null,
+            cy: parseFloat(decodedParams.cy) || null,
+        };
+    } catch (e) {
+        console.error('Error decoding URL parameters:', e);
+        return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
     }
 }
 
@@ -50,13 +99,10 @@ export function loadFractalParamsFromURL(fractalApp) {
  */
 export function clearURLParams() {
     if (!urlParamsSet) return;
-
-    const newURL = window.location.protocol + "//" +
-        window.location.host +
-        window.location.pathname +
-        window.location.hash;
-    window.history.replaceState({}, document.title, newURL);
-
+    console.log("Clearing URL params");
+    const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
+    const newUrl = `${window.location.origin}/${hash}`;
+    window.history.pushState({}, '', newUrl);
     urlParamsSet = false;
 }
 
