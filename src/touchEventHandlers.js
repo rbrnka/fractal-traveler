@@ -139,7 +139,7 @@ function handleTouchMove(event) {
             lastTouchY = touch.clientY;
 
             fractalApp.draw();
-            updateInfo(null, false);
+            updateInfo();
         }
         return;
     }
@@ -198,7 +198,7 @@ function handleTouchMove(event) {
 
         // Redraw fractal with the updated transformations
         fractalApp.draw();
-        updateInfo(null, false);
+        updateInfo();
     }
 }
 

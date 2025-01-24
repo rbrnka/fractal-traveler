@@ -174,9 +174,8 @@ export class JuliaRenderer extends FractalRenderer {
         this.rotation = this.DEFAULT_ROTATION; // Reset rotation
         this.c = this.DEFAULT_C.slice();
         this.extraIterations = 0;
-        this.resizeCanvas();
-        updateInfo(null, false);
-        updateJuliaSliders();
+        //this.resizeCanvas();
+        updateInfo();
 
         this.draw();
     }
@@ -193,10 +192,10 @@ export class JuliaRenderer extends FractalRenderer {
 
             self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
             self.draw();
+            updateInfo(true);
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepZoom);
-                updateInfo(null, true);
             } else if (callback) {
                 callback(); // Execute callback after zoom finishes
             }
@@ -241,10 +240,10 @@ export class JuliaRenderer extends FractalRenderer {
 
                 // Redraw during the adjustment
                 self.draw();
+                updateInfo(true);
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
-                    updateInfo(null, true);
                 } else if (callback) {
                     callback(); // Proceed to preset transition
                 }
@@ -279,10 +278,10 @@ export class JuliaRenderer extends FractalRenderer {
 
                 // Redraw with updated values
                 self.draw();
+                updateInfo(true);
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepTransition);
-                    updateInfo(null, true);
                 } else {
                     // Ensure exact final values
                     self.c = preset.c.slice();

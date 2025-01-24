@@ -166,8 +166,8 @@ export class FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = 0; // Reset rotation
         this.extraIterations = 0;
-        this.resizeCanvas();
-        updateInfo(null, false);
+        //this.resizeCanvas();
+        updateInfo();
 
         this.draw();
     }
@@ -227,7 +227,7 @@ export class FractalRenderer {
     onAnimationFinished() {
         //this.currentAnimationFrame = null;
         setTimeout(() => {
-            updateInfo(null, false);
+            updateInfo();
         }, 200);
     }
 
@@ -251,7 +251,7 @@ export class FractalRenderer {
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepZoom);
-                updateInfo(null, true);
+                updateInfo(true);
             } else {
                 self.onAnimationFinished();
             }
@@ -283,7 +283,7 @@ export class FractalRenderer {
             self.pan[0] = startStatePan[0] + (targetPan[0] - startStatePan[0]) * progress;
             self.pan[1] = startStatePan[1] + (targetPan[1] - startStatePan[1]) * progress;
             self.draw();
-            updateInfo(null, true);
+            updateInfo(true);
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepPan);
@@ -322,7 +322,7 @@ export class FractalRenderer {
             self.pan[1] = lerp(startPan[1], targetPan[1], progress);
             self.zoom = lerp(startZoom, targetZoom, progress);
             self.draw();
-            updateInfo(null, true);
+            updateInfo(true);
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(step);
@@ -341,6 +341,7 @@ export class FractalRenderer {
      * @param targetZoom
      * @param targetRotation
      * @param duration
+     * @param callback
      */
     animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500, callback = null) {
         this.stopCurrentAnimation();
@@ -364,6 +365,7 @@ export class FractalRenderer {
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(step);
+                updateInfo(true);
             } else {
                 self.onAnimationFinished();
                 if (callback) callback();
@@ -401,7 +403,7 @@ export class FractalRenderer {
 
             self.zoom = startZoom * Math.pow(self.DEFAULT_ZOOM / startZoom, progress);
             self.draw();
-            updateInfo(null, true);
+            updateInfo(true);
 
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
@@ -452,7 +454,7 @@ export class FractalRenderer {
                 self.rotation = startRotation + (zoomOutRotation - startRotation) * progress;
 
                 self.draw();
-                updateInfo(null, true, true);
+                updateInfo(true);
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
@@ -476,7 +478,7 @@ export class FractalRenderer {
                 self.pan[1] = startPan[1] + (preset.pan[1] - startPan[1]) * progress;
 
                 self.draw();
-                updateInfo(null, true, true);
+                updateInfo(true);
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepPan);
@@ -502,7 +504,7 @@ export class FractalRenderer {
                 self.rotation = zoomOutRotation + (zoomInRotation - zoomOutRotation) * progress;
 
                 self.draw();
-                updateInfo(null, true, true);
+                updateInfo(true);
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);

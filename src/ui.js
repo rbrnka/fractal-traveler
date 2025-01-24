@@ -7,7 +7,7 @@ let fractalApp;
 // 0..Mandelbrot, 1..Julia
 export const MODE_MANDELBROT = 0;
 export const MODE_JULIA = 1;
-export let fractalMode = MODE_MANDELBROT;
+let fractalMode = MODE_MANDELBROT;
 let mandelbrotRadio;
 let juliaRadio;
 
@@ -31,12 +31,16 @@ let realSlider;
 let imagSlider;
 let realSliderValue;
 let imagSliderValue;
+let lastSliderUpdate = 0; // Tracks the last time the sliders were updated
+const sliderUpdateThrottleLimit = 10; // Throttle limit in milliseconds
+
+let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
+const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 
 
 let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
 let currentJuliaAnimationFrame = null;
 export let activeTimers = []; // Store all active demo timers
-let lastUpdateTime = 0;
 
 function switchFractalMode(mode) {
     clearURLParams();
@@ -46,12 +50,18 @@ function switchFractalMode(mode) {
     window.location.reload();
 }
 
+export function isJuliaMode() {
+    return fractalMode === MODE_JULIA;
+}
+
 export function enableJuliaMode() {
     fractalMode = MODE_JULIA;
 }
 
 function stopDemo() {
     if (!demoActive) return;
+
+    console.log("Stopping demo");
 
     demoActive = false;
     currentMandelbrotDemoPresetIndex = 0;
@@ -73,10 +83,15 @@ function stopDemo() {
     activeTimers.forEach(timer => clearTimeout(timer));
     activeTimers = []; // Reset the timer list
     // enableControls();
+    enableJuliaSliders();
+
+    setTimeout(() => {
+        updateInfo();
+    }, 150);
 }
 
-
 function startDemo() {
+    console.log('Starting demo for mode ' + fractalMode);
     demoActive = true;
     demoButton.innerText = "Stop Demo";
     // Register control events
@@ -128,6 +143,8 @@ function startMandelbrotDemo() {
 
 function startJuliaDemo() {
     if (demoActive) return;
+
+    disableJuliaSliders();
     startDemo();
 
     let time = 0;
@@ -141,9 +158,18 @@ function startJuliaDemo() {
         time += 0.005;
 
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
+        updateInfo(true);
+        updateJuliaSliders();
     }
 
     fractalApp.animatePanZoomRotate(fractalApp.DEFAULT_PAN.slice(), fractalApp.DEFAULT_ZOOM, fractalApp.DEFAULT_ROTATION, 500, animate);
+}
+
+function resetSliders() {
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+    realSliderValue.innerText = realSlider.value;
+    imagSliderValue.innerText = imagSlider.value;
 }
 
 function initHeaderEvents() {
@@ -208,6 +234,10 @@ function initControlButtonEvents() {
         fractalApp.colorPalette = fractalApp.DEFAULT_PALETTE;
         updateColorSchema(); // Update app colors
         fractalApp.reset();
+        if (isJuliaMode()) {
+            resetSliders();
+        }
+        updateInfo();
     });
 
     randomizeColorsButton.addEventListener('click', () => {
@@ -227,8 +257,6 @@ function initControlButtonEvents() {
     });
 
     demoButton.addEventListener('click', () => {
-        console.log('Starting demo for mode ' + fractalMode);
-
         if (demoActive) {
             stopDemo();
             return;
@@ -339,6 +367,7 @@ function initPresetButtonEvents() {
         if (btn != null) {
             btn.addEventListener('click', () => {
                 stopDemo();
+                clearURLParams();
                 fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
             });
         }
@@ -356,22 +385,23 @@ function initFractalSwitchRadios() {
 }
 
 function initSliders() {
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
-    realSliderValue.innerText = realSlider.value;
-    imagSliderValue.innerText = imagSlider.value;
+    resetSliders();
 
     // Update `c` dynamically when sliders are moved
     realSlider.addEventListener('input', () => {
         fractalApp.c[0] = parseFloat(realSlider.value);
         realSliderValue.innerText = fractalApp.c[0].toFixed(2);
         fractalApp.draw();
+        updateInfo();
+        clearURLParams();
     });
 
     imagSlider.addEventListener('input', () => {
         fractalApp.c[1] = parseFloat(imagSlider.value);
         imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
         fractalApp.draw();
+        updateInfo();
+        clearURLParams();
     });
 
     let sliderContainer = document.getElementById('sliders');
@@ -497,129 +527,64 @@ function updateColorSchema() {
 }
 
 /**
- * Disables button sets
- * @param presets
- * @param reset
- * @param randomize
- * @param demo
+ *
  */
-export function disableControls(presets = true, reset = true, randomize = true, demo = true) {
-    if (presets) {
-        presetButtons.forEach(button => {
-            button.disabled = true;
-        });
-    }
-
-    if (reset) {
-        const button = document.getElementById("reset");
-        button.disabled = true;
-    }
-
-    if (randomize) {
-        const button = document.getElementById("randomize");
-        button.disabled = true;
-    }
-
-    if (demo) {
-        const button = document.getElementById("demo");
-        button.disabled = true;
-    }
+export function disableJuliaSliders() {
+    imagSlider.disabled = true;
+    realSlider.disabled = true;
 }
 
 /**
- * Enables button sets
- * @param presets
- * @param reset
- * @param randomize
- * @param demo
+ *
  */
-export function enableControls(presets = true, reset = true, randomize = true, demo = true) {
-    if (presets) {
-        presetButtons.forEach(button => {
-            button.disabled = false;
-        });
-    }
-
-    if (reset) {
-        const button = document.getElementById("reset");
-        button.disabled = false;
-    }
-
-    if (randomize) {
-        const button = document.getElementById("randomize");
-        button.disabled = false;
-    }
-
-    if (demo) {
-        const button = document.getElementById("demo");
-        button.disabled = false;
-    }
+export function enableJuliaSliders() {
+    imagSlider.disabled = false;
+    realSlider.disabled = false;
 }
 
 /**
  * Updates the bottom info bar
- * @param inputEvent mouse event
  * @param traveling {boolean} if inside animation
- * @param demo {boolean} if demo mode
  */
-export function updateInfo(inputEvent, traveling = false, demo = false) {
+export function updateInfo(traveling = false) {
     const now = performance.now();
-    if (now - lastUpdateTime < 100) {
-        return; // Skip updates if called too soon
+    const timeSinceLastUpdate = now - lastInfoUpdate;
+
+    if (timeSinceLastUpdate < infoUpdateThrottleLimit) {
+        return; // Skip update if called too soon
     }
-    lastUpdateTime = now;
+
+    // Update the last update time
+    lastInfoUpdate = now;
 
     if (!canvas || !fractalApp) {
         return;
     }
 
-    let text = '';
+    let text ='';
 
-    if (traveling) {
-        if (demo) {
-            text = 'DEMO: Traveling to: ';
-        }
-    } else if (inputEvent && typeof inputEvent.clientX === 'number') {
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = inputEvent.clientX - rect.left;
-        const mouseY = inputEvent.clientY - rect.top;
+    const panX = fractalApp.pan[0] ?? 0;
+    const panY = fractalApp.pan[1] ?? 0;
 
-        // Apply rotation to screen coordinates before converting to fractal coordinates
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+    text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}`;
 
-        const offsetX = mouseX - centerX;
-        const offsetY = mouseY - centerY;
-
-        const cosR = Math.cos(-fractalApp.rotation); // Negative for counterclockwise rotation
-        const sinR = Math.sin(-fractalApp.rotation);
-
-        const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
-        const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
-
-        const [fx, fy] = fractalApp.screenToFractal(rotatedX, rotatedY);
-
-        text = isTouchDevice() ? '' : `x=${fx.toFixed(6)}, y=${fy.toFixed(6)} | `;
-    }
-
-    const currentZoom = fractalApp.zoom ?? 0;
-    if (fractalMode === MODE_MANDELBROT) {
-        const panX = fractalApp.pan[0] ?? 0;
-        const panY = fractalApp.pan[1] ?? 0;
-        //const currentRotation = (fractalApp.rotation ?? 0).toFixed(2);
-
-        text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-        infoText.textContent = text;
-    } else if (fractalMode === MODE_JULIA) {
+    if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `cx=${cx.toFixed(6)}, cy=${cy.toFixed(6)}, zoom=${currentZoom.toFixed(6)}`;
-        infoText.textContent = text;
-
-    } else {
-        console.warn('Unknown mode');
+        text += `, cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}`;
     }
+
+    const currentZoom = fractalApp.zoom ?? 0;
+    const currentRotation = Math.abs(fractalApp.rotation * 180 / Math.PI % 360);
+    text += `, r=${currentRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
+
+    infoText.textContent = text + (demoActive ? ` [DEMO]` : ``);
+
+    //if (text.length > 64) {
+    //     infoText.style.height = 'auto';
+    //     infoText.style.height = `${infoText.scrollHeight}px`;
+    //}
 }
 
 /**
@@ -627,10 +592,14 @@ export function updateInfo(inputEvent, traveling = false, demo = false) {
  */
 export function updateJuliaSliders() {
     const now = performance.now();
-    if (now - lastUpdateTime < 100) {
-        return; // Skip updates if called too soon
+    const timeSinceLastUpdate = now - lastSliderUpdate;
+
+    if (timeSinceLastUpdate < sliderUpdateThrottleLimit) {
+        return; // Skip update if called too soon
     }
-    lastUpdateTime = now;
+
+    // Update the last update time
+    lastSliderUpdate = now;
     realSliderValue.innerText = fractalApp.c[0].toFixed(2);
     imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));

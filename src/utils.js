@@ -3,7 +3,7 @@
  * @author Radim Brnka
  */
 
-import {fractalMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {fractalMode, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
 
 let urlParamsSet = false;
 
@@ -35,7 +35,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
         return;
     }
 
-    if (fractalMode === MODE_JULIA && [cx, cy].some(el => el == null)) {
+    if (isJuliaMode() && [cx, cy].some(el => el == null)) {
         console.error("Julia params incomplete, can't generate URL!");
         return;
     }
@@ -44,7 +44,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
     const encodedParams = btoa(JSON.stringify(params));
 
     // Update the URL with a single "params" field
-    const hashPath = fractalMode === MODE_JULIA ? '#julia' : '#';
+    const hashPath = isJuliaMode() ? '#julia' : '#';
     window.history.pushState({}, '', `${hashPath}?view=${encodedParams}`);
 
     urlParamsSet = true;
@@ -90,6 +90,7 @@ export function loadFractalParamsFromURL() {
         };
     } catch (e) {
         console.error('Error decoding URL parameters:', e);
+        urlParamsSet = true;
         return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
     }
 }

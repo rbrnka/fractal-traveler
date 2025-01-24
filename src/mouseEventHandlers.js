@@ -96,9 +96,8 @@ function handleWheel(event, fractalApp) {
     fractalApp.pan[0] += (fxOld - fxNew);
     fractalApp.pan[1] += (fyOld - fyNew);
 
-    updateInfo(event);
+    updateInfo();
     fractalApp.draw();
-    //}
 }
 
 function handleMouseDown(event) {
@@ -124,7 +123,6 @@ function handleMouseMove(event) {
         }
 
         if (isDragging) {
-
             canvas.style.cursor = 'move';
             if (clickTimeout) {
                 clearTimeout(clickTimeout);
@@ -148,6 +146,7 @@ function handleMouseMove(event) {
             lastY = event.clientY;
 
             fractalApp.draw();
+            updateInfo();
         }
     }
 
@@ -159,9 +158,8 @@ function handleMouseMove(event) {
         startX = event.clientX; // Update starting point for smooth rotation
         canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
         fractalApp.draw(); // Redraw with the updated rotation
+        updateInfo();
     }
-
-    updateInfo(event);
 }
 
 function handleMouseUp(event) {
@@ -171,12 +169,11 @@ function handleMouseUp(event) {
     event.preventDefault(); // Stop browser-specific behaviors
     event.stopPropagation(); // Prevent bubbling to parent elements
 
-
     if (event.button === 2) { // Right mouse button released
         isRightDragging = false;
         // TODO clear url params if rotated
-
         // Reset cursor to default after rotation ends
+        clearURLParams();
     }
 
     if (event.button === 1) { // Middle-click toggles the lines
@@ -196,50 +193,54 @@ function handleMouseUp(event) {
     }
 
     // We check if the click was not a drag.
-    if (!isDragging && event.button === 0) { // Left-click
-        const rect = canvas.getBoundingClientRect();
-        const mouseX = event.clientX - rect.left;
-        const mouseY = event.clientY - rect.top;
-        const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+    if (event.button === 0) { // Left-click
+        if (!isDragging) {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
-        // If there is already a pending click, then we have a double-click.
-        if (clickTimeout !== null) {
-            clearTimeout(clickTimeout);
-            clickTimeout = null;
+            // If there is already a pending click, then we have a double-click.
+            if (clickTimeout !== null) {
+                clearTimeout(clickTimeout);
+                clickTimeout = null;
 
-            // --- Double-click action ---
-            console.log("Double Left Click: Centering on", fx, fy);
+                // --- Double-click action ---
+                console.log("Double Left Click: Centering on", fx, fy);
 
-            const targetZoom = fractalApp.zoom * 0.05;
-            if (targetZoom > fractalApp.MAX_ZOOM) {
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
+                const targetZoom = fractalApp.zoom * 0.05;
+                if (targetZoom > fractalApp.MAX_ZOOM) {
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
+                }
+            } else {
+                // Set a timeout for the single-click action.
+                clickTimeout = setTimeout(() => {
+                    console.log("Single Click: Centering on", fx, fy);
+
+                    // Centering action:
+                    fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
+                        if (fractalApp instanceof JuliaRenderer) {
+                            updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                        } else {
+                            updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                        }
+                    });
+
+                    // Copy URL to clipboard:
+                    navigator.clipboard.writeText(window.location.href).then(function () {
+                        console.log('Copied URL to clipboard!');
+                    }, function (err) {
+                        console.error('Not copied to clipboard!', err);
+                    });
+
+                    updateInfo(event);
+                    clickTimeout = null; // Clear the timeout.
+                }, doubleClickThreshold);
             }
         } else {
-            // Set a timeout for the single-click action.
-            clickTimeout = setTimeout(() => {
-                console.log("Single Click: Centering on", fx, fy);
-
-                // Centering action:
-                fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
-                    if (fractalApp instanceof JuliaRenderer) {
-                        updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
-                    } else {
-                        updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
-                    }
-                });
-
-                // Copy URL to clipboard:
-                navigator.clipboard.writeText(window.location.href).then(function () {
-                    console.log('Copied URL to clipboard!');
-                }, function (err) {
-                    console.error('Not copied to clipboard!', err);
-                });
-
-                updateInfo(event);
-                clickTimeout = null; // Clear the timeout.
-            }, doubleClickThreshold);
+            clearURLParams();
+            isDragging = false;
         }
-        isDragging = false;
     }
 
     if (event.button === 2) { // Right mouse button released
@@ -266,7 +267,7 @@ function handleMouseUp(event) {
             console.log("Double Right Click: Zooming out");
             const targetZoom = fractalApp.zoom / 0.05;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000,  clearURLParams);
+                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
             }
         } else {
             // Set timeout for single click
