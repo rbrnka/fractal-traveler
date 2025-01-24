@@ -31,7 +31,11 @@
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
     <h1 class="colorable">Synaptory Fractal Traveler<sup>1.5</sup></h1>
-    <p>An interactive, GPU-powered app that lets you pan, zoom, and explore Mandelbrot and Julia sets (<a
+    <p>Mandelbrot and Julia fractals explorer. Developed for the <a
+            target="_blank"
+            title="Unmasking Chaos: Synaptory blog"
+            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
+        Chaos</a> article &copy; Radim Brnka 2025 (<a
             target="_blank"
             title="Github Repository"
             href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
@@ -46,13 +50,13 @@
             <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
         <div id="sliders">
             <div class="slider-container">
-                <label for="realSlider">x:</label>
-                <input type="range" id="realSlider" class="slider" min="-1" max="1" step="0.01" value="0.355">
+                <label for="realSlider">cx:</label>
+                <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
                 <span class="sliderValue" id="realSliderValue">0</span>
             </div>
             <div class="slider-container">
-                <label for="imagSlider">yi:</label>
-                <input type="range" id="imagSlider" class="slider" min="-1" max="1" step="0.01" value="0.355">
+                <label for="imagSlider">cy:</label>
+                <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
                 <span class="sliderValue" id="imagSliderValue">0</span>
             </div>
         </div>
@@ -69,11 +73,6 @@
             <!--        <button id="preset10"10</button>-->
         </p>
     </div>
-    <p class="small">Developed for the <a
-            target="_blank"
-            title="Unmasking Chaos: Synaptory blog"
-            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
-        Chaos</a> article &copy; Radim Brnka 2025</p>
     <p class="small"><span>Controls:</span> Left Drag: Pan &#124; Right Drag: Rotate &#124; Wheel:
         Zoom,
         <br/>Left Click: Center &amp; URL link &#124; Double click:
