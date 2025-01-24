@@ -6,7 +6,7 @@ import './css/style.css';
 import {JuliaRenderer} from "./juliaRenderer";
 import {enableJuliaMode, initUI, MODE_JULIA, MODE_MANDELBROT} from "./ui";
 import {MandelbrotRenderer} from "./mandelbrotRenderer";
-import {loadFractalParamsFromURL} from "./utils";
+import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
         console.log('Basic test: DOMContentLoaded triggered');
@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let fractalApp;
 
         const params = loadFractalParamsFromURL();
+        let initializedFromParams = false;
 
         // http://localhost:8080/#julia?view=eyJtb2RlIjoiMS4wIiwicHgiOiItMC4yOTA0MjIiLCJweSI6Ii0wLjE3NzQ5MyIsInpvb20iOiIwLjAwMDAyNiIsInIiOiItMC42NDkyMDQiLCJjeCI6IjAuMzU1MDAwIiwiY3kiOiIwLjUyMDAwMCJ9
         // http://localhost:8080/#?view=eyJtb2RlIjpudWxsLCJweCI6Ii0wLjcyMTYwNCIsInB5IjoiMC4yNTkxMjYiLCJ6b29tIjoiMC4wMDAwMzgiLCJyIjoiNC42NzAwMDAiLCJjeCI6bnVsbCwiY3kiOm51bGx9
@@ -49,17 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (params.mode === MODE_MANDELBROT && params.px && params.py && params.zoom && params.r != null) {
             fractalApp.animatePanZoomRotate(preset.pan, preset.zoom, preset.rotation, 500);
+            initializedFromParams = true;
             console.log("Traveling to URL params! M");
         } else if (params.mode === MODE_JULIA && params.px && params.py && params.zoom && params.r && params.cx && params.cy) {
             fractalApp.animateTravelToPreset(preset, 500);
+            initializedFromParams = true;
             console.log("Traveling to URL params! J");
         } else {
-            //clearURLParams();
-            fractalApp.reset();
+            clearURLParams();
             console.log("Initialized default fractal (no or invalid URL params) ");
         }
 
         initUI(fractalApp);
+
+        if (!initializedFromParams) {
+            fractalApp.reset();
+        }
+
         console.log('Init complete.');
     },
     {
