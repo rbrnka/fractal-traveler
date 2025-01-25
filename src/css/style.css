@@ -13,6 +13,7 @@ html, body {
     position: relative;
     z-index: 9999;
     background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
     width: 390px;
     margin: 0 auto;
     border-bottom-left-radius: 15px;
@@ -243,8 +244,9 @@ a:hover {
 #infoLabel {
     width: 370px;
     height: 14px;
-    padding: 5px 10px;
+    padding: 5px 10px 7px 10px;
     background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(6px);
     z-index: 9999;
     border: 1px solid #222;
     cursor: text;
@@ -267,6 +269,8 @@ a:hover {
     background: transparent;
     border: none;
     text-align: center;
+    resize: none; /* Prevent user resizing */
+    overflow: hidden; /* Hide scrollbars */
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE 10+ */
@@ -276,6 +280,10 @@ a:hover {
 
 #infoText:focus {
     outline: none !important;
+}
+
+#infoText.demoActive {
+    color: #47E789;
 }
 
 /* Center guideline styles with dashed borders */

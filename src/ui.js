@@ -561,30 +561,33 @@ export function updateInfo(traveling = false) {
         return;
     }
 
-    let text ='';
+    let text = (demoActive ? ` [DEMO] ` : ``);
 
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
 
-    text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}`;
+    if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)){
+        text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}, `;
+    }
 
     if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `, cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}`;
+        text += `cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}, `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = Math.abs(fractalApp.rotation * 180 / Math.PI % 360);
-    text += `, r=${currentRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
+    text += `r=${currentRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
 
-    infoText.textContent = text + (demoActive ? ` [DEMO]` : ``);
+    if (demoActive) {
+        infoText.classList.add('demoActive');
+    } else {
+        infoText.classList.remove('demoActive');
+    }
 
-    //if (text.length > 64) {
-    //     infoText.style.height = 'auto';
-    //     infoText.style.height = `${infoText.scrollHeight}px`;
-    //}
+    infoText.textContent = text;
 }
 
 /**
