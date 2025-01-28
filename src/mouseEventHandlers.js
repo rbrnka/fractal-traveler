@@ -154,7 +154,10 @@ function handleMouseMove(event) {
         event.preventDefault(); // Prevent default actions during dragging
         const deltaX = event.clientX - startX;
         const rotationSpeed = 0.01; // Adjust rotation speed as needed
+
         fractalApp.rotation += deltaX * rotationSpeed;
+        fractalApp.rotation = (fractalApp.rotation % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+
         startX = event.clientX; // Update starting point for smooth rotation
         canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
         fractalApp.draw(); // Redraw with the updated rotation
