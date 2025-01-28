@@ -40,6 +40,7 @@ const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 
 let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
 let currentJuliaAnimationFrame = null;
+let rotationAnimationFrame = null; // For hotkey rotation only
 export let activeTimers = []; // Store all active demo timers
 
 function switchFractalMode(mode) {
@@ -165,6 +166,13 @@ function startJuliaDemo() {
     fractalApp.animatePanZoomRotate(fractalApp.DEFAULT_PAN.slice(), fractalApp.DEFAULT_ZOOM, fractalApp.DEFAULT_ROTATION, 500, animate);
 }
 
+function stopRotationAnimation() {
+    if (rotationAnimationFrame !== null) {
+        cancelAnimationFrame(rotationAnimationFrame);
+        rotationAnimationFrame = null;
+    }
+}
+
 function resetSliders() {
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
@@ -219,25 +227,7 @@ function initHeaderEvents() {
 function initControlButtonEvents() {
 
     resetButton.addEventListener('click', () => {
-        // Clear the URL parameters.
-        clearURLParams();
-        stopDemo();
-
-        const verticalLine = document.getElementById('verticalLine');
-        const horizontalLine = document.getElementById('horizontalLine');
-
-        if (verticalLine.style.display === 'block' && horizontalLine.style.display === 'block') {
-            verticalLine.style.display = 'none';
-            horizontalLine.style.display = 'none';
-        }
-
-        fractalApp.colorPalette = fractalApp.DEFAULT_PALETTE;
-        updateColorSchema(); // Update app colors
-        fractalApp.reset();
-        if (isJuliaMode()) {
-            resetSliders();
-        }
-        updateInfo();
+        switchFractalMode(fractalMode);
     });
 
     randomizeColorsButton.addEventListener('click', () => {
@@ -261,6 +251,8 @@ function initControlButtonEvents() {
             stopDemo();
             return;
         }
+
+        stopRotationAnimation();
 
         if (fractalMode === MODE_MANDELBROT) {
             const presets = fractalApp.PRESETS;
@@ -367,6 +359,7 @@ function initPresetButtonEvents() {
         if (btn != null) {
             btn.addEventListener('click', () => {
                 stopDemo();
+                stopRotationAnimation();
                 clearURLParams();
                 fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
             });
@@ -413,7 +406,6 @@ function initWindowEvents() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             fractalApp.resizeCanvas(); // Adjust canvas dimensions
-            fractalApp.draw();  // Redraw after resize
         }, 200); // Adjust delay as needed
     });
 }
@@ -427,6 +419,47 @@ function initInfoText() {
         }, function (err) {
             console.error('Not copied to clipboard! ' + err.toString());
         });
+    });
+}
+
+function initHotkeys() {
+    document.addEventListener("keydown", (event) => {
+
+        switch (event.code) {
+            case 'KeyR':
+                if (rotationAnimationFrame !== null) {
+                    stopRotationAnimation();
+                } else {
+                    (function animate() {
+                        fractalApp.rotation = (fractalApp.rotation - 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
+                        fractalApp.draw();
+                        rotationAnimationFrame = requestAnimationFrame(animate);
+                    })();
+                    updateInfo(true);
+                }
+                break;
+
+            case 'KeyE':
+                if (rotationAnimationFrame !== null) {
+                    stopRotationAnimation();
+                } else {
+                    (function animate() {
+                        fractalApp.rotation = (fractalApp.rotation + 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
+                        fractalApp.draw();
+                        rotationAnimationFrame = requestAnimationFrame(animate);
+                    })();
+                    updateInfo(true);
+                }
+                break;
+
+            case 'KeyT':
+                console.log("Resizing canvas (forced)");
+                fractalApp.resizeCanvas();
+                break;
+
+            default:
+                break;
+        }
     });
 }
 
@@ -465,6 +498,7 @@ export function initUI(fractalRenderer) {
     initPresetButtonEvents();
     initInfoText();
     initFractalSwitchRadios();
+    initHotkeys();
 
     if (fractalMode === MODE_JULIA) {
         initSliders();
@@ -566,7 +600,7 @@ export function updateInfo(traveling = false) {
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
 
-    if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)){
+    if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)) {
         text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}, `;
     }
 
@@ -578,8 +612,9 @@ export function updateInfo(traveling = false) {
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
-    const currentRotation = Math.abs(fractalApp.rotation * 180 / Math.PI % 360);
-    text += `r=${currentRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
+    const currentRotation = (fractalApp.rotation * 180 / Math.PI) % 360;
+    const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
+    text += `r=${normalizedRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
 
     if (demoActive) {
         infoText.classList.add('demoActive');
