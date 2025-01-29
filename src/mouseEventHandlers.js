@@ -8,6 +8,7 @@ import {JuliaRenderer} from "./juliaRenderer";
 
 const doubleClickThreshold = 300;
 const dragThreshold = 5;
+const ZOOM_STEP = 0.05; // Common for both zoom-in and out
 
 let mouseHandlersRegistered = false; // Global variable to track registration
 // Store references to event handler functions
@@ -211,7 +212,7 @@ function handleMouseUp(event) {
                 // --- Double-click action ---
                 console.log("Double Left Click: Centering on", fx, fy);
 
-                const targetZoom = fractalApp.zoom * 0.05;
+                const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
                     fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
                 }
@@ -268,7 +269,7 @@ function handleMouseUp(event) {
             clickTimeout = null;
 
             console.log("Double Right Click: Zooming out");
-            const targetZoom = fractalApp.zoom / 0.05;
+            const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
                 fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
             }
