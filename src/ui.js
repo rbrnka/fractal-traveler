@@ -2,6 +2,8 @@ import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 
+export const DEBUG_MODE = true;
+
 let canvas;
 let fractalApp;
 // 0..Mandelbrot, 1..Julia
@@ -180,6 +182,85 @@ function resetSliders() {
     imagSliderValue.innerText = imagSlider.value;
 }
 
+function takeScreenshot() {
+// Ensure the fractal is fully rendered before taking a screenshot
+    fractalApp.draw();
+
+    // Create an offscreen canvas for watermarking
+    const offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+    const ctx = offscreenCanvas.getContext('2d');
+
+    if (!ctx) {
+        console.error('Unable to get 2D context for the canvas.');
+        return;
+    }
+
+    // Copy the fractal canvas content to the offscreen canvas
+    ctx.drawImage(canvas, 0, 0);
+
+    // Define the watermark text and style
+    let watermarkText = `Created by Synaptory Fractal Traveler, `;
+    watermarkText += (
+        fractalMode === MODE_MANDELBROT
+            ? `(Mandelbrot: p=[${fractalApp.pan[0].toFixed(6)}, ${fractalApp.pan[1].toFixed(6)}i], Z=${fractalApp.zoom.toFixed(6)})`
+            : `(Julia: c=[${fractalApp.c[0]}, ${fractalApp.c[1]}i], p=[${fractalApp.pan[0].toFixed(6)}, ${fractalApp.pan[1].toFixed(6)}], Z=${fractalApp.zoom.toFixed(6)})`
+    );
+    const fontSize = 12;
+    const padding = 6;
+    const borderWidth = 1;
+
+    ctx.font = `${fontSize}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    // Measure the text width and calculate the rectangle size
+    const textWidth = ctx.measureText(watermarkText).width;
+    const rectWidth = textWidth + padding * 2 + borderWidth * 2;
+    const rectHeight = fontSize + padding * 2 + borderWidth * 2;
+
+    // Position the rectangle in the bottom-right corner
+    const x = offscreenCanvas.width - rectWidth - padding;
+    const y = offscreenCanvas.height - rectHeight - padding;
+
+    // Draw the semi-transparent black background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+    ctx.fillRect(x, y, rectWidth, rectHeight);
+
+    // Draw the border
+    const palette = fractalApp.colorPalette;
+    ctx.strokeStyle = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.3)`;
+    ctx.lineWidth = borderWidth;
+    ctx.strokeRect(x, y, rectWidth, rectHeight);
+
+    // Draw the text centered within the rectangle
+    const brightnessFactor = 1.9;
+    const adjustChannel = (value) => Math.min(255, Math.floor(value * 255 * brightnessFactor));
+    const textX = x + rectWidth / 2;
+    const textY = y + rectHeight / 2;
+    ctx.fillStyle = `rgb(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])}, 0.8)`;
+    ctx.fillText(watermarkText, textX, textY);
+
+    // Create a temporary link for downloading the image
+    const link = document.createElement('a');
+
+    // Generate a filename based on the current timestamp
+    const generateFilename = () => {
+        const now = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        return `fractal-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.png`;
+    };
+
+    // Set the download attributes
+    link.setAttribute('download', generateFilename());
+    link.setAttribute(
+        'href',
+        offscreenCanvas.toDataURL("image/jpeg", 0.95) // 0.8 = 80% quality for compression
+    );
+    link.click();
+}
+
 function initHeaderEvents() {
 
     header.addEventListener('pointerenter', () => {
@@ -269,82 +350,7 @@ function initControlButtonEvents() {
     });
 
     screenshotButton.addEventListener('click', () => {
-        // Ensure the fractal is fully rendered before taking a screenshot
-        fractalApp.draw();
-
-        // Create an offscreen canvas for watermarking
-        const offscreenCanvas = document.createElement('canvas');
-        offscreenCanvas.width = canvas.width;
-        offscreenCanvas.height = canvas.height;
-        const ctx = offscreenCanvas.getContext('2d');
-
-        if (!ctx) {
-            console.error('Unable to get 2D context for the canvas.');
-            return;
-        }
-
-        // Copy the fractal canvas content to the offscreen canvas
-        ctx.drawImage(canvas, 0, 0);
-
-        // Define the watermark text and style
-        let watermarkText = `Created by Synaptory Fractal Traveler, `;
-        watermarkText += (
-            fractalMode === MODE_MANDELBROT
-                ? `(Mandelbrot: z=[${fractalApp.pan[0].toFixed(6)}, ${fractalApp.pan[1].toFixed(6)}i], Z=${fractalApp.zoom.toFixed(6)})`
-                : `(Julia: c=[${fractalApp.c[0]}, =${fractalApp.c[1]}i], x=${fractalApp.pan[0].toFixed(6)}, y=${fractalApp.pan[1].toFixed(6)}, Z=${fractalApp.zoom.toFixed(6)})`
-        );
-        const fontSize = 12;
-        const padding = 6;
-        const borderWidth = 1;
-
-        ctx.font = `${fontSize}px sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        // Measure the text width and calculate the rectangle size
-        const textWidth = ctx.measureText(watermarkText).width;
-        const rectWidth = textWidth + padding * 2 + borderWidth * 2;
-        const rectHeight = fontSize + padding * 2 + borderWidth * 2;
-
-        // Position the rectangle in the bottom-right corner
-        const x = offscreenCanvas.width - rectWidth - padding;
-        const y = offscreenCanvas.height - rectHeight - padding;
-
-        // Draw the semi-transparent black background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(x, y, rectWidth, rectHeight);
-
-        // Draw the border
-        const palette = fractalApp.colorPalette;
-        ctx.strokeStyle = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.3)`;
-        ctx.lineWidth = borderWidth;
-        ctx.strokeRect(x, y, rectWidth, rectHeight);
-
-        // Draw the text centered within the rectangle
-        const brightnessFactor = 1.9;
-        const adjustChannel = (value) => Math.min(255, Math.floor(value * 255 * brightnessFactor));
-        const textX = x + rectWidth / 2;
-        const textY = y + rectHeight / 2;
-        ctx.fillStyle = `rgb(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])}, 0.8)`;
-        ctx.fillText(watermarkText, textX, textY);
-
-        // Create a temporary link for downloading the image
-        const link = document.createElement('a');
-
-        // Generate a filename based on the current timestamp
-        const generateFilename = () => {
-            const now = new Date();
-            const pad = (n) => String(n).padStart(2, '0');
-            return `fractal-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.png`;
-        };
-
-        // Set the download attributes
-        link.setAttribute('download', generateFilename());
-        link.setAttribute(
-            'href',
-            offscreenCanvas.toDataURL("image/png", 1.0).replace("image/png", "image/octet-stream")
-        );
-        link.click();
+        takeScreenshot();
     });
 
 }
