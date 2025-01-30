@@ -26,6 +26,26 @@ export class MandelbrotRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
+        const coloring1 = `float color = i / 100.0;
+                    vec3 fractalColor = vec3(
+                        sin(color * 1.571),
+                        sin(color * 6.283),
+                        sin(color * 3.142)
+                    );
+                    fractalColor *= u_colorPalette;
+                    gl_FragColor = vec4(fractalColor, 1.0);
+                    `;
+        const coloring2 = `float color = i / 100.0;
+                vec3 fractalColor = vec3(
+                    sin(color * 3.1415),
+                    sin(color * 6.283),
+                    sin(color * 1.720)
+                ) * u_colorPalette;
+
+                gl_FragColor = vec4(fractalColor, 1.0);
+                `;
+
+
         const w = this.canvas.width;
         const h = this.canvas.height;
         return `
@@ -54,10 +74,10 @@ export class MandelbrotRenderer extends FractalRenderer {
                 // Scale and translate
                 vec2 c = rotated * u_zoom + u_pan;
     
-                // Fractal computation (e.g., Mandelbrot set)
+                // Fractal computation (Mandelbrot set)
                 vec2 z = vec2(0.0, 0.0);
                 float i;
-                for (float n = 0.0; n < 10000.0; n++) {
+                for (float n = 0.0; n < 2000.0; n++) {
                     if (n >= u_iterations || dot(z, z) > 4.0) {
                         i = n;
                         break;
@@ -65,17 +85,11 @@ export class MandelbrotRenderer extends FractalRenderer {
                     z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
                 }
             
+               // Color computation
                 if (i >= u_iterations) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    float color = i / 100.0;
-                    vec3 fractalColor = vec3(
-                        sin(color * 1.571),
-                        sin(color * 6.283),
-                        sin(color * 3.142)
-                    );
-                    fractalColor *= u_colorPalette;
-                    gl_FragColor = vec4(fractalColor, 1.0);
+                    ${coloring2}
                 }
             }
         `;
@@ -89,10 +103,8 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
 
-        // const baseIters = Math.floor(100 * Math.pow(2, -Math.log2(this.zoom)));
-        // const iters = Math.min(10000, baseIters + this.extraIterations);
-        const baseIters = Math.floor(1000 * Math.pow(2, -Math.log2(this.zoom)));
-        const iters = Math.min(50000, baseIters + this.extraIterations);
+        const baseIters = Math.floor(5000 * Math.pow(2, -Math.log2(this.zoom)));
+        const iters = Math.min(2000, baseIters + this.extraIterations);
 
         this.gl.uniform1f(this.iterLoc, iters);
         this.gl.uniform3fv(this.colorLoc, this.colorPalette);
