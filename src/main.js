@@ -5,13 +5,12 @@
 import './css/style.css';
 import {JuliaRenderer} from "./juliaRenderer";
 import {MandelbrotRenderer} from "./mandelbrotRenderer";
-import {enableJuliaMode, initUI, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {initUI, MODE_JULIA, MODE_MANDELBROT} from "./ui";
 import {clearURLParams, loadFractalParamsFromURL} from "./utils";
 
 document.addEventListener('DOMContentLoaded', () => {
         console.log('DOMContentLoaded triggered');
 
-        // Create the fractal application instance.
         const canvas = document.getElementById('fractalCanvas');
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
@@ -39,11 +38,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let fractalApp;
 
         switch (params.mode) {
+            /************
+             * JULIA SET
+             ************/
             case MODE_JULIA:
-                enableJuliaMode();
                 fractalApp = new JuliaRenderer(canvas);
-                fractalApp.init();
-                if (validMandelbrotPreset) {
+                if (validJuliaPreset) {
                     fractalApp.animateTravelToPreset(preset, 500);
                     console.log("Constructing Julia from URL params");
                 } else {
@@ -51,11 +51,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     onDefault();
                 }
                 break;
-
+            /****************
+             * MANDELBROT SET
+             ****************/
             case MODE_MANDELBROT:
                 fractalApp = new MandelbrotRenderer(canvas);
-                fractalApp.init();
-                if (validJuliaPreset) {
+                if (validMandelbrotPreset) {
                     fractalApp.animatePanZoomRotate(preset.pan, preset.zoom, preset.rotation, 500);
                     console.log("Constructing Mandelbrot from URL params");
                 } else {

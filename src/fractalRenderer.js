@@ -45,18 +45,9 @@ export class FractalRenderer {
                 gl_Position = a_position;
             }
         `;
-    }
 
-    // // Zoom getter and setter with clamping.
-    // set zoom(value) {
-    //     // Clamp the new value between MIN_ZOOM and MAX_ZOOM.
-    //     // If value is out of bounds, it will be set to the nearest allowed value.
-    //     this._zoom = Math.min(Math.max(value, this.MIN_ZOOM), this.MAX_ZOOM);
-    // }
-    //
-    // get zoom() {
-    //     return this._zoom;
-    // }
+        this.init();
+    }
 
     init() {
         // Initialize WebGL program and uniforms
@@ -70,7 +61,6 @@ export class FractalRenderer {
 
     resizeCanvas() {
         console.log("Resizing canvas");
-        // TODO https://webglfundamentals.org/webgl/lessons/webgl-resizing-the-canvas.html
 
         const dpr = Math.max(1, Math.min(3, 1 / this.zoom));
         this.canvas.width = Math.floor(window.innerWidth * dpr);
