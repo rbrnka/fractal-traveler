@@ -20,12 +20,15 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log("URL: " + JSON.stringify(params));
 
         // Do we have all the params needed for initial travel?
+        const validMandelbrotPreset = params.px != null && params.py != null && params.zoom != null && params.r != null;
+        const validJuliaPreset = validMandelbrotPreset && params.cx != null && params.cy != null;
         const preset = {
             pan: [params.px, params.py],
             zoom: params.zoom,
             c: [params.cx, params.cy],
             rotation: params.r
         };
+
         console.log("Preset: " + JSON.stringify(preset));
 
         const onDefault = () => {
@@ -40,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 enableJuliaMode();
                 fractalApp = new JuliaRenderer(canvas);
                 fractalApp.init();
-                if (params.px && params.py && params.zoom && params.r && params.cx && params.cy) {
+                if (validMandelbrotPreset) {
                     fractalApp.animateTravelToPreset(preset, 500);
                     console.log("Constructing Julia from URL params");
                 } else {
@@ -52,7 +55,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case MODE_MANDELBROT:
                 fractalApp = new MandelbrotRenderer(canvas);
                 fractalApp.init();
-                if (params.px && params.py && params.zoom && params.r) {
+                if (validJuliaPreset) {
                     fractalApp.animatePanZoomRotate(preset.pan, preset.zoom, preset.rotation, 500);
                     console.log("Constructing Mandelbrot from URL params");
                 } else {
