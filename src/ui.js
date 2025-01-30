@@ -1,6 +1,9 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
+import {JuliaRenderer} from "./juliaRenderer";
+
+export const DEBUG_MODE = false;
 
 let canvas;
 let fractalApp;
@@ -19,6 +22,7 @@ let resizeTimeout;
 
 let header;
 let handle;
+let infoLabel;
 let infoText;
 let resetButton;
 let randomizeColorsButton;
@@ -178,6 +182,22 @@ function resetSliders() {
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
     realSliderValue.innerText = realSlider.value;
     imagSliderValue.innerText = imagSlider.value;
+}
+
+function initDebugMode() {
+    console.warn('DEBUG MODE ENABLED');
+
+    infoLabel.style.height = '100px';
+
+    const debugInfo = document.getElementById('debugInfo');
+    debugInfo.style.display = 'block';
+
+    (function update() {
+        // debugInfo.innerText = `SCREEN: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio}), CANVAS: ${canvas.width}x${canvas.height}
+        // Center: ${fractalApp.screenToFractal(canvas.width / 2, canvas.height / 2)}`;
+        //
+        // requestAnimationFrame(update);
+    })();
 }
 
 function initHeaderEvents() {
@@ -476,21 +496,27 @@ export function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
 
+    // Element binding
+    realSlider = document.getElementById('realSlider');
+    realSliderValue = document.getElementById('realSliderValue');
+    imagSlider = document.getElementById('imagSlider');
+    imagSliderValue = document.getElementById('imagSliderValue');
+    mandelbrotRadio = document.getElementById('mandelbrotRadio');
+    juliaRadio = document.getElementById('juliaRadio');
     header = document.getElementById('headerContainer');
     handle = document.getElementById('handle'); // Header click icon
+    infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
     randomizeColorsButton = document.getElementById('randomize');
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
 
-    mandelbrotRadio = document.getElementById('mandelbrotRadio');
-    juliaRadio = document.getElementById('juliaRadio');
-
-    realSlider = document.getElementById('realSlider');
-    realSliderValue = document.getElementById('realSliderValue');
-    imagSlider = document.getElementById('imagSlider');
-    imagSliderValue = document.getElementById('imagSliderValue');
+    if (fractalRenderer instanceof JuliaRenderer) {
+        enableJuliaMode();
+        initSliders();
+        juliaRadio.checked = true;
+    }
 
     initWindowEvents();
     initHeaderEvents();
@@ -499,11 +525,6 @@ export function initUI(fractalRenderer) {
     initInfoText();
     initFractalSwitchRadios();
     initHotkeys();
-
-    if (fractalMode === MODE_JULIA) {
-        initSliders();
-        juliaRadio.checked = true;
-    }
 
     // Register control events
     if (isTouchDevice()) {
@@ -515,6 +536,10 @@ export function initUI(fractalRenderer) {
     }
 
     updateColorSchema();
+
+    if (DEBUG_MODE) {
+        initDebugMode();
+    }
 
     uiInitialized = true;
 }
@@ -536,7 +561,6 @@ function updateColorSchema() {
     }
 
     // Update infoText border and background color
-    const infoLabel = document.getElementById('infoLabel');
     if (infoLabel) {
         infoLabel.style.borderColor = borderColor;
     }

@@ -21,7 +21,6 @@ html, body {
     cursor: auto;
     height: 100%;
     overflow: hidden;
-    transition: height 0.2s ease; /* Smooth animation */
     border: 1px solid #222;
     border-top: none;
 }
@@ -284,6 +283,14 @@ a:hover {
 
 #infoText.demoActive {
     color: #47E789;
+}
+
+#debugInfo {
+    display: none;
+    border: 1px solid yellow;
+    font-size: 11px;
+    padding: 3px;
+    text-align: left;
 }
 
 /* Center guideline styles with dashed borders */
