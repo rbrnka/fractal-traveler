@@ -39,12 +39,11 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-
         return `
             precision mediump float;
             
+            // Use dynamic resolution.
+            uniform vec2 u_resolution;
             uniform vec2 u_pan;
             uniform float u_zoom;
             uniform float u_iterations;
@@ -53,11 +52,14 @@ export class JuliaRenderer extends FractalRenderer {
             uniform vec2 u_c; // Julia set constant
             
             void main() {
-                float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
-                vec2 st = gl_FragCoord.xy / vec2(${w.toFixed(1)}, ${h.toFixed(1)});
+                // Compute aspect ratio dynamically.
+                float aspect = u_resolution.x / u_resolution.y;
+                
+                // Normalize coordinates based on the current resolution.
+                vec2 st = gl_FragCoord.xy / u_resolution;
                 st -= 0.5; // Center the coordinates
                 st.x *= aspect; // Adjust aspect ratio
-    
+                
                 // Apply rotation
                 float cosR = cos(u_rotation);
                 float sinR = sin(u_rotation);
@@ -94,11 +96,25 @@ export class JuliaRenderer extends FractalRenderer {
                 }
             }
         `;
-
     }
 
     draw() {
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.gl.useProgram(this.program);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // Update the viewport.
+        this.gl.viewport(0, 0, w, h);
+
+        // Update the resolution uniform.
+        if (this.resolutionLoc === undefined) {
+            // Cache the resolution location if not already cached.
+            this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+        }
+        if (this.resolutionLoc) {
+            this.gl.uniform2f(this.resolutionLoc, w, h);
+        }
+
         this.updateUniforms();
 
         this.gl.uniform2fv(this.panLoc, this.pan);
