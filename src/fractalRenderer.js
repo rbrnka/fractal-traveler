@@ -31,6 +31,9 @@ export class FractalRenderer {
         this.pan = this.DEFAULT_PAN.slice(); // Copy
         this.rotation = this.DEFAULT_ROTATION;
 
+        this.fractalCenter = this.screenToFractal( this.canvas.width / 2,  this.canvas.height / 2);
+        console.log("Fractal centered to " + this.fractalCenter);
+
         this.currentAnimationFrame = null;
         this.extraIterations = 0;
         this.colorPalette = this.DEFAULT_PALETTE.slice();
@@ -66,37 +69,38 @@ export class FractalRenderer {
     resizeCanvas() {
         console.log("Resizing canvas");
 
-        const rect = this.canvas.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
+        // Use window dimensions to determine the new center.
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
 
-        // Capture fractal coordinates at the center BEFORE resizing.
-        const [oldCenterX, oldCenterY] = this.screenToFractal(centerX, centerY);
-
+        // Update the canvas drawing-buffer size to match the window.
         const dpr = window.devicePixelRatio || 1;
-        this.canvas.width = Math.floor(rect.width * dpr);
-        this.canvas.height = Math.floor(rect.height * dpr);
-        this.canvas.style.width = `${rect.width}px`;
-        this.canvas.style.height = `${rect.height}px`;
+        this.canvas.width = Math.floor(window.innerWidth * dpr);
+        this.canvas.height = Math.floor(window.innerHeight * dpr);
+        this.canvas.style.width = window.innerWidth + "px";
+        this.canvas.style.height = window.innerHeight + "px";
+        console.log("After resize: canvas.width =", this.canvas.width, "canvas.height =", this.canvas.height);
 
-        // Force reflow if necessary.
-        document.body.offsetHeight;
-
+        // Update the WebGL viewport and the resolution uniform.
         if (this.gl) {
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         }
-
-        // IMPORTANT: Use the drawing buffer dimensions for resolution uniform.
         if (this.resolutionLoc) {
             this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
         }
 
-        // Capture fractal coordinates at the center AFTER resizing.
-        const [newCenterX, newCenterY] = this.screenToFractal(centerX, centerY);
-
-        // Adjust pan to maintain the centered fractal point.
-        this.pan[0] += (oldCenterX - newCenterX);
-        this.pan[1] += (oldCenterY - newCenterY);
+        // Now reapply the stored fractal center, if available.
+        if (this.fractalCenter) {
+            console.log("Reapplying stored center:", this.fractalCenter);
+            this.pan[0] = this.fractalCenter[0];
+            this.pan[1] = this.fractalCenter[1];
+        } else {
+            console.warn("No stored centerCoord found; the fractal will recenter based on the computed center.");
+            // Optionally, you could compute the center and set it as pan.
+            const [fx, fy] = this.screenToFractal(centerX, centerY);
+            this.pan[0] = fx;
+            this.pan[1] = fy;
+        }
 
         this.draw();
     }
@@ -214,33 +218,25 @@ export class FractalRenderer {
         const normX = bufferX / w;         // range [0,1]
         const normY = bufferY / h;         // range [0,1]
 
-        /*
-            In the shader I do:
-            st = gl_FragCoord.xy / u_resolution; st -= 0.5;
-            st.x *= (u_resolution.x / u_resolution.y);
-            And gl_FragCoord.y is measured from the bottom.
-            So I flip Y by using (1 - normY)
-         */
+        // In the shader, you subtract 0.5 from the normalized coordinates and adjust the x by aspect ratio.
         let stX = normX - 0.5;
-        let stY = (1 - normY) - 0.5;
+        let stY = (1 - normY) - 0.5;  // Flip Y, since gl_FragCoord.y is measured from the bottom.
 
-        // Compute aspect ratio using drawing buffer dimensions.
+        // Compute aspect ratio using drawing-buffer dimensions.
         const aspect = w / h;
         stX *= aspect;
 
-        // Apply rotation correction.
+        // Apply rotation (if any).
         const cosR = Math.cos(this.rotation);
         const sinR = Math.sin(this.rotation);
         const rotatedX = cosR * stX - sinR * stY;
         const rotatedY = sinR * stX + cosR * stY;
 
-        // Map normalized coordinates to fractal coordinates.
+        // Map to fractal coordinates.
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
 
-        console.log(
-            `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), fractal (${fx}, ${fy})`
-        );
+        console.log(`screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), fractal (${fx}, ${fy})`);
 
         return [fx, fy];
     }

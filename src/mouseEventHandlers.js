@@ -198,6 +198,7 @@ function handleMouseUp(event) {
             const mouseX = event.clientX - rect.left;  // in CSS pixels
             const mouseY = event.clientY - rect.top;     // in CSS pixels
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+            fractalApp.fractalCenter = [fx, fy];
 
             // If there is already a pending click, then we have a double-click.
             if (clickTimeout !== null) {
@@ -205,7 +206,7 @@ function handleMouseUp(event) {
                 clickTimeout = null;
 
                 // --- Double-click action ---
-                console.log("Double Left Click: Centering on", fx, fy);
+                console.log(`Double Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
@@ -214,7 +215,7 @@ function handleMouseUp(event) {
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log("Single Click: Centering on", fx, fy);
+                    console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                     // Centering action:
                     fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {

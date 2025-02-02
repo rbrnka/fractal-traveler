@@ -89,13 +89,13 @@ export class MandelbrotRenderer extends FractalRenderer {
     }
 
     draw() {
-        // Ensure the program is in use.
         this.gl.useProgram(this.program);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+        this.gl.viewport(0, 0, w, h);
+        this.gl.uniform2f(this.resolutionLoc, w, h);
 
-        // Use the canvas's internal drawing buffer size as resolution.
-        this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
-
-        // Update other uniforms.
+        // Update other uniforms...
         this.gl.uniform2fv(this.panLoc, this.pan);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
@@ -105,7 +105,6 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.gl.uniform1f(this.iterLoc, iters);
         this.gl.uniform3fv(this.colorLoc, this.colorPalette);
 
-        // Clear and draw.
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
