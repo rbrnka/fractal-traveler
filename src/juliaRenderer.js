@@ -4,7 +4,7 @@
  * @extends FractalRenderer
  */
 
-import {updateInfo} from "./ui";
+import {updateInfo, updateJuliaSliders} from "./ui";
 import {FractalRenderer} from "./fractalRenderer";
 
 export class JuliaRenderer extends FractalRenderer {
@@ -43,7 +43,7 @@ export class JuliaRenderer extends FractalRenderer {
         const h = this.canvas.height;
 
         return `
-            precision highp float;
+            precision mediump float;
             
             uniform vec2 u_pan;
             uniform float u_zoom;
@@ -51,14 +51,6 @@ export class JuliaRenderer extends FractalRenderer {
             uniform vec3 u_colorPalette;
             uniform float u_rotation; // Rotation in radians
             uniform vec2 u_c; // Julia set constant
-            
-            // Color constants (customizable for more variation)
-            const vec3 C1 = vec3(1.0, 0.0, 0.0); // Red
-            const vec3 C2 = vec3(0.0, 1.0, 0.0); // Green
-            const vec3 C3 = vec3(0.0, 0.0, 1.0); // Blue
-            const vec3 C4 = vec3(1.0, 1.0, 0.0); // Yellow
-            const vec3 C5 = vec3(0.0, 1.0, 1.0); // Cyan
-            const vec3 C6 = vec3(1.0, 0.0, 1.0); // Magenta
             
             void main() {
                 float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
@@ -102,6 +94,7 @@ export class JuliaRenderer extends FractalRenderer {
                 }
             }
         `;
+
     }
 
     draw() {
@@ -239,6 +232,7 @@ export class JuliaRenderer extends FractalRenderer {
 
                 // Redraw with updated values
                 self.draw();
+                updateJuliaSliders();
                 updateInfo(true);
 
                 if (progress < 1) {

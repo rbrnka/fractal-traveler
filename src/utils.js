@@ -52,8 +52,9 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
 
 /**
  * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
+ * @return {{mode: number}|{mode: (number), r: (number|number), cx: (number|null), cy: (number|null), px: (number|null), py: (number|null), zoom: (number|null)}|{mode: (number)}}
  */
-export function loadFractalParamsFromURL() {
+ export function loadFractalParamsFromURL() {
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
@@ -140,7 +141,7 @@ export function isMobileDevice() {
  * @param h
  * @param s
  * @param b
- * @returns {number[]}
+ * @returns {number[]} rgb
  */
 export function hsbToRgb(h, s, b) {
     const i = Math.floor(h * 6);

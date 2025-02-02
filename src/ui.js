@@ -3,7 +3,7 @@ import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandl
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 import {JuliaRenderer} from "./juliaRenderer";
 
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = true;
 
 let canvas;
 let fractalApp;
@@ -45,7 +45,7 @@ const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
 let currentJuliaAnimationFrame = null;
 let rotationAnimationFrame = null; // For hotkey rotation only
-export let activeTimers = []; // Store all active demo timers
+let activeTimers = []; // Store all active demo timers
 
 function switchFractalMode(mode) {
     clearURLParams();
@@ -129,11 +129,9 @@ function startMandelbrotDemo() {
         console.log("Animating to preset:", currentPreset);
 
         // Animate to the current preset
-        //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
         fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
 
         // Schedule the next animation
-        // Schedule the next preset animation
         const timer = setTimeout(() => {
             activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
             currentMandelbrotDemoPresetIndex = (currentMandelbrotDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
@@ -191,13 +189,21 @@ function initDebugMode() {
 
     const debugInfo = document.getElementById('debugInfo');
     debugInfo.style.display = 'block';
+    const dpr = window.devicePixelRatio;
 
+    const {width, height} = canvas.getBoundingClientRect();
+    const displayWidth = Math.round(width * dpr);
+    const displayHeight = Math.round(height * dpr);
     (function update() {
-        // debugInfo.innerText = `SCREEN: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio}), CANVAS: ${canvas.width}x${canvas.height}
-        // Center: ${fractalApp.screenToFractal(canvas.width / 2, canvas.height / 2)}`;
-        //
-        // requestAnimationFrame(update);
+        debugInfo.innerText = `WINDOW: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio})
+        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width/canvas.height).toFixed(2)} 
+        BoundingRect: ${width}x${height}, display W/H: ${displayWidth}x${displayHeight}`;
+        requestAnimationFrame(update);
     })();
+
+    debugInfo.addEventListener('click', () => {
+        console.log(debugInfo.innerText);
+    });
 }
 
 function initHeaderEvents() {
@@ -454,8 +460,8 @@ function initHotkeys() {
                         fractalApp.rotation = (fractalApp.rotation - 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
                         fractalApp.draw();
                         rotationAnimationFrame = requestAnimationFrame(animate);
+                        updateInfo(true);
                     })();
-                    updateInfo(true);
                 }
                 break;
 
@@ -467,14 +473,18 @@ function initHotkeys() {
                         fractalApp.rotation = (fractalApp.rotation + 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
                         fractalApp.draw();
                         rotationAnimationFrame = requestAnimationFrame(animate);
+                        updateInfo(true);
                     })();
-                    updateInfo(true);
                 }
                 break;
 
             case 'KeyT':
                 console.log("Resizing canvas (forced)");
                 fractalApp.resizeCanvas();
+                break;
+
+            case 'KeyQ':
+                switchFractalMode(fractalMode);
                 break;
 
             default:

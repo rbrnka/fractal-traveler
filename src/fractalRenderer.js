@@ -9,7 +9,7 @@ export class FractalRenderer {
 
     constructor(canvas) {
         this.canvas = canvas;
-        this.gl = this.canvas.getContext('webgl', { antialias: true });
+        this.gl = this.canvas.getContext('webgl', {antialias: true});
 
         if (!this.gl) {
             alert('WebGL is not supported by your browser.');
@@ -46,6 +46,12 @@ export class FractalRenderer {
             }
         `;
 
+        this.canvas.addEventListener('webglcontextlost', (event) => {
+            event.preventDefault();
+            console.warn('WebGL context lost. Attempting to recover...');
+            this.init(); // Reinitialize WebGL context
+        });
+
         this.init();
     }
 
@@ -55,23 +61,48 @@ export class FractalRenderer {
 
         // Cache uniform locations
         this.updateUniforms();
-
-        this.resizeCanvas();
     }
 
     resizeCanvas() {
         console.log("Resizing canvas");
 
-        const dpr = Math.max(1, Math.min(3, 1 / this.zoom));
-        this.canvas.width = Math.floor(window.innerWidth * dpr);
-        this.canvas.height = Math.floor(window.innerHeight * dpr);
+        const rect = this.canvas.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
 
-        this.canvas.style.width = `${window.innerWidth}px`;
-        this.canvas.style.height = `${window.innerHeight}px`;
+        // Capture fractal coordinates at the center BEFORE resizing.
+        const [oldCenterX, oldCenterY] = this.screenToFractal(centerX, centerY);
+
+        const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = Math.floor(rect.width * dpr);
+        this.canvas.height = Math.floor(rect.height * dpr);
+        this.canvas.style.width = `${rect.width}px`;
+        this.canvas.style.height = `${rect.height}px`;
+
+        document.body.offsetHeight;
 
         if (this.gl) {
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         }
+
+        // Update the resolution uniform.
+        if (this.resolutionLoc) {
+            this.gl.uniform2f(this.resolutionLoc, rect.width, rect.height);
+        }
+
+        // Capture fractal coordinates at the center AFTER resizing.
+        const [newCenterX, newCenterY] = this.screenToFractal(centerX, centerY);
+
+        // Adjust pan to keep the center constant.
+        this.pan[0] -= (oldCenterX - newCenterX);
+        this.pan[1] -= (oldCenterY - newCenterY);
+
+        console.log(`BoundingRect: ${rect.width} x ${rect.height}`);
+        console.log(`StF center before resize: ${oldCenterX}, ${oldCenterY}`);
+        console.log(`StF center after resize: ${newCenterX}, ${newCenterY}`);
+        console.log(`Adjusted pan: ${this.pan[0]}, ${this.pan[1]}`);
+
+        this.draw();
     }
 
     /**
@@ -137,6 +168,7 @@ export class FractalRenderer {
         this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
         this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation'); // Add rotation
+        this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
     }
 
     /**
@@ -157,9 +189,9 @@ export class FractalRenderer {
         this.rotation = 0; // Reset rotation
         this.extraIterations = 0;
         //this.resizeCanvas();
-        updateInfo();
-
         this.draw();
+
+        updateInfo();
     }
 
     /**
@@ -169,23 +201,24 @@ export class FractalRenderer {
      * @returns {number[]}
      */
     screenToFractal(screenX, screenY) {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
+        // Use the displayed (CSS) dimensions of the canvas.
+        const rect = this.canvas.getBoundingClientRect();
+        const w = rect.width;
+        const h = rect.height;
         const aspect = w / h;
 
-        // Normalize screen coordinates to [-0.5, 0.5]
+        // Normalize coordinates into the range [-0.5, 0.5]
         let stX = screenX / w - 0.5;
         let stY = (h - screenY) / h - 0.5;
         stX *= aspect;
 
-        // Apply rotation correction
+        // Apply rotation correction.
         const cosR = Math.cos(this.rotation);
         const sinR = Math.sin(this.rotation);
-
         const rotatedX = cosR * stX - sinR * stY;
         const rotatedY = sinR * stX + cosR * stY;
 
-        // Map normalized coordinates to fractal coordinates
+        // Map normalized coordinates to fractal coordinates.
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
 
@@ -206,16 +239,9 @@ export class FractalRenderer {
     }
 
     /**
-     * Sets fractal rotation and rotates it immediately
-     * @param angleInDegrees
+     * Default callback after every animation
      */
-    setRotation(angleInDegrees) {
-        this.rotation = (angleInDegrees * Math.PI) / 180; // Convert degrees to radians
-        this.draw(); // Redraw with the new rotation
-    }
-
     onAnimationFinished() {
-        //this.currentAnimationFrame = null;
         setTimeout(() => {
             updateInfo();
         }, 200);
@@ -227,6 +253,8 @@ export class FractalRenderer {
      * @param duration in milliseconds
      */
     animateZoom(targetZoom, duration) {
+        this.stopCurrentAnimation();
+
         const startZoom = this.zoom;
         const self = this;
         let startTime = null;

@@ -26,90 +26,91 @@ export class MandelbrotRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        const coloring1 = `float color = i / 100.0;
-                    vec3 fractalColor = vec3(
-                        sin(color * 1.571),
-                        sin(color * 6.283),
-                        sin(color * 3.142)
-                    );
-                    fractalColor *= u_colorPalette;
-                    gl_FragColor = vec4(fractalColor, 1.0);
-                    `;
-        const coloring2 = `float color = i / 100.0;
-                vec3 fractalColor = vec3(
-                    sin(color * 3.1415),
-                    sin(color * 6.283),
-                    sin(color * 1.720)
-                ) * u_colorPalette;
+        const coloring2 = `
+        float color = i / 100.0;
+        vec3 fractalColor = vec3(
+            sin(color * 3.1415),
+            sin(color * 6.283),
+            sin(color * 1.720)
+        ) * u_colorPalette;
+        gl_FragColor = vec4(fractalColor, 1.0);
+    `;
 
-                gl_FragColor = vec4(fractalColor, 1.0);
-                `;
-
-
-        const w = this.canvas.width;
-        const h = this.canvas.height;
         return `
-            precision mediump float;
+        precision mediump float;
+        
+        // Use uniforms for dynamic values.
+        uniform vec2 u_resolution;
+        uniform vec2 u_pan;
+        uniform float u_zoom;
+        uniform float u_iterations;
+        uniform vec3 u_colorPalette;
+        uniform float u_rotation; // Rotation in radians
+        
+        void main() {
+            // Compute aspect ratio from the current resolution.
+            float aspect = u_resolution.x / u_resolution.y;
             
-            uniform vec2 u_pan;
-            uniform float u_zoom;
-            uniform float u_iterations;
-            uniform vec3 u_colorPalette;
-            uniform float u_rotation; // Rotation in radians
-            
-            void main() {
-                float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
-                vec2 st = gl_FragCoord.xy / vec2(${w.toFixed(1)}, ${h.toFixed(1)});
-                st -= 0.5; // Center
-                st.x *= aspect; // Adjust aspect ratio
+            // Normalize coordinates based on the current resolution.
+            vec2 st = gl_FragCoord.xy / u_resolution;
+            st -= 0.5;  // Center the coordinate system.
+            st.x *= aspect;  // Adjust for the aspect ratio.
     
-                // Apply rotation matrix
-                float cosR = cos(u_rotation);
-                float sinR = sin(u_rotation);
-                vec2 rotated = vec2(
-                    st.x * cosR - st.y * sinR,
-                    st.x * sinR + st.y * cosR
-                );
+            // Apply rotation.
+            float cosR = cos(u_rotation);
+            float sinR = sin(u_rotation);
+            vec2 rotated = vec2(
+                st.x * cosR - st.y * sinR,
+                st.x * sinR + st.y * cosR
+            );
     
-                // Scale and translate
-                vec2 c = rotated * u_zoom + u_pan;
+            // Scale and translate to fractal coordinates.
+            vec2 c = rotated * u_zoom + u_pan;
     
-                // Fractal computation (Mandelbrot set)
-                vec2 z = vec2(0.0, 0.0);
-                float i;
-                for (float n = 0.0; n < 2000.0; n++) {
-                    if (n >= u_iterations || dot(z, z) > 4.0) {
-                        i = n;
-                        break;
-                    }
-                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
+            // Mandelbrot computation.
+            vec2 z = vec2(0.0, 0.0);
+            float i;
+            for (float n = 0.0; n < 2000.0; n++) {
+                if (n >= u_iterations || dot(z, z) > 4.0) {
+                    i = n;
+                    break;
                 }
-            
-               // Color computation
-                if (i >= u_iterations) {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                } else {
-                    ${coloring2}
-                }
+                z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + c;
             }
-        `;
+    
+            // Color the pixel.
+            if (i >= u_iterations) {
+                gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+            } else {
+                ${coloring2}
+            }
+        }
+    `;
     }
 
-    draw() {
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        this.updateUniforms();
 
+    draw() {
+        // Ensure the program is in use.
+        this.gl.useProgram(this.program);
+
+        // Update resolution uniform using the CSS (displayed) size.
+        const rect = this.canvas.getBoundingClientRect();
+        this.gl.uniform2f(this.resolutionLoc, rect.width, rect.height);
+
+        // Update other uniforms.
         this.gl.uniform2fv(this.panLoc, this.pan);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
 
         const baseIters = Math.floor(5000 * Math.pow(2, -Math.log2(this.zoom)));
         const iters = Math.min(2000, baseIters + this.extraIterations);
-
         this.gl.uniform1f(this.iterLoc, iters);
         this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+
+        // Clear and draw.
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
+
 }

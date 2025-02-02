@@ -71,31 +71,28 @@ export function unregisterMouseEventHandlers() {
 
     mouseHandlersRegistered = false;
 }
-
 function handleWheel(event, fractalApp) {
     event.preventDefault();
     clearURLParams();
 
-    // 1) Get the mouse position in "canvas coordinates" (0..width, 0..height)
-    const rect = canvas.getBoundingClientRect();
+    // Get the CSS coordinate of the mouse relative to the canvas
+    const rect = fractalApp.canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    // 2) Convert that point to fractal coordinates BEFORE zooming
+    // Get fractal coordinates before zooming
     const [fxOld, fyOld] = fractalApp.screenToFractal(mouseX, mouseY);
 
-    // 3) Update the zoom
+    // Determine zoom factor based on wheel direction
     const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
-
-    //if (fractalApp.zoom * zoomFactor > 0.000017 && fractalApp.zoom * zoomFactor < 50) {
     fractalApp.zoom *= zoomFactor;
 
-    // 4) Convert that same screen point to fractal coords AFTER zooming
+    // Get fractal coordinates after zooming (using the same mouse position)
     const [fxNew, fyNew] = fractalApp.screenToFractal(mouseX, mouseY);
 
-    // 5) Adjust pan so that fxOld/fyOld remains the same fractal point under the mouse
-    fractalApp.pan[0] += (fxOld - fxNew);
-    fractalApp.pan[1] += (fyOld - fyNew);
+    // Adjust pan to keep the fractal point under the mouse cursor fixed
+    fractalApp.pan[0] -= fxNew - fxOld;
+    fractalApp.pan[1] -= fyNew - fyOld ;
 
     updateInfo();
     fractalApp.draw();
@@ -175,8 +172,6 @@ function handleMouseUp(event) {
 
     if (event.button === 2) { // Right mouse button released
         isRightDragging = false;
-        // TODO clear url params if rotated
-        // Reset cursor to default after rotation ends
         clearURLParams();
     }
 
