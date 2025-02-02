@@ -3,13 +3,13 @@
  * @author Radim Brnka
  */
 
-import {fractalMode, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
 
 let urlParamsSet = false;
 
 /**
  * Updates browser URL with params of the selected point and zoom in the fractal
- * @param mode {(MODE_JULIA|MODE_MANDELBROT)} number
+ * @param mode number {MODE_JULIA|MODE_MANDELBROT}
  * @param px panX
  * @param py panY
  * @param cx Julia only
@@ -19,11 +19,11 @@ let urlParamsSet = false;
  */
 export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
     const params = {
-        mode: mode != null ? mode.toFixed(0) : null,
+        mode: mode != null ? mode.toFixed(0) : MODE_MANDELBROT,
         px: px != null ? px.toFixed(6) : null,
         py: py != null ? py.toFixed(6) : null,
         zoom: zoom != null ? zoom.toFixed(6) : null,
-        r: rotation != null ? rotation.toFixed(6) : null,
+        r: rotation != null ? rotation.toFixed(6) : 0, // Rotation is not necessary to be defined
         cx: cx != null ? cx.toFixed(6) : null,
         cy: cy != null ? cy.toFixed(6) : null,
     };
@@ -52,8 +52,9 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
 
 /**
  * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
+ * @return {{mode: number}|{mode: (number), r: (number|number), cx: (number|null), cy: (number|null), px: (number|null), py: (number|null), zoom: (number|null)}|{mode: (number)}}
  */
-export function loadFractalParamsFromURL() {
+ export function loadFractalParamsFromURL() {
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
@@ -84,7 +85,7 @@ export function loadFractalParamsFromURL() {
             px: parseFloat(decodedParams.px) || null,
             py: parseFloat(decodedParams.py) || null,
             zoom: parseFloat(decodedParams.zoom) || null,
-            r: parseFloat(decodedParams.r) || null,
+            r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
             cx: parseFloat(decodedParams.cx) || null,
             cy: parseFloat(decodedParams.cy) || null,
         };
@@ -140,7 +141,7 @@ export function isMobileDevice() {
  * @param h
  * @param s
  * @param b
- * @returns {number[]}
+ * @returns {number[]} rgb
  */
 export function hsbToRgb(h, s, b) {
     const i = Math.floor(h * 6);

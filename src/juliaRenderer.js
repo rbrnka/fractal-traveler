@@ -39,12 +39,11 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-
         return `
             precision mediump float;
             
+            // Use dynamic resolution.
+            uniform vec2 u_resolution;
             uniform vec2 u_pan;
             uniform float u_zoom;
             uniform float u_iterations;
@@ -52,20 +51,15 @@ export class JuliaRenderer extends FractalRenderer {
             uniform float u_rotation; // Rotation in radians
             uniform vec2 u_c; // Julia set constant
             
-            // Color constants (customizable for more variation)
-            const vec3 C1 = vec3(1.0, 0.0, 0.0); // Red
-            const vec3 C2 = vec3(0.0, 1.0, 0.0); // Green
-            const vec3 C3 = vec3(0.0, 0.0, 1.0); // Blue
-            const vec3 C4 = vec3(1.0, 1.0, 0.0); // Yellow
-            const vec3 C5 = vec3(0.0, 1.0, 1.0); // Cyan
-            const vec3 C6 = vec3(1.0, 0.0, 1.0); // Magenta
-            
             void main() {
-                float aspect = float(${w.toFixed(1)}) / float(${h.toFixed(1)});
-                vec2 st = gl_FragCoord.xy / vec2(${w.toFixed(1)}, ${h.toFixed(1)});
+                // Compute aspect ratio dynamically.
+                float aspect = u_resolution.x / u_resolution.y;
+                
+                // Normalize coordinates based on the current resolution.
+                vec2 st = gl_FragCoord.xy / u_resolution;
                 st -= 0.5; // Center the coordinates
                 st.x *= aspect; // Adjust aspect ratio
-    
+                
                 // Apply rotation
                 float cosR = cos(u_rotation);
                 float sinR = sin(u_rotation);
@@ -79,7 +73,7 @@ export class JuliaRenderer extends FractalRenderer {
     
                 // Julia set calculation
                 float i;
-                for (float n = 0.0; n < 10000.0; n++) {
+                for (float n = 0.0; n < 1000.0; n++) {
                     if (n >= u_iterations || dot(z, z) > 4.0) {
                         i = n;
                         break;
@@ -102,47 +96,25 @@ export class JuliaRenderer extends FractalRenderer {
                 }
             }
         `;
-
-        /*
-         // Color logic
-                if (i >= u_iterations) {
-                    // Points inside the set
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                } else {
-                    // Normalize the escape value
-                    float value = i / u_iterations;
-
-                    // Apply a sine wave function for cyclic transitions
-                    float t = sin(value * 3.14159 * 6.0); // 6 cycles
-                    t = 0.5 + 0.5 * t; // Map to [0, 1]
-
-                    float smoothColor = i - log2(log2(dot(z, z))) + 4.0;
-                    smoothColor = fract(smoothColor * 0.01); // Normalize for smooth color transitions
-
-                    // Segment-based color transitions
-                    vec3 color;
-                    if (t < 0.2) {
-                        color = mix(C1, C2, t / 0.2); // Red to Green
-                    } else if (t < 0.4) {
-                        color = mix(C2, C3, (t - 0.2) / 0.2); // Green to Blue
-                    } else if (t < 0.6) {
-                        color = mix(C3, C4, (t - 0.4) / 0.2); // Blue to Yellow
-                    } else if (t < 0.8) {
-                        color = mix(C4, C5, (t - 0.6) / 0.2); // Yellow to Cyan
-                    } else {
-                        color = mix(C5, C6, (t - 0.8) / 0.2); // Cyan to Magenta
-                    }
-
-                    // Apply user-defined palette multiplier
-                    color *= smoothColor;
-
-                    // Final color
-                    gl_FragColor = vec4(color, 1.0);
-         */
     }
 
     draw() {
-        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        this.gl.useProgram(this.program);
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // Update the viewport.
+        this.gl.viewport(0, 0, w, h);
+
+        // Update the resolution uniform.
+        if (this.resolutionLoc === undefined) {
+            // Cache the resolution location if not already cached.
+            this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+        }
+        if (this.resolutionLoc) {
+            this.gl.uniform2f(this.resolutionLoc, w, h);
+        }
+
         this.updateUniforms();
 
         this.gl.uniform2fv(this.panLoc, this.pan);
@@ -150,8 +122,8 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.uniform1f(this.rotationLoc, this.rotation);
 
         // Dynamically calculate iterations
-        const baseIters = Math.floor(1000 * Math.pow(2, -Math.log2(this.zoom)));
-        const iters = Math.min(50000, baseIters + this.extraIterations);
+        const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
+        const iters = Math.min(1000, baseIters + this.extraIterations);
         this.gl.uniform1f(this.iterLoc, iters);
 
         this.gl.uniform3fv(this.colorLoc, this.colorPalette);
@@ -163,21 +135,19 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-
-        updateJuliaSliders();
     }
 
     reset() {
         this.stopCurrentAnimation();
+        this.colorPalette = this.DEFAULT_PALETTE.slice();
         this.pan = this.DEFAULT_PAN.slice();
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = this.DEFAULT_ROTATION; // Reset rotation
         this.c = this.DEFAULT_C.slice();
         this.extraIterations = 0;
-        //this.resizeCanvas();
-        updateInfo();
 
         this.draw();
+        updateInfo();
     }
 
     animateZoom(targetZoom, duration, callback) {
@@ -278,6 +248,7 @@ export class JuliaRenderer extends FractalRenderer {
 
                 // Redraw with updated values
                 self.draw();
+                updateJuliaSliders();
                 updateInfo(true);
 
                 if (progress < 1) {

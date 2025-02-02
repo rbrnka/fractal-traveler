@@ -8,6 +8,7 @@ import {JuliaRenderer} from "./juliaRenderer";
 
 const doubleClickThreshold = 300;
 const dragThreshold = 5;
+const ZOOM_STEP = 0.05; // Common for both zoom-in and out
 
 let mouseHandlersRegistered = false; // Global variable to track registration
 // Store references to event handler functions
@@ -70,31 +71,28 @@ export function unregisterMouseEventHandlers() {
 
     mouseHandlersRegistered = false;
 }
-
 function handleWheel(event, fractalApp) {
     event.preventDefault();
     clearURLParams();
 
-    // 1) Get the mouse position in "canvas coordinates" (0..width, 0..height)
-    const rect = canvas.getBoundingClientRect();
+    // Get the CSS coordinate of the mouse relative to the canvas
+    const rect = fractalApp.canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    // 2) Convert that point to fractal coordinates BEFORE zooming
+    // Get fractal coordinates before zooming
     const [fxOld, fyOld] = fractalApp.screenToFractal(mouseX, mouseY);
 
-    // 3) Update the zoom
+    // Determine zoom factor based on wheel direction
     const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
-
-    //if (fractalApp.zoom * zoomFactor > 0.000017 && fractalApp.zoom * zoomFactor < 50) {
     fractalApp.zoom *= zoomFactor;
 
-    // 4) Convert that same screen point to fractal coords AFTER zooming
+    // Get fractal coordinates after zooming (using the same mouse position)
     const [fxNew, fyNew] = fractalApp.screenToFractal(mouseX, mouseY);
 
-    // 5) Adjust pan so that fxOld/fyOld remains the same fractal point under the mouse
-    fractalApp.pan[0] += (fxOld - fxNew);
-    fractalApp.pan[1] += (fyOld - fyNew);
+    // Adjust pan to keep the fractal point under the mouse cursor fixed
+    fractalApp.pan[0] -= fxNew - fxOld;
+    fractalApp.pan[1] -= fyNew - fyOld ;
 
     updateInfo();
     fractalApp.draw();
@@ -174,8 +172,6 @@ function handleMouseUp(event) {
 
     if (event.button === 2) { // Right mouse button released
         isRightDragging = false;
-        // TODO clear url params if rotated
-        // Reset cursor to default after rotation ends
         clearURLParams();
     }
 
@@ -199,9 +195,10 @@ function handleMouseUp(event) {
     if (event.button === 0) { // Left-click
         if (!isDragging) {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+            const mouseX = event.clientX - rect.left;  // in CSS pixels
+            const mouseY = event.clientY - rect.top;     // in CSS pixels
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+            fractalApp.fractalCenter = [fx, fy];
 
             // If there is already a pending click, then we have a double-click.
             if (clickTimeout !== null) {
@@ -209,16 +206,16 @@ function handleMouseUp(event) {
                 clickTimeout = null;
 
                 // --- Double-click action ---
-                console.log("Double Left Click: Centering on", fx, fy);
+                console.log(`Double Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
-                const targetZoom = fractalApp.zoom * 0.05;
+                const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
                     fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
                 }
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log("Single Click: Centering on", fx, fy);
+                    console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                     // Centering action:
                     fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
@@ -268,7 +265,7 @@ function handleMouseUp(event) {
             clickTimeout = null;
 
             console.log("Double Right Click: Zooming out");
-            const targetZoom = fractalApp.zoom / 0.05;
+            const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
                 fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
             }

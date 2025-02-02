@@ -1,6 +1,6 @@
 {
   "name": "fractal-traveler",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Synaptory Fractal Traveler",
   "main": "src/main.js",
   "scripts": {

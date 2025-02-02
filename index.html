@@ -8,7 +8,7 @@
           content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
     <meta property="og:title" content="Synaptory: Fractal Traveler">
     <meta property="og:description"
-          content="Mandelbrot Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
+          content="Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
     <meta property="og:image" content="https://fractal.brnka.com/fractal.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 
@@ -30,12 +30,11 @@
 <body>
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
-    <h1 class="colorable">Synaptory Fractal Traveler<sup>1.5</sup></h1>
-    <p>Mandelbrot and Julia fractals explorer. Developed as part for the <a
+    <h1 class="colorable">~ Synaptory Fractal Traveler ~</h1>
+    <p>Mandelbrot and Julia fractal explorer. Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
-            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking
-        Chaos</a> article &copy; Radim Brnka 2025 (<a
+            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a> article &copy; Radim Brnka 2025 (<a
             target="_blank"
             title="Github Repository"
             href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
@@ -73,13 +72,13 @@
             <!--        <button id="preset10"10</button>-->
         </p>
     </div>
-    <p class="small"><span>Controls:</span> Left Drag: Pan &#124; Right Drag: Rotate &#124; Wheel:
-        Zoom,
-        <br/>Left Click: Center &amp; URL link &#124; Double click:
-        Zoom-in/out &amp; center &#124;<br/> Middle Click: guiding lines &#124; F11: Fullscreen</p>
+    <p class="small"><span>Controls:</span> Left Drag: Pan &middot; Right Drag: Rotate &middot; Wheel: Zoom<br/>
+        Left Click: Center &amp; URL link &middot; Double click: Zoom-in/out &amp; Center<br/>
+        Middle Click: Guiding lines &middot; F11: Fullscreen &#124; <span id="version">version 1.5.1</span> </p>
 </div>
 <div id="infoLabel">
     <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
+    <div id="debugInfo"></div>
 </div>
 <canvas id="fractalCanvas"></canvas>
 <div id="verticalLine" class="centerLine verticalLine"></div>

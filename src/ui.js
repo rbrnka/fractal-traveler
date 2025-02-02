@@ -1,6 +1,9 @@
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
+import {JuliaRenderer} from "./juliaRenderer";
+
+export const DEBUG_MODE = true;
 
 export const DEBUG_MODE = true;
 
@@ -21,6 +24,7 @@ let resizeTimeout;
 
 let header;
 let handle;
+let infoLabel;
 let infoText;
 let resetButton;
 let randomizeColorsButton;
@@ -43,7 +47,7 @@ const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 let currentMandelbrotDemoPresetIndex = 0; // Keep track of the current preset
 let currentJuliaAnimationFrame = null;
 let rotationAnimationFrame = null; // For hotkey rotation only
-export let activeTimers = []; // Store all active demo timers
+let activeTimers = []; // Store all active demo timers
 
 function switchFractalMode(mode) {
     clearURLParams();
@@ -127,11 +131,9 @@ function startMandelbrotDemo() {
         console.log("Animating to preset:", currentPreset);
 
         // Animate to the current preset
-        //fractalApp.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
         fractalApp.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
 
         // Schedule the next animation
-        // Schedule the next preset animation
         const timer = setTimeout(() => {
             activeTimers = activeTimers.filter(t => t !== timer); // Remove timer from active list
             currentMandelbrotDemoPresetIndex = (currentMandelbrotDemoPresetIndex + 1) % presets.length; // Loop back to the first preset
@@ -181,6 +183,29 @@ function resetSliders() {
     realSliderValue.innerText = realSlider.value;
     imagSliderValue.innerText = imagSlider.value;
 }
+
+function initDebugMode() {
+    console.warn('DEBUG MODE ENABLED');
+
+    infoLabel.style.height = '100px';
+
+    const debugInfo = document.getElementById('debugInfo');
+    debugInfo.style.display = 'block';
+    const dpr = window.devicePixelRatio;
+
+    const {width, height} = canvas.getBoundingClientRect();
+    const displayWidth = Math.round(width * dpr);
+    const displayHeight = Math.round(height * dpr);
+    (function update() {
+        debugInfo.innerText = `WINDOW: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio})
+        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width/canvas.height).toFixed(2)} 
+        BoundingRect: ${width}x${height}, display W/H: ${displayWidth}x${displayHeight}`;
+        requestAnimationFrame(update);
+    })();
+
+    debugInfo.addEventListener('click', () => {
+        console.log(debugInfo.innerText);
+    });
 
 function takeScreenshot() {
 // Ensure the fractal is fully rendered before taking a screenshot
@@ -440,8 +465,8 @@ function initHotkeys() {
                         fractalApp.rotation = (fractalApp.rotation - 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
                         fractalApp.draw();
                         rotationAnimationFrame = requestAnimationFrame(animate);
+                        updateInfo(true);
                     })();
-                    updateInfo(true);
                 }
                 break;
 
@@ -453,14 +478,18 @@ function initHotkeys() {
                         fractalApp.rotation = (fractalApp.rotation + 0.1 + 2 * Math.PI) % (2 * Math.PI); // Normalize rotation
                         fractalApp.draw();
                         rotationAnimationFrame = requestAnimationFrame(animate);
+                        updateInfo(true);
                     })();
-                    updateInfo(true);
                 }
                 break;
 
             case 'KeyT':
                 console.log("Resizing canvas (forced)");
                 fractalApp.resizeCanvas();
+                break;
+
+            case 'KeyQ':
+                switchFractalMode(fractalMode);
                 break;
 
             default:
@@ -482,21 +511,27 @@ export function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
 
+    // Element binding
+    realSlider = document.getElementById('realSlider');
+    realSliderValue = document.getElementById('realSliderValue');
+    imagSlider = document.getElementById('imagSlider');
+    imagSliderValue = document.getElementById('imagSliderValue');
+    mandelbrotRadio = document.getElementById('mandelbrotRadio');
+    juliaRadio = document.getElementById('juliaRadio');
     header = document.getElementById('headerContainer');
     handle = document.getElementById('handle'); // Header click icon
+    infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
     randomizeColorsButton = document.getElementById('randomize');
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
 
-    mandelbrotRadio = document.getElementById('mandelbrotRadio');
-    juliaRadio = document.getElementById('juliaRadio');
-
-    realSlider = document.getElementById('realSlider');
-    realSliderValue = document.getElementById('realSliderValue');
-    imagSlider = document.getElementById('imagSlider');
-    imagSliderValue = document.getElementById('imagSliderValue');
+    if (fractalRenderer instanceof JuliaRenderer) {
+        enableJuliaMode();
+        initSliders();
+        juliaRadio.checked = true;
+    }
 
     initWindowEvents();
     initHeaderEvents();
@@ -505,11 +540,6 @@ export function initUI(fractalRenderer) {
     initInfoText();
     initFractalSwitchRadios();
     initHotkeys();
-
-    if (fractalMode === MODE_JULIA) {
-        initSliders();
-        juliaRadio.checked = true;
-    }
 
     // Register control events
     if (isTouchDevice()) {
@@ -521,6 +551,10 @@ export function initUI(fractalRenderer) {
     }
 
     updateColorSchema();
+
+    if (DEBUG_MODE) {
+        initDebugMode();
+    }
 
     uiInitialized = true;
 }
@@ -542,7 +576,6 @@ function updateColorSchema() {
     }
 
     // Update infoText border and background color
-    const infoLabel = document.getElementById('infoLabel');
     if (infoLabel) {
         infoLabel.style.borderColor = borderColor;
     }
