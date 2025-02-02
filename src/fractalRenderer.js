@@ -79,28 +79,24 @@ export class FractalRenderer {
         this.canvas.style.width = `${rect.width}px`;
         this.canvas.style.height = `${rect.height}px`;
 
+        // Force reflow if necessary.
         document.body.offsetHeight;
 
         if (this.gl) {
             this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
         }
 
-        // Update the resolution uniform.
+        // IMPORTANT: Use the drawing buffer dimensions for resolution uniform.
         if (this.resolutionLoc) {
-            this.gl.uniform2f(this.resolutionLoc, rect.width, rect.height);
+            this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
         }
 
         // Capture fractal coordinates at the center AFTER resizing.
         const [newCenterX, newCenterY] = this.screenToFractal(centerX, centerY);
 
-        // Adjust pan to keep the center constant.
-        this.pan[0] -= (oldCenterX - newCenterX);
-        this.pan[1] -= (oldCenterY - newCenterY);
-
-        console.log(`BoundingRect: ${rect.width} x ${rect.height}`);
-        console.log(`StF center before resize: ${oldCenterX}, ${oldCenterY}`);
-        console.log(`StF center after resize: ${newCenterX}, ${newCenterY}`);
-        console.log(`Adjusted pan: ${this.pan[0]}, ${this.pan[1]}`);
+        // Adjust pan to maintain the centered fractal point.
+        this.pan[0] += (oldCenterX - newCenterX);
+        this.pan[1] += (oldCenterY - newCenterY);
 
         this.draw();
     }
@@ -201,15 +197,35 @@ export class FractalRenderer {
      * @returns {number[]}
      */
     screenToFractal(screenX, screenY) {
-        // Use the displayed (CSS) dimensions of the canvas.
-        const rect = this.canvas.getBoundingClientRect();
-        const w = rect.width;
-        const h = rect.height;
-        const aspect = w / h;
+        // Get the device pixel ratio.
+        const dpr = window.devicePixelRatio || 1;
 
-        // Normalize coordinates into the range [-0.5, 0.5]
-        let stX = screenX / w - 0.5;
-        let stY = (h - screenY) / h - 0.5;
+        // Get the drawing buffer size (which should be rect.width * dpr, etc.)
+        const w = this.canvas.width;   // drawing buffer width
+        const h = this.canvas.height;  // drawing buffer height
+
+        // Convert the mouse coordinates (which are in CSS pixels) to drawing buffer pixels.
+        const bufferX = screenX * dpr;
+        const bufferY = screenY * dpr;
+
+        // Now compute normalized coordinates:
+        // Since gl_FragCoord (and thus our resolution uniform) uses the drawing buffer size,
+        // we must use the drawing buffer size here.
+        const normX = bufferX / w;         // range [0,1]
+        const normY = bufferY / h;         // range [0,1]
+
+        /*
+            In the shader I do:
+            st = gl_FragCoord.xy / u_resolution; st -= 0.5;
+            st.x *= (u_resolution.x / u_resolution.y);
+            And gl_FragCoord.y is measured from the bottom.
+            So I flip Y by using (1 - normY)
+         */
+        let stX = normX - 0.5;
+        let stY = (1 - normY) - 0.5;
+
+        // Compute aspect ratio using drawing buffer dimensions.
+        const aspect = w / h;
         stX *= aspect;
 
         // Apply rotation correction.
@@ -221,6 +237,10 @@ export class FractalRenderer {
         // Map normalized coordinates to fractal coordinates.
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
+
+        console.log(
+            `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), fractal (${fx}, ${fy})`
+        );
 
         return [fx, fy];
     }

@@ -195,8 +195,8 @@ function handleMouseUp(event) {
     if (event.button === 0) { // Left-click
         if (!isDragging) {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+            const mouseX = event.clientX - rect.left;  // in CSS pixels
+            const mouseY = event.clientY - rect.top;     // in CSS pixels
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
             // If there is already a pending click, then we have a double-click.

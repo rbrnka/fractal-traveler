@@ -88,14 +88,12 @@ export class MandelbrotRenderer extends FractalRenderer {
     `;
     }
 
-
     draw() {
         // Ensure the program is in use.
         this.gl.useProgram(this.program);
 
-        // Update resolution uniform using the CSS (displayed) size.
-        const rect = this.canvas.getBoundingClientRect();
-        this.gl.uniform2f(this.resolutionLoc, rect.width, rect.height);
+        // Use the canvas's internal drawing buffer size as resolution.
+        this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
 
         // Update other uniforms.
         this.gl.uniform2fv(this.panLoc, this.pan);
@@ -112,5 +110,4 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
-
 }
