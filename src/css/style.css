@@ -106,11 +106,7 @@ h1 {
     margin: 0;
     color: #30AF5E;
     z-index: 1000;
-    font-size: 16px;
-}
-
-h1 sup {
-    color: #fff;
+    font-size: 14px;
 }
 
 p {
@@ -240,6 +236,11 @@ a:hover {
     text-decoration: underline;
 }
 
+#version {
+    color: #ccc;
+    font-size: 11px;
+}
+
 #infoLabel {
     width: 370px;
     height: 14px;
@@ -282,7 +283,7 @@ a:hover {
 }
 
 #infoText.demoActive {
-    color: #47E789;
+    color: #5FB036;
 }
 
 #debugInfo {
