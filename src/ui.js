@@ -3,7 +3,7 @@ import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandl
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 import {JuliaRenderer} from "./juliaRenderer";
 
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = true;
 
 let canvas;
 let fractalApp;
@@ -204,21 +204,6 @@ function initDebugMode() {
     debugInfo.addEventListener('click', () => {
         console.log(debugInfo.innerText);
     });
-
-    toggleDebugLines();
-}
-
-export function toggleDebugLines() {
-    const verticalLine = document.getElementById('verticalLine');
-    const horizontalLine = document.getElementById('horizontalLine');
-
-    if (verticalLine.style.display === 'block' && horizontalLine.style.display === 'block') {
-        verticalLine.style.display = 'none';
-        horizontalLine.style.display = 'none';
-    } else {
-        verticalLine.style.display = 'block';
-        horizontalLine.style.display = 'block';
-    }
 }
 
 function takeScreenshot() {
@@ -295,7 +280,7 @@ function takeScreenshot() {
     link.setAttribute('download', generateFilename());
     link.setAttribute(
         'href',
-        offscreenCanvas.toDataURL("image/jpeg", 0.95)
+        offscreenCanvas.toDataURL("image/jpeg", 0.95) // 0.8 = 80% quality for compression
     );
     link.click();
 }
@@ -504,10 +489,6 @@ function initHotkeys() {
 
             case 'KeyQ':
                 switchFractalMode(fractalMode);
-                break;
-
-            case 'KeyA':
-                toggleDebugLines();
                 break;
 
             default:
