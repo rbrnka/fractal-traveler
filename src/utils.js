@@ -54,7 +54,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
  * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
  * @return {{mode: number}|{mode: (number), r: (number|number), cx: (number|null), cy: (number|null), px: (number|null), py: (number|null), zoom: (number|null)}|{mode: (number)}}
  */
- export function loadFractalParamsFromURL() {
+export function loadFractalParamsFromURL() {
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
@@ -161,4 +161,27 @@ export function hsbToRgb(h, s, b) {
     }
 
     return [r, g, bl];
+}
+
+/**
+ * Get fractal coordinates after applying rotation
+ * @param fractalApp {FractalRenderer}
+ * @param mouseX {number} X coordinate on the canvas
+ * @param mouseY {number} Y coordinate on the canvas
+ * @param rect {DOMRect} Canvas bounding rectangle
+ * @returns {[number, number]} Rotated fractal coordinates
+ */
+export function getRotatedFractalCoords(fractalApp, mouseX, mouseY, rect) {
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const offsetX = mouseX - centerX;
+    const offsetY = mouseY - centerY;
+
+    const cosR = Math.cos(-fractalApp.rotation);
+    const sinR = Math.sin(-fractalApp.rotation);
+
+    const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
+    const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
+
+    return fractalApp.screenToFractal(rotatedX, rotatedY);
 }
