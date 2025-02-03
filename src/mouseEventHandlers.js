@@ -3,7 +3,7 @@
  * @author Radim Brnka
  */
 import {updateURLParams, clearURLParams} from './utils.js';
-import {MODE_JULIA, MODE_MANDELBROT, updateInfo} from './ui.js';
+import {MODE_JULIA, MODE_MANDELBROT, updateInfo, toggleDebugLines} from './ui.js';
 import {JuliaRenderer} from "./juliaRenderer";
 
 const doubleClickThreshold = 300;
@@ -178,16 +178,7 @@ function handleMouseUp(event) {
     if (event.button === 1) { // Middle-click toggles the lines
         console.log("Middle Click: Toggling lines");
 
-        const verticalLine = document.getElementById('verticalLine');
-        const horizontalLine = document.getElementById('horizontalLine');
-
-        if (verticalLine.style.display === 'block' && horizontalLine.style.display === 'block') {
-            verticalLine.style.display = 'none';
-            horizontalLine.style.display = 'none';
-        } else {
-            verticalLine.style.display = 'block';
-            horizontalLine.style.display = 'block';
-        }
+        toggleDebugLines();
         return; // Exit early since middle-click doesn't involve dragging or centering.
     }
 
