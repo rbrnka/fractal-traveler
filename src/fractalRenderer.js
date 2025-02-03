@@ -31,7 +31,7 @@ export class FractalRenderer {
         this.pan = this.DEFAULT_PAN.slice(); // Copy
         this.rotation = this.DEFAULT_ROTATION;
 
-        this.fractalCenter = this.screenToFractal( this.canvas.width / 2,  this.canvas.height / 2);
+        this.fractalCenter = this.screenToFractal(this.canvas.width / 2, this.canvas.height / 2);
         console.log("Fractal centered to " + this.fractalCenter);
 
         this.currentAnimationFrame = null;
@@ -67,7 +67,7 @@ export class FractalRenderer {
     }
 
     resizeCanvas() {
-        console.log("Resizing canvas", this.canvas);
+        console.log("Resizing canvas");
 
         // Use visual viewport if available, otherwise fallback to window dimensions.
         const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -196,7 +196,7 @@ export class FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = 0; // Reset rotation
         this.extraIterations = 0;
-        //this.resizeCanvas();
+        this.resizeCanvas();
         this.draw();
 
         updateInfo();
@@ -209,20 +209,14 @@ export class FractalRenderer {
      * @returns {number[]}
      */
     screenToFractal(screenX, screenY) {
-        // Use visualViewport dimensions if available; otherwise fall back to the canvas's bounding rect.
-        const rect = this.canvas.getBoundingClientRect();
-        const vw = window.visualViewport ? window.visualViewport.width : rect.width;
-        const vh = window.visualViewport ? window.visualViewport.height : rect.height;
-
-        // Use the device pixel ratio
         const dpr = window.devicePixelRatio || 1;
+        // Use the canvas's bounding rectangle for CSS dimensions.
+        const rect = this.canvas.getBoundingClientRect();
+        // Use the actual CSS size of the canvas.
+        const w = rect.width * dpr;
+        const h = rect.height * dpr;
 
-        // The canvas drawing-buffer size is set to (vw * dpr, vh * dpr)
-        const w = this.canvas.width;   // drawing buffer width (vw * dpr)
-        const h = this.canvas.height;  // drawing buffer height (vh * dpr)
-
-        // Convert CSS (touch/mouse) coordinates to drawing-buffer pixels.
-        // (Assuming the canvas’s CSS size is set to vw x vh.)
+        // Convert the screen (touch/mouse) coordinate to drawing-buffer pixels.
         const bufferX = screenX * dpr;
         const bufferY = screenY * dpr;
 
@@ -230,10 +224,7 @@ export class FractalRenderer {
         const normX = bufferX / w;
         const normY = bufferY / h;
 
-        // In the shader you do:
-        //   st = gl_FragCoord.xy / u_resolution; st -= 0.5;
-        //   st.x *= (u_resolution.x / u_resolution.y);
-        // Also note that gl_FragCoord.y is measured from the bottom.
+        // In the shader, I subtract 0.5 and flip Y because gl_FragCoord.y starts from the bottom.
         let stX = normX - 0.5;
         let stY = (1 - normY) - 0.5;
 
@@ -251,7 +242,6 @@ export class FractalRenderer {
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
 
-        // Debug log (you already have similar logs)
         console.log(
             `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), ` +
             `buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), ` +
