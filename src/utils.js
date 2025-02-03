@@ -162,3 +162,26 @@ export function hsbToRgb(h, s, b) {
 
     return [r, g, bl];
 }
+
+/**
+ * Get fractal coordinates after applying rotation
+ * @param fractalApp {FractalRenderer}
+ * @param mouseX {number} X coordinate on the canvas
+ * @param mouseY {number} Y coordinate on the canvas
+ * @param rect {DOMRect} Canvas bounding rectangle
+ * @returns {[number, number]} Rotated fractal coordinates
+ */
+export function getRotatedFractalCoords(fractalApp, mouseX, mouseY, rect) {
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
+    const offsetX = mouseX - centerX;
+    const offsetY = mouseY - centerY;
+
+    const cosR = Math.cos(-fractalApp.rotation);
+    const sinR = Math.sin(-fractalApp.rotation);
+
+    const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
+    const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
+
+    return fractalApp.screenToFractal(rotatedX, rotatedY);
+}

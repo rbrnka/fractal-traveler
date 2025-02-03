@@ -5,8 +5,6 @@ import {JuliaRenderer} from "./juliaRenderer";
 
 export const DEBUG_MODE = true;
 
-export const DEBUG_MODE = true;
-
 let canvas;
 let fractalApp;
 // 0..Mandelbrot, 1..Julia
@@ -206,6 +204,7 @@ function initDebugMode() {
     debugInfo.addEventListener('click', () => {
         console.log(debugInfo.innerText);
     });
+}
 
 function takeScreenshot() {
 // Ensure the fractal is fully rendered before taking a screenshot
