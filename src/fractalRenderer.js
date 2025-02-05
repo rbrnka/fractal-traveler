@@ -275,6 +275,40 @@ export class FractalRenderer {
     }
 
     /**
+     * Animates pan
+     * @param targetPan
+     * @param duration
+     * @param callback after the animation
+     * @param startPan
+     */
+    animatePan(targetPan, duration = 200, callback = null, startPan = this.pan.slice()) {
+        this.stopCurrentAnimation();
+
+        const self = this;
+        let startTime = null;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            self.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
+            self.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
+            self.draw();
+
+            if (progress < 1) {
+                self.currentAnimationFrame = requestAnimationFrame(step);
+                updateInfo(true);
+            } else {
+                self.onAnimationFinished();
+                if (callback) callback();
+            }
+        }
+
+        this.currentAnimationFrame = requestAnimationFrame(step);
+    }
+
+    /**
      * Animates zoom without panning.
      * @param targetZoom
      * @param duration in milliseconds

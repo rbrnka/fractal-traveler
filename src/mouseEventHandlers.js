@@ -209,7 +209,7 @@ function handleMouseUp(event) {
                     console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                     // Centering action:
-                    fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
+                    fractalApp.animatePan([fx, fy], 500, () => {
                         if (fractalApp instanceof JuliaRenderer) {
                             updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
