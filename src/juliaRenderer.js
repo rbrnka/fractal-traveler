@@ -12,7 +12,7 @@ export class JuliaRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.DEFAULT_ROTATION = 90 * (Math.PI / 180);
+        this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.5;
         this.DEFAULT_PAN = [0.0, 0.0];
         this.DEFAULT_PALETTE = [1.0, 0.5, 0.8];
@@ -24,9 +24,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         this.PRESETS = [
-            {c: [0.34, -0.05], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]},
-            {c: [0.285, 0.01], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]}, // Near Julia set border
-            {c: [0.45, 0.1428], zoom: 3.5, rotation: this.DEFAULT_ROTATION, pan: [0, 0]},
+            {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
+            {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]}, // Near Julia set border
+            {c: [0.45, 0.1428], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
             {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0]},
             {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]},
             {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Spiral structure
@@ -42,7 +42,6 @@ export class JuliaRenderer extends FractalRenderer {
         return `
             precision mediump float;
             
-            // Use dynamic resolution.
             uniform vec2 u_resolution;
             uniform vec2 u_pan;
             uniform float u_zoom;
@@ -149,6 +148,10 @@ export class JuliaRenderer extends FractalRenderer {
         this.draw();
         updateInfo();
     }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Animation Methods
+    // -----------------------------------------------------------------------------------------------------------------
 
     animateZoom(targetZoom, duration, callback) {
         const startZoom = this.zoom;
