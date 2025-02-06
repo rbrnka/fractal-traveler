@@ -71,6 +71,7 @@ export function unregisterMouseEventHandlers() {
 
     mouseHandlersRegistered = false;
 }
+
 function handleWheel(event, fractalApp) {
     event.preventDefault();
     clearURLParams();
@@ -85,6 +86,12 @@ function handleWheel(event, fractalApp) {
 
     // Determine zoom factor based on wheel direction
     const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
+
+    const targetZoom = fractalApp.zoom * zoomFactor;
+    if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) {
+        return;
+    }
+
     fractalApp.zoom *= zoomFactor;
 
     // Get fractal coordinates after zooming (using the same mouse position)
@@ -92,7 +99,7 @@ function handleWheel(event, fractalApp) {
 
     // Adjust pan to keep the fractal point under the mouse cursor fixed
     fractalApp.pan[0] -= fxNew - fxOld;
-    fractalApp.pan[1] -= fyNew - fyOld ;
+    fractalApp.pan[1] -= fyNew - fyOld;
 
     updateInfo();
     fractalApp.draw();
