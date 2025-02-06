@@ -521,6 +521,10 @@ function initHotkeys() {
                 fractalApp.resizeCanvas();
                 break;
 
+            case 'KeyS': // Screenshot
+                takeScreenshot();
+                break;
+
             default:
                 break;
         }
