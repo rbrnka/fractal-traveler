@@ -154,11 +154,12 @@ function startJuliaDemo() {
 
     function animate() {
         fractalApp.c = [
-            Math.sin(time) * 0.5, // Oscillate real part
-            Math.cos(time) * 0.5  // Oscillate imaginary part
+            ((Math.sin(time) + 1) / 2) * 1.5 - 1,   // Oscillates between -1 and 0.5
+            ((Math.cos(time) + 1) / 2) * 1.4 - 0.7    // Oscillates between -0.7 and 0.7
         ];
+        fractalApp.rotation += 0.0001;
         fractalApp.draw();
-        time += 0.005;
+        time += 0.0005;
 
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
         updateInfo(true);
@@ -196,7 +197,7 @@ function initDebugMode() {
     const displayHeight = Math.round(height * dpr);
     (function update() {
         debugInfo.innerText = `WINDOW: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio})
-        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width/canvas.height).toFixed(2)} 
+        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width / canvas.height).toFixed(2)} 
         BoundingRect: ${width}x${height}, display W/H: ${displayWidth}x${displayHeight}`;
         requestAnimationFrame(update);
     })();
@@ -300,6 +301,22 @@ function takeScreenshot() {
     link.click();
 }
 
+function randomizeColors() {
+    // Generate a bright random color palette
+    // Generate colors with better separation and higher brightness
+    const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
+    const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
+    const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
+
+    // Convert HSB/HSV to RGB
+    const newPalette = hsbToRgb(hue, saturation, brightness);
+
+    fractalApp.colorPalette = newPalette;
+    fractalApp.draw();
+
+    updateColorSchema(); // Update app colors
+}
+
 function initHeaderEvents() {
 
     header.addEventListener('pointerenter', () => {
@@ -351,19 +368,7 @@ function initControlButtonEvents() {
     });
 
     randomizeColorsButton.addEventListener('click', () => {
-        // Generate a bright random color palette
-        // Generate colors with better separation and higher brightness
-        const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
-        const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
-        const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
-
-        // Convert HSB/HSV to RGB
-        const newPalette = hsbToRgb(hue, saturation, brightness);
-
-        fractalApp.colorPalette = newPalette;
-        fractalApp.draw();
-
-        updateColorSchema(); // Update app colors
+        randomizeColors();
     });
 
     demoButton.addEventListener('click', () => {
@@ -470,8 +475,10 @@ function initInfoText() {
 function initHotkeys() {
     document.addEventListener("keydown", (event) => {
 
+        if (demoActive) return;
+
         switch (event.code) {
-            case 'KeyR':
+            case 'KeyQ': // Rotation counter-clockwise
                 if (rotationAnimationFrame !== null) {
                     stopRotationAnimation();
                 } else {
@@ -484,7 +491,7 @@ function initHotkeys() {
                 }
                 break;
 
-            case 'KeyE':
+            case 'KeyW':  // Rotation clockwise
                 if (rotationAnimationFrame !== null) {
                     stopRotationAnimation();
                 } else {
@@ -497,17 +504,21 @@ function initHotkeys() {
                 }
                 break;
 
-            case 'KeyT':
-                console.log("Resizing canvas (forced)");
-                fractalApp.resizeCanvas();
+            case 'KeyT': // Random colors
+                randomizeColors();
                 break;
 
-            case 'KeyQ':
+            case 'KeyR': // Reset
                 switchFractalMode(fractalMode);
                 break;
 
-            case 'KeyA':
+            case 'KeyE': // Debug lines
                 toggleDebugLines();
+                break;
+
+            case 'KeyA': // Forced resize
+                console.log("Resizing canvas (forced)");
+                fractalApp.resizeCanvas();
                 break;
 
             default:
@@ -623,6 +634,9 @@ function updateColorSchema() {
 export function disableJuliaSliders() {
     imagSlider.disabled = true;
     realSlider.disabled = true;
+
+    realSlider.classList.add('thumbDisabled');
+    imagSlider.classList.add('thumbDisabled');
 }
 
 /**
@@ -631,6 +645,9 @@ export function disableJuliaSliders() {
 export function enableJuliaSliders() {
     imagSlider.disabled = false;
     realSlider.disabled = false;
+
+    realSlider.classList.remove('thumbDisabled');
+    imagSlider.classList.remove('thumbDisabled');
 }
 
 /**

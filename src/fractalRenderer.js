@@ -19,7 +19,7 @@ export class FractalRenderer {
         // Default values:
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
-        this.DEFAULT_PAN = [-0.5, 0.0];
+        this.DEFAULT_PAN = [0, 0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
@@ -42,7 +42,6 @@ export class FractalRenderer {
         this.vertexShaderSource = `
             precision mediump float;
             attribute vec4 a_position;
-            uniform float u_rotation;
        
             void main() {
                 gl_Position = a_position;
@@ -54,8 +53,6 @@ export class FractalRenderer {
             console.warn('WebGL context lost. Attempting to recover...');
             this.init(); // Reinitialize WebGL context
         });
-
-        this.init();
     }
 
     init() {
@@ -64,6 +61,8 @@ export class FractalRenderer {
 
         // Cache uniform locations
         this.updateUniforms();
+
+        this.fractalCenter = this.screenToFractal(this.canvas.width / 2, this.canvas.height / 2);
     }
 
     resizeCanvas() {
@@ -177,6 +176,7 @@ export class FractalRenderer {
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
         this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation'); // Add rotation
         this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
     }
 
     /**

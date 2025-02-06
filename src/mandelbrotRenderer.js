@@ -11,6 +11,8 @@ export class MandelbrotRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
+        this.DEFAULT_PAN = [-0.5, 0];
+        this.pan = this.DEFAULT_PAN.slice();
         this.PRESETS = [
             {pan: [0.351424, 0.063866], zoom: 0.000049},
             {pan: [0.254998, 0.000568], zoom: 0.000045},
@@ -23,6 +25,8 @@ export class MandelbrotRenderer extends FractalRenderer {
             {pan: [0.116501, -0.663546], zoom: 0.000104},
             // {pan: [-0.124797, 0.840309], zoom: 0.000628}
         ];
+
+        this.init();
     }
 
     createFragmentShaderSource() {

@@ -172,6 +172,10 @@ label, .sliderValue {
     box-shadow: -287px 0 0 280px var(--thumb-color);
 }
 
+.thumbDisabled {
+    background: #888;
+}
+
 input[type="radio"] {
     appearance: none;
     -webkit-appearance: none;
@@ -286,7 +290,7 @@ a:hover {
 }
 
 #infoText.demoActive {
-    color: #5FB036;
+    color: #0f0;
 }
 
 #debugInfo {

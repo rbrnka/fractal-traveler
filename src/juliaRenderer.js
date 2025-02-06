@@ -14,9 +14,8 @@ export class JuliaRenderer extends FractalRenderer {
 
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.5;
-        this.DEFAULT_PAN = [0.0, 0.0];
-        this.DEFAULT_PALETTE = [1.0, 0.5, 0.8];
-        this.DEFAULT_C = [0.355, 0.355];
+        this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
+        this.DEFAULT_C = [-0.246, 0.64];
 
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
@@ -36,65 +35,101 @@ export class JuliaRenderer extends FractalRenderer {
         ];
 
         this.c = this.DEFAULT_C.slice();
+        this.init();
     }
 
     createFragmentShaderSource() {
         return `
+            #ifdef GL_ES
             precision mediump float;
+            #endif
             
-            uniform vec2 u_resolution;
-            uniform vec2 u_pan;
-            uniform float u_zoom;
-            uniform float u_iterations;
-            uniform vec3 u_colorPalette;
-            uniform float u_rotation; // Rotation in radians
-            uniform vec2 u_c; // Julia set constant
+            // Uniforms from your JavaScript code:
+            uniform vec2 u_resolution;    // Canvas resolution in pixels.
+            uniform vec2 u_pan;           // Pan offset in fractal space.
+            uniform float u_zoom;         // Zoom factor.
+            uniform float u_iterations;   // For normalizing the smooth iteration count.
+            uniform float u_rotation;     // Rotation (in radians).
+            uniform vec2 u_c;             // Julia set constant.
+            uniform vec3 u_colorPalette;  // Color palette (can be changed by the user).
+            
+            // Maximum iterations (compile-time constant required by GLSL ES 1.00).
+            const int MAX_ITERATIONS = 1000;
+            
+            // Define color stops as individual constants (RGB values in [0,1]).
+            // Default stops (black, orange, white, blue, dark blue).
+            const vec3 stop0 = vec3(0.0, 0.0, 0.0);       // Black
+            const vec3 stop1 = vec3(1.0, 0.647, 0.0);     // Orange
+            const vec3 stop2 = vec3(1.0, 1.0, 1.0);       // White
+            const vec3 stop3 = vec3(0.0, 0.0, 1.0);       // Blue
+            const vec3 stop4 = vec3(0.0, 0.0, 0.5);       // Dark Blue
+            
+            // Interpolates between the five color stops.
+            // 5 stops = 4 segments.
+            vec3 getColorFromMap(float t) {
+                float step = 1.0 / 4.0; // size of one segment
+                if(t <= step) {
+                    return mix(stop0, stop1, t / step);
+                } else if(t <= 2.0 * step) {
+                    return mix(stop1, stop2, (t - step) / step);
+                } else if(t <= 3.0 * step) {
+                    return mix(stop2, stop3, (t - 2.0 * step) / step);
+                } else {
+                    return mix(stop3, stop4, (t - 3.0 * step) / step);
+                }
+            }
             
             void main() {
-                // Compute aspect ratio dynamically.
+                // Map fragment coordinates to normalized device coordinates.
                 float aspect = u_resolution.x / u_resolution.y;
-                
-                // Normalize coordinates based on the current resolution.
                 vec2 st = gl_FragCoord.xy / u_resolution;
-                st -= 0.5; // Center the coordinates
-                st.x *= aspect; // Adjust aspect ratio
-                
-                // Apply rotation
+                st -= 0.5;       // center at (0,0)
+                st.x *= aspect;  // adjust x for aspect ratio
+            
+                // Apply rotation.
                 float cosR = cos(u_rotation);
                 float sinR = sin(u_rotation);
                 vec2 rotated = vec2(
                     st.x * cosR - st.y * sinR,
                     st.x * sinR + st.y * cosR
                 );
-    
-                // Scale and translate
+                
+                // Map screen coordinates to Julia space.
                 vec2 z = rotated * u_zoom + u_pan;
-    
-                // Julia set calculation
-                float i;
-                for (float n = 0.0; n < 1000.0; n++) {
-                    if (n >= u_iterations || dot(z, z) > 4.0) {
-                        i = n;
+                
+                // Determine escape iterations.
+                int iterCount = MAX_ITERATIONS;
+                for (int i = 0; i < MAX_ITERATIONS; i++) {
+                    if (dot(z, z) > 4.0) {
+                        iterCount = i;
                         break;
                     }
-                    z = vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y) + u_c;
+                    // Julia set iteration.
+                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + u_c;
                 }
-    
-                if (i >= u_iterations) {
+                
+                // If the point never escaped, render as simple color.
+                if (iterCount == MAX_ITERATIONS) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    float smoothColor = i - log2(log2(dot(z, z))) + 4.0;
-                    smoothColor = fract(smoothColor * 0.01); // Normalize for smooth color transitions
-                    vec3 fractalColor = vec3(
-                        sin(smoothColor * 3.283),
-                        sin(smoothColor * 6.283),
-                        cos(smoothColor * 1.7)
-                    );
-                    fractalColor *= u_colorPalette;
-                    gl_FragColor = vec4(fractalColor, 1.0);
+                    // Compute a smooth iteration value.
+                    float smoothColor = float(iterCount) - log2(log2(dot(z, z)));
+                    float t = clamp(smoothColor / u_iterations, 0.0, 1.0);
+                    
+                    // Apply a sine modulation to mimic the "sine" color mapping effect.
+                    // Frequency: 4π
+                    t = 0.5 + 0.6 * sin(t * 4.0 * 3.14159265);
+                    
+                    // Lookup the color from the map.
+                    vec3 col = getColorFromMap(t);
+                    
+                    // Use the user-defined color palette as a tint.
+                    col *= u_colorPalette;
+                    
+                    gl_FragColor = vec4(col, 1.0);
                 }
             }
-        `;
+         `;
     }
 
     draw() {
@@ -145,8 +180,28 @@ export class JuliaRenderer extends FractalRenderer {
         this.c = this.DEFAULT_C.slice();
         this.extraIterations = 0;
 
+        this.resizeCanvas();
         this.draw();
         updateInfo();
+    }
+
+    /**
+     * Test function to randomize the inner palette stops.
+     */
+    randomizeInnerPalette() {
+        // Generate three random inner stops.
+        // Each stop is an array of three numbers in [0, 1].
+        const innerStops = [];
+        for (let i = 0; i < 3; i++) {
+            innerStops.push(Math.random()); // red
+            innerStops.push(Math.random()); // green
+            innerStops.push(Math.random()); // blue
+        }
+        // Convert to a Float32Array.
+        const innerStopsArray = new Float32Array(innerStops);
+
+        this.gl.useProgram(this.program);
+        this.gl.uniform3fv(this.innerStopsLoc, innerStopsArray);
     }
 
     // -----------------------------------------------------------------------------------------------------------------
