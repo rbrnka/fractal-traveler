@@ -151,6 +151,7 @@ export function hsbToRgb(h, s, b) {
     const t = b * (1 - (1 - f) * s);
 
     let r, g, bl;
+    // @formatter:off
     switch (i % 6) {
         case 0: r = b; g = t; bl = p; break;
         case 1: r = q; g = b; bl = p; break;
@@ -159,7 +160,7 @@ export function hsbToRgb(h, s, b) {
         case 4: r = t; g = p; bl = b; break;
         case 5: r = b; g = p; bl = q; break;
     }
-
+    // @formatter:on
     return [r, g, bl];
 }
 
