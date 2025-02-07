@@ -6,6 +6,7 @@
 
 import {updateInfo, updateJuliaSliders} from "./ui";
 import {FractalRenderer} from "./fractalRenderer";
+import {isTouchDevice} from "./utils";
 
 export class JuliaRenderer extends FractalRenderer {
 
@@ -15,7 +16,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.5;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
-        this.DEFAULT_C = [-0.246, 0.64];
+        this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64];
 
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
@@ -140,7 +141,6 @@ export class JuliaRenderer extends FractalRenderer {
         // Update the viewport.
         this.gl.viewport(0, 0, w, h);
 
-        // Update the resolution uniform.
         if (this.resolutionLoc === undefined) {
             // Cache the resolution location if not already cached.
             this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
@@ -208,6 +208,26 @@ export class JuliaRenderer extends FractalRenderer {
     // Animation Methods
     // -----------------------------------------------------------------------------------------------------------------
 
+    /**
+     * Helper function for ease-in-out timing
+     * @param t time step
+     * @return {number}
+     */
+    easeInOut = (t) => {
+        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    }
+
+    /**
+     * Helper function for linear interpolation
+     * @param start
+     * @param end
+     * @param t
+     * @return {*}
+     */
+    lerp(start, end, t) {
+        return start + (end - start) * t;
+    }
+
     animateZoom(targetZoom, duration, callback) {
         const startZoom = this.zoom;
         const self = this;
@@ -232,20 +252,54 @@ export class JuliaRenderer extends FractalRenderer {
         this.currentAnimationFrame = requestAnimationFrame(stepZoom);
     }
 
-    animateTravelToPreset(preset, transitionDuration) {
+    /**
+     * Animates Julia from current C to target C
+     * @param targetC
+     * @param duration transition duration
+     * @param callback once finished
+     */
+    animateToC(targetC = this.DEFAULT_C.slice(), duration = 500, callback = null) {
+        if (this.c[0] === targetC[0] && this.c[1] === targetC[1]) return;
+
         this.stopCurrentAnimation();
 
         const self = this;
+        const startC = self.c;
 
-        // Helper function for ease-in-out timing
-        function easeInOut(t) {
-            return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        let startTime = null;
+
+        function stepAdjustC(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            // Apply eased progress
+            const easedProgress = self.easeInOut(progress);
+
+            // Interpolate `c` smoothly
+            self.c[0] = self.lerp(startC[0], targetC[0], easedProgress);
+            self.c[1] = self.lerp(startC[1], targetC[1], easedProgress);
+
+            // Redraw with updated values
+            self.draw();
+            updateJuliaSliders();
+            updateInfo(true);
+
+            if (progress < 1) {
+                self.currentAnimationFrame = requestAnimationFrame(stepAdjustC);
+            } else {
+                self.onAnimationFinished();
+                if (callback) callback();
+            }
         }
 
-        // Helper function for linear interpolation
-        function lerp(start, end, t) {
-            return start + (end - start) * t;
-        }
+        self.currentAnimationFrame = requestAnimationFrame(stepAdjustC);
+    }
+
+    animateTravelToPreset(preset, transitionDuration, onFinishedCallback = null) {
+        this.stopCurrentAnimation();
+
+        const self = this;
 
         // Adjust to default zoom and pan
         function adjustToDefault(callback) {
@@ -262,9 +316,9 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress > 1) progress = 1;
 
                 // Interpolate zoom and pan
-                self.zoom = lerp(startZoom, self.DEFAULT_ZOOM, progress);
-                self.pan[0] = lerp(startPan[0], targetPan[0], progress);
-                self.pan[1] = lerp(startPan[1], targetPan[1], progress);
+                self.zoom = self.lerp(startZoom, self.DEFAULT_ZOOM, progress);
+                self.pan[0] = self.lerp(startPan[0], targetPan[0], progress);
+                self.pan[1] = self.lerp(startPan[1], targetPan[1], progress);
 
                 // Redraw during the adjustment
                 self.draw();
@@ -272,8 +326,9 @@ export class JuliaRenderer extends FractalRenderer {
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
-                } else if (callback) {
-                    callback(); // Proceed to preset transition
+                } else {
+                    self.onAnimationFinished();
+                    if (callback) callback();
                 }
             }
 
@@ -294,15 +349,15 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress > 1) progress = 1;
 
                 // Apply eased progress
-                const easedProgress = easeInOut(progress);
+                const easedProgress = self.easeInOut(progress);
 
                 // Interpolate `c`, `pan`, and rotation smoothly
-                self.c[0] = lerp(startC[0], preset.c[0], easedProgress);
-                self.c[1] = lerp(startC[1], preset.c[1], easedProgress);
-                self.rotation = lerp(startRotation, preset.rotation, progress);
-                self.pan[0] = lerp(startPan[0], preset.pan[0], progress);
-                self.pan[1] = lerp(startPan[1], preset.pan[1], progress);
-                self.zoom = lerp(startZoom, preset.zoom, progress);
+                self.c[0] = self.lerp(startC[0], preset.c[0], easedProgress);
+                self.c[1] = self.lerp(startC[1], preset.c[1], easedProgress);
+                self.rotation = self.lerp(startRotation, preset.rotation, progress);
+                self.pan[0] = self.lerp(startPan[0], preset.pan[0], progress);
+                self.pan[1] = self.lerp(startPan[1], preset.pan[1], progress);
+                self.zoom = self.lerp(startZoom, preset.zoom, progress);
 
                 // Redraw with updated values
                 self.draw();
