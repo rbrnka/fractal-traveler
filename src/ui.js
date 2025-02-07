@@ -18,6 +18,7 @@ let headerMinimizeTimeout = null;
 let uiInitialized = false;
 let headerToggled = false;
 let demoActive = false;
+let juliaDemoTime = 0;
 let resizeTimeout;
 
 let header;
@@ -37,6 +38,9 @@ let realSliderValue;
 let imagSliderValue;
 let lastSliderUpdate = 0; // Tracks the last time the sliders were updated
 const sliderUpdateThrottleLimit = 10; // Throttle limit in milliseconds
+const JULIA_HOTKEY_C_STEP = 0.0005; // Smooth stepping: step size
+const JULIA_HOTKEY_C_SMOOTH_STEP = 0.1; // Super smooth stepping multiplier (SHIFT)
+const JULIA_HOTKEY_C_SPEED = 50; // Smooth stepping: animation delay
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
@@ -150,23 +154,31 @@ function startJuliaDemo() {
     disableJuliaSliders();
     startDemo();
 
-    let time = 0;
-
     function animate() {
         fractalApp.c = [
-            ((Math.sin(time) + 1) / 2) * 1.5 - 1,   // Oscillates between -1 and 0.5
-            ((Math.cos(time) + 1) / 2) * 1.4 - 0.7    // Oscillates between -0.7 and 0.7
+            ((Math.sin(juliaDemoTime) + 1) / 2) * 1.5 - 1,   // Oscillates between -1 and 0.5
+            ((Math.cos(juliaDemoTime) + 1) / 2) * 1.4 - 0.7    // Oscillates between -0.7 and 0.7
         ];
         fractalApp.rotation += 0.0001;
         fractalApp.draw();
-        time += 0.0005;
+        juliaDemoTime += 0.0005;
 
         currentJuliaAnimationFrame = requestAnimationFrame(animate);
         updateInfo(true);
         updateJuliaSliders();
     }
 
-    fractalApp.animatePanZoomRotate(fractalApp.DEFAULT_PAN.slice(), fractalApp.DEFAULT_ZOOM, fractalApp.DEFAULT_ROTATION, 500, animate);
+    fractalApp.animatePanZoomRotate(
+        fractalApp.DEFAULT_PAN.slice(),
+        fractalApp.DEFAULT_ZOOM,
+        fractalApp.DEFAULT_ROTATION,
+        500,
+        juliaDemoTime > 0
+            ? animate
+            : () => {
+                fractalApp.animateToC([-0.25, 0.7], 500, animate);
+            }
+    );
 }
 
 function stopRotationAnimation() {
@@ -180,7 +192,8 @@ function resetSliders() {
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
     realSliderValue.innerText = realSlider.value;
-    imagSliderValue.innerText = imagSlider.value;
+    imagSliderValue.innerText = imagSlider.value + 'i';
+    juliaDemoTime = 0;
 }
 
 function initDebugMode() {
@@ -324,6 +337,7 @@ function initHeaderEvents() {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
         }
+        handle.style.display = "none";
         header.classList.remove('minimized');
     });
 
@@ -332,6 +346,7 @@ function initHeaderEvents() {
         if (!headerToggled) {
             headerMinimizeTimeout = setTimeout(() => {
                 header.classList.add('minimized');
+                handle.style.display = "block";
                 headerMinimizeTimeout = null;
             }, 1000);
         }
@@ -342,8 +357,10 @@ function initHeaderEvents() {
 
         if (!headerToggled) {
             header.classList.remove('minimized');
+            handle.style.display = "none";
         } else {
             header.classList.add('minimized');
+            handle.style.display = "block";
         }
 
         headerToggled = !headerToggled;
@@ -357,6 +374,7 @@ function initHeaderEvents() {
     // When user clicks/taps outside of the header
     canvas.addEventListener('pointerdown', () => {
         header.classList.add('minimized');
+        handle.style.display = "block";
         headerToggled = false;
     });
 }
@@ -410,6 +428,9 @@ function initPresetButtonEvents() {
             btn.addEventListener('click', () => {
                 stopDemo();
                 stopRotationAnimation();
+                if (isJuliaMode()) {
+                    juliaDemoTime = 0;
+                }
                 clearURLParams();
                 fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
             });
@@ -437,14 +458,16 @@ function initSliders() {
         fractalApp.draw();
         updateInfo();
         clearURLParams();
+        juliaDemoTime = 0;
     });
 
     imagSlider.addEventListener('input', () => {
         fractalApp.c[1] = parseFloat(imagSlider.value);
-        imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+        imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
         fractalApp.draw();
         updateInfo();
         clearURLParams();
+        juliaDemoTime = 0;
     });
 
     let sliderContainer = document.getElementById('sliders');
@@ -523,6 +546,30 @@ function initHotkeys() {
 
             case 'KeyS': // Screenshot
                 takeScreenshot();
+                break;
+
+            case "ArrowLeft": // Julia cx smooth down
+                if (isJuliaMode()) {
+                    fractalApp.animateToC([fractalApp.c[0] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                }
+                break;
+
+            case "ArrowRight": // Julia cx smooth up
+                if (isJuliaMode()) {
+                    fractalApp.animateToC([fractalApp.c[0] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                }
+                break;
+
+                case "ArrowUp": // Julia cy smooth up
+                if (isJuliaMode()) {
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1)], JULIA_HOTKEY_C_SPEED);
+                }
+                break; // Julia cy smooth down
+
+            case "ArrowDown":
+                if (isJuliaMode()) {
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1)], JULIA_HOTKEY_C_SPEED);
+                }
                 break;
 
             default:
@@ -633,7 +680,7 @@ function updateColorSchema() {
 }
 
 /**
- *
+ * Disable slider controls
  */
 export function disableJuliaSliders() {
     imagSlider.disabled = true;
@@ -644,7 +691,7 @@ export function disableJuliaSliders() {
 }
 
 /**
- *
+ * Enable slider controls
  */
 export function enableJuliaSliders() {
     imagSlider.disabled = false;
@@ -679,20 +726,20 @@ export function updateInfo(traveling = false) {
     const panY = fractalApp.pan[1] ?? 0;
 
     if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)) {
-        text += `px=${panX.toFixed(6)}, py=${panY.toFixed(6)}, `;
+        text += `p = [${panX.toFixed(6)}, ${panY.toFixed(6)}], `;
     }
 
     if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `cx=${cx.toFixed(2)}, cy=${cy.toFixed(2)}, `;
+        text += `c = [${cx.toFixed(2)}, ${cy.toFixed(2)}i], `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / Math.PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r=${normalizedRotation.toFixed(0)}°, zoom=${currentZoom.toFixed(6)}`;
+    text += `r = ${normalizedRotation.toFixed(0)}°, zoom = ${currentZoom.toFixed(6)}`;
 
     if (demoActive) {
         infoText.classList.add('demoActive');
@@ -717,7 +764,7 @@ export function updateJuliaSliders() {
     // Update the last update time
     lastSliderUpdate = now;
     realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2);
+    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
 }
