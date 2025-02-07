@@ -54,7 +54,7 @@ hr {
 button {
     position: relative;
     z-index: 10;
-    margin: 2px 2px;
+    margin: 4px 2px;
     cursor: pointer;
     align-items: center;
     background-color: initial;
@@ -95,7 +95,8 @@ button:active {
 }
 
 button:focus {
-    box-shadow: rgba(0, 0, 0, .5) 0 0 0 3px;
+    border: none;
+    outline: 0;
 }
 
 button:disabled,
@@ -105,11 +106,13 @@ button[disabled] {
 }
 
 h1 {
-    padding: 0 10px 5px 10px;
+    padding: 12px 10px 5px 10px;
     margin: 0;
     color: #30AF5E;
     z-index: 1000;
-    font-size: 14px;
+    font-size: 16px;
+    text-shadow: 0 0 10px #0f0;
+    letter-spacing: 1px;
 }
 
 p {
@@ -210,6 +213,7 @@ input[type="radio"]:checked::before {
     user-select: none; /* Standard syntax */
     cursor: pointer;
     padding: 2px 150px 2px 150px;
+    display: none;
 }
 
 #handle.toggled {
@@ -314,7 +318,7 @@ a:hover {
     left: 50%;
     top: 0;
     transform: translateX(-50%);
-    border-left: 2px dashed white;
+    border-left: 2px dashed #ccc;
     background: transparent;
 }
 
@@ -323,6 +327,6 @@ a:hover {
     top: 50%;
     left: 0;
     transform: translateY(-50%);
-    border-top: 2px dashed white;
+    border-top: 2px dashed #ccc;
     background: transparent;
 }
