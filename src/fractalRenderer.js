@@ -9,7 +9,15 @@ export class FractalRenderer {
 
     constructor(canvas) {
         this.canvas = canvas;
-        this.gl = this.canvas.getContext('webgl', {antialias: true});
+        this.gl = this.canvas.getContext('webgl', {
+            antialias: false, // Already disabling anti-aliasing.
+            alpha: false, // Disable alpha channel if not needed.
+            depth: false, // Disable depth buffer.
+            stencil: false, // Disable stencil buffer.
+            preserveDrawingBuffer: false, // Do not preserve drawing buffer (faster).
+            powerPreference: 'high-performance', // Hint for high-performance GPU.
+            //failIfMajorPerformanceCaveat: true // Fail if forced to use software renderer.
+        });
 
         if (!this.gl) {
             alert('WebGL is not supported by your browser.');
@@ -309,7 +317,7 @@ export class FractalRenderer {
     }
 
     /**
-     * Animates zoom without panning.
+     * Animates to target zoom without panning.
      * @param targetZoom
      * @param duration in milliseconds
      */
