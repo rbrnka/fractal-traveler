@@ -223,7 +223,6 @@ function handleTouchEnd(event) {
             const touchX = touch.clientX - rect.left;
             const touchY = touch.clientY - rect.top;
             const [fx, fy] = fractalApp.screenToFractal(touchX, touchY);
-            fractalApp.fractalCenter = [fx, fy];  // Store the fractal center
 
             if (touchClickTimeout !== null) {
                 clearTimeout(touchClickTimeout);

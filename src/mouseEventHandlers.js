@@ -196,7 +196,6 @@ function handleMouseUp(event) {
             const mouseX = event.clientX - rect.left;  // in CSS pixels
             const mouseY = event.clientY - rect.top;     // in CSS pixels
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
-            fractalApp.fractalCenter = [fx, fy];
 
             // If there is already a pending click, then we have a double-click.
             if (clickTimeout !== null) {
