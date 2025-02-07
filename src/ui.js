@@ -19,6 +19,7 @@ let uiInitialized = false;
 let headerToggled = false;
 let demoActive = false;
 let juliaDemoTime = 0;
+let activeJuliaDiveIndex = -1;
 let resizeTimeout;
 
 let header;
@@ -30,6 +31,7 @@ let randomizeColorsButton;
 let screenshotButton;
 let demoButton;
 let presetButtons = [];
+let diveButtons = [];
 
 // Julia sliders
 let realSlider;
@@ -69,6 +71,7 @@ export function enableJuliaMode() {
 
 function stopDemo() {
     if (!demoActive) return;
+    activeJuliaDiveIndex = -1;
 
     console.log("Stopping demo");
 
@@ -148,6 +151,36 @@ function startMandelbrotDemo() {
     runPresets();
 }
 
+function startJuliaDive(dive) {
+    if (demoActive) return;
+
+    disableJuliaSliders();
+    startDemo();
+
+    fractalApp.animateTravelToPreset({pan: dive.pan, c: dive.c, zoom: dive.zoom, rotation: dive.rotation}, 500, () => {
+        function animate() {
+            const step = dive.step;
+            if (fractalApp.c[0] > -0.38) {
+                fractalApp.c[0] -= step;
+            } else {
+                if (fractalApp.c[1] < 0.59132038015578136) {
+                    fractalApp.c[0] -= step;
+                } else {
+                    fractalApp.c[1] -= step;
+                    fractalApp.c[0] += step;
+                }
+            }
+
+            fractalApp.draw();
+            currentJuliaAnimationFrame = requestAnimationFrame(animate);
+            updateInfo(true);
+            updateJuliaSliders();
+        }
+
+        animate();
+    });
+}
+
 function startJuliaDemo() {
     if (demoActive) return;
 
@@ -194,6 +227,18 @@ function resetSliders() {
     realSliderValue.innerText = realSlider.value;
     imagSliderValue.innerText = imagSlider.value + 'i';
     juliaDemoTime = 0;
+}
+
+function travelToPreset(preset) {
+    stopDemo();
+    stopRotationAnimation();
+    if (isJuliaMode()) {
+        juliaDemoTime = 0;
+        fractalApp.animateTravelToPreset(preset, 750);
+    } else {
+        fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
+    }
+    clearURLParams();
 }
 
 function initDebugMode() {
@@ -426,16 +471,34 @@ function initPresetButtonEvents() {
         presetButtons.push(btn);
         if (btn != null) {
             btn.addEventListener('click', () => {
-                stopDemo();
-                stopRotationAnimation();
-                if (isJuliaMode()) {
-                    juliaDemoTime = 0;
-                }
-                clearURLParams();
-                fractalApp.animateTravelToPreset(preset, 500, 500, 3500);
+                travelToPreset(preset);
             });
         }
     });
+}
+
+function initDives() {
+    if (isJuliaMode()) {
+        const diveBlock = document.getElementById('dives');
+        diveBlock.style.display = 'block';
+
+        let dives = fractalApp.DIVES.slice();
+        diveButtons.length = 0;
+
+        dives.forEach((dive, index) => {
+            const btn = document.getElementById('dive' + (index + 1));
+            diveButtons.push(btn);
+            if (btn != null) {
+                btn.addEventListener('click', () => {
+                    if (demoActive && index !== activeJuliaDiveIndex) {
+                        stopDemo();
+                    }
+                    startJuliaDive(dive);
+                    activeJuliaDiveIndex = index;
+                });
+            }
+        });
+    }
 }
 
 function initFractalSwitchRadios() {
@@ -484,10 +547,13 @@ function initWindowEvents() {
 }
 
 function initInfoText() {
-
     infoText.addEventListener('click', () => {
         let textarea = document.getElementById("infoText");
-        navigator.clipboard.writeText(textarea.value).then(function () {
+        let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`;
+        text += isJuliaMode()
+            ? `, c: [${fractalApp.c}]}`
+            : `}`;
+        navigator.clipboard.writeText(text).then(function () {
             textarea.innerText = 'Copied to clipboard!';
         }, function (err) {
             console.error('Not copied to clipboard! ' + err.toString());
@@ -495,6 +561,9 @@ function initInfoText() {
     });
 }
 
+/**
+ * https://www.freecodecamp.org/news/javascript-keycode-list-keypress-event-key-codes/
+ */
 function initHotkeys() {
     document.addEventListener("keydown", (event) => {
 
@@ -550,27 +619,44 @@ function initHotkeys() {
 
             case "ArrowLeft": // Julia cx smooth down
                 if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                    fractalApp.animateToC([fractalApp.c[0] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                } else {
+                    // TODO include zoom factor
+                    fractalApp.animatePan([fractalApp.pan[0] - 0.1, fractalApp.pan[1]], 50);
                 }
                 break;
 
             case "ArrowRight": // Julia cx smooth up
                 if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                    fractalApp.animateToC([fractalApp.c[0] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                } else {
+                    // TODO include zoom factor
+                    fractalApp.animatePan([fractalApp.pan[0] + 0.1, fractalApp.pan[1]], 50);
                 }
                 break;
 
-                case "ArrowUp": // Julia cy smooth up
+            case "ArrowUp": // Julia cy smooth up
                 if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1)], JULIA_HOTKEY_C_SPEED);
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
                 }
                 break; // Julia cy smooth down
 
             case "ArrowDown":
                 if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP: 1)], JULIA_HOTKEY_C_SPEED);
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
                 }
                 break;
+            // @formatter:off
+            case "Digit1": case "Numpad1": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[0]); else travelToPreset(fractalApp.PRESETS[0]); break;
+            case "Digit2": case "Numpad2": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[1]); else travelToPreset(fractalApp.PRESETS[1]); break;
+            case "Digit3": case "Numpad3": travelToPreset(fractalApp.PRESETS[2]); break;
+            case "Digit4": case "Numpad4": travelToPreset(fractalApp.PRESETS[3]); break;
+            case "Digit5": case "Numpad5": travelToPreset(fractalApp.PRESETS[4]); break;
+            case "Digit6": case "Numpad6": travelToPreset(fractalApp.PRESETS[5]); break;
+            case "Digit7": case "Numpad7": travelToPreset(fractalApp.PRESETS[6]); break;
+            case "Digit8": case "Numpad8": travelToPreset(fractalApp.PRESETS[7]); break;
+            case "Digit9": case "Numpad9": travelToPreset(fractalApp.PRESETS[8]); break;
+            // @formatter:on
 
             default:
                 break;
@@ -610,6 +696,7 @@ export function initUI(fractalRenderer) {
     if (fractalRenderer instanceof JuliaRenderer) {
         enableJuliaMode();
         initSliders();
+        initDives();
         juliaRadio.checked = true;
     }
 
@@ -726,14 +813,14 @@ export function updateInfo(traveling = false) {
     const panY = fractalApp.pan[1] ?? 0;
 
     if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)) {
-        text += `p = [${panX.toFixed(6)}, ${panY.toFixed(6)}], `;
+        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}], `;
     }
 
     if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(2)}, ${cy.toFixed(2)}i], `;
+        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 2)}, ${cy.toFixed(DEBUG_MODE ? 12 : 2)}i], `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;

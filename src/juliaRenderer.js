@@ -35,6 +35,46 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]} // Deep zoom
         ];
 
+        /**
+         *  Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
+         *  it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
+         *  direction.
+         */
+        this.DIVES = [
+            {
+                pan: [0, 0],
+                c: [-0.25190652273600045, 0.637461568487061],
+                rotation: 0,
+                zoom: 0.05,
+                step: 0.00000005,
+
+                cxDirection: -1,
+                cYDirection: +1,
+                endC: [-0.38, 0.59132],
+            },
+            {
+                pan: [-0.3083000755566157, 0.3955446343534545],
+                rotation: 1.4999999999999947,
+                zoom: 0.3829664619602934,
+                c: [-0.25190652273600045, 0.637461568487061],
+                step: 0.00001
+            },
+            {
+                pan: [-0.6838279169792393, 0.46991716118236204],
+                rotation: 0,
+                zoom: 0.04471011402132469,
+                c: [-0.246, 0.6427128691849591],
+                step: 0.000001
+            },
+            {
+                pan: [0.0004602397265110535, -0.0005233390584007328],
+                rotation: 2.6179938779914944,
+                zoom: 0.7385821389576397,
+                c: [-1.253593844201527, 0.020091693459541395],
+                step: 0.000001
+            }
+        ];
+
         this.c = this.DEFAULT_C.slice();
         this.init();
     }
@@ -367,8 +407,7 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepTransition);
                 } else {
-                    // Ensure exact final values
-                    self.c = preset.c.slice();
+                    if (onFinishedCallback) onFinishedCallback();
                     self.onAnimationFinished();
                 }
             }
