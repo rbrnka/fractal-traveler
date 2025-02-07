@@ -3,7 +3,7 @@
 <head>
     <title>Synaptory Fractal Traveler</title>
     <meta charset="UTF-8">
-    <meta name="author" content="Radim Brnka (c) 2025">
+    <meta name="author" content="Radim Brnka &copy; 2025">
     <meta name="description"
           content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
     <meta property="og:title" content="Synaptory: Fractal Traveler">
@@ -35,31 +35,20 @@
     <p>Mandelbrot and Julia fractal explorer. Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
-            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a> article &copy; Radim Brnka 2025 (<a
-            target="_blank"
-            title="Github Repository"
-            href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
+            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
+        article &copy; Radim Brnka 2025 (<a
+                target="_blank"
+                title="Github Repository"
+                href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
     <div id="controlArea">
+        <span>Fractal set:</span>
+        <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
+        <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
+        <hr/>
         <button id="reset" class="colorable">Reset</button>
         <button id="randomize" class="colorable">Random Colors</button>
         <button id="screenshot" class="colorable">Save Image</button>
         <button id="demo" class="colorable">Demo</button>
-        <hr/>
-        <span>Fractal set:</span>
-            <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
-            <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
-        <div id="sliders">
-            <div class="slider-container">
-                <label for="realSlider">cx:</label>
-                <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
-                <span class="sliderValue" id="realSliderValue">0</span>
-            </div>
-            <div class="slider-container">
-                <label for="imagSlider">cy:</label>
-                <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
-                <span class="sliderValue" id="imagSliderValue">0</span>
-            </div>
-        </div>
         <p>Presets:
             <button id="preset1" class="colorable">1</button>
             <button id="preset2" class="colorable">2</button>
@@ -72,10 +61,28 @@
             <button id="preset9" class="colorable">9</button>
             <!--        <button id="preset10"10</button>-->
         </p>
+        <p id="dives">Dives:
+            <button id="dive1" class="dive colorable">1</button>
+            <button id="dive2" class="dive colorable">2</button>
+            <button id="dive3" class="dive colorable">3</button>
+            <button id="dive4" class="dive colorable">4</button>
+        </p>
+        <div id="sliders">
+            <div class="slider-container">
+                <label for="realSlider">cx:</label>
+                <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
+                <span class="sliderValue" id="realSliderValue">0</span>
+            </div>
+            <div class="slider-container">
+                <label for="imagSlider">cy:</label>
+                <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
+                <span class="sliderValue" id="imagSliderValue">0</span>
+            </div>
+        </div>
     </div>
     <p class="small"><span>Controls:</span> Left Drag: Pan &middot; Right Drag: Rotate &middot; Wheel: Zoom<br/>
         Left Click: Center &amp; URL link &middot; Double click: Zoom-in/out &amp; Center<br/>
-        Middle Click: Guiding lines &middot; F11: Fullscreen &#124; <span id="version">version 1.6</span> </p>
+        Middle Click: Guiding lines &middot; F11: Fullscreen &#124; <span id="version" class="colorable">version 1.7</span></p>
 </div>
 <div id="infoLabel">
     <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
