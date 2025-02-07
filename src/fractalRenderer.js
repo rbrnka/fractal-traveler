@@ -39,9 +39,6 @@ export class FractalRenderer {
         this.pan = this.DEFAULT_PAN.slice(); // Copy
         this.rotation = this.DEFAULT_ROTATION;
 
-        this.fractalCenter = this.screenToFractal(this.canvas.width / 2, this.canvas.height / 2);
-        console.log("Fractal centered to " + this.fractalCenter);
-
         this.currentAnimationFrame = null;
         this.extraIterations = 0;
         this.colorPalette = this.DEFAULT_PALETTE.slice();
@@ -69,8 +66,6 @@ export class FractalRenderer {
 
         // Cache uniform locations
         this.updateUniforms();
-
-        this.fractalCenter = this.screenToFractal(this.canvas.width / 2, this.canvas.height / 2);
     }
 
     resizeCanvas() {
@@ -105,17 +100,9 @@ export class FractalRenderer {
             this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
         }
 
-        // Now reapply the stored fractal center, if available.
-        if (this.fractalCenter) {
-            console.log("Reapplying stored center:", this.fractalCenter);
-            this.pan[0] = this.fractalCenter[0];
-            this.pan[1] = this.fractalCenter[1];
-        } else {
-            console.warn("No stored centerCoord found; the fractal will recenter based on the computed center.");
-            const [fx, fy] = this.screenToFractal(centerX, centerY);
-            this.pan[0] = fx;
-            this.pan[1] = fy;
-        }
+        const [fx, fy] = this.screenToFractal(centerX, centerY);
+        this.pan[0] = fx;
+        this.pan[1] = fy;
 
         this.draw();
     }
