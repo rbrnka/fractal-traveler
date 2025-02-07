@@ -46,9 +46,11 @@ The architecture supports additional fractal types and further customization of 
 - Proper defaulting of pan and centering on init
 - Preparation for improved Julia color randomization
 - Hotkeys Q-T to rotate, reset and randomize colors
-- Default Julia state changed to more appealing
+- Arrow hotkeys to smoothly animate Julia set
+- Default Julia state changed to more appealing and to less detailed in mobile version
 - Disabled graphics of sliders during Julia demo
 - Demo active color to more visible
+- GL performance optimizations
 - Dev: FTP upload in prod deploy using .env
 - Bugs fixed: 
   - Off-center after screen resize
@@ -120,6 +122,10 @@ The entry point that imports modules, creates the fractal renderer instance (pas
 - T: Randomize color palette
 - S: Take screenshot
 - A: Force resize
+- Left/Right arrow (Julia only): Real part (cs) smooth stepping
+- Down/Up arrow (Julia only): Imaginary part (cs) smooth stepping
+- Shift + arrows: Super smooth stepping
+
 ### Touch
 - One finger pan: Pan
 - One finger tap: Center & Generate URL link
