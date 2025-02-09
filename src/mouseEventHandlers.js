@@ -1,5 +1,6 @@
 /**
  * @module MouseEventhandlers
+ * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
  * @author Radim Brnka
  */
 import {updateURLParams, clearURLParams} from './utils.js';

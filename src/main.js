@@ -1,6 +1,7 @@
 /**
  * @module main
  * @author Radim Brnka
+ * @description The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), registers events, initializes the UI and the fractal.
  */
 import './css/style.css';
 import {JuliaRenderer} from "./juliaRenderer";

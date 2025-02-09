@@ -1,6 +1,7 @@
 /**
  * @module TouchEventHandlers
  * @author Radim Brnka
+ * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
  */
 import {updateURLParams, clearURLParams} from './utils.js';
 import {MODE_JULIA, MODE_MANDELBROT, updateInfo} from './ui.js';

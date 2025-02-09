@@ -1,5 +1,7 @@
 /**
- * Mandelbrot set renderer
+ * MandelbrotRenderer
+ * This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
+ *
  * @author Radim Brnka
  * @extends FractalRenderer
  */
@@ -29,6 +31,9 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.init();
     }
 
+    /**
+     * @inheritDoc
+     */
     createFragmentShaderSource() {
         const coloring2 = `
         float color = i / 100.0;
@@ -92,6 +97,9 @@ export class MandelbrotRenderer extends FractalRenderer {
     `;
     }
 
+    /**
+     * @inheritDoc
+     */
     draw() {
         this.gl.useProgram(this.program);
         const w = this.canvas.width;
