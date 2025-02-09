@@ -67,7 +67,7 @@ button {
     border-width: 0;
     box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
     box-sizing: border-box;
-    color: #ccc;
+    color: #eee;
     display: inline-flex;
     flex-direction: column;
     font-size: 12px;
@@ -89,34 +89,23 @@ button {
     opacity: .85;
 }
 
-button:hover {
-    box-shadow: rgba(0, 0, 0, .8) 0 1px 2px;
-    opacity: 1;
-    color: #fff;
-}
-
-button:active {
-    outline: 0;
+button.active {
+    background-image: linear-gradient(#222, #666);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+    transform: translateY(1px);
+    color: #B4FF6A;
 }
 
 button:focus {
-    border: none;
     outline: 0;
-}
-
-button:disabled,
-button[disabled] {
-    color: #666;
-    cursor: auto;
 }
 
 h1 {
     padding: 12px 10px 5px 10px;
     margin: 0;
-    color: #30AF5E;
+    color: #B4FF6A;
     z-index: 1000;
     font-size: 16px;
-    text-shadow: 0 0 10px #0f0;
     letter-spacing: 1px;
 }
 
@@ -160,13 +149,14 @@ label, .sliderValue {
     flex: 1; /* Allow the slider to take remaining space */
     height: 10px;
     -webkit-appearance: none;
-    background: #222;
+    background: #000;
     outline: none;
     border-radius: 10px;
+    border: 1px solid #444;
     overflow: hidden;
     box-shadow: inset 0 0 5px rgba(0, 0, 0, 1);
     --slider-color: #fff; /* Default thumb color */
-    --thumb-color: #aaa; /* Default thumb color */
+    --thumb-color: #464646; /* Default thumb color */
 }
 
 .slider::-webkit-slider-thumb {
@@ -181,7 +171,7 @@ label, .sliderValue {
 }
 
 .thumbDisabled {
-    background: #888;
+    background: #333;
 }
 
 #dives {
@@ -193,10 +183,10 @@ input[type="radio"] {
     -webkit-appearance: none;
     width: 14px;
     height: 14px;
-    border: 1px solid #ccc;
+    border: 1px solid #888;
     border-radius: 50%;
     margin-left: 10px;
-    background-color: var(--slider-color);
+    background-color: #222;
     position: relative;
     top: 3px;
     cursor: pointer;
@@ -207,7 +197,7 @@ input[type="radio"]:checked::before {
     display: block;
     width: 8px;
     height: 8px;
-    background-color: #ccc;
+    background-color: #aaa;
     border-radius: 50%;
     position: absolute;
     top: 50%;
@@ -303,7 +293,7 @@ a:hover {
 }
 
 #infoText.demoActive {
-    color: #0f0;
+    color: #B4FF6A;
 }
 
 #debugInfo {

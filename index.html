@@ -32,40 +32,23 @@
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
     <h1 class="colorable"> ~ Synaptory Fractal Traveler ~ </h1>
-    <p>Mandelbrot and Julia fractal explorer. Developed for the <a
+    <p>Mandelbrot and Julia fractal explorer &copy; Radim Brnka 2025<br/>Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
             href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
-        article &copy; Radim Brnka 2025 (<a
-                target="_blank"
-                title="Github Repository"
-                href="https://github.com/rbrnka/fractal-traveler">source code</a>)</p>
+        article.</p>
     <div id="controlArea">
         <span>Fractal set:</span>
         <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
         <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
         <hr/>
-        <button id="reset" class="colorable">Reset</button>
-        <button id="randomize" class="colorable">Random Colors</button>
-        <button id="screenshot" class="colorable">Save Image</button>
-        <button id="demo" class="colorable">Demo</button>
-        <p>Presets:
-            <button id="preset1" class="colorable">1</button>
-            <button id="preset2" class="colorable">2</button>
-            <button id="preset3" class="colorable">3</button>
-            <button id="preset4" class="colorable">4</button>
-            <button id="preset5" class="colorable">5</button>
-            <button id="preset6" class="colorable">6</button>
-            <button id="preset7" class="colorable">7</button>
-            <button id="preset8" class="colorable">8</button>
-            <button id="preset9" class="colorable">9</button>
-            <!--        <button id="preset10"10</button>-->
+        <button id="reset" class="colorable" title="Shift+R">Reset</button>
+        <button id="randomize" class="colorable" title="T">Random Colors</button>
+        <button id="screenshot" class="colorable" title="Shift+S">Save Image</button>
+        <button id="demo" class="colorable" title="D">Demo</button>
+        <p id="presets">Presets:
         </p>
         <p id="dives">Dives:
-            <button id="dive1" class="dive colorable">1</button>
-            <button id="dive2" class="dive colorable">2</button>
-            <button id="dive3" class="dive colorable">3</button>
-            <button id="dive4" class="dive colorable">4</button>
         </p>
         <div id="sliders">
             <div class="slider-container">
@@ -80,9 +63,36 @@
             </div>
         </div>
     </div>
-    <p class="small"><span>Controls:</span> Left Drag: Pan &middot; Right Drag: Rotate &middot; Wheel: Zoom<br/>
-        Left Click: Center &amp; URL link &middot; Double click: Zoom-in/out &amp; Center<br/>
-        Middle Click: Guiding lines &middot; F11: Fullscreen &#124; <span id="version" class="colorable">version 1.7</span></p>
+    <p class="small">
+        <a target="_blank" title="
+### Mouse
+    - Left Drag: Pan
+    - Right Drag: Rotate
+    - Wheel: Zoom
+    - Left Single Click: Center & Generate URL link
+    - Double click: Zoom-in/out & Center
+    - Middle Click: Toggle guiding lines
+### Keyboard
+    - `F11`: Toggle fullscreen
+    - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+    - `E`: Toggle guiding lines
+    - `Shift + R`: Reset
+    - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
+    - `Shift + S`: Take screenshot
+    - `Space`: Zoom-in (Shift: zoom-out)
+    - `A`: Force resize
+    - `Left / Right` arrow: Julia: Real part (cx) stepping / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
+    - `Up / Down` arrow: Julia: Imaginary part (cy) stepping / Mandelbrot: Vertical pan (Shift: Smooth stepping)
+    - `Num 1-9`: Load Preset (Shift: Start dive)"
+           href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#controls">Controls</a>
+        &middot;
+        <a target="_blank" title="Documentation"
+           href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#synaptory-fractal-traveler">Documentation</a>
+        &middot;
+        <a target="_blank" title="Source Code" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
+        &middot;
+        <span id="version" title="Version" class="colorable">v1.7</span>
+    </p>
 </div>
 <div id="infoLabel">
     <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>

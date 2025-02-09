@@ -1,12 +1,13 @@
 /**
  * Julia set renderer
  * @author Radim Brnka
+ * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
  * @extends FractalRenderer
  */
 
 import {updateInfo, updateJuliaSliders} from "./ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {isTouchDevice} from "./utils";
+import {easeInOut, isTouchDevice, lerp} from "./utils";
 
 export class JuliaRenderer extends FractalRenderer {
 
@@ -39,39 +40,62 @@ export class JuliaRenderer extends FractalRenderer {
          *  Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
          *  it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
          *  direction.
+         * @type {[{cyDirection: number, endC: number[], rotation: number, cxDirection: number, zoom: number, step: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]}]}
          */
         this.DIVES = [
             {
                 pan: [0, 0],
-                c: [-0.25190652273600045, 0.637461568487061],
+                startC: [-0.25190652273600045, 0.637461568487061],
+                endC: [-0.2526, 0.6355],
+                cxDirection: -1,
+                cyDirection: -1,
                 rotation: 0,
                 zoom: 0.05,
                 step: 0.00000005,
-
-                cxDirection: -1,
-                cYDirection: +1,
-                endC: [-0.38, 0.59132],
             },
             {
-                pan: [-0.3083000755566157, 0.3955446343534545],
+                pan: [-0.31106298032702495, 0.39370074960517293],
                 rotation: 1.4999999999999947,
                 zoom: 0.3829664619602934,
-                c: [-0.25190652273600045, 0.637461568487061],
-                step: 0.00001
+                startC: [-0.2523365227360009, 0.6386621652418372],
+                step: 0.00001,
+
+                cxDirection: -1,
+                cyDirection: -1,
+                endC: [-0.335, 0.62],
             },
             {
                 pan: [-0.6838279169792393, 0.46991716118236204],
                 rotation: 0,
                 zoom: 0.04471011402132469,
-                c: [-0.246, 0.6427128691849591],
-                step: 0.000001
+                startC: [-0.246, 0.6427128691849591],
+                step: 0.0000005,
+
+                cxDirection: -1,
+                cyDirection: -1,
+                endC: [-0.247, 0.638],
             },
             {
-                pan: [0.0004602397265110535, -0.0005233390584007328],
+                pan: [0, 0],
                 rotation: 2.6179938779914944,
-                zoom: 0.7385821389576397,
-                c: [-1.253593844201527, 0.020091693459541395],
-                step: 0.000001
+                zoom: 1.7,
+                startC: [-0.246, 0.64],
+                step: 0.000005,
+
+                cxDirection: 1,
+                cyDirection: 1,
+                endC: [-0.2298, 0.67],
+            },
+            {
+                pan: [0.5160225367869309, -0.05413028639548453],
+                rotation: 2.6179938779914944,
+                zoom: 0.110783,
+                startC: [-0.78, 0.11],
+                step: 0.00001,
+
+                cxDirection: 1,
+                cyDirection: 1,
+                endC: [-0.7425, 0.25],
             }
         ];
 
@@ -79,6 +103,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.init();
     }
 
+    /**
+     * @inheritDoc
+     */
     createFragmentShaderSource() {
         return `
             #ifdef GL_ES
@@ -173,6 +200,9 @@ export class JuliaRenderer extends FractalRenderer {
          `;
     }
 
+    /**
+     * @inheritDoc
+     */
     draw() {
         this.gl.useProgram(this.program);
         const w = this.canvas.width;
@@ -197,7 +227,7 @@ export class JuliaRenderer extends FractalRenderer {
 
         // Dynamically calculate iterations
         const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
-        const iters = Math.min(1000, baseIters + this.extraIterations);
+        const iters = Math.min(2000, baseIters + this.extraIterations);
         this.gl.uniform1f(this.iterLoc, iters);
 
         this.gl.uniform3fv(this.colorLoc, this.colorPalette);
@@ -211,22 +241,16 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
+    /**
+     * @inheritDoc
+     */
     reset() {
-        this.stopCurrentAnimation();
-        this.colorPalette = this.DEFAULT_PALETTE.slice();
-        this.pan = this.DEFAULT_PAN.slice();
-        this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
-        this.rotation = this.DEFAULT_ROTATION; // Reset rotation
         this.c = this.DEFAULT_C.slice();
-        this.extraIterations = 0;
-
-        this.resizeCanvas();
-        this.draw();
-        updateInfo();
+        super.reset();
     }
 
     /**
-     * Test function to randomize the inner palette stops.
+     * TODO Test function to randomize the inner palette stops.
      */
     randomizeInnerPalette() {
         // Generate three random inner stops.
@@ -249,25 +273,8 @@ export class JuliaRenderer extends FractalRenderer {
     // -----------------------------------------------------------------------------------------------------------------
 
     /**
-     * Helper function for ease-in-out timing
-     * @param t time step
-     * @return {number}
+     * @inheritDoc
      */
-    easeInOut = (t) => {
-        return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-    }
-
-    /**
-     * Helper function for linear interpolation
-     * @param start
-     * @param end
-     * @param t
-     * @return {*}
-     */
-    lerp(start, end, t) {
-        return start + (end - start) * t;
-    }
-
     animateZoom(targetZoom, duration, callback) {
         const startZoom = this.zoom;
         const self = this;
@@ -294,6 +301,7 @@ export class JuliaRenderer extends FractalRenderer {
 
     /**
      * Animates Julia from current C to target C
+     *
      * @param targetC
      * @param duration transition duration
      * @param callback once finished
@@ -301,7 +309,7 @@ export class JuliaRenderer extends FractalRenderer {
     animateToC(targetC = this.DEFAULT_C.slice(), duration = 500, callback = null) {
         if (this.c[0] === targetC[0] && this.c[1] === targetC[1]) return;
 
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         const self = this;
         const startC = self.c;
@@ -314,11 +322,11 @@ export class JuliaRenderer extends FractalRenderer {
             if (progress > 1) progress = 1;
 
             // Apply eased progress
-            const easedProgress = self.easeInOut(progress);
+            const easedProgress = easeInOut(progress);
 
             // Interpolate `c` smoothly
-            self.c[0] = self.lerp(startC[0], targetC[0], easedProgress);
-            self.c[1] = self.lerp(startC[1], targetC[1], easedProgress);
+            self.c[0] = lerp(startC[0], targetC[0], easedProgress);
+            self.c[1] = lerp(startC[1], targetC[1], easedProgress);
 
             // Redraw with updated values
             self.draw();
@@ -328,7 +336,7 @@ export class JuliaRenderer extends FractalRenderer {
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepAdjustC);
             } else {
-                self.onAnimationFinished();
+                self.updateInfoOnAnimationFinished();
                 if (callback) callback();
             }
         }
@@ -336,8 +344,11 @@ export class JuliaRenderer extends FractalRenderer {
         self.currentAnimationFrame = requestAnimationFrame(stepAdjustC);
     }
 
+    /**
+     * @inheritDoc
+     */
     animateTravelToPreset(preset, transitionDuration, onFinishedCallback = null) {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         const self = this;
 
@@ -356,9 +367,9 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress > 1) progress = 1;
 
                 // Interpolate zoom and pan
-                self.zoom = self.lerp(startZoom, self.DEFAULT_ZOOM, progress);
-                self.pan[0] = self.lerp(startPan[0], targetPan[0], progress);
-                self.pan[1] = self.lerp(startPan[1], targetPan[1], progress);
+                self.zoom = lerp(startZoom, self.DEFAULT_ZOOM, progress);
+                self.pan[0] = lerp(startPan[0], targetPan[0], progress);
+                self.pan[1] = lerp(startPan[1], targetPan[1], progress);
 
                 // Redraw during the adjustment
                 self.draw();
@@ -367,7 +378,7 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepAdjust);
                 } else {
-                    self.onAnimationFinished();
+                    self.updateInfoOnAnimationFinished();
                     if (callback) callback();
                 }
             }
@@ -389,15 +400,15 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress > 1) progress = 1;
 
                 // Apply eased progress
-                const easedProgress = self.easeInOut(progress);
+                const easedProgress = easeInOut(progress);
 
                 // Interpolate `c`, `pan`, and rotation smoothly
-                self.c[0] = self.lerp(startC[0], preset.c[0], easedProgress);
-                self.c[1] = self.lerp(startC[1], preset.c[1], easedProgress);
-                self.rotation = self.lerp(startRotation, preset.rotation, progress);
-                self.pan[0] = self.lerp(startPan[0], preset.pan[0], progress);
-                self.pan[1] = self.lerp(startPan[1], preset.pan[1], progress);
-                self.zoom = self.lerp(startZoom, preset.zoom, progress);
+                self.c[0] = lerp(startC[0], preset.c[0], easedProgress);
+                self.c[1] = lerp(startC[1], preset.c[1], easedProgress);
+                self.rotation = lerp(startRotation, preset.rotation, progress);
+                self.pan[0] = lerp(startPan[0], preset.pan[0], progress);
+                self.pan[1] = lerp(startPan[1], preset.pan[1], progress);
+                self.zoom = lerp(startZoom, preset.zoom, progress);
 
                 // Redraw with updated values
                 self.draw();
@@ -408,7 +419,7 @@ export class JuliaRenderer extends FractalRenderer {
                     self.currentAnimationFrame = requestAnimationFrame(stepTransition);
                 } else {
                     if (onFinishedCallback) onFinishedCallback();
-                    self.onAnimationFinished();
+                    self.updateInfoOnAnimationFinished();
                 }
             }
 

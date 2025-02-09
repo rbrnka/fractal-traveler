@@ -1,8 +1,11 @@
 import {updateInfo} from "./ui";
+import {hslToRgb, lerp, rgbToHsl} from "./utils";
 
 /**
  * FractalRenderer
+ *
  * @author Radim Brnka
+ * @description This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.
  * @abstract
  */
 export class FractalRenderer {
@@ -40,6 +43,7 @@ export class FractalRenderer {
         this.rotation = this.DEFAULT_ROTATION;
 
         this.currentAnimationFrame = null;
+        this.currentColorAnimationFrame = null;
         this.extraIterations = 0;
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
@@ -60,6 +64,9 @@ export class FractalRenderer {
         });
     }
 
+    /**
+     * WebGL init & initial uniforms setting
+     */
     init() {
         // Initialize WebGL program and uniforms
         this.initGLProgram();
@@ -68,6 +75,9 @@ export class FractalRenderer {
         this.updateUniforms();
     }
 
+    /**
+     * Updates the canvas size based on the current visual viewport
+     */
     resizeCanvas() {
         console.log("Resizing canvas");
 
@@ -108,12 +118,21 @@ export class FractalRenderer {
     }
 
     /**
+     * Defines the shader code for rendering the fractal shape
+     *
      * @abstract
      */
     createFragmentShaderSource() {
         throw new Error('The draw method must be implemented in child classes');
     }
 
+    /**
+     * Compiles the shader code
+     *
+     * @param source
+     * @param type
+     * @return {*|{}|WebGLShader|null}
+     */
     compileShader(source, type) {
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
@@ -128,6 +147,9 @@ export class FractalRenderer {
         return shader;
     }
 
+    /**
+     * Initializes the WebGL program and sets initial position
+     */
     initGLProgram() {
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
@@ -176,6 +198,7 @@ export class FractalRenderer {
 
     /**
      * Draws the fractal.
+     *
      * @abstract
      */
     draw() {
@@ -186,7 +209,10 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom) and redraws.
      */
     reset() {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
+        this.stopCurrentColorAnimation();
+
+        this.colorPalette = this.DEFAULT_PALETTE.slice();
         this.pan = this.DEFAULT_PAN.slice();
         this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
         this.rotation = 0; // Reset rotation
@@ -199,6 +225,7 @@ export class FractalRenderer {
 
     /**
      * Calculates coordinates from screen to fx/fy in the fractal scale (matches complex number x+yi)
+     *
      * @param screenX
      * @param screenY
      * @returns {number[]}
@@ -246,14 +273,14 @@ export class FractalRenderer {
         return [fx, fy];
     }
 
-
     // -----------------------------------------------------------------------------------------------------------------
     // Animation Methods
     // -----------------------------------------------------------------------------------------------------------------
+
     /**
-     * Stops currently running animation
+     * Stops currently running animation that is not a color transition
      */
-    stopCurrentAnimation() {
+    stopCurrentNonColorAnimation() {
         if (this.currentAnimationFrame !== null) {
             cancelAnimationFrame(this.currentAnimationFrame);
             this.currentAnimationFrame = null;
@@ -261,23 +288,112 @@ export class FractalRenderer {
     }
 
     /**
-     * Default callback after every animation
+     * Stops currently running color animation
      */
-    onAnimationFinished() {
+    stopCurrentColorAnimation() {
+        if (this.currentColorAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentColorAnimationFrame);
+            this.currentColorAnimationFrame = null;
+        }
+    }
+
+    /**
+     * Default callback after every animation that requires on-screen info update
+     */
+    updateInfoOnAnimationFinished() {
         setTimeout(() => {
             updateInfo();
         }, 200);
     }
 
     /**
+     * Smoothly transitions fractalApp.colorPalette from its current value
+     * to the provided newPalette over the specified duration (in milliseconds).
+     *
+     * @param {Array} newPalette - The target palette as [r, g, b] (each in [0,1]).
+     * @param {number} duration - Duration of the transition in milliseconds.
+     * @param callback
+     */
+    animateColorPaletteTransition(newPalette, duration = 250, callback = null) {
+        this.stopCurrentColorAnimation();
+
+        // Store the starting palette
+        const startPalette = this.colorPalette.slice();
+        let startTime = null;
+        const self = this;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            let progress = (timestamp - startTime) / duration;
+            if (progress > 1) progress = 1;
+
+            // Interpolate each channel.
+            const interpPalette = [
+                lerp(startPalette[0], newPalette[0], progress),
+                lerp(startPalette[1], newPalette[1], progress),
+                lerp(startPalette[2], newPalette[2], progress)
+            ];
+
+            self.colorPalette = interpPalette;
+            self.draw();
+
+            if (progress < 1) {
+                self.currentColorAnimationFrame = requestAnimationFrame(step);
+            } else {
+                self.stopCurrentColorAnimation();
+                if (callback) callback();
+            }
+        }
+
+        this.currentColorAnimationFrame = requestAnimationFrame(step);
+    }
+
+    /**
+     * Animates fractalApp.colorPalette by cycling through the entire color space.
+     * The palette will continuously change hue from 0 to 360 degrees and starts from the current palette
+     *
+     * @param {number} duration - Duration (in milliseconds) for one full color cycle.
+     */
+    animateFullColorSpaceCycle(duration) {
+        this.stopCurrentColorAnimation();
+
+        let startTime = null;
+        const self = this;
+        console.log("Starting full color cycle animation from current palette");
+
+        const currentRGB = self.colorPalette;
+        const hsl = rgbToHsl(currentRGB[0], currentRGB[1], currentRGB[2]);
+        const startHue = hsl[0];  // starting hue in [0,1]
+        // Use fixed saturation and lightness for the animation.
+        const fixedS = 1.0;
+        const fixedL = 0.6;
+
+        function step(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const progress = ((timestamp - startTime) % duration) / duration;
+            const newHue = (startHue + progress) % 1;
+            const newPalette = hslToRgb(newHue, fixedS, fixedL);
+
+            self.colorPalette = newPalette;
+            self.draw();
+
+            self.currentColorAnimationFrame = requestAnimationFrame(step);
+            updateInfo(true);
+        }
+
+        self.currentColorAnimationFrame = requestAnimationFrame(step);
+    }
+
+    /**
      * Animates pan
+     *
      * @param targetPan
      * @param duration
      * @param callback after the animation
      * @param startPan
      */
     animatePan(targetPan, duration = 200, callback = null, startPan = this.pan.slice()) {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         const self = this;
         let startTime = null;
@@ -295,7 +411,8 @@ export class FractalRenderer {
                 self.currentAnimationFrame = requestAnimationFrame(step);
                 updateInfo(true);
             } else {
-                self.onAnimationFinished();
+                self.updateInfoOnAnimationFinished();
+                self.stopCurrentNonColorAnimation();
                 if (callback) callback();
             }
         }
@@ -305,11 +422,13 @@ export class FractalRenderer {
 
     /**
      * Animates to target zoom without panning.
+     *
      * @param targetZoom
      * @param duration in milliseconds
+     * @param callback
      */
-    animateZoom(targetZoom, duration) {
-        this.stopCurrentAnimation();
+    animateZoom(targetZoom, duration, callback = null) {
+        this.stopCurrentNonColorAnimation();
 
         const startZoom = this.zoom;
         const self = this;
@@ -327,7 +446,9 @@ export class FractalRenderer {
                 self.currentAnimationFrame = requestAnimationFrame(stepZoom);
                 updateInfo(true);
             } else {
-                self.onAnimationFinished();
+                self.stopCurrentNonColorAnimation();
+                self.updateInfoOnAnimationFinished();
+                if (callback) callback();
             }
         }
 
@@ -336,14 +457,16 @@ export class FractalRenderer {
 
     /**
      * Animates sequential pan and then zooms into the target location.
+     *
      * @param targetPan Array [x, y]
      * @param targetZoom
      * @param panDuration in milliseconds
      * @param zoomDuration in milliseconds
      * @param startPan Defaults to current pan
+     * @param callback
      */
-    animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration, startPan = this.pan.slice()) {
-        this.stopCurrentAnimation();
+    animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration, startPan = this.pan.slice(), callback = null) {
+        this.stopCurrentNonColorAnimation();
 
         const startStatePan = startPan; // current pan
         const self = this;
@@ -362,7 +485,7 @@ export class FractalRenderer {
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(stepPan);
             } else {
-                self.animateZoom(targetZoom, zoomDuration);
+                self.animateZoom(targetZoom, zoomDuration, callback);
             }
         }
 
@@ -371,13 +494,14 @@ export class FractalRenderer {
 
     /**
      * Animates pan and zoom simultaneously.
+     *
      * @param targetPan Array [x, y]
      * @param targetZoom
      * @param duration in milliseconds
      * @param callback Function called when animation is finished
      */
     animatePanAndZoomTo(targetPan, targetZoom, duration = 500, callback = null) {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         const startPan = this.pan.slice();
         const startZoom = this.zoom;
@@ -389,8 +513,6 @@ export class FractalRenderer {
             let progress = (timestamp - startTime) / duration;
             if (progress > 1) progress = 1;
 
-            const lerp = (a, b, t) => a + (b - a) * t;
-
             // In animatePanAndZoomTo or other animations:
             self.pan[0] = lerp(startPan[0], targetPan[0], progress);
             self.pan[1] = lerp(startPan[1], targetPan[1], progress);
@@ -401,7 +523,8 @@ export class FractalRenderer {
             if (progress < 1) {
                 self.currentAnimationFrame = requestAnimationFrame(step);
             } else {
-                self.onAnimationFinished();
+                self.stopCurrentNonColorAnimation();
+                self.updateInfoOnAnimationFinished();
                 if (callback) callback();
             }
         }
@@ -410,6 +533,7 @@ export class FractalRenderer {
     }
 
     /**
+     * Animates pan, zoom and rotation simultaneously
      *
      * @param targetPan
      * @param targetZoom
@@ -418,7 +542,7 @@ export class FractalRenderer {
      * @param callback
      */
     animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500, callback = null) {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         const startPan = this.pan.slice();
         const startZoom = this.zoom;
@@ -441,7 +565,8 @@ export class FractalRenderer {
                 self.currentAnimationFrame = requestAnimationFrame(step);
                 updateInfo(true);
             } else {
-                self.onAnimationFinished();
+                self.stopCurrentNonColorAnimation();
+                self.updateInfoOnAnimationFinished();
                 if (callback) callback();
             }
         }
@@ -452,13 +577,15 @@ export class FractalRenderer {
     /**
      * Animates travel to a preset. If the current zoom is different from the default,
      * it first zooms out to the default zoom and then animates pan and zoom.
+     *
      * @param preset Object { pan: [x, y], zoom: number }
      * @param zoomOutDuration in milliseconds
      * @param panDuration in milliseconds
      * @param zoomInDuration in milliseconds
+     * @param callback
      */
-    animateTravelToPreset(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        this.stopCurrentAnimation();
+    animateTravelToPreset(preset, zoomOutDuration = 500, panDuration = 500, zoomInDuration = 3500, callback = null) {
+        this.stopCurrentNonColorAnimation();
 
         const self = this;
 
@@ -497,7 +624,7 @@ export class FractalRenderer {
      * @param zoomInDuration
      */
     animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        this.stopCurrentAnimation();
+        this.stopCurrentNonColorAnimation();
 
         if (this.zoom === this.DEFAULT_ZOOM) {
             this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration);
@@ -532,8 +659,9 @@ export class FractalRenderer {
 
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
-                } else if (callback) {
-                    callback();
+                } else {
+                    self.stopCurrentNonColorAnimation();
+                    if (callback) callback();
                 }
             }
 
@@ -583,7 +711,7 @@ export class FractalRenderer {
                 if (progress < 1) {
                     self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);
                 } else {
-                    self.onAnimationFinished();
+                    self.updateInfoOnAnimationFinished();
                 }
             }
 

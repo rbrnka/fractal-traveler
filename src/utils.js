@@ -1,6 +1,7 @@
 /**
  * @module utils.js
  * @author Radim Brnka
+ * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
 import {isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
@@ -165,24 +166,77 @@ export function hsbToRgb(h, s, b) {
 }
 
 /**
- * Get fractal coordinates after applying rotation
- * @param fractalApp {FractalRenderer}
- * @param mouseX {number} X coordinate on the canvas
- * @param mouseY {number} Y coordinate on the canvas
- * @param rect {DOMRect} Canvas bounding rectangle
- * @returns {[number, number]} Rotated fractal coordinates
+ * Convert HSL (h in [0,1], s in [0,1], l in [0,1]) to RGB (each channel in [0,1])
+ * @param h
+ * @param s
+ * @param l
+ * @return {(*)[]}
  */
-export function getRotatedFractalCoords(fractalApp, mouseX, mouseY, rect) {
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const offsetX = mouseX - centerX;
-    const offsetY = mouseY - centerY;
+export function hslToRgb(h, s, l) {
+    let r, g, b;
+    if (s === 0) {
+        r = g = b = l; // achromatic
+    } else {
+        const hue2rgb = (p, q, t) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        };
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [r, g, b];
+}
 
-    const cosR = Math.cos(-fractalApp.rotation);
-    const sinR = Math.sin(-fractalApp.rotation);
+/**
+ * Converts RGB (each in [0,1]) to HSL (h in [0,1], s in [0,1], l in [0,1])
+ * @param r
+ * @param g
+ * @param b
+ * @return {(number|number)[]}
+ */
+export function rgbToHsl(r, g, b) {
+    let max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) {
+        h = s = 0; // achromatic
+    } else {
+        let d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        if (max === r) {
+            h = (g - b) / d + (g < b ? 6 : 0);
+        } else if (max === g) {
+            h = (b - r) / d + 2;
+        } else {
+            h = (r - g) / d + 4;
+        }
+        h /= 6;
+    }
+    return [h, s, l];
+}
 
-    const rotatedX = cosR * offsetX - sinR * offsetY + centerX;
-    const rotatedY = sinR * offsetX + cosR * offsetY + centerY;
+/**
+ * Helper function for ease-in-out timing
+ * @param t time step
+ * @return {number}
+ */
+export function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+}
 
-    return fractalApp.screenToFractal(rotatedX, rotatedY);
+/**
+ * Helper function for linear interpolation
+ * @param start
+ * @param end
+ * @param t
+ * @return {*}
+ */
+export function lerp(start, end, t) {
+    return start + (end - start) * t;
 }
