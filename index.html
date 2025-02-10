@@ -31,25 +31,24 @@
 <body>
 <div id="headerContainer">
     <span id="handle" title="Toggle" class="colorable">&#8801;</span>
-    <h1 class="colorable"> ~ Synaptory Fractal Traveler ~ </h1>
+    <h1> ~ Synaptory Fractal Traveler ~ </h1>
     <p>Mandelbrot and Julia fractal explorer &copy; Radim Brnka 2025<br/>Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
             href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
         article.</p>
     <div id="controlArea">
-        <span>Fractal set:</span>
-        <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
-        <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">Julia</label>
-        <hr/>
-        <button id="reset" class="colorable" title="Shift+R">Reset</button>
-        <button id="randomize" class="colorable" title="T">Random Colors</button>
-        <button id="screenshot" class="colorable" title="Shift+S">Save Image</button>
-        <button id="demo" class="colorable" title="D">Demo</button>
-        <p id="presets">Presets:
-        </p>
-        <p id="dives">Dives:
-        </p>
+        <div class="switch-field">
+            <span>Fractal set:</span>
+            <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
+            <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">&nbsp;&nbsp;&nbsp;&nbsp;Julia&nbsp;&nbsp;&nbsp;&nbsp;</label>
+        </div>
+        <button id="reset" class="" title="Shift+R">Reset</button>
+        <button id="randomize" class="" title="T">Random Colors</button>
+        <button id="screenshot" class="" title="Shift+S">Save Image</button>
+        <button id="demo" class="" title="D">Demo</button>
+        <p id="presets">Presets:</p>
+        <p id="dives">Dives:</p>
         <div id="sliders">
             <div class="slider-container">
                 <label for="realSlider">cx:</label>
@@ -91,7 +90,7 @@
         &middot;
         <a target="_blank" title="Source Code" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
         &middot;
-        <span id="version" title="Version" class="colorable">version 1.7</span>
+        <span id="version" title="Version">version 1.8 beta</span>
     </p>
 </div>
 <div id="infoLabel">

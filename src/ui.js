@@ -489,7 +489,7 @@ function randomizeColors() {
 }
 
 function initHeaderEvents() {
-    if(DEBUG_MODE) return;
+    if (DEBUG_MODE) return;
     header.addEventListener('pointerenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
@@ -567,7 +567,7 @@ function initPresetButtonEvents() {
     presets.forEach((preset, index) => {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index + 1);
-        btn.className = 'preset colorable';
+        btn.className = 'preset';
         btn.textContent = (index + 1).toString();
         btn.addEventListener('click', () => {
             if (index !== activePresetIndex) {
@@ -614,7 +614,7 @@ function initDives() {
         dives.forEach((dive, index) => {
             const btn = document.createElement('button');
             btn.id = 'dive' + (index + 1);
-            btn.className = 'dive colorable';
+            btn.className = 'dive';
             btn.textContent = (index + 1).toString();
             btn.addEventListener('click', () => {
                 if (index !== activeJuliaDiveIndex) {
@@ -636,11 +636,13 @@ function initDives() {
 
 function initFractalSwitchRadios() {
     mandelbrotRadio.addEventListener('click', (event) => {
-        switchFractalMode(MODE_MANDELBROT);
+        if (isJuliaMode())
+            switchFractalMode(MODE_MANDELBROT);
     });
 
     juliaRadio.addEventListener('click', (event) => {
-        switchFractalMode(MODE_JULIA);
+        if (!isJuliaMode())
+            switchFractalMode(MODE_JULIA);
     });
 }
 
@@ -815,6 +817,11 @@ function initHotkeys() {
                 fractalApp.animateZoom(fractalApp.zoom * (event.shiftKey ? 1.1 : 0.9), 20);
                 break;
 
+            case "Enter":
+                header.classList.remove('minimized');
+                console.log(fractalApp.colorPalette);
+                break;
+
             default:
                 // Case nums:
                 const match = event.code.match(/^(Digit|Numpad)([1-9])$/);
@@ -877,6 +884,9 @@ export function initUI(fractalRenderer) {
         enableJuliaMode();
         initSliders();
         initDives();
+        updateColorTheme([0.298, 0.298, 0.741]);
+        header.style.background = 'rgba(20, 20, 20, 0.8)';
+        infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
     }
 
     initWindowEvents();
@@ -897,50 +907,28 @@ export function initUI(fractalRenderer) {
     }
 
     if (DEBUG_MODE) {
-        initDebugMode();
+        //initDebugMode();
     }
 
     uiInitialized = true;
 }
 
-function updateColorTheme() {
-    const palette = fractalApp.colorPalette;
-    // Convert the palette into RGB values for the primary color
+/**
+ * Updates color scheme
+ * @param [palette] defaults to the fractal palette
+ */
+function updateColorTheme(palette) {
+    palette ||= fractalApp.colorPalette.slice();
+    console.log('Setting color theme to ' + palette)
     const brightnessFactor = 1.9; // Increase brightness by 90%
     const adjustChannel = (value) => Math.min(255, Math.floor(value * 255 * brightnessFactor));
-    const primaryColor = `rgb(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])})`;
 
-    // Adjust border colors based on the primary color
-    const borderColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.3)`; // Slightly dimmed for borders
+    const borderColor = `rgb(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])})`;
+    const accentColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.1)`; // Slightly dimmed for borders
 
-    // Update header border and background color
-    const header = document.getElementById('headerContainer');
-    if (header) {
-        header.style.borderColor = borderColor;
-    }
-
-    // Update infoText border and background color
-    if (infoLabel) {
-        infoLabel.style.borderColor = borderColor;
-    }
-
-    realSlider.style.setProperty('--thumb-color', borderColor);
-    realSlider.style.setProperty('--slider-color', primaryColor);
-    imagSlider.style.setProperty('--thumb-color', borderColor);
-    imagSlider.style.setProperty('--slider-color', primaryColor);
-
-    // Update infoText border and background color
-    const colorableElements = document.getElementsByClassName('colorable');
-    if (colorableElements) {
-        for (let i = 0; i < colorableElements.length; i++) {
-            colorableElements[i].style.color = primaryColor;
-        }
-    }
-
-    // Optional: Update other UI elements using CSS variables or inline styles
-    //const root = document.documentElement;
-    //root.style.setProperty('--app-primary-color', primaryColor);
-    //root.style.setProperty('--app-border-color', borderColor);
+    let root = document.querySelector(':root');
+    root.style.setProperty('--bg-color', accentColor);
+    root.style.setProperty('--accent-color', borderColor);
 }
 
 /**
