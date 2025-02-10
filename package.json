@@ -49,6 +49,7 @@
     }
   },
   "dependencies": {
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "jsdoc": "^4.0.4"
   }
 }
