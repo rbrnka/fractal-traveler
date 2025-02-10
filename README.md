@@ -49,9 +49,11 @@ The architecture supports additional fractal types and further customization of 
 
 ## Changelog
 ### v1.7
-- Julia dives added (super smooth detailed animations)
+- Julia dives added (super smooth detailed animated c-transitions)
 - Num hotkeys support for presets and dives
 - Arrow hotkeys pan in Mandelbrot mode
+- Bugs fixed:
+  - Centering after resize
 
 ### v1.6
 - Improved Julia coloring
@@ -135,8 +137,8 @@ The entry point that imports modules, creates the fractal renderer instance (pas
 - `Shift + S`: Take screenshot
 - `Space`: Zoom-in (Shift: zoom-out)
 - `A`: Force resize
-- `Left / Right` arrow: Julia: Real part (cx) stepping / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
-- `Up / Down` arrow: Julia: Imaginary part (cy) stepping / Mandelbrot: Vertical pan (Shift: Smooth stepping)
+- `Left / Right`: Julia: Real part (cx) stepping / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
+- `Up / Down`: Julia: Imaginary part (cy) stepping / Mandelbrot: Vertical pan (Shift: Smooth stepping)
 - `Num 1-9`: Load Preset (Shift: Start dive)
 
 ### Touch
