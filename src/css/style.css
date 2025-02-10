@@ -1,5 +1,5 @@
 :root {
-    --bg-color: rgba(24, 48, 13, 0.1);
+    --bg-color: rgba(24, 48, 13, 0.2);
     --accent-color: #B4FF6A;
 }
 
@@ -19,7 +19,7 @@ html, body {
 #headerContainer {
     position: relative;
     z-index: 9999;
-    background: var(--bg-color);
+    background-color: var(--bg-color);
     backdrop-filter: blur(6px);
     width: 390px;
     margin: 0 auto;
@@ -28,7 +28,7 @@ html, body {
     cursor: auto;
     height: auto;
     overflow: hidden;
-    /*border: 2px solid var(--bg-color);*/
+    border: 2px solid var(--bg-color);
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -38,6 +38,8 @@ html, body {
 
 #headerContainer.minimized {
     height: 20px;
+    border: 2px solid var(--bg-color);
+    border-top: none;
 }
 
 #fractalCanvas {
@@ -305,10 +307,11 @@ a:hover {
     width: 370px;
     height: 14px;
     padding: 5px 10px 7px 10px;
-    background: rgba(0, 0, 0, 0.2);
-    backdrop-filter: blur(6px);
+    background-color: var(--bg-color);
+    backdrop-filter: blur(8px);
     z-index: 9999;
-    /*border: 2px solid var(--bg-color);*/
+    border: 2px solid var(--bg-color);
+    border-bottom: none;
     cursor: text;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
@@ -323,6 +326,7 @@ a:hover {
 
 #infoText {
     color: #ccc;
+    /*color: var(--accent-color);*/
     font-family: sans-serif;
     /*font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;*/
     width: 100%;

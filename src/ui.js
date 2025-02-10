@@ -566,9 +566,9 @@ function initPresetButtonEvents() {
     const presets = fractalApp.PRESETS.slice();
     presets.forEach((preset, index) => {
         const btn = document.createElement('button');
-        btn.id = 'preset' + (index + 1);
+        btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.textContent = (index + 1).toString();
+        btn.textContent = (index).toString();
         btn.addEventListener('click', () => {
             if (index !== activePresetIndex) {
                 activePresetIndex = index;
@@ -582,6 +582,7 @@ function initPresetButtonEvents() {
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
+        presetButtons[0].classList.add('active');
     });
 }
 
@@ -613,9 +614,9 @@ function initDives() {
         const dives = fractalApp.DIVES.slice();
         dives.forEach((dive, index) => {
             const btn = document.createElement('button');
-            btn.id = 'dive' + (index + 1);
+            btn.id = 'dive' + (index);
             btn.className = 'dive';
-            btn.textContent = (index + 1).toString();
+            btn.textContent = (index).toString();
             btn.addEventListener('click', () => {
                 if (index !== activeJuliaDiveIndex) {
                     stopDemoMode();
@@ -782,34 +783,54 @@ function initHotkeys() {
                 break;
 
             case "ArrowLeft": // Julia cx smooth down
-                if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                if (event.ctrlKey || !isJuliaMode()) {
+                    let step = mandelbrotPanSpeed * fractalApp.zoom;
+                    let r = fractalApp.rotation;
+                    let dx = -step, dy = 0;
+                    let deltaX = dx * Math.cos(r) - dy * Math.sin(r);
+                    let deltaY = dx * Math.sin(r) + dy * Math.cos(r);
+                    fractalApp.animatePan([fractalApp.pan[0] + deltaX, fractalApp.pan[1] + deltaY], 50);
                 } else {
-                    fractalApp.animatePan([fractalApp.pan[0] - mandelbrotPanSpeed * fractalApp.zoom, fractalApp.pan[1]], 50);
+                    fractalApp.animateToC([fractalApp.c[0] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
                 }
                 break;
 
             case "ArrowRight": // Julia cx smooth up
-                if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
+                if (event.ctrlKey || !isJuliaMode()) {
+                    let step = mandelbrotPanSpeed * fractalApp.zoom;
+                    let r = fractalApp.rotation;
+                    let dx = step, dy = 0;
+                    let deltaX = dx * Math.cos(r) - dy * Math.sin(r);
+                    let deltaY = dx * Math.sin(r) + dy * Math.cos(r);
+                    fractalApp.animatePan([fractalApp.pan[0] + deltaX, fractalApp.pan[1] + deltaY], 50);
                 } else {
-                    fractalApp.animatePan([fractalApp.pan[0] + mandelbrotPanSpeed * fractalApp.zoom, fractalApp.pan[1]], 50);
+                    fractalApp.animateToC([fractalApp.c[0] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1), fractalApp.c[1]], JULIA_HOTKEY_C_SPEED);
                 }
                 break;
 
             case "ArrowUp": // Julia cy smooth up
-                if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
+                if (event.ctrlKey || !isJuliaMode()) {
+                    let step = mandelbrotPanSpeed * fractalApp.zoom;
+                    let r = fractalApp.rotation;
+                    let dx = 0, dy = step;
+                    let deltaX = dx * Math.cos(r) - dy * Math.sin(r);
+                    let deltaY = dx * Math.sin(r) + dy * Math.cos(r);
+                    fractalApp.animatePan([fractalApp.pan[0] + deltaX, fractalApp.pan[1] + deltaY], 50);
                 } else {
-                    fractalApp.animatePan([fractalApp.pan[0], fractalApp.pan[1] + mandelbrotPanSpeed * fractalApp.zoom], 50);
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] - JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
                 }
                 break; // Julia cy smooth down
 
             case "ArrowDown":
-                if (isJuliaMode()) {
-                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
+                if (event.ctrlKey || !isJuliaMode()) {
+                    let step = mandelbrotPanSpeed * fractalApp.zoom;
+                    let r = fractalApp.rotation;
+                    let dx = 0, dy = -step;
+                    let deltaX = dx * Math.cos(r) - dy * Math.sin(r);
+                    let deltaY = dx * Math.sin(r) + dy * Math.cos(r);
+                    fractalApp.animatePan([fractalApp.pan[0] + deltaX, fractalApp.pan[1] + deltaY], 50);
                 } else {
-                    fractalApp.animatePan([fractalApp.pan[0], fractalApp.pan[1] - mandelbrotPanSpeed * fractalApp.zoom], 50);
+                    fractalApp.animateToC([fractalApp.c[0], fractalApp.c[1] + JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1)], JULIA_HOTKEY_C_SPEED);
                 }
                 break;
 
@@ -819,6 +840,7 @@ function initHotkeys() {
 
             case "Enter":
                 header.classList.remove('minimized');
+                handle.style.display = "none";
                 console.log(fractalApp.colorPalette);
                 break;
 
@@ -828,7 +850,7 @@ function initHotkeys() {
                 if (match) {
                     console.log("Pressed:", event.code, "Number:", match[2]);
 
-                    const index = match[2] - 1; // match[2] contains the digit pressed
+                    const index = match[2]; // match[2] contains the digit pressed
                     if (event.shiftKey && isJuliaMode()) {
                         if (index !== activeJuliaDiveIndex) {
                             stopDemoMode();
@@ -978,20 +1000,20 @@ export function updateInfo(traveling = false) {
     const panY = fractalApp.pan[1] ?? 0;
 
     if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)) {
-        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i], `;
+        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i] · `;
     }
 
     if (fractalMode === MODE_JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 2)}, ${cy.toFixed(DEBUG_MODE ? 12 : 2)}i], `;
+        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 2)}, ${cy.toFixed(DEBUG_MODE ? 12 : 2)}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / Math.PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}°, zoom = ${currentZoom.toFixed(6)}`;
+    text += `r = ${normalizedRotation.toFixed(0)}° · zoom = ${currentZoom.toFixed(6)}`;
 
     if (demoActive) {
         infoText.classList.add('demoActive');
