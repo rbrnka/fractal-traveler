@@ -1,4 +1,6 @@
 # Synaptory Fractal Traveler
+![image](https://github.com/user-attachments/assets/447755dd-1f67-4be7-9df5-1ae939fae216)
+
 Interactive fractal explorer that lets explore the mesmerizing depths of the Mandelbrot and Julia sets.
 Built with modern JavaScript, ES6, and WebGL, this app provides smooth animations and
 intuitive controls allowing you to travel through intricate fractal landscapes with ease.
