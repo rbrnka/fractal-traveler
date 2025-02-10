@@ -1,10 +1,10 @@
 /**
- * @module utils.js
+ * @module Utils
  * @author Radim Brnka
  * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
-import {isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {DEBUG_MODE, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
 
 let urlParamsSet = false;
 
@@ -29,7 +29,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
         cy: cy != null ? cy.toFixed(6) : null,
     };
 
-    console.log("URL: " + JSON.stringify(params));
+    if (DEBUG_MODE) console.log("URL: " + JSON.stringify(params));
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
         console.error("Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
@@ -170,7 +170,7 @@ export function hsbToRgb(h, s, b) {
  * @param h
  * @param s
  * @param l
- * @return {(*)[]}
+ * @return [r, g ,b]
  */
 export function hslToRgb(h, s, l) {
     let r, g, b;
@@ -199,7 +199,7 @@ export function hslToRgb(h, s, l) {
  * @param r
  * @param g
  * @param b
- * @return {(number|number)[]}
+ * @return [h, s, l]
  */
 export function rgbToHsl(r, g, b) {
     let max = Math.max(r, g, b), min = Math.min(r, g, b);

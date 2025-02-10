@@ -1,11 +1,18 @@
+import {updateURLParams, clearURLParams} from './utils.js';
+import {
+    MODE_JULIA,
+    MODE_MANDELBROT,
+    updateInfo,
+    toggleDebugLines,
+    resetPresetAndDiveButtons,
+    isJuliaMode, resetActivePresetIndex
+} from './ui.js';
+
 /**
  * @module MouseEventhandlers
  * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
  * @author Radim Brnka
  */
-import {updateURLParams, clearURLParams} from './utils.js';
-import {MODE_JULIA, MODE_MANDELBROT, updateInfo, toggleDebugLines} from './ui.js';
-import {JuliaRenderer} from "./juliaRenderer";
 
 const doubleClickThreshold = 300;
 const dragThreshold = 5;
@@ -43,6 +50,8 @@ export function registerMouseEventHandlers() {
         console.warn('Mouse event handlers already registered.');
         return; // Prevent duplicate registration
     }
+
+    console.log('Mouse event handlers registered.');
     mouseHandlersRegistered = true;
 
     // Define event handler functions
@@ -52,12 +61,11 @@ export function registerMouseEventHandlers() {
     handleMouseUpEvent = (event) => handleMouseUp(event, fractalApp);
 
     // Add event listeners using stored references
-    canvas.addEventListener('wheel', handleWheelEvent, { passive: false });
+    canvas.addEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.addEventListener('mousedown', handleMouseDownEvent);
     canvas.addEventListener('mousemove', handleMouseMoveEvent);
     canvas.addEventListener('mouseup', handleMouseUpEvent);
 }
-
 
 export function unregisterMouseEventHandlers() {
     if (!mouseHandlersRegistered) {
@@ -65,7 +73,9 @@ export function unregisterMouseEventHandlers() {
         return;
     }
 
-    canvas.removeEventListener('wheel', handleWheelEvent, { passive: false });
+    console.warn('Mouse event handlers unregistered.');
+
+    canvas.removeEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.removeEventListener('mousedown', handleMouseDownEvent);
     canvas.removeEventListener('mousemove', handleMouseMoveEvent);
     canvas.removeEventListener('mouseup', handleMouseUpEvent);
@@ -76,6 +86,8 @@ export function unregisterMouseEventHandlers() {
 function handleWheel(event, fractalApp) {
     event.preventDefault();
     clearURLParams();
+    resetPresetAndDiveButtons();
+    resetActivePresetIndex();
 
     // Get the CSS coordinate of the mouse relative to the canvas
     const rect = fractalApp.canvas.getBoundingClientRect();
@@ -208,7 +220,11 @@ function handleMouseUp(event) {
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
+                        clearURLParams();
+                        resetPresetAndDiveButtons();
+                        resetActivePresetIndex();
+                    });
                 }
             } else {
                 // Set a timeout for the single-click action.
@@ -217,11 +233,13 @@ function handleMouseUp(event) {
 
                     // Centering action:
                     fractalApp.animatePan([fx, fy], 500, () => {
-                        if (fractalApp instanceof JuliaRenderer) {
+                        if (isJuliaMode()) {
                             updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
                             updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                         }
+                        resetPresetAndDiveButtons();
+                        resetActivePresetIndex();
                     });
 
                     // Copy URL to clipboard:
@@ -237,6 +255,8 @@ function handleMouseUp(event) {
             }
         } else {
             clearURLParams();
+            resetPresetAndDiveButtons();
+            resetActivePresetIndex();
             isDragging = false;
         }
     }
@@ -265,7 +285,11 @@ function handleMouseUp(event) {
             console.log("Double Right Click: Zooming out");
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
+                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
+                    clearURLParams();
+                    resetPresetAndDiveButtons();
+                    resetActivePresetIndex();
+                });
             }
         } else {
             // Set timeout for single click

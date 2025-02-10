@@ -1,13 +1,12 @@
-/**
- * MandelbrotRenderer
- * This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
- *
- * @author Radim Brnka
- * @extends FractalRenderer
- */
-
 import {FractalRenderer} from './fractalRenderer.js';
 
+/**
+ * MandelbrotRenderer
+ *
+ * @author Radim Brnka
+ * @description This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
+ * @extends FractalRenderer
+ */
 export class MandelbrotRenderer extends FractalRenderer {
 
     constructor(canvas) {

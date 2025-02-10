@@ -1,14 +1,14 @@
-/**
- * Julia set renderer
- * @author Radim Brnka
- * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
- * @extends FractalRenderer
- */
-
 import {updateInfo, updateJuliaSliders} from "./ui";
 import {FractalRenderer} from "./fractalRenderer";
 import {easeInOut, isTouchDevice, lerp} from "./utils";
 
+/**
+ * Julia set renderer
+ *
+ * @author Radim Brnka
+ * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
+ * @extends FractalRenderer
+ */
 export class JuliaRenderer extends FractalRenderer {
 
     constructor(canvas) {
@@ -24,6 +24,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.rotation = this.DEFAULT_ROTATION;
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
+        /**
+         * Julia-specific presets
+         */
         this.PRESETS = [
             {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
             {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]}, // Near Julia set border
@@ -40,7 +43,22 @@ export class JuliaRenderer extends FractalRenderer {
          *  Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
          *  it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
          *  direction.
-         * @type {[{cyDirection: number, endC: number[], rotation: number, cxDirection: number, zoom: number, step: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]},{cyDirection: number, rotation: number, endC: number[], zoom: number, step: number, cxDirection: number, pan: number[], startC: number[]}]}
+         *  @typedef {Object} Dive
+         *  @property {number} cxDirection Use -1/+1 for negative/positive direction of the animation
+         *  @property {Array.<{phase: Number, phase: Number, phase: Number, phase: Number}>} [phases]
+         *      1: animate cx toward dive.endC[0],
+         *      2: animate cy toward dive.endC[1],
+         *      3: animate cx back toward dive.startC[0],
+         *      4: animate cy back toward dive.startC[1]
+         * @property {Array.<{panX, panY}>} pan
+         * @property {Array.<{cx, cy}>} startC
+         * @property {Array.<{cx, cy}>} endC
+         * @property {number} zoom
+         * @property {number} step
+         */
+
+        /**
+         * @type Dive[]
          */
         this.DIVES = [
             {
@@ -96,7 +114,20 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: 1,
                 cyDirection: 1,
                 endC: [-0.7425, 0.25],
-            }
+            }//, {
+            //     pan: [0.47682225091699837, 0.09390869977189013],
+            //     rotation: 5.827258771281306,
+            //     zoom: 0.16607266879497062,
+            //
+            //     startC: [-0.750542394776536, 0.008450344098947803],
+            //     endC: [-0.7325586,0.18251028375238866],
+            //
+            //     cxDirection: 1,
+            //     cyDirection: 1,
+            //
+            //     step: 0.00001,
+            //     phases: [2, 1, 4, 3],
+            // }
         ];
 
         this.c = this.DEFAULT_C.slice();
@@ -345,7 +376,14 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     /**
-     * @inheritDoc
+     * Animates travel to a preset.
+     * @param {object} preset
+     *      @param {Array} preset.c [x, yi]
+     *      @param {Array} preset.pan [fx, fy]
+     *      @param {number} preset.zoom
+     *      @param {number} preset.rotation in rad
+     * @param {number} transitionDuration in ms
+     * @param {function()} onFinishedCallback A callback method executed once the animation is finished
      */
     animateTravelToPreset(preset, transitionDuration, onFinishedCallback = null) {
         this.stopCurrentNonColorAnimation();

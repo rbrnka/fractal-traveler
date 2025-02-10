@@ -1,11 +1,18 @@
+import {updateURLParams, clearURLParams} from './utils.js';
+import {
+    isJuliaMode,
+    MODE_JULIA,
+    MODE_MANDELBROT,
+    resetActivePresetIndex,
+    resetPresetAndDiveButtons,
+    updateInfo
+} from './ui.js';
+
 /**
  * @module TouchEventHandlers
  * @author Radim Brnka
  * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
  */
-import {updateURLParams, clearURLParams} from './utils.js';
-import {MODE_JULIA, MODE_MANDELBROT, updateInfo} from './ui.js';
-import {JuliaRenderer} from "./juliaRenderer";
 
 let fractalApp;
 let canvas;
@@ -49,6 +56,8 @@ export function registerTouchEventHandlers() {
         return; // Prevent duplicate registration
     }
 
+    console.log('Touch event handlers registered.');
+
     // Define event handler functions
     handleTouchStartEvent = (event) => handleTouchStart(event);
     handleTouchMoveEvent = (event) => handleTouchMove(event);
@@ -64,9 +73,11 @@ export function registerTouchEventHandlers() {
 
 export function unregisterTouchEventHandlers() {
     if (!touchHandlersRegistered) {
-        console.warn('Mouse event handlers are not registered.');
+        console.warn('Touch event handlers are not registered so cannot be unregistered.');
         return;
     }
+
+    console.warn('Touch event handlers unregistered.');
 
     canvas.removeEventListener('touchstart', handleTouchStartEvent, {passive: false});
     canvas.removeEventListener('touchmove', handleTouchMoveEvent, {passive: false});
@@ -126,7 +137,6 @@ function handleTouchMove(event) {
         }
 
         if (isTouchDragging) {
-            clearURLParams();
             const rect = canvas.getBoundingClientRect();
             const moveX = touch.clientX - lastTouchX;
             const moveY = touch.clientY - lastTouchY;
@@ -232,21 +242,31 @@ function handleTouchEnd(event) {
                 console.log(`Double-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, clearURLParams);
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
+                        resetPresetAndDiveButtons();
+                        resetActivePresetIndex();
+                        clearURLParams();
+                    });
                 }
             } else {
                 touchClickTimeout = setTimeout(() => {
                     console.log(`Single-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
-                    if (fractalApp instanceof JuliaRenderer) {
+                    if (isJuliaMode()) {
                         updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                     } else {
                         updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                     }
-                    fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500);
+                    fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
+                        resetPresetAndDiveButtons();
+                        resetActivePresetIndex();
+                    });
                     touchClickTimeout = null;
                 }, doubleTapThreshold);
             }
         }
+        resetPresetAndDiveButtons();
+        resetActivePresetIndex();
+        clearURLParams();
         isTouchDragging = false;
     }
 }

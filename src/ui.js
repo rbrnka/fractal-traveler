@@ -1,13 +1,18 @@
-/**
- * @module ui.js
- * @author Radim Brnka
- * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
- */
 import {clearURLParams, hsbToRgb, isTouchDevice} from './utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
 import {JuliaRenderer} from "./juliaRenderer";
 
+/**
+ * @module UI
+ * @author Radim Brnka
+ * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
+ */
+
+/**
+ * Debug mode. False for prod
+ * @type {boolean}
+ */
 export const DEBUG_MODE = false;
 
 let canvas;
@@ -25,6 +30,7 @@ let headerToggled = false;
 let demoActive = false;
 let juliaDemoTime = 0;
 let activeJuliaDiveIndex = -1;
+let activePresetIndex = -1;
 let resizeTimeout;
 
 let header;
@@ -37,6 +43,7 @@ let screenshotButton;
 let demoButton;
 let presetButtons = [];
 let diveButtons = [];
+let allButtons = [];
 
 // Julia sliders
 let realSlider;
@@ -72,9 +79,15 @@ export function isJuliaMode() {
 
 export function enableJuliaMode() {
     fractalMode = MODE_JULIA;
+    juliaRadio.checked = true;
 }
 
-function stopDemo() {
+function onTravelToPresetFinished() {
+    console.log("Travel to preset complete");
+    stopDemoMode(true);
+}
+
+function stopDemoMode(presetOnly = false) {
     if (!demoActive) return;
     activeJuliaDiveIndex = -1;
 
@@ -85,7 +98,8 @@ function stopDemo() {
     fractalApp.stopCurrentNonColorAnimation();
     demoButton.innerText = "Demo";
     demoButton.classList.remove('active');
-    resetActiveButtons();
+    if (!presetOnly)
+        resetPresetAndDiveButtons();
 
     if (isTouchDevice()) {
         console.log("Registering touch events");
@@ -109,11 +123,12 @@ function stopDemo() {
     }, 150);
 }
 
-function initDemo() {
-    console.log('Starting demo for mode ' + fractalMode);
+function initDemoMode() {
+    console.log('Starting demo mode for ' + fractalMode);
     demoActive = true;
 
-    demoButton.innerText = "Stop Demo";
+    resetPresetAndDiveButtons();
+    demoButton.innerText = "Stop";
     demoButton.classList.add('active');
     // Register control events
     if (isTouchDevice()) {
@@ -124,17 +139,18 @@ function initDemo() {
     }
 
     disableJuliaSliders();
-    //disableControls(true, false, false, false);
     clearURLParams();
 }
 
 function toggleDemo() {
     if (demoActive) {
-        stopDemo();
+        resetPresetAndDiveButtons();
+        stopDemoMode();
         return;
     }
 
     stopRotationAnimation();
+    resetPresetAndDiveButtons();
 
     if (fractalMode === MODE_MANDELBROT) {
         const presets = fractalApp.PRESETS;
@@ -152,7 +168,7 @@ function toggleDemo() {
 
 function startMandelbrotDemo() {
     if (demoActive) return;
-    initDemo();
+    initDemoMode();
 
     // Start the demo
     const presets = fractalApp.PRESETS.slice();
@@ -183,17 +199,6 @@ function startMandelbrotDemo() {
     runPresets();
 }
 
-
-/**
- *  Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
- *  it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
- *  direction.
- */
-/**
- * Dive is a special animation loop that first animates cx in a given direction until it reaches a set threshold,
- * then animates cy in the given direction until its threshold is hit.
- * Once both thresholds are reached, it reverses the animation, returning to the starting values.
- */
 function startJuliaDive(dive) {
     if (demoActive) return;
 
@@ -213,15 +218,17 @@ function startJuliaDive(dive) {
         return;
     }
 
-    initDemo();
+    if (!dive.phases) {
+        console.warn("Phases are not defined, setting to default order.");
+        dive.phases = [1, 2, 3, 4];
+    }
 
-    if (DEBUG_MODE) dive.step *= 50;
+    initDemoMode();
 
-    // phase 1: animate cx toward dive.endC[0]
-    // phase 2: animate cy toward dive.endC[1]
-    // phase 3: animate cx back toward dive.startC[0]
-    // phase 4: animate cy back toward dive.startC[1]
-    let phase = 1;
+    if (DEBUG_MODE) dive.step *= 10;
+
+    let phase = dive.phases[0] || 1;
+    let phaseIndex = 0; // TODO implement phase ordering
 
     // Transition to the initial preset first.
     fractalApp.animateTravelToPreset({
@@ -282,7 +289,7 @@ function startJuliaDive(dive) {
 function startJuliaDemo() {
     if (demoActive) return;
 
-    initDemo();
+    initDemoMode();
 
     function animate() {
         fractalApp.c = [
@@ -327,15 +334,13 @@ function resetSliders() {
 }
 
 function travelToPreset(preset) {
-    stopDemo();
-    stopRotationAnimation();
+    initDemoMode();
 
-    initDemo();
     if (isJuliaMode()) {
         juliaDemoTime = 0;
-        fractalApp.animateTravelToPreset(preset, 750, stopDemo);
+        fractalApp.animateTravelToPreset(preset, 750, onTravelToPresetFinished);
     } else {
-        fractalApp.animateTravelToPreset(preset, 500, 500, 3500, stopDemo);
+        fractalApp.animateTravelToPreset(preset, 500, 500, 3500, onTravelToPresetFinished);
     }
     clearURLParams();
 }
@@ -379,10 +384,16 @@ export function toggleDebugLines() {
     }
 }
 
-function resetActiveButtons() {
-    console.log("Reseting active buttons");
+export function resetPresetAndDiveButtons() {
+    console.log("Resetting active buttons");
     presetButtons.concat(diveButtons).forEach(b => b.classList.remove('active'));
-    //demoButton.classList.remove('active');
+}
+
+/**
+ * This needs to happen on any fractal change
+ */
+export function resetActivePresetIndex() {
+    activePresetIndex = -1;
 }
 
 function takeScreenshot() {
@@ -478,7 +489,7 @@ function randomizeColors() {
 }
 
 function initHeaderEvents() {
-
+    if(DEBUG_MODE) return;
     header.addEventListener('pointerenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
@@ -559,9 +570,14 @@ function initPresetButtonEvents() {
         btn.className = 'preset colorable';
         btn.textContent = (index + 1).toString();
         btn.addEventListener('click', () => {
-            travelToPreset(preset);
-            resetActiveButtons();
-            btn.classList.add('active');
+            if (index !== activePresetIndex) {
+                activePresetIndex = index;
+                travelToPreset(presets[index]);
+                btn.classList.add('active');
+            } else {
+                console.log("Already set preset, skipping");
+            }
+
         });
 
         presetBlock.appendChild(btn);
@@ -569,6 +585,23 @@ function initPresetButtonEvents() {
     });
 }
 
+/**
+ * Inits behavior common for all buttons
+ */
+function initCommonButtonEvents() {
+    allButtons = diveButtons.concat(presetButtons);
+    allButtons.push(resetButton, randomizeColorsButton, screenshotButton, demoButton);
+
+    allButtons.forEach((btn) => {
+        btn.addEventListener('mouseleave', () => {
+            btn.blur();
+        });
+
+        btn.addEventListener('mouseup', () => {
+            btn.blur();
+        });
+    });
+}
 
 function initDives() {
     if (isJuliaMode()) {
@@ -584,14 +617,13 @@ function initDives() {
             btn.className = 'dive colorable';
             btn.textContent = (index + 1).toString();
             btn.addEventListener('click', () => {
-                if (demoActive && index !== activeJuliaDiveIndex) {
-                    stopDemo();
+                if (index !== activeJuliaDiveIndex) {
+                    stopDemoMode();
                 }
-                resetActiveButtons();
-                btn.classList.add('active');
 
                 startJuliaDive(dive);
                 activeJuliaDiveIndex = index;
+                btn.classList.add('active');
             });
 
             diveBlock.appendChild(btn);
@@ -622,6 +654,7 @@ function initSliders() {
         fractalApp.draw();
         updateInfo();
         clearURLParams();
+        resetPresetAndDiveButtons();
         juliaDemoTime = 0;
     });
 
@@ -631,6 +664,7 @@ function initSliders() {
         fractalApp.draw();
         updateInfo();
         clearURLParams();
+        resetPresetAndDiveButtons();
         juliaDemoTime = 0;
     });
 
@@ -662,9 +696,6 @@ function initInfoText() {
     });
 }
 
-/**
- * https://www.freecodecamp.org/news/javascript-keycode-list-keypress-event-key-codes/
- */
 function initHotkeys() {
     document.addEventListener("keydown", (event) => {
 
@@ -675,6 +706,9 @@ function initHotkeys() {
         const rotationSpeed = event.shiftKey ? 0.01 : 0.1;
         const mandelbrotPanSpeed = event.shiftKey ? 0.01 : 0.1;
 
+        /**
+         * https://www.freecodecamp.org/news/javascript-keycode-list-keypress-event-key-codes/
+         */
         switch (event.code) {
             case 'KeyQ': // Rotation counter-clockwise
                 if (rotationAnimationFrame !== null) {
@@ -781,19 +815,30 @@ function initHotkeys() {
                 fractalApp.animateZoom(fractalApp.zoom * (event.shiftKey ? 1.1 : 0.9), 20);
                 break;
 
-            // @formatter:off
-            case "Digit1": case "Numpad1": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[0]); else travelToPreset(fractalApp.PRESETS[0]); break;
-            case "Digit2": case "Numpad2": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[1]); else travelToPreset(fractalApp.PRESETS[1]); break;
-            case "Digit3": case "Numpad3": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[1]); else travelToPreset(fractalApp.PRESETS[2]); break;
-            case "Digit4": case "Numpad4": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[1]); else travelToPreset(fractalApp.PRESETS[3]); break;
-            case "Digit5": case "Numpad5": if (event.shiftKey) startJuliaDive(fractalApp.DIVES[1]); else travelToPreset(fractalApp.PRESETS[4]); break;
-            case "Digit6": case "Numpad6": travelToPreset(fractalApp.PRESETS[5]); break;
-            case "Digit7": case "Numpad7": travelToPreset(fractalApp.PRESETS[6]); break;
-            case "Digit8": case "Numpad8": travelToPreset(fractalApp.PRESETS[7]); break;
-            case "Digit9": case "Numpad9": travelToPreset(fractalApp.PRESETS[8]); break;
-            // @formatter:on
-
             default:
+                // Case nums:
+                const match = event.code.match(/^(Digit|Numpad)([1-9])$/);
+                if (match) {
+                    console.log("Pressed:", event.code, "Number:", match[2]);
+
+                    const index = match[2] - 1; // match[2] contains the digit pressed
+                    if (event.shiftKey && isJuliaMode()) {
+                        if (index !== activeJuliaDiveIndex) {
+                            stopDemoMode();
+                        }
+                        activeJuliaDiveIndex = index;
+                        startJuliaDive(fractalApp.DIVES[activeJuliaDiveIndex]);
+                        diveButtons[index].classList.add('active');
+                    } else {
+                        if (index !== activePresetIndex) {
+                            activePresetIndex = index;
+                            travelToPreset(fractalApp.PRESETS[index]);
+                            presetButtons[index].classList.add('active');
+                        } else {
+                            console.log("Already set preset, skipping");
+                        }
+                    }
+                }
                 break;
         }
     });
@@ -832,7 +877,6 @@ export function initUI(fractalRenderer) {
         enableJuliaMode();
         initSliders();
         initDives();
-        juliaRadio.checked = true;
     }
 
     initWindowEvents();
@@ -842,14 +886,14 @@ export function initUI(fractalRenderer) {
     initInfoText();
     initFractalSwitchRadios();
     initHotkeys();
+    initCommonButtonEvents(); // After all dynamic buttons are set
+
 
     // Register control events
     if (isTouchDevice()) {
         initTouchHandlers(fractalApp);
-        console.log('Touch event handlers registered.');
     } else {
         initMouseHandlers(fractalApp);
-        console.log('Mouse event handlers registered.');
     }
 
     if (DEBUG_MODE) {
@@ -902,7 +946,7 @@ function updateColorTheme() {
 /**
  * Disable slider controls
  */
-export function disableJuliaSliders() {
+function disableJuliaSliders() {
     imagSlider.disabled = true;
     realSlider.disabled = true;
 
@@ -913,7 +957,7 @@ export function disableJuliaSliders() {
 /**
  * Enable slider controls
  */
-export function enableJuliaSliders() {
+function enableJuliaSliders() {
     imagSlider.disabled = false;
     realSlider.disabled = false;
 
@@ -946,7 +990,7 @@ export function updateInfo(traveling = false) {
     const panY = fractalApp.pan[1] ?? 0;
 
     if (fractalMode === MODE_MANDELBROT || (fractalMode === MODE_JULIA && !demoActive)) {
-        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}], `;
+        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i], `;
     }
 
     if (fractalMode === MODE_JULIA) {

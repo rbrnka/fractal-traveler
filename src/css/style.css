@@ -14,7 +14,7 @@ html, body {
 #headerContainer {
     position: relative;
     z-index: 9999;
-    background: rgba(0, 0, 0, 0.75);
+    background: rgba(20, 20, 20, 0.5);
     backdrop-filter: blur(6px);
     width: 390px;
     margin: 0 auto;
@@ -23,7 +23,7 @@ html, body {
     cursor: auto;
     height: auto;
     overflow: hidden;
-    border: 1px solid #222;
+    border: 1px solid transparent;
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -97,7 +97,11 @@ button.active {
 }
 
 button:focus {
-    outline: 0;
+    outline: none;
+    background-image: linear-gradient(#222, #666);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
+    transform: translateY(1px);
+    color: #B4FF6A;
 }
 
 h1 {
@@ -107,6 +111,7 @@ h1 {
     z-index: 1000;
     font-size: 16px;
     letter-spacing: 1px;
+    font-style: italic;
 }
 
 p {
@@ -197,7 +202,7 @@ input[type="radio"]:checked::before {
     display: block;
     width: 8px;
     height: 8px;
-    background-color: #aaa;
+    background-color: #ccc;
     border-radius: 50%;
     position: absolute;
     top: 50%;
@@ -247,7 +252,7 @@ a:hover {
 }
 
 #version {
-    color: #0c0;
+    color: #B4FF6A;
     font-size: 11px;
 }
 

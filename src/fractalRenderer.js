@@ -1,4 +1,4 @@
-import {updateInfo} from "./ui";
+import {DEBUG_MODE, updateInfo} from "./ui";
 import {hslToRgb, lerp, rgbToHsl} from "./utils";
 
 /**
@@ -34,7 +34,10 @@ export class FractalRenderer {
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
-        // Interesting zoom-ins
+
+        /**
+         * Interesting zoom-ins
+         */
         this.PRESETS = [];
 
         // Use the setter so that if DEFAULT_ZOOM is out of bounds it’s clamped.
@@ -49,13 +52,13 @@ export class FractalRenderer {
 
         // Initialize shaders
         this.vertexShaderSource = `
-            precision mediump float;
-            attribute vec4 a_position;
-       
-            void main() {
-                gl_Position = a_position;
-            }
-        `;
+			precision mediump float;
+			attribute vec4 a_position;
+	   
+			void main() {
+				gl_Position = a_position;
+			}
+		`;
 
         this.canvas.addEventListener('webglcontextlost', (event) => {
             event.preventDefault();
@@ -206,7 +209,7 @@ export class FractalRenderer {
     }
 
     /**
-     * Resets the fractal to its initial state (default pan, zoom) and redraws.
+     * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
         this.stopCurrentNonColorAnimation();
@@ -228,7 +231,7 @@ export class FractalRenderer {
      *
      * @param screenX
      * @param screenY
-     * @returns {number[]}
+     * @returns {number[]} fractal plane coords [x, yi]
      */
     screenToFractal(screenX, screenY) {
         const dpr = window.devicePixelRatio || 1;
@@ -264,11 +267,12 @@ export class FractalRenderer {
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
 
-        console.log(
-            `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), ` +
-            `buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), ` +
-            `fractal (${fx}, ${fy})`
-        );
+        if (DEBUG_MODE)
+            console.log(
+                `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), ` +
+                `buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), ` +
+                `fractal (${fx}, ${fy})`
+            );
 
         return [fx, fy];
     }
@@ -424,7 +428,7 @@ export class FractalRenderer {
      * Animates to target zoom without panning.
      *
      * @param targetZoom
-     * @param duration in milliseconds
+     * @param duration in ms
      * @param callback
      */
     animateZoom(targetZoom, duration, callback = null) {
@@ -575,14 +579,17 @@ export class FractalRenderer {
     }
 
     /**
-     * Animates travel to a preset. If the current zoom is different from the default,
-     * it first zooms out to the default zoom and then animates pan and zoom.
+     * Animates travel to a preset. If any of the final params is different from the default, it won't animate it.
+     * It first zooms out to the default zoom and then animates pan and zoom otherwise.
      *
-     * @param preset Object { pan: [x, y], zoom: number }
-     * @param zoomOutDuration in milliseconds
-     * @param panDuration in milliseconds
-     * @param zoomInDuration in milliseconds
-     * @param callback
+     * @param {Object} preset An instance-specific object to define exact spot in the fractal
+     *      @param {Array} preset.pan [fx, fy]
+     *      @param {number} preset.zoom
+     *      @param {number} preset.rotation in rad
+     * @param {number} zoomOutDuration in ms
+     * @param {number} panDuration in ms
+     * @param {number} zoomInDuration in ms
+     * @param {function()} callback A callback method executed once the animation is finished
      */
     animateTravelToPreset(preset, zoomOutDuration = 500, panDuration = 500, zoomInDuration = 3500, callback = null) {
         this.stopCurrentNonColorAnimation();
@@ -590,7 +597,20 @@ export class FractalRenderer {
         const self = this;
 
         if (this.zoom === this.DEFAULT_ZOOM) {
-            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration);
+            console.log('Already at default zoom, only pan and then zoom');
+            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration, this.pan.slice(), callback);
+            return;
+        }
+
+        if (this.zoom === preset.zoom) {
+            console.log('Already at the correct zoom, only pan.');
+            this.animatePan(preset.pan, panDuration, callback);
+            return;
+        }
+
+        if (preset.pan[0].toFixed(6) === self.pan[0].toFixed(6) && preset.pan[1].toFixed(6) === self.pan[1].toFixed(6)) {
+            console.log('Already in right pan, zooming only.');
+            self.animateZoom(preset.zoom, zoomInDuration, callback);
             return;
         }
 
@@ -617,11 +637,14 @@ export class FractalRenderer {
     }
 
     /**
-     * Demo traveling through presets
+     * Demo loop traveling through presets
      * @param preset
-     * @param zoomOutDuration
-     * @param panDuration
-     * @param zoomInDuration
+     *      @param {Array} preset.pan [fx, fy]
+     *      @param {number} preset.zoom
+     *      @param {number} preset.rotation in rad
+     * @param zoomOutDuration in ms
+     * @param panDuration in ms
+     * @param zoomInDuration in ms
      */
     animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         this.stopCurrentNonColorAnimation();
