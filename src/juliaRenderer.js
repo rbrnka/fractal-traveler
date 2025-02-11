@@ -64,6 +64,17 @@ export class JuliaRenderer extends FractalRenderer {
         this.DIVES = [
             {
                 pan: [0, 0],
+                rotation: 2.6179938779914944,
+                zoom: 1.7,
+                startC: [-0.246, 0.64],
+                step: 0.000005,
+
+                cxDirection: 1,
+                cyDirection: 1,
+                endC: [-0.2298, 0.67],
+            },
+            {
+                pan: [0, 0],
                 startC: [-0.25190652273600045, 0.637461568487061],
                 endC: [-0.2526, 0.6355],
                 cxDirection: -1,
@@ -93,17 +104,6 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: -1,
                 cyDirection: -1,
                 endC: [-0.247, 0.638],
-            },
-            {
-                pan: [0, 0],
-                rotation: 2.6179938779914944,
-                zoom: 1.7,
-                startC: [-0.246, 0.64],
-                step: 0.000005,
-
-                cxDirection: 1,
-                cyDirection: 1,
-                endC: [-0.2298, 0.67],
             },
             {
                 pan: [0.5160225367869309, -0.05413028639548453],
@@ -319,6 +319,7 @@ export class JuliaRenderer extends FractalRenderer {
 
             self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
             self.draw();
+
             updateInfo(true);
 
             if (progress < 1) {
@@ -359,9 +360,8 @@ export class JuliaRenderer extends FractalRenderer {
             // Interpolate `c` smoothly
             self.c[0] = lerp(startC[0], targetC[0], easedProgress);
             self.c[1] = lerp(startC[1], targetC[1], easedProgress);
-
-            // Redraw with updated values
             self.draw();
+
             updateJuliaSliders();
             updateInfo(true);
 
@@ -409,9 +409,8 @@ export class JuliaRenderer extends FractalRenderer {
                 self.zoom = lerp(startZoom, self.DEFAULT_ZOOM, progress);
                 self.pan[0] = lerp(startPan[0], targetPan[0], progress);
                 self.pan[1] = lerp(startPan[1], targetPan[1], progress);
-
-                // Redraw during the adjustment
                 self.draw();
+
                 updateInfo(true);
 
                 if (progress < 1) {
@@ -448,9 +447,8 @@ export class JuliaRenderer extends FractalRenderer {
                 self.pan[0] = lerp(startPan[0], preset.pan[0], progress);
                 self.pan[1] = lerp(startPan[1], preset.pan[1], progress);
                 self.zoom = lerp(startZoom, preset.zoom, progress);
-
-                // Redraw with updated values
                 self.draw();
+
                 updateJuliaSliders();
                 updateInfo(true);
 

@@ -15,7 +15,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.DEFAULT_PAN = [-0.5, 0];
         this.pan = this.DEFAULT_PAN.slice();
         this.PRESETS = [
-            {pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM},
+            {pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION},
             {pan: [0.351424, 0.063866], zoom: 0.000049},
             {pan: [0.254998, 0.000568], zoom: 0.000045},
             {pan: [-0.164538, 1.038428], zoom: 0.000127},
