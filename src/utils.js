@@ -29,15 +29,15 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
         cy: cy != null ? cy.toFixed(6) : null,
     };
 
-    if (DEBUG_MODE) console.log("URL: " + JSON.stringify(params));
+    if (DEBUG_MODE) console.log('%c updateURLParams: %c Setting URL:' +  JSON.stringify(params), 'color: #bada55', 'color: #fff');
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
-        console.error("Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
+        console.error("updateURLParams: Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
         return;
     }
 
     if (isJuliaMode() && [cx, cy].some(el => el == null)) {
-        console.error("Julia params incomplete, can't generate URL!");
+        console.error("updateURLParams: Julia params incomplete, can't generate URL!");
         return;
     }
 
@@ -60,7 +60,8 @@ export function loadFractalParamsFromURL() {
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
     if (!hash) {
-        console.log("No hash found in the URL");
+        if (DEBUG_MODE) console.log(`%c loadFractalParamsFromURL: `+` %c No hash found in the URL, return default mode.`, 'color: #bada55', 'color: #fff');
+
         return {mode: MODE_MANDELBROT}; // Return default if no hash is present
     }
 
@@ -78,20 +79,20 @@ export function loadFractalParamsFromURL() {
     try {
         // Decode the Base64 string and parse the JSON object
         const decodedParams = JSON.parse(atob(encodedParams));
-
+        if (DEBUG_MODE) console.log('%c loadFractalParamsFromURL: %c Decoded params: ' + JSON.stringify(decodedParams), 'color: #bada55', 'color: #fff');
         urlParamsSet = true;
         // Return the parsed parameters
         return {
             mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT,
-            px: parseFloat(decodedParams.px) || null,
-            py: parseFloat(decodedParams.py) || null,
+            px: decodedParams.px != null ? parseFloat(decodedParams.px) : null,
+            py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
             zoom: parseFloat(decodedParams.zoom) || null,
             r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
-            cx: parseFloat(decodedParams.cx) || null,
-            cy: parseFloat(decodedParams.cy) || null,
+            cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
+            cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
     } catch (e) {
-        console.error('Error decoding URL parameters:', e);
+        console.error('loadFractalParamsFromURL: Error decoding URL parameters:', e);
         urlParamsSet = true;
         return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
     }
@@ -102,7 +103,9 @@ export function loadFractalParamsFromURL() {
  */
 export function clearURLParams() {
     if (!urlParamsSet) return;
-    console.log("Clearing URL params");
+
+    if (DEBUG_MODE) console.log('%c clearURLParams: %c Clearing URL params.', 'color: #bada55', 'color: #fff');
+
     const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
     const newUrl = `${window.location.origin}/${hash}`;
     window.history.pushState({}, '', newUrl);
