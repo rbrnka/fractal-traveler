@@ -43,10 +43,6 @@
             <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
             <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">&nbsp;&nbsp;&nbsp;&nbsp;Julia&nbsp;&nbsp;&nbsp;&nbsp;</label>
         </div>
-        <button id="reset" class="" title="Shift+R">Reset</button>
-        <button id="randomize" class="" title="T">Random Colors</button>
-        <button id="screenshot" class="" title="Shift+S">Save Image</button>
-        <button id="demo" class="" title="D">Demo</button>
         <p id="presets">Presets:</p>
         <p id="dives">Dives:</p>
         <div id="sliders">
@@ -61,36 +57,43 @@
                 <span class="sliderValue" id="imagSliderValue">0</span>
             </div>
         </div>
+        <div id="controlButtons">
+            <button id="reset" class="" title="Shift+R">Reset</button>
+            <button id="randomize" class="" title="T">Random Colors</button>
+            <button id="screenshot" class="" title="Shift+S">Save Image</button>
+            <button id="demo" class="" title="D">Demo</button>
+        </div>
     </div>
     <p class="small">
+<!--        <img id="pin" src="./img/pin.png"> &middot;-->
         <a target="_blank" title="
 ### Mouse
-    - Left Drag: Pan
-    - Right Drag: Rotate
+    - Left Button Drag: Pan
+    - Right Button Drag: Rotate
     - Wheel: Zoom
-    - Left Single Click: Center & Generate URL link
+    - Left Button Single Click: Center & Generate URL link
     - Double click: Zoom-in/out & Center
     - Middle Click: Toggle guiding lines
 ### Keyboard
-    - `F11`: Toggle fullscreen
-    - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
-    - `E`: Toggle guiding lines
-    - `Shift + R`: Reset
-    - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
-    - `Shift + S`: Take screenshot
-    - `Space`: Zoom-in (Shift: zoom-out)
-    - `A`: Force resize
-    - `Left / Right` arrow: Julia: Real part (cx) stepping / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
-    - `Up / Down` arrow: Julia: Imaginary part (cy) stepping / Mandelbrot: Vertical pan (Shift: Smooth stepping)
-    - `Num 1-9`: Load Preset (Shift: Start dive)"
+    - F11: Toggle fullscreen
+    - Q / W: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+    - E: Toggle guiding lines
+    - Shift + R: Reset
+    - T: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
+    - Shift + S: Take screenshot
+    - Space: Zoom-in (Shift: zoom-out)
+    - A: Force resize
+    - Left / Right: Julia: Real part (cx) stepping (Ctrl: Horizontal pan) / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
+    - Up / Down: Julia: Imaginary part (cy) stepping (Ctrl: Vertical pan) / Mandelbrot: Vertical pan (Shift: Smooth stepping)
+    - Num 1-9: Load Preset (Shift: Start dive)"
            href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#controls">Controls</a>
-        &middot;
+        <span class="middot">&middot;</span>
         <a target="_blank" title="Documentation"
            href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#synaptory-fractal-traveler">Documentation</a>
-        &middot;
+        <span class="middot">&middot;</span>
         <a target="_blank" title="Source Code" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
-        &middot;
-        <span id="version" title="Version">version 1.8 beta</span>
+        <span class="middot">&middot;</span>
+        <span id="version" title="Current version">v1.8</span>
     </p>
 </div>
 <div id="infoLabel">

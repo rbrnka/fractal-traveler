@@ -115,18 +115,21 @@ button:focus {
     font-size: 12px;
     line-height: 1;
     border: 1px solid #666;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05)
+    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    text-shadow: 0 0 4px var(--accent-color);
 }
 
 h1 {
     padding: 12px 10px 5px 10px;
     margin: 0;
     color: var(--accent-color);
+    /*color: #fff;*/
     z-index: 1000;
-    font-size: 16px;
+    font-size: 20px;
     letter-spacing: 1px;
     font-style: italic;
-    text-shadow: 0 0 10px var(--accent-color);
+    /*text-shadow: 0 0 10px var(--accent-color);*/
+    text-shadow: 0 0 2px var(--accent-color),0 0 20px var(--accent-color);
 }
 
 p {
@@ -149,7 +152,7 @@ span {
     flex-direction: column; /* Stack children vertically */
     align-items: center; /* Center the slider-container */
     gap: 5px; /* Add spacing between sliders */
-    margin: 5px 0 0 0;
+    margin: 5px 0 10px 0;
     display: none;
 }
 
@@ -167,16 +170,25 @@ label, .sliderValue {
     text-align: right; /* Align text to the right */
 }
 
+.slider-container label {
+    text-shadow: 0 0 10px var(--accent-color);
+    color: #fff;
+}
+
+.slider-container span {
+    text-shadow: 0 0 2px var(--accent-color);
+}
+
 .slider {
     flex: 1; /* Allow the slider to take remaining space */
     height: 10px;
     -webkit-appearance: none;
-    background: #000;
+    background: var(--bg-color);
     outline: none;
     border-radius: 10px;
-    border: 1px solid #444;
+    border: 1px solid #666;
     overflow: hidden;
-    box-shadow: inset 0 0 5px rgba(0, 0, 0, 1);
+    box-shadow: inset 0 0 5px var(--bg-color);
 }
 
 .slider::-webkit-slider-thumb {
@@ -186,7 +198,7 @@ label, .sliderValue {
     border-radius: 50%;
     background: var(--accent-color);
     cursor: pointer;
-    border: 2px solid #ccc;
+    border: 1px solid #fff;
     box-shadow: -287px 0 0 280px var(--bg-color);
 }
 
@@ -202,7 +214,7 @@ label, .sliderValue {
     /*border: 1px solid yellow;*/
     display: flex;
     overflow: hidden;
-    margin: 5px auto 10px auto;
+    margin: 5px auto 0 auto;
     width: 210px;
 }
 
@@ -291,11 +303,12 @@ p#presets, p#dives {
 
 a {
     color: #fff;
-    text-decoration: none;
+    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
+    transition: text-decoration-color 300ms;
 }
 
 a:hover {
-    text-decoration: underline;
+    text-decoration-color: rgba(255, 255, 255, 1);
 }
 
 #version {
@@ -324,6 +337,10 @@ a:hover {
     margin-left: -195px;
 }
 
+.middot {
+    color: var(--accent-color);
+}
+
 #infoText {
     color: #ccc;
     /*color: var(--accent-color);*/
@@ -341,7 +358,7 @@ a:hover {
     -ms-user-select: none; /* IE 10+ */
     user-select: none; /* Standard syntax */
     cursor: pointer;
-    text-shadow: 0 0 1px var(--bg-color);
+    text-shadow: 0 0 4px var(--accent-color);
 }
 
 #infoText:focus {
