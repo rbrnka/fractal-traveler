@@ -97,26 +97,27 @@ button {
 }
 
 button.active {
-    /*background-image: linear-gradient(#222, #666);*/
-    /*box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);*/
-    /*transform: translateY(1px);*/
     color: var(--accent-color);
-    background: var(--bg-color);
+    background-image: linear-gradient(#222, #666);
     font-size: 12px;
     line-height: 1;
     border: 1px solid #666;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
     text-shadow: 0 0 4px var(--accent-color);
 }
 
 button:focus {
-    color: var(--accent-color);
-    background: var(--bg-color);
+    /*color: var(--accent-color);*/
+    background-image: linear-gradient(#222, #666);
     font-size: 12px;
     line-height: 1;
-    border: 1px solid #666;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    /*border: 1px solid #666;*/
     text-shadow: 0 0 4px var(--accent-color);
+    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
+}
+
+button:hover {
+    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
 }
 
 h1 {
@@ -129,11 +130,11 @@ h1 {
     letter-spacing: 1px;
     font-style: italic;
     /*text-shadow: 0 0 10px var(--accent-color);*/
-    text-shadow: 0 0 2px var(--accent-color),0 0 20px var(--accent-color);
+    text-shadow: 0 0 2px var(--accent-color), 0 0 20px var(--accent-color);
 }
 
 p {
-    margin: 5px 5px 3px 5px;
+    margin: 5px 0 3px 0;
     color: #ccc;
     z-index: 1000;
     font-size: 12px;
@@ -199,7 +200,11 @@ label, .sliderValue {
     background: var(--accent-color);
     cursor: pointer;
     border: 1px solid #fff;
-    box-shadow: -287px 0 0 280px var(--bg-color);
+    /*box-shadow: -287px 0 0 280px var(--bg-color);*/
+}
+
+.slider::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 10px var(--accent-color);
 }
 
 .thumbDisabled {
@@ -214,8 +219,9 @@ label, .sliderValue {
     /*border: 1px solid yellow;*/
     display: flex;
     overflow: hidden;
-    margin: 5px auto 0 auto;
-    width: 210px;
+    margin: 0 auto;
+    width: 240px;
+    padding: 5px 0 5px 0;
 }
 
 .switch-field span {
@@ -232,7 +238,7 @@ label, .sliderValue {
 }
 
 .switch-field label {
-    background: linear-gradient(#777, #333);;
+    background: linear-gradient(#777, #333);
     color: #eee;
     font-size: 12px;
     line-height: 1;
@@ -240,7 +246,8 @@ label, .sliderValue {
     padding: 3px 6px;
     margin-right: -1px;
     height: 14px;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    width: 70px;
+    /*border: 1px solid #B4FF6A;*/
 }
 
 .switch-field label:hover {
@@ -251,16 +258,19 @@ label, .sliderValue {
     height: 12px;
     border: 1px solid #666;
     text-shadow: 0 0 10px var(--accent-color);
-    background: var(--bg-color);
+    background-image: linear-gradient(#222, #666);
     color: var(--accent-color);
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
 }
 
-.switch-field label:first-of-type {
+.switch-field label#mandelbrotRadioLabel {
     border-radius: 4px 0 0 4px;
 }
 
-.switch-field label:last-of-type {
+.switch-field label.active {
+    box-shadow: 0 0 4px var(--accent-color);
+}
+
+.switch-field label#juliaRadioLabel {
     border-radius: 0 4px 4px 0;
 }
 
@@ -273,6 +283,7 @@ label, .sliderValue {
     padding: 2px 150px 2px 150px;
     display: none;
     color: var(--accent-color);
+    text-shadow: 0 0 1px var(--accent-color), 0 0 4px var(--accent-color), 0 0 10px var(--accent-color);
 }
 
 #handle.toggled {
@@ -291,6 +302,10 @@ label, .sliderValue {
 
 p.small {
     font-size: 11px;
+}
+
+p#presets {
+    margin: 0;
 }
 
 p#presets, p#dives {
@@ -342,7 +357,7 @@ a:hover {
 }
 
 #infoText {
-    color: #ccc;
+    color: #fff;
     /*color: var(--accent-color);*/
     font-family: sans-serif;
     /*font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;*/
@@ -358,7 +373,7 @@ a:hover {
     -ms-user-select: none; /* IE 10+ */
     user-select: none; /* Standard syntax */
     cursor: pointer;
-    text-shadow: 0 0 4px var(--accent-color);
+    text-shadow: 0 0 3px var(--accent-color);
 }
 
 #infoText:focus {

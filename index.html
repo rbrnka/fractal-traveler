@@ -40,11 +40,13 @@
     <div id="controlArea">
         <div class="switch-field">
             <span>Fractal set:</span>
-            <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label for="mandelbrotRadio">Mandelbrot</label>
-            <input id="juliaRadio" type="radio" name="fractalType" value="1"><label for="juliaRadio">&nbsp;&nbsp;&nbsp;&nbsp;Julia&nbsp;&nbsp;&nbsp;&nbsp;</label>
+            <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label id="mandelbrotRadioLabel" class="active" for="mandelbrotRadio">Mandelbrot</label>
+            <input id="juliaRadio" type="radio" name="fractalType" value="1"><label id="juliaRadioLabel" for="juliaRadio">Julia</label>
         </div>
-        <p id="presets">Presets:</p>
-        <p id="dives">Dives:</p>
+        <div id="presets-dives">
+            <p id="presets">Presets:</p>
+            <p id="dives">Dives:</p>
+        </div>
         <div id="sliders">
             <div class="slider-container">
                 <label for="realSlider">cx:</label>
@@ -65,7 +67,7 @@
         </div>
     </div>
     <p class="small">
-<!--        <img id="pin" src="./img/pin.png"> &middot;-->
+        <!--        <img id="pin" src="./img/pin.png"> &middot;-->
         <a target="_blank" title="
 ### Mouse
     - Left Button Drag: Pan
