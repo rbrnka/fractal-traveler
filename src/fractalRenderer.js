@@ -10,6 +10,9 @@ import {hslToRgb, lerp, rgbToHsl} from "./utils";
  */
 export class FractalRenderer {
 
+    /**
+     * @param {HTMLCanvasElement} canvas
+     */
     constructor(canvas) {
         this.canvas = canvas;
         this.gl = this.canvas.getContext('webgl', {
@@ -23,7 +26,7 @@ export class FractalRenderer {
         });
 
         if (!this.gl) {
-            alert('WebGL is not supported by your browser.');
+            alert('WebGL is not supported by your browser or crashed.');
             return;
         }
 
@@ -36,21 +39,50 @@ export class FractalRenderer {
         this.MIN_ZOOM = 40;
 
         /**
-         * Interesting zoom-ins
+         * Preset is an object containing properties of specific point in the fractal on the scene.
+         * @typedef Preset {Object}
+         */
+        /** Interesting zoom-ins
+         *  @type {Array.<Preset>}
          */
         this.PRESETS = [];
 
-        // Use the setter so that if DEFAULT_ZOOM is out of bounds it’s clamped.
+        /**
+         * Zoom. Lower number = higher zoom.
+         * @type {number}
+         */
         this.zoom = this.DEFAULT_ZOOM;
+
+        /**
+         * Coordinates in fractal units
+         * @typedef {Array.<number>} Pan
+         * @property {number} panX
+         * @property {number} panY
+         */
+        /** @type Pan */
         this.pan = this.DEFAULT_PAN.slice(); // Copy
+
+        /**
+         * Rotation in rad
+         * @type {number}
+         */
         this.rotation = this.DEFAULT_ROTATION;
 
         this.currentAnimationFrame = null;
         this.currentColorAnimationFrame = null;
         this.extraIterations = 0;
+
+        /**
+         * Color palette
+         * @typedef {Float32List} Palette
+         * @property {number} R Red
+         * @property {number} G Green
+         * @property {number} B Blue
+         */
+        /** @type Palette */
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
-        // Initialize shaders
+        /**  Vertex shader initialization snippet */
         this.vertexShaderSource = `
 			precision mediump float;
 			attribute vec4 a_position;
@@ -62,27 +94,23 @@ export class FractalRenderer {
 
         this.canvas.addEventListener('webglcontextlost', (event) => {
             event.preventDefault();
-            console.warn('WebGL context lost. Attempting to recover...');
+            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, 'color: #bada55', 'color: #fff');
             this.init(); // Reinitialize WebGL context
         });
     }
 
-    /**
-     * WebGL init & initial uniforms setting
-     */
-    init() {
-        // Initialize WebGL program and uniforms
-        this.initGLProgram();
+    //region > CONTROL METHODS -----------------------------------------------------------------------------------------
 
-        // Cache uniform locations
-        this.updateUniforms();
+    /** WebGL init & initial uniforms setting */
+    init() {
+        this.initGLProgram();  // Initialize WebGL program and uniforms
+        this.updateUniforms(); // Cache uniform locations
     }
 
-    /**
-     * Updates the canvas size based on the current visual viewport
-     */
+    /** Updates the canvas size based on the current visual viewport and redraws the fractal */
     resizeCanvas() {
-        console.log("Resizing canvas");
+        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, 'color: #bada55');
+        console.log(`Canvas before resize: ${this.canvas.width}x${this.canvas.height}`);
 
         // Use visual viewport if available, otherwise fallback to window dimensions.
         const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -103,7 +131,7 @@ export class FractalRenderer {
         this.canvas.style.width = vw + "px";
         this.canvas.style.height = vh + "px";
 
-        console.log("After resize: canvas.width =", this.canvas.width, "canvas.height =", this.canvas.height);
+        console.log(`Canvas after resize: ${this.canvas.width}x${this.canvas.height}`);
 
         // Update the WebGL viewport and the resolution uniform.
         if (this.gl) {
@@ -118,6 +146,8 @@ export class FractalRenderer {
         this.pan[1] = fy;
 
         this.draw();
+
+        console.groupEnd();
     }
 
     /**
@@ -132,11 +162,15 @@ export class FractalRenderer {
     /**
      * Compiles the shader code
      *
-     * @param source
-     * @param type
-     * @return {*|{}|WebGLShader|null}
+     * @param {string} source
+     * @param {GLenum} type
+     * @return {WebGLShader|null}
      */
     compileShader(source, type) {
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, 'color: #bada55');
+        console.log(`Shader GLenum type: ${type}`);
+        console.log(`Shader code: ${source}`);
+
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
         this.gl.compileShader(shader);
@@ -146,14 +180,17 @@ export class FractalRenderer {
             this.gl.deleteShader(shader);
             return null;
         }
+        if (DEBUG_MODE) console.groupEnd();
 
         return shader;
     }
 
     /**
-     * Initializes the WebGL program and sets initial position
+     * Initializes the WebGL program, shaders and sets initial position
      */
     initGLProgram() {
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, 'color: #bada55');
+
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
 
@@ -180,13 +217,14 @@ export class FractalRenderer {
         const positionLoc = this.gl.getAttribLocation(this.program, 'a_position');
         this.gl.enableVertexAttribArray(positionLoc);
         this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
+
+        if (DEBUG_MODE) console.groupEnd();
     }
 
     /**
      * Updates uniforms (should be done on every redraw)
      */
     updateUniforms() {
-        // Make sure the program is active.
         this.gl.useProgram(this.program);
 
         // Cache the uniform locations.
@@ -194,7 +232,7 @@ export class FractalRenderer {
         this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
         this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
-        this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation'); // Add rotation
+        this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation');
         this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
         this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
     }
@@ -212,26 +250,29 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, 'color: #bada55');
+
         this.stopCurrentNonColorAnimation();
         this.stopCurrentColorAnimation();
 
         this.colorPalette = this.DEFAULT_PALETTE.slice();
         this.pan = this.DEFAULT_PAN.slice();
-        this.zoom = this.DEFAULT_ZOOM; // Uses the setter!
-        this.rotation = 0; // Reset rotation
+        this.zoom = this.DEFAULT_ZOOM;
+        this.rotation = this.DEFAULT_ROTATION;
         this.extraIterations = 0;
         this.resizeCanvas();
         this.draw();
 
+        if (DEBUG_MODE) console.groupEnd();
         updateInfo();
     }
 
     /**
-     * Calculates coordinates from screen to fx/fy in the fractal scale (matches complex number x+yi)
+     * Calculates coordinates from screen point [x, y] to the fractal scale [x, yi]
      *
-     * @param screenX
-     * @param screenY
-     * @returns {number[]} fractal plane coords [x, yi]
+     * @param {number} screenX
+     * @param {number} screenY
+     * @returns {Pan} fractal plane coords [x, yi]
      */
     screenToFractal(screenX, screenY) {
         const dpr = window.devicePixelRatio || 1;
@@ -267,24 +308,18 @@ export class FractalRenderer {
         const fx = rotatedX * this.zoom + this.pan[0];
         const fy = rotatedY * this.zoom + this.pan[1];
 
-        if (DEBUG_MODE)
-            console.log(
-                `screenToFractal - dpr: ${dpr}, CSS input (${screenX}, ${screenY}), ` +
-                `buffer coords (${bufferX.toFixed(2)}, ${bufferY.toFixed(2)}), normalized (${stX.toFixed(3)}, ${stY.toFixed(3)}), ` +
-                `fractal (${fx}, ${fy})`
-            );
-
-            return [fx, fy];
+        return [fx, fy];
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Animation Methods
-    // -----------------------------------------------------------------------------------------------------------------
+    // endregion--------------------------------------------------------------------------------------------------------
+    // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
     /**
      * Stops currently running animation that is not a color transition
      */
     stopCurrentNonColorAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentNonColorAnimation`, 'color: #bada55', 'color: #fff');
+
         if (this.currentAnimationFrame !== null) {
             cancelAnimationFrame(this.currentAnimationFrame);
             this.currentAnimationFrame = null;
@@ -295,6 +330,8 @@ export class FractalRenderer {
      * Stops currently running color animation
      */
     stopCurrentColorAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, 'color: #bada55', 'color: #fff');
+
         if (this.currentColorAnimationFrame !== null) {
             cancelAnimationFrame(this.currentColorAnimationFrame);
             this.currentColorAnimationFrame = null;
@@ -307,456 +344,384 @@ export class FractalRenderer {
     updateInfoOnAnimationFinished() {
         setTimeout(() => {
             updateInfo();
-        }, 200);
+        }, 50);
     }
 
+    /**
+     * Method that handles gradual color changes
+     * @callback coloringCallback
+     */
     /**
      * Smoothly transitions fractalApp.colorPalette from its current value
      * to the provided newPalette over the specified duration (in milliseconds).
      *
-     * @param {Array} newPalette - The target palette as [r, g, b] (each in [0,1]).
-     * @param {number} duration - Duration of the transition in milliseconds.
-     * @param callback
+     * @param {Palette} newPalette - The target palette as [r, g, b] (each in [0,1]).
+     * @param {number} [duration] - Duration of the transition in milliseconds.
+     * @param {coloringCallback} [coloringCallback] A method called at every animation step
+     * @return {Promise<void>}
      */
-    animateColorPaletteTransition(newPalette, duration = 250, callback = null) {
+    async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, 'color: #bada55');
         this.stopCurrentColorAnimation();
 
-        // Store the starting palette
-        const startPalette = this.colorPalette.slice();
-        let startTime = null;
-        const self = this;
-
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
-
-            // Interpolate each channel.
-            const interpPalette = [
-                lerp(startPalette[0], newPalette[0], progress),
-                lerp(startPalette[1], newPalette[1], progress),
-                lerp(startPalette[2], newPalette[2], progress)
-            ];
-
-            self.colorPalette = interpPalette;
-            self.draw();
-
-            if (progress < 1) {
-                self.currentColorAnimationFrame = requestAnimationFrame(step);
-            } else {
-                self.stopCurrentColorAnimation();
-                if (callback) callback();
-            }
+        if (this.colorPalette[0] === newPalette[0] && this.colorPalette[1] === newPalette[1] && this.colorPalette[2] === newPalette[2]) {
+            console.warn(`Identical palette found. Skipping.`);
+            return;
         }
+        console.log(`Animating to ${newPalette}.`);
 
-        this.currentColorAnimationFrame = requestAnimationFrame(step);
+        const startPalette = this.colorPalette.slice();
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                // Interpolate each channel.
+                this.colorPalette = [
+                    lerp(startPalette[0], newPalette[0], progress),
+                    lerp(startPalette[1], newPalette[1], progress),
+                    lerp(startPalette[2], newPalette[2], progress)
+                ];
+                this.draw();
+
+                if (coloringCallback) coloringCallback();
+
+                if (progress < 1) {
+                    this.currentColorAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentColorAnimation();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentColorAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
      * Animates fractalApp.colorPalette by cycling through the entire color space.
      * The palette will continuously change hue from 0 to 360 degrees and starts from the current palette
      *
-     * @param {number} duration - Duration (in milliseconds) for one full color cycle.
+     * @param {number} [duration] - Duration (in milliseconds) for one full color cycle.
+     * @return {Promise<void>}
      */
-    animateFullColorSpaceCycle(duration) {
+    async animateFullColorSpaceCycle(duration = 15000) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, 'color: #bada55');
         this.stopCurrentColorAnimation();
 
-        let startTime = null;
-        const self = this;
-        console.log("Starting full color cycle animation from current palette");
+        console.log(`Starting.`);
 
-        const currentRGB = self.colorPalette;
+        const currentRGB = this.colorPalette;
         const hsl = rgbToHsl(currentRGB[0], currentRGB[1], currentRGB[2]);
-        const startHue = hsl[0];  // starting hue in [0,1]
-        // Use fixed saturation and lightness for the animation.
+        const startHue = hsl[0]; // starting hue in [0, 1]
         const fixedS = 1.0;
         const fixedL = 0.6;
 
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            const progress = ((timestamp - startTime) % duration) / duration;
-            const newHue = (startHue + progress) % 1;
-            const newPalette = hslToRgb(newHue, fixedS, fixedL);
+        // Return a Promise that never resolves (continuous animation)
+        await new Promise(() => {
+            let startTime = null;
 
-            self.colorPalette = newPalette;
-            self.draw();
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
 
-            self.currentColorAnimationFrame = requestAnimationFrame(step);
-        }
+                const newHue = (startHue + progress) % 1;
 
-        self.currentColorAnimationFrame = requestAnimationFrame(step);
+                this.colorPalette = hslToRgb(newHue, fixedS, fixedL);
+                this.draw();
+                this.currentColorAnimationFrame = requestAnimationFrame(step);
+            };
+            this.currentColorAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
-     * Animates pan
+     * Animates pan from current position to the new one
      *
-     * @param targetPan
-     * @param duration
-     * @param callback after the animation
-     * @param startPan
+     * @param {Pan} targetPan
+     * @param [duration] in ms
+     * @return {Promise<void>}
      */
-    animatePan(targetPan, duration = 200, callback = null, startPan = this.pan.slice()) {
+    async animatePan(targetPan, duration = 200) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePan`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
 
-        const self = this;
-        let startTime = null;
-
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
-
-            self.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
-            self.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
-            self.draw();
-
-            updateInfo(true);
-
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(step);
-            } else {
-                self.updateInfoOnAnimationFinished();
-                self.stopCurrentNonColorAnimation();
-                if (callback) callback();
-            }
+        if (this.pan[0].toFixed(6) === targetPan[0].toFixed(6) && this.pan[1].toFixed(6) === targetPan[1].toFixed(6)) {
+            console.log(`Already at the target pan. Skipping.`);
+            console.groupEnd();
+            return;
         }
+        console.log(`Panning to ${targetPan}.`);
 
-        this.currentAnimationFrame = requestAnimationFrame(step);
+        const startPan = this.pan.slice();
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                this.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
+                this.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
+                this.draw();
+
+                updateInfo(true);
+
+                if (progress < 1) {
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentNonColorAnimation();
+                    this.updateInfoOnAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
      * Animates to target zoom without panning.
      *
-     * @param targetZoom
-     * @param duration in ms
-     * @param callback
+     * @param {number} targetZoom
+     * @param {number} [duration] in ms
+     * @return {Promise<void>}
      */
-    animateZoom(targetZoom, duration, callback = null) {
+    async animateZoom(targetZoom, duration = 500) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoom`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
 
-        const startZoom = this.zoom;
-        const self = this;
-        let startTime = null;
-
-        function stepZoom(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
-
-            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-            self.draw();
-
-            updateInfo(true);
-
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(stepZoom);
-            } else {
-                self.stopCurrentNonColorAnimation();
-                self.updateInfoOnAnimationFinished();
-                if (callback) callback();
-            }
+        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
+            console.log(`Already at the target zoom. Skipping.`);
+            console.groupEnd();
+            return;
         }
+        console.log(`Zooming from ${this.zoom.toFixed(6)} to ${targetZoom.toFixed(6)}.`);
 
-        this.currentAnimationFrame = requestAnimationFrame(stepZoom);
+        const startZoom = this.zoom;
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+                this.draw();
+
+                updateInfo(true);
+
+                if (progress < 1) {
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentNonColorAnimation();
+                    this.updateInfoOnAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    /**
+     * Animates to target rotation. Rotation is normalized into [0, 2*PI] interval
+     *
+     * @param {number} targetRotation
+     * @param {number} [duration] in ms
+     * @return {Promise<void>}
+     */
+    async animateRotation(targetRotation, duration = 500) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateRotation`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        // Normalize
+        targetRotation = (targetRotation % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+
+        if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
+            console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
+            console.groupEnd();
+            return;
+        }
+        console.log(`Rotating from ${this.rotation.toFixed(6)} to ${targetRotation.toFixed(6)}.`);
+
+        const startRotation = this.rotation;
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                this.rotation = startRotation + (targetRotation - startRotation) * progress;
+                this.draw();
+
+                updateInfo(true);
+
+                if (progress < 1) {
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentNonColorAnimation();
+                    this.updateInfoOnAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
      * Animates sequential pan and then zooms into the target location.
      *
-     * @param targetPan Array [x, y]
-     * @param targetZoom
-     * @param panDuration in milliseconds
-     * @param zoomDuration in milliseconds
-     * @param startPan Defaults to current pan
-     * @param callback
+     * @param {Pan} targetPan
+     * @param {number} targetZoom
+     * @param {number} panDuration in milliseconds
+     * @param {number} zoomDuration in milliseconds
+     * @return {Promise<void>}
      */
-    animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration, startPan = this.pan.slice(), callback = null) {
-        this.stopCurrentNonColorAnimation();
-
-        const startStatePan = startPan; // current pan
-        const self = this;
-        let startTime = null;
-
-        function stepPan(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / panDuration;
-            if (progress > 1) progress = 1;
-
-            self.pan[0] = startStatePan[0] + (targetPan[0] - startStatePan[0]) * progress;
-            self.pan[1] = startStatePan[1] + (targetPan[1] - startStatePan[1]) * progress;
-            self.draw();
-
-            updateInfo(true);
-
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(stepPan);
-            } else {
-                self.animateZoom(targetZoom, zoomDuration, callback);
-            }
-        }
-
-        this.currentAnimationFrame = requestAnimationFrame(stepPan);
+    async animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoom`, 'color: #bada55');
+        await this.animatePan(targetPan, panDuration);
+        await this.animateZoom(targetZoom, zoomDuration);
+        console.groupEnd();
     }
 
     /**
      * Animates pan and zoom simultaneously.
      *
-     * @param targetPan Array [x, y]
-     * @param targetZoom
-     * @param duration in milliseconds
-     * @param callback Function called when animation is finished
+     * @param {Pan} targetPan
+     * @param {number} targetZoom
+     * @param {number} [duration] in milliseconds
+     * @return {Promise<void>}
      */
-    animatePanAndZoomTo(targetPan, targetZoom, duration = 500, callback = null) {
+    async animatePanAndZoomTo(targetPan, targetZoom, duration = 1000) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
+
+        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
+            console.log(`Already at the target zoom. Panning.`);
+            await this.animatePan(targetPan, Math.round(duration / 2));
+            console.groupEnd();
+            return;
+        }
+
+        if (this.pan[0].toFixed(6) === targetPan[0].toFixed(6) && this.pan[1].toFixed(6) === targetPan[1].toFixed(6)) {
+            console.log(`Already at the target pan. Zooming.`);
+            await this.animateZoom(targetZoom, Math.round(duration / 2));
+            console.groupEnd();
+            return;
+        }
+
+        console.log(`Panning and zooming in parallel.`);
 
         const startPan = this.pan.slice();
         const startZoom = this.zoom;
-        const self = this;
-        let startTime = null;
 
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
+        await new Promise(resolve => {
+            let startTime = null;
 
-            // In animatePanAndZoomTo or other animations:
-            self.pan[0] = lerp(startPan[0], targetPan[0], progress);
-            self.pan[1] = lerp(startPan[1], targetPan[1], progress);
-            self.zoom = lerp(startZoom, targetZoom, progress);
-            self.draw();
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
 
-            updateInfo(true);
+                this.pan[0] = lerp(startPan[0], targetPan[0], progress);
+                this.pan[1] = lerp(startPan[1], targetPan[1], progress);
+                this.zoom = lerp(startZoom, targetZoom, progress);
+                this.draw();
 
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(step);
-            } else {
-                self.stopCurrentNonColorAnimation();
-                self.updateInfoOnAnimationFinished();
-                if (callback) callback();
-            }
-        }
+                updateInfo(true);
 
-        this.currentAnimationFrame = requestAnimationFrame(step);
+                if (progress < 1) {
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentNonColorAnimation();
+                    this.updateInfoOnAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
      * Animates pan, zoom and rotation simultaneously
      *
-     * @param targetPan
-     * @param targetZoom
-     * @param targetRotation
-     * @param duration
-     * @param callback
+     * @param {Pan} targetPan
+     * @param {number} targetZoom
+     * @param {number} targetRotation
+     * @param {number} [duration] in milliseconds
+     * @return {Promise<void>}
      */
-    animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500, callback = null) {
+    async animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500) {
         this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotate`, 'color: #bada55');
+        console.log(`Panning, zooming and rotating in parallel.`);
 
+        // Simply does the animation without the need for other combinations of animation methods.
         const startPan = this.pan.slice();
         const startZoom = this.zoom;
         const startRotation = this.rotation;
-        const self = this;
-        let startTime = null;
 
-        function step(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / duration;
-            if (progress > 1) progress = 1;
-
-            self.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
-            self.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
-            self.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-            self.rotation = startRotation + (targetRotation - startRotation) * progress;
-            self.draw();
-
-            updateInfo(true);
-
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(step);
-            } else {
-                self.stopCurrentNonColorAnimation();
-                self.updateInfoOnAnimationFinished();
-                if (callback) callback();
-            }
-        }
-
-        this.currentAnimationFrame = requestAnimationFrame(step);
-    }
-
-    /**
-     * Animates travel to a preset. If any of the final params is different from the default, it won't animate it.
-     * It first zooms out to the default zoom and then animates pan and zoom otherwise.
-     *
-     * @param {Object} preset An instance-specific object to define exact spot in the fractal
-     *      @param {Array} preset.pan [fx, fy]
-     *      @param {number} preset.zoom
-     *      @param {number} preset.rotation in rad
-     * @param {number} zoomOutDuration in ms
-     * @param {number} panDuration in ms
-     * @param {number} zoomInDuration in ms
-     * @param {function()} callback A callback method executed once the animation is finished
-     */
-    animateTravelToPreset(preset, zoomOutDuration = 500, panDuration = 500, zoomInDuration = 3500, callback = null) {
-        this.stopCurrentNonColorAnimation();
-
-        const self = this;
-        const startRotation = this.rotation;
-        const targetRotation = preset.rotation || 0;
-
-        console.log(`Setting targetRotation from ${startRotation} to ${targetRotation}`);
-
-        if (this.zoom === this.DEFAULT_ZOOM) {
-            console.log('Already at default zoom, only pan and then zoom');
-            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration, this.pan.slice(), callback);
-            return;
-        }
-
-        if (this.zoom === preset.zoom) {
-            console.log('Already at the correct zoom, only pan.');
-            this.animatePan(preset.pan, panDuration, callback);
-            return;
-        }
-
-        if (preset.pan[0].toFixed(6) === self.pan[0].toFixed(6) && preset.pan[1].toFixed(6) === self.pan[1].toFixed(6)) {
-            console.log('Already in right pan, zooming only.');
-            self.animateZoom(preset.zoom, zoomInDuration, callback);
-            return;
-        }
-
-        const startZoom = this.zoom;
-        let startTime = null;
-
-        function stepZoomOut(timestamp) {
-            if (!startTime) startTime = timestamp;
-            let progress = (timestamp - startTime) / zoomOutDuration;
-            if (progress > 1) progress = 1;
-
-            self.zoom = startZoom * Math.pow(self.DEFAULT_ZOOM / startZoom, progress);
-            self.rotation = startRotation + (targetRotation - startRotation) * progress;
-            self.draw();
-
-            updateInfo(true);
-
-            if (progress < 1) {
-                self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
-            } else {
-                self.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration, self.pan.slice(), callback);
-            }
-        }
-
-        this.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
-    }
-
-    /**
-     * Demo loop traveling through presets
-     * @param preset
-     *      @param {Array} preset.pan [fx, fy]
-     *      @param {number} preset.zoom
-     *      @param {number} preset.rotation in rad
-     * @param zoomOutDuration in ms
-     * @param panDuration in ms
-     * @param zoomInDuration in ms
-     * @param callback {function} called after every demo phase (preset)
-     */
-    animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration, callback = null) {
-        this.stopCurrentNonColorAnimation();
-
-        if (this.zoom === this.DEFAULT_ZOOM) {
-            this.animatePanThenZoom(preset.pan, preset.zoom, panDuration, zoomInDuration, this.pan.slice(), callback);
-            return;
-        }
-
-        const startZoom = this.zoom;
-        const startPan = this.pan.slice();
-        const startRotation = this.rotation;
-
-        // Adjust rotation ranges for more noticeable and random effects
-        const zoomOutRotation = startRotation + (Math.random() * Math.PI * 2 - Math.PI);
-        const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
-
-        const self = this;
-
-        function animateZoomOut() {
+        await new Promise(resolve => {
             let startTime = null;
 
-            function stepZoomOut(timestamp) {
+            const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min(1, (timestamp - startTime) / zoomOutDuration);
+                const progress = Math.min((timestamp - startTime) / duration, 1)
 
-                // Zoom out
-                self.zoom = startZoom * Math.pow(self.DEFAULT_ZOOM / startZoom, progress);
+                this.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
+                this.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+                this.rotation = startRotation + (targetRotation - startRotation) * progress;
+                this.draw();
 
-                // Rotate during zoom-out
-                self.rotation = startRotation + (zoomOutRotation - startRotation) * progress;
-
-                self.draw();
                 updateInfo(true);
 
                 if (progress < 1) {
-                    self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
+                    this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    self.stopCurrentNonColorAnimation();
+                    this.stopCurrentNonColorAnimation();
+                    this.updateInfoOnAnimationFinished();
+                    console.groupEnd();
+                    resolve();
                 }
-            }
-
-            self.currentAnimationFrame = requestAnimationFrame(stepZoomOut);
-        }
-
-        function animatePan() {
-            let startTime = null;
-
-            function stepPan(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min(1, (timestamp - startTime) / panDuration);
-
-                // Pan without rotation
-                self.pan[0] = startPan[0] + (preset.pan[0] - startPan[0]) * progress;
-                self.pan[1] = startPan[1] + (preset.pan[1] - startPan[1]) * progress;
-
-                self.draw();
-                updateInfo(true);
-
-                if (progress < 1) {
-                    self.currentAnimationFrame = requestAnimationFrame(stepPan);
-                } else {
-                    self.stopCurrentNonColorAnimation();
-                }
-            }
-
-            self.currentAnimationFrame = requestAnimationFrame(stepPan);
-        }
-
-        function animateZoomInWithRotation(callback) {
-            let startTime = null;
-
-            function stepZoomInRotate(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min(1, (timestamp - startTime) / zoomInDuration);
-
-                // Zoom in
-                self.zoom = self.DEFAULT_ZOOM * Math.pow(preset.zoom / self.DEFAULT_ZOOM, progress);
-
-                // Rotate during zoom-in
-                self.rotation = zoomOutRotation + (zoomInRotation - zoomOutRotation) * progress;
-
-                self.draw();
-                updateInfo(true);
-
-                if (progress < 1) {
-                    self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);
-                } else {
-                    self.updateInfoOnAnimationFinished();
-                    if (callback) callback();
-                }
-            }
-
-            self.currentAnimationFrame = requestAnimationFrame(stepZoomInRotate);
-        }
-
-        // Execute zoom-out, then pan, then zoom-in with rotation
-        animateZoomOut(() => {
-            animatePan(() => {
-                animateZoomInWithRotation(callback);
-            });
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
         });
     }
+
+    /**
+     * Animates travel to preset.
+     * @abstract
+     * @return {Promise<void>}
+     */
+    async animateTravelToPreset() {
+        throw new Error('The animateTravelToPreset method must be implemented in child classes');
+    }
+
+    /**
+     * Animate travel to a preset with random rotation. This method waits for three stages:
+     *   1. Zoom-out with rotation.
+     *   2. Pan transition.
+     *   3. Zoom-in with rotation.
+     *
+     * @abstract
+     * @param {Preset} preset - The target preset object with properties: pan, c, zoom, rotation.
+     * @param {number} zoomOutDuration - Duration (ms) for the zoom-out stage.
+     * @param {number} panDuration - Duration (ms) for the pan stage.
+     * @param {number} zoomInDuration - Duration (ms) for the zoom-in stage.
+     */
+    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
+        throw new Error('The animateTravelToPreset method must be implemented in child classes');
+    }
+
+    // endregion--------------------------------------------------------------------------------------------------------
 }
