@@ -1,5 +1,5 @@
 import {DEBUG_MODE, updateInfo} from "./ui";
-import {hslToRgb, lerp, rgbToHsl} from "./utils";
+import {hslToRgb, lerp, normalizeRotation, rgbToHsl} from "./utils";
 
 /**
  * FractalRenderer
@@ -41,6 +41,9 @@ export class FractalRenderer {
         /**
          * Preset is an object containing properties of specific point in the fractal on the scene.
          * @typedef Preset {Object}
+         *      @property {number} zoom
+         *      @property {number} [rotation]
+         *      @property {number} pan
          */
         /** Interesting zoom-ins
          *  @type {Array.<Preset>}
@@ -70,6 +73,12 @@ export class FractalRenderer {
 
         this.currentAnimationFrame = null;
         this.currentColorAnimationFrame = null;
+
+        /**
+         * Determines the level of fractal rendering detail
+         * @type {number}
+         */
+        this.iterations = 0;
         this.extraIterations = 0;
 
         /**
@@ -225,8 +234,6 @@ export class FractalRenderer {
      * Updates uniforms (should be done on every redraw)
      */
     updateUniforms() {
-        this.gl.useProgram(this.program);
-
         // Cache the uniform locations.
         this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
         this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
@@ -238,12 +245,36 @@ export class FractalRenderer {
     }
 
     /**
-     * Draws the fractal.
-     *
-     * @abstract
+     * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
      */
     draw() {
-        throw new Error('The draw method must be implemented in child classes');
+        this.gl.useProgram(this.program);
+
+        const w = this.canvas.width;
+        const h = this.canvas.height;
+
+        // Update the viewport.
+        this.gl.viewport(0, 0, w, h);
+
+        if (this.resolutionLoc === undefined) {
+            // Cache the resolution location if not already cached.
+            this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+        }
+        if (this.resolutionLoc) {
+            this.gl.uniform2f(this.resolutionLoc, w, h);
+        }
+
+        this.gl.uniform2fv(this.panLoc, this.pan);
+        this.gl.uniform1f(this.zoomLoc, this.zoom);
+        this.gl.uniform1f(this.rotationLoc, this.rotation);
+        this.gl.uniform1f(this.iterLoc, this.iterations);
+        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+
+        this.updateUniforms();
+
+        this.gl.clearColor(0, 0, 0, 1);
+        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
     }
 
     /**
@@ -341,7 +372,9 @@ export class FractalRenderer {
     /**
      * Default callback after every animation that requires on-screen info update
      */
-    updateInfoOnAnimationFinished() {
+    onAnimationFinished() {
+        this.resizeCanvas();
+
         setTimeout(() => {
             updateInfo();
         }, 50);
@@ -475,7 +508,7 @@ export class FractalRenderer {
                     this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentNonColorAnimation();
-                    this.updateInfoOnAnimationFinished();
+                    this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
@@ -520,7 +553,7 @@ export class FractalRenderer {
                     this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentNonColorAnimation();
-                    this.updateInfoOnAnimationFinished();
+                    this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
@@ -541,7 +574,7 @@ export class FractalRenderer {
         this.stopCurrentNonColorAnimation();
 
         // Normalize
-        targetRotation = (targetRotation % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+        targetRotation = normalizeRotation(targetRotation);
 
         if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
             console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
@@ -559,7 +592,9 @@ export class FractalRenderer {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
-                this.rotation = startRotation + (targetRotation - startRotation) * progress;
+                // this.rotation = startRotation + (targetRotation - startRotation) * progress;
+                this.rotation = lerp(startRotation, targetRotation, progress);
+
                 this.draw();
 
                 updateInfo(true);
@@ -568,7 +603,7 @@ export class FractalRenderer {
                     this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentNonColorAnimation();
-                    this.updateInfoOnAnimationFinished();
+                    this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
@@ -633,7 +668,7 @@ export class FractalRenderer {
 
                 this.pan[0] = lerp(startPan[0], targetPan[0], progress);
                 this.pan[1] = lerp(startPan[1], targetPan[1], progress);
-                this.zoom = lerp(startZoom, targetZoom, progress);
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
                 this.draw();
 
                 updateInfo(true);
@@ -642,7 +677,67 @@ export class FractalRenderer {
                     this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentNonColorAnimation();
-                    this.updateInfoOnAnimationFinished();
+                    this.onAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    /**
+     * Animates to target zoom and rotation simultaneously. Rotation is normalized into [0, 2*PI] interval
+     *
+     * @param {number} targetZoom
+     * @param {number} targetRotation
+     * @param {number} [duration] in ms
+     * @return {Promise<void>}
+     */
+    async animateZoomRotation(targetZoom, targetRotation, duration = 500) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotation`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        // Normalize
+        targetRotation = normalizeRotation(targetRotation);
+
+        if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
+            console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
+            await this.animateZoom(targetZoom, duration);
+            console.groupEnd();
+            return;
+        }
+
+        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
+            console.log(`Already at the target zoom. Panning.`);
+            await this.animateRotation(targetRotation, duration);
+            console.groupEnd();
+            return;
+        }
+
+        console.log(`Rotating from ${this.rotation.toFixed(6)} to ${targetRotation.toFixed(6)}.`);
+
+        const startRotation = this.rotation;
+        const startZoom = this.zoom;
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                this.rotation = lerp(startRotation, targetRotation, progress);
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+                this.draw();
+
+                updateInfo(true);
+
+                if (progress < 1) {
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentNonColorAnimation();
+                    this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
@@ -680,7 +775,7 @@ export class FractalRenderer {
                 this.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
                 this.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
                 this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-                this.rotation = startRotation + (targetRotation - startRotation) * progress;
+                this.rotation = lerp(startRotation, targetRotation, progress);
                 this.draw();
 
                 updateInfo(true);
@@ -689,7 +784,7 @@ export class FractalRenderer {
                     this.currentAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentNonColorAnimation();
-                    this.updateInfoOnAnimationFinished();
+                    this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }

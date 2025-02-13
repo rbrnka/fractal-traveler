@@ -14,6 +14,8 @@ export class MandelbrotRenderer extends FractalRenderer {
 
         this.DEFAULT_PAN = [-0.5, 0];
         this.pan = this.DEFAULT_PAN.slice();
+        /** Mandelbrot-specific presets
+         */
         this.PRESETS = [
             {pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION},
             {pan: [0.351424, 0.063866], zoom: 0.000049},
@@ -22,9 +24,9 @@ export class MandelbrotRenderer extends FractalRenderer {
             {pan: [-0.750700, 0.021415], zoom: 0.000110},
             // {pan: [-1.907294, 0.000000], zoom: 0.000451},
             {pan: [-0.766863, -0.107475], zoom: 0.000196},
-            {pan: [-0.853569, -0.210814], zoom: 0.000126},
+            {pan: [-0.8535686544080792, -0.21081423598149682], zoom: 0.000126},
             {pan: [0.337420, 0.047257], zoom: 0.000143},
-            {pan: [0.116501, -0.663546], zoom: 0.000104},
+            {pan: [0.11650135661082159, -0.6635453818054073], zoom: 0.000104},
             {pan: [-0.124797, 0.840309], zoom: 0.000628}
         ];
 
@@ -33,17 +35,18 @@ export class MandelbrotRenderer extends FractalRenderer {
 
     /**
      * @inheritDoc
+     * @override
      */
     createFragmentShaderSource() {
-        const coloring2 = `
-        float color = i / 100.0;
-        vec3 fractalColor = vec3(
-            sin(color * 3.1415),
-            sin(color * 6.283),
-            sin(color * 1.720)
-        ) * u_colorPalette;
-        gl_FragColor = vec4(fractalColor, 1.0);
-    `;
+        /** Coloring algorithm */
+        const coloring = `float color = i / 100.0;
+                vec3 fractalColor = vec3(
+                    sin(color * 3.1415),
+                    sin(color * 6.283),
+                    sin(color * 1.720)
+                ) * u_colorPalette;
+                gl_FragColor = vec4(fractalColor, 1.0);
+         `;
 
         return `
         precision mediump float;
@@ -91,7 +94,7 @@ export class MandelbrotRenderer extends FractalRenderer {
             if (i >= u_iterations) {
                 gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
             } else {
-                ${coloring2}
+                ${coloring}
             }
         }
     `;
@@ -99,26 +102,105 @@ export class MandelbrotRenderer extends FractalRenderer {
 
     /**
      * @inheritDoc
+     * @override
      */
     draw() {
-        this.gl.useProgram(this.program);
-        const w = this.canvas.width;
-        const h = this.canvas.height;
-        this.gl.viewport(0, 0, w, h);
-        this.gl.uniform2f(this.resolutionLoc, w, h);
-
-        // Update other uniforms...
-        this.gl.uniform2fv(this.panLoc, this.pan);
-        this.gl.uniform1f(this.zoomLoc, this.zoom);
-        this.gl.uniform1f(this.rotationLoc, this.rotation);
-
         const baseIters = Math.floor(5000 * Math.pow(2, -Math.log2(this.zoom)));
-        const iters = Math.min(2000, baseIters + this.extraIterations);
-        this.gl.uniform1f(this.iterLoc, iters);
-        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
-        this.gl.clearColor(0, 0, 0, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        super.draw();
+
+    }
+
+    /**
+     * Animates travel to a preset. It first zooms out to the default zoom, then rotates, then animates pan and zoom-in.
+     * If any of the final params is the same as the target, it won't animate it.
+     *
+     * @param {Preset} preset An instance-specific object to define exact spot in the fractal
+     * @param {number} [zoomOutDuration] in ms
+     * @param {number} [zoomInDuration] in ms
+     * @return {Promise<void>}
+     */
+    async animateTravelToPreset(preset, zoomOutDuration = 1000, zoomInDuration = 3500) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        // Already at the position, just wrong zoom?
+        if (this.pan[0].toFixed(6) === preset.pan[0].toFixed(6) && this.pan[1].toFixed(6) === preset.pan[1].toFixed(6)) {
+            console.log(`Already at the right pan, zooming only.`);
+            await this.animateZoom(preset.zoom);
+            console.groupEnd();
+            return;
+        }
+
+        // Right zoom level but pan is off?
+        if (this.zoom.toFixed(6) === preset.zoom.toFixed(6)) {
+            console.log(`Already at default zoom, panning and zooming only.`);
+            await this.animatePan(preset.pan.slice(), 1000);
+            console.groupEnd();
+            return;
+        }
+
+        console.log(`Preset: ${JSON.stringify(preset)}`);
+
+        // Stage 1: Zoom-out
+        console.log(`Stage 1: Zoom-out`);
+        await this.animateZoom(this.DEFAULT_ZOOM, zoomOutDuration);
+
+        // Stage 2: Rotation
+        console.log(`Stage 2: Rotation`);
+        const targetRotation = preset.rotation || 0;
+        await this.animateRotation(targetRotation, 100);
+
+        // Stage 3: PanZoom transition with adjusted duration based on the Euclidean distance between startPan and targetPan.
+        console.log(`Stage 3: PanThenZoom`);
+        const duration = Math.round(500 * Math.hypot(preset.pan[0] - this.pan[0], preset.pan[1] - this.pan[1]));
+        console.log(`Adjusted pan duration ${duration}ms`);
+        await this.animatePanThenZoom(preset.pan, preset.zoom, duration, zoomInDuration);
+        console.groupEnd();
+    }
+
+    /**
+     * Animate travel to a preset with random rotation. This method waits for three stages:
+     *   1. Zoom-out to default zoom with rotation.
+     *   2. Pan transition.
+     *   3. Zoom-in with rotation.
+     *
+     * @param {Object} preset The target preset object with properties: pan, c, zoom, rotation.
+     * @param {number} zoomOutDuration Duration (ms) for the zoom-out stage.
+     * @param {number} panDuration Duration (ms) for the pan stage.
+     * @param {number} zoomInDuration Duration (ms) for the zoom-in stage.
+     */
+    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        // Generate random rotations for a more dynamic effect.
+        const startRotation = this.rotation;
+        const zoomOutRotation = startRotation + (Math.random() * Math.PI * 2 - Math.PI);
+        const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
+
+        // Stage 1: Zoom-out with rotation.
+        console.log(`Stage 1: Zoom-out with rotation.`);
+        if (this.zoom.toFixed(6) !== this.DEFAULT_ZOOM.toFixed(6)) {
+            await this.animateZoomRotation(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration);
+        } else {
+            console.log(`Already at default zoom, skipping rotation.`); // Rotation at default zoom looks weird.
+            await this.animateZoom(this.DEFAULT_ZOOM, zoomOutDuration);
+        }
+
+        // Stage 2: Pan transition.
+        console.log(`Stage 2: Pan transition.`);
+        await this.animatePan(preset.pan, panDuration);
+
+        // Stage 3: Zoom-in with rotation.
+        console.log(`Stage 3: Zoom-in with rotation.`);
+        await this.animateZoomRotation(preset.zoom, zoomInRotation, zoomInDuration);
+
+        this.stopCurrentNonColorAnimation();
+        this.onAnimationFinished();
+
+        console.log(this.currentAnimationFrame);
+        console.groupEnd();
     }
 }
