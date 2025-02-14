@@ -139,11 +139,46 @@ export function isMobileDevice() {
 }
 
 /**
+ * Generates string in [x, yi] format from the given complex number.
+ * @param {COMPLEX} c
+ * @param {number} precision Decimal point precision
+ * @param {boolean} [withI] Append "i" to the 2nd member?
+ * @return {string}
+ */
+export function expandComplexToString(c, precision = 6, withI = true) {
+    return `[${c[0].toFixed(precision)}, ${c[1].toFixed(precision)}` + (withI ? 'i]' : ']');
+}
+
+/**
+ * Compares two complex numbers / arrays of two numbers with given precision
+ * @param {COMPLEX} c1
+ * @param {COMPLEX}c2
+ * @param {number} [precision]
+ * @return {boolean} true if numbers are equal, false if not
+ */
+export function compareComplex(c1, c2, precision = 12) {
+    return c1[0].toFixed(precision) === c2[0].toFixed(precision) && c1[1].toFixed(precision) === c2[1].toFixed(precision);
+}
+
+/**
+ * Compares two palettes / arrays of three numbers with given precision (transitively uses the compareComplex)
+ * @param {PALETTE} p1
+ * @param {PALETTE} p2
+ * @param {number} [precision]
+ * @return {boolean} true if palettes are equal, false if not
+ */
+export function comparePalettes(p1, p2, precision = 6) {
+    return p1[0].toFixed(precision) === p2[0].toFixed(precision) &&
+        p1[1].toFixed(precision) === p2[1].toFixed(precision) &&
+        p1[2].toFixed(precision) === p2[2].toFixed(precision);
+}
+
+/**
  * HSB to RGB conversion helper function
  * @param h Hue
  * @param s Saturation
  * @param b Brightness
- * @returns {number[]} rgb
+ * @returns {PALETTE} rgb
  */
 export function hsbToRgb(h, s, b) {
     const i = Math.floor(h * 6);
@@ -171,7 +206,7 @@ export function hsbToRgb(h, s, b) {
  * @param {number} h Hue
  * @param {number} s Saturation
  * @param {number} l Lightness
- * @return {Array.<number, number, number>} [r, g ,b]
+ * @return {PALETTE} [r, g ,b]
  */
 export function hslToRgb(h, s, l) {
     let r, g, b;
@@ -200,7 +235,7 @@ export function hslToRgb(h, s, l) {
  * @param {number} r Red
  * @param {number} g Green
  * @param {number} b Blue
- * @return {Array.<number, number, number>} [h, s, l]
+ * @return {[number, number, number]} [h, s, l]
  */
 export function rgbToHsl(r, g, b) {
     let max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -223,7 +258,8 @@ export function rgbToHsl(r, g, b) {
 }
 
 /**
- * Helper function for ease-in-out timing
+ * Helper function for ease-in-out timing. This function accelerates in the first half (using 2*t²) and decelerates in
+ * the second half.
  * @param {number} time time step
  * @return {number}
  */
@@ -232,9 +268,21 @@ export function easeInOut(time) {
 }
 
 /**
+ * Helper function for ease-in-out timing. The cubic version tends to have a smoother acceleration at the beginning and
+ * a gentler deceleration at the end, to start more gradually and then slow down more smoothly toward the end.
+ * @param {number} time time step
+ * @return {number}
+ */
+export function easeInOutCubic(time) {
+    return time < 0.5
+        ? 4 * time * time * time
+        : 1 - Math.pow(-2 * time + 2, 3) / 2;
+}
+
+/**
  * Helper function for linear interpolation
  * @param {number} start
- * @param {number}end
+ * @param {number} end
  * @param {number} time
  * @return {number}
  */
@@ -250,4 +298,47 @@ export function lerp(start, end, time) {
 export function normalizeRotation(rotation) {
     const twoPi = 2 * Math.PI;
     return (rotation % twoPi + twoPi) % twoPi;
+}
+
+/**
+ * Computes a duration based on the travel distance between current and target parameters. Iterates over each property
+ * in target (assuming current and target have the same structure)
+ * @param {number} seed - A scaling factor to adjust the overall duration.
+ * @param {object} current - An object with current values
+ * @param {object} target - An object with target values
+ * @param {object} [weights] - Optional weights
+ * @returns {number} The computed duration.
+ */
+export function getAnimationDuration(seed, current, target, weights = {}) {
+    let compositeDistance = 0;
+    for (const key in target) {
+        if (Object.prototype.hasOwnProperty.call(target, key)) {
+            const w = weights[key] !== undefined ? weights[key] : 1.0;
+            const currVal = current[key];
+            const targVal = target[key];
+            let diff = 0;
+
+            // If the property is a number, use absolute difference.
+            if (typeof targVal === 'number' && typeof currVal === 'number') {
+                diff = Math.abs(targVal - currVal);
+            }
+            // If the property is an array, compute the Euclidean distance between the two arrays.
+            else if (Array.isArray(targVal) && Array.isArray(currVal)) {
+                // Assume both arrays have the same length.
+                diff = Math.hypot(...targVal.map((v, i) => v - (currVal[i] || 0)));
+            }
+
+            compositeDistance += w * diff;
+        }
+    }
+    return Math.round(seed * compositeDistance);
+}
+
+/**
+ * Helper function that returns a Promise that resolves after timeout.
+ * @param {number} timeout in ms
+ * @return {Promise<unknown>}
+ */
+export async function asyncDelay(timeout) {
+    return new Promise(resolve => setTimeout(resolve, timeout));
 }
