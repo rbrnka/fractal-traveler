@@ -28,12 +28,22 @@ html, body {
     cursor: auto;
     height: auto;
     overflow: hidden;
-    border: 2px solid var(--bg-color);
+    /*border: 2px solid var(--bg-color);*/
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE 10+ */
     user-select: none; /* Standard syntax */
+}
+
+@media screen and (min-width: 470px) {
+    #headerContainer {
+        zoom: 120%;
+    }
+
+    #infoLabel {
+        zoom: 120%;
+    }
 }
 
 #headerContainer.minimized {
@@ -52,78 +62,10 @@ html, body {
     display: block;
 }
 
-hr {
-    width: 90%;
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #222;
-    padding: 0;
-    margin: 5px auto 1px auto;
-}
-
-button {
-    position: relative;
-    z-index: 10;
-    margin: 4px 2px;
-    cursor: pointer;
-    align-items: center;
-    background-color: initial;
-    background-image: linear-gradient(#777, #333);
-    border-radius: 4px;
-    border-width: 0;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
-    box-sizing: border-box;
-    color: #eee;
-    display: inline-flex;
-    flex-direction: column;
-    font-size: 12px;
-    height: 18px;
-    justify-content: center;
-    line-height: 1;
-    outline: none;
-    overflow: hidden;
-    padding: 0 8px;
-    text-align: center;
-    text-decoration: none;
-    transform: translate3d(0, 0, 0);
-    transition: all 150ms;
-    vertical-align: baseline;
-    white-space: nowrap;
-    user-select: none;
-    -webkit-user-select: none;
-    touch-action: manipulation;
-    opacity: .85;
-}
-
-button.active {
-    color: var(--accent-color);
-    background-image: linear-gradient(#222, #666);
-    font-size: 12px;
-    line-height: 1;
-    border: 1px solid #666;
-    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
-    text-shadow: 0 0 4px var(--accent-color);
-}
-
-button:focus {
-    /*color: var(--accent-color);*/
-    background-image: linear-gradient(#222, #666);
-    font-size: 12px;
-    line-height: 1;
-    /*border: 1px solid #666;*/
-    text-shadow: 0 0 4px var(--accent-color);
-    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
-}
-
-button:hover {
-    box-shadow: 0 0 4px var(--accent-color), 0 0 10px var(--bg-color);
-}
-
 h1 {
     padding: 12px 10px 5px 10px;
     margin: 0;
-    color: var(--accent-color);
+    color: var(--accent-color, #fff);
     /*color: #fff;*/
     z-index: 1000;
     font-size: 20px;
@@ -142,10 +84,107 @@ p {
     text-shadow: 0 0 10px var(--accent-color);
 }
 
+a {
+    color: #fff;
+    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
+    transition: text-decoration-color 300ms;
+}
+
+a:hover {
+    /*color: var(--accent-color);*/
+    text-decoration: underline;
+}
+
 span {
     font-size: 12px;
     color: #fff;
     text-shadow: 0 0 6px var(--accent-color);
+}
+
+hr {
+    width: 90%;
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #222;
+    padding: 0;
+    margin: 5px auto 1px auto;
+}
+
+button {
+    position: relative;
+    z-index: 10;
+    margin: 4px 0;
+    cursor: pointer;
+    align-items: center;
+    background-color: initial;
+    background-image: linear-gradient(#777, #333);
+    /*border-radius: 4px;*/
+    border-width: 0;
+    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    box-sizing: border-box;
+    color: #eee;
+    display: inline-flex;
+    flex-direction: column;
+    font-size: 12px;
+    height: 18px;
+    justify-content: center;
+    line-height: 1;
+    outline: none;
+    overflow: hidden;
+    padding: 10px 10px;
+    text-align: center;
+    text-decoration: none;
+    transform: translate3d(0, 0, 0);
+    transition: all 150ms;
+    vertical-align: baseline;
+    white-space: nowrap;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    opacity: .85;
+    border-right: 1px solid var(--accent-color);
+}
+
+button:first-of-type {
+    border-radius: 4px 0 0 4px;
+    border-left: none;
+}
+
+button:last-of-type {
+    border-radius: 0 4px 4px 0;
+    border-right: none;
+}
+
+button:hover {
+    box-shadow: 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
+}
+
+button.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #666);
+    box-shadow: 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
+    text-shadow: 0 0 4px var(--accent-color);
+}
+
+button:first-of-type:hover {
+    box-shadow: -2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
+}
+button:first-of-type.active {
+    box-shadow: -4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
+}
+
+button:last-of-type:hover {
+    box-shadow: 2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
+
+}
+button:last-of-type.active {
+    box-shadow: 4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
+}
+
+button:focus {
+    background-image: linear-gradient(#222, #666);
+    text-shadow: 0 0 4px var(--accent-color);
 }
 
 #sliders {
@@ -221,57 +260,23 @@ label, .sliderValue {
     overflow: hidden;
     margin: 0 auto;
     width: 240px;
-    padding: 5px 0 5px 0;
+    padding: 10px 0;
 }
 
 .switch-field span {
-    padding: 2px 5px 0 0;
+    padding: 6px 5px 0 0;
 }
 
-.switch-field input {
-    position: absolute !important;
-    clip: rect(0, 0, 0, 0);
-    height: 1px;
-    width: 1px;
-    border: 0;
-    overflow: hidden;
+.switch-field button {
+    width: 80px;
 }
 
-.switch-field label {
-    background: linear-gradient(#777, #333);
-    color: #eee;
-    font-size: 12px;
-    line-height: 1;
-    text-align: center;
-    padding: 3px 6px;
-    margin-right: -1px;
-    height: 14px;
-    width: 70px;
-    /*border: 1px solid #B4FF6A;*/
+#mandelbrotSwitch {
+
 }
 
-.switch-field label:hover {
-    cursor: pointer;
-}
+#juliaSwitch {
 
-.switch-field input:checked + label {
-    height: 12px;
-    border: 1px solid #666;
-    text-shadow: 0 0 10px var(--accent-color);
-    background-image: linear-gradient(#222, #666);
-    color: var(--accent-color);
-}
-
-.switch-field label#mandelbrotRadioLabel {
-    border-radius: 4px 0 0 4px;
-}
-
-.switch-field label.active {
-    box-shadow: 0 0 4px var(--accent-color);
-}
-
-.switch-field label#juliaRadioLabel {
-    border-radius: 0 4px 4px 0;
 }
 
 #handle {
@@ -300,6 +305,10 @@ label, .sliderValue {
     cursor: auto;
 }
 
+#controlButtons {
+    margin: 5px 0 0 0;
+}
+
 p.small {
     font-size: 11px;
 }
@@ -314,16 +323,6 @@ p#presets, p#dives {
 
 .highlight {
     color: #fff;
-}
-
-a {
-    color: #fff;
-    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
-    transition: text-decoration-color 300ms;
-}
-
-a:hover {
-    text-decoration-color: rgba(255, 255, 255, 1);
 }
 
 #version {

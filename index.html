@@ -40,8 +40,7 @@
     <div id="controlArea">
         <div class="switch-field">
             <span>Fractal set:</span>
-            <input id="mandelbrotRadio" type="radio" name="fractalType" value="0" checked><label id="mandelbrotRadioLabel" class="active" for="mandelbrotRadio">Mandelbrot</label>
-            <input id="juliaRadio" type="radio" name="fractalType" value="1"><label id="juliaRadioLabel" for="juliaRadio">Julia</label>
+            <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode">Mandelbrot</button><button id="juliaSwitch" class="" title="Julia mode">Julia</button>
         </div>
         <div id="presets-dives">
             <p id="presets">Presets:</p>
@@ -59,12 +58,9 @@
                 <span class="sliderValue" id="imagSliderValue">0</span>
             </div>
         </div>
-        <div id="controlButtons">
-            <button id="reset" class="" title="Shift+R">Reset</button>
-            <button id="randomize" class="" title="T">Random Colors</button>
-            <button id="screenshot" class="" title="Shift+S">Save Image</button>
-            <button id="demo" class="" title="D">Demo</button>
-        </div>
+        <p id="controlButtons">
+            <button id="reset" class="" title="Shift+R">Reset</button><button id="randomize" class="" title="T">Random Colors</button><button id="screenshot" class="" title="Shift+S">Save Image</button><button id="demo" class="" title="D">Demo</button>
+        </p>
     </div>
     <p class="small">
         <!--        <img id="pin" src="./img/pin.png"> &middot;-->
