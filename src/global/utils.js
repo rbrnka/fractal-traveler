@@ -4,19 +4,19 @@
  * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
-import {DEBUG_MODE, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {DEBUG_MODE, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "../ui/ui";
 
 let urlParamsSet = false;
 
 /**
  * Updates browser URL with params of the selected point and zoom in the fractal
- * @param mode number {MODE_JULIA|MODE_MANDELBROT}
- * @param px panX
- * @param py panY
- * @param cx Julia only
- * @param cy Julia only
- * @param zoom
- * @param rotation
+ * @param {FRACTAL_TYPE} mode
+ * @param {number} px panX
+ * @param {number} py panY
+ * @param {number} cx Julia only
+ * @param {number} cy Julia only
+ * @param {number} zoom
+ * @param {number} rotation
  */
 export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
     const params = {
@@ -29,15 +29,15 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
         cy: cy != null ? cy.toFixed(6) : null,
     };
 
-    if (DEBUG_MODE) console.log('%c updateURLParams: %c Setting URL:' +  JSON.stringify(params), 'color: #bada55', 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, 'color: #bada55', 'color: #fff');
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
-        console.error("updateURLParams: Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
+        console.error(`%c updateURLParams: %c Fractal params incomplete, can't generate URL! ${JSON.stringify(params)}`, 'color: #bada55', 'color: #fff');
         return;
     }
 
     if (isJuliaMode() && [cx, cy].some(el => el == null)) {
-        console.error("updateURLParams: Julia params incomplete, can't generate URL!");
+        console.error(`%c updateURLParams: %c Julia params incomplete, can't generate URL! ${JSON.stringify(params)}`, 'color: #bada55', 'color: #fff');
         return;
     }
 
@@ -53,14 +53,14 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
 
 /**
  * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
- * @return {{mode: number}|{mode: (number), r: (number|number), cx: (number|null), cy: (number|null), px: (number|null), py: (number|null), zoom: (number|null)}|{mode: (number)}}
+ * @return {URL_PRESET}
  */
 export function loadFractalParamsFromURL() {
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
     if (!hash) {
-        if (DEBUG_MODE) console.log(`%c loadFractalParamsFromURL: `+` %c No hash found in the URL, return default mode.`, 'color: #bada55', 'color: #fff');
+        if (DEBUG_MODE) console.log(`%c loadFractalParamsFromURL: %c No hash found in the URL, return default mode.`, 'color: #bada55', 'color: #fff');
 
         return {mode: MODE_MANDELBROT}; // Return default if no hash is present
     }
@@ -79,7 +79,7 @@ export function loadFractalParamsFromURL() {
     try {
         // Decode the Base64 string and parse the JSON object
         const decodedParams = JSON.parse(atob(encodedParams));
-        if (DEBUG_MODE) console.log('%c loadFractalParamsFromURL: %c Decoded params: ' + JSON.stringify(decodedParams), 'color: #bada55', 'color: #fff');
+        if (DEBUG_MODE) console.log(`%c loadFractalParamsFromURL: %c Decoded params: ${JSON.stringify(decodedParams)}`, 'color: #bada55', 'color: #fff');
         urlParamsSet = true;
         // Return the parsed parameters
         return {
@@ -92,19 +92,17 @@ export function loadFractalParamsFromURL() {
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
     } catch (e) {
-        console.error('loadFractalParamsFromURL: Error decoding URL parameters:', e);
+        console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, 'color: #bada55', 'color: #fff');
         urlParamsSet = true;
         return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
     }
 }
 
-/**
- * Clears browser URL, usually when it stops correspond with the position/zoom in the fractal
- */
+/** Clears browser URL, usually when it stops correspond with the position/zoom in the fractal */
 export function clearURLParams() {
     if (!urlParamsSet) return;
 
-    if (DEBUG_MODE) console.log('%c clearURLParams: %c Clearing URL params.', 'color: #bada55', 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c clearURLParams: %c Clearing URL params.`, 'color: #bada55', 'color: #fff');
 
     const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
     const newUrl = `${window.location.origin}/${hash}`;
@@ -142,9 +140,9 @@ export function isMobileDevice() {
 
 /**
  * HSB to RGB conversion helper function
- * @param h
- * @param s
- * @param b
+ * @param h Hue
+ * @param s Saturation
+ * @param b Brightness
  * @returns {number[]} rgb
  */
 export function hsbToRgb(h, s, b) {
@@ -170,10 +168,10 @@ export function hsbToRgb(h, s, b) {
 
 /**
  * Convert HSL (h in [0,1], s in [0,1], l in [0,1]) to RGB (each channel in [0,1])
- * @param h
- * @param s
- * @param l
- * @return [r, g ,b]
+ * @param {number} h Hue
+ * @param {number} s Saturation
+ * @param {number} l Lightness
+ * @return {Array.<number, number, number>} [r, g ,b]
  */
 export function hslToRgb(h, s, l) {
     let r, g, b;
@@ -199,10 +197,10 @@ export function hslToRgb(h, s, l) {
 
 /**
  * Converts RGB (each in [0,1]) to HSL (h in [0,1], s in [0,1], l in [0,1])
- * @param r
- * @param g
- * @param b
- * @return [h, s, l]
+ * @param {number} r Red
+ * @param {number} g Green
+ * @param {number} b Blue
+ * @return {Array.<number, number, number>} [h, s, l]
  */
 export function rgbToHsl(r, g, b) {
     let max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -226,20 +224,30 @@ export function rgbToHsl(r, g, b) {
 
 /**
  * Helper function for ease-in-out timing
- * @param t time step
+ * @param {number} time time step
  * @return {number}
  */
-export function easeInOut(t) {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+export function easeInOut(time) {
+    return time < 0.5 ? 2 * time * time : -1 + (4 - 2 * time) * time;
 }
 
 /**
  * Helper function for linear interpolation
- * @param start
- * @param end
- * @param t
- * @return {*}
+ * @param {number} start
+ * @param {number}end
+ * @param {number} time
+ * @return {number}
  */
-export function lerp(start, end, t) {
-    return start + (end - start) * t;
+export function lerp(start, end, time) {
+    return start + (end - start) * time;
+}
+
+/**
+ * Normalizes rotation into into [0, 2*PI] interval
+ * @param {number} rotation in rad
+ * @return {number} rotation in rad
+ */
+export function normalizeRotation(rotation) {
+    const twoPi = 2 * Math.PI;
+    return (rotation % twoPi + twoPi) % twoPi;
 }
