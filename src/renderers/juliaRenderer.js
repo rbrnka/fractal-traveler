@@ -1,6 +1,6 @@
 import {updateInfo, updateJuliaSliders} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {easeInOut, isTouchDevice, lerp} from "../global/utils";
+import {compareComplex, easeInOut, easeInOutCubic, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
 import '../global/types';
 
 /**
@@ -23,10 +23,10 @@ export class JuliaRenderer extends FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = this.DEFAULT_PAN.slice(); // Copy
         this.rotation = this.DEFAULT_ROTATION;
-        this.colorPalette = this.DEFAULT_PALETTE.slice();
+        this.colorPalette = [...this.DEFAULT_PALETTE];
 
         /** @type COMPLEX */
-        this.c = this.DEFAULT_C.slice();
+        this.c = [...this.DEFAULT_C];
 
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
@@ -46,7 +46,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.DIVES = [
             {
                 pan: [0, 0],
-                rotation: 2.6179938779914944,
+                rotation: 0,
                 zoom: 1.7,
                 startC: [-0.246, 0.64],
                 step: 0.000005,
@@ -112,6 +112,8 @@ export class JuliaRenderer extends FractalRenderer {
             //     phases: [2, 1, 4, 3],
             // }
         ];
+
+        this.demoTime = 0;
 
         this.init();
     }
@@ -241,7 +243,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @inheritDoc
      */
     reset() {
-        this.c = this.DEFAULT_C.slice();
+        this.c =  [...this.DEFAULT_C];
         super.reset();
     }
 
@@ -273,11 +275,11 @@ export class JuliaRenderer extends FractalRenderer {
      * @param {number} [duration] in ms
      * @return {Promise<void>}
      */
-    async animateToC(targetC = this.DEFAULT_C.slice(), duration = 500) {
+    async animateToC(targetC = [...this.DEFAULT_C], duration = 500) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
 
-        if (this.c[0].toFixed(12) === targetC[0].toFixed(12) && this.c[1].toFixed(12) === targetC[1].toFixed(12)) {
+        if (compareComplex(this.c, targetC)) {
             console.log(`Already at the target c. Skipping.`);
             console.groupEnd();
             return;
@@ -285,7 +287,7 @@ export class JuliaRenderer extends FractalRenderer {
 
         console.log(`Animating c from ${this.c} to ${targetC}.`);
 
-        const startC = this.c;
+        const startC = [...this.c];
 
         await new Promise(resolve => {
             let startTime = null;
@@ -351,7 +353,7 @@ export class JuliaRenderer extends FractalRenderer {
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
                 // Apply eased progress
-                const easedProgress = easeInOut(progress);
+                const easedProgress = easeInOutCubic(progress);
 
                 // Interpolate `c` smoothly
                 this.c[0] = lerp(startC[0], preset.c[0], easedProgress);
@@ -383,6 +385,98 @@ export class JuliaRenderer extends FractalRenderer {
      */
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         return Promise.resolve(); // TODO implement someday if needed
+    }
+
+    /**
+     * Infinite animation of the dive (c-param interpolations)
+     * @param {DIVE} dive
+     * @return {Promise<void>}
+     */
+    async animateDive(dive) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        console.log(`Diving to ${dive}.`);
+
+        // Return a Promise that never resolves (continuous animation)
+        await new Promise(() => {
+            // Ensure phases are defined
+            dive.phases ||= [1, 2, 3, 4];
+            let phase = dive.phases[0];
+
+            const diveStep = () => {
+                const step = dive.step;
+                // Phase 1: Animate cx (real part) toward endC[0]
+                if (phase === 1) {
+                    this.c[0] += dive.cxDirection * step;
+                    if ((dive.cxDirection < 0 && this.c[0] <= dive.endC[0]) || (dive.cxDirection > 0 && this.c[0] >= dive.endC[0])) {
+                        this.c[0] = dive.endC[0];
+                        phase = 2;
+                    }
+                }
+                // Phase 2: Animate cy (imaginary part) toward endC[1]
+                else if (phase === 2) {
+                    this.c[1] += dive.cyDirection * step;
+                    if ((dive.cyDirection < 0 && this.c[1] <= dive.endC[1]) || (dive.cyDirection > 0 && this.c[1] >= dive.endC[1])) {
+                        this.c[1] = dive.endC[1];
+                        phase = 3;
+                    }
+                }
+                // Phase 3: Animate cx back toward startC[0]
+                else if (phase === 3) {
+                    this.c[0] -= dive.cxDirection * step;
+                    if ((dive.cxDirection < 0 && this.c[0] >= dive.startC[0]) || (dive.cxDirection > 0 && this.c[0] <= dive.startC[0])) {
+                        this.c[0] = dive.startC[0];
+                        phase = 4;
+                    }
+                }
+                // Phase 4: Animate cy back toward startC[1]
+                else if (phase === 4) {
+                    this.c[1] -= dive.cyDirection * step;
+                    if ((dive.cyDirection < 0 && this.c[1] >= dive.startC[1]) || (dive.cyDirection > 0 && this.c[1] <= dive.startC[1])) {
+                        this.c[1] = dive.startC[1];
+                        phase = 1; // Loop back to start phase.
+                    }
+                }
+
+                this.draw();
+                updateInfo(true);
+                updateJuliaSliders();
+
+                this.currentAnimationFrame = requestAnimationFrame(diveStep);
+            };
+            this.currentColorAnimationFrame = requestAnimationFrame(diveStep);
+        });
+    }
+
+    /**
+     * Animates infinite demo loop with oscillating c between predefined values
+     * @return {Promise<void>}
+     */
+    async animateDemo() {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, 'color: #bada55');
+        this.stopCurrentNonColorAnimation();
+
+        console.log(`Demoing...`);
+
+        // Return a Promise that never resolves (continuous animation)
+        await new Promise(() => {
+            const step = () => {
+                this.c = [
+                    ((Math.sin(this.demoTime) + 1) / 2) * 1.5 - 1,   // Oscillates between -1 and 0.5
+                    ((Math.cos(this.demoTime) + 1) / 2) * 1.4 - 0.7  // Oscillates between -0.7 and 0.7
+                ];
+                this.rotation = normalizeRotation(this.rotation + 0.0001);
+                this.demoTime += 0.0005; // Speed
+
+                this.draw();
+                updateInfo(true);
+                updateJuliaSliders();
+
+                this.currentAnimationFrame = requestAnimationFrame(step);
+            };
+            this.currentColorAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     // endregion--------------------------------------------------------------------------------------------------------

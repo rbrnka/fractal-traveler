@@ -1,5 +1,5 @@
 import {DEBUG_MODE, updateInfo} from "../ui/ui";
-import {hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
+import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
 
 /**
  * FractalRenderer
@@ -52,7 +52,7 @@ export class FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM;
 
         /** @type {COMPLEX} */
-        this.pan = this.DEFAULT_PAN.slice(); // Copy
+        this.pan = [...this.DEFAULT_PAN]; // Copy
 
         /**
          * Rotation in rad
@@ -270,7 +270,7 @@ export class FractalRenderer {
         this.stopCurrentColorAnimation();
 
         this.colorPalette = this.DEFAULT_PALETTE.slice();
-        this.pan = this.DEFAULT_PAN.slice();
+        this.pan = [...this.DEFAULT_PAN];
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
         this.extraIterations = 0;
@@ -376,7 +376,7 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, 'color: #bada55');
         this.stopCurrentColorAnimation();
 
-        if (this.colorPalette[0] === newPalette[0] && this.colorPalette[1] === newPalette[1] && this.colorPalette[2] === newPalette[2]) {
+        if (comparePalettes(this.colorPalette, newPalette)) {
             console.warn(`Identical palette found. Skipping.`);
             return;
         }
@@ -461,7 +461,7 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animatePan`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
 
-        if (this.pan[0].toFixed(6) === targetPan[0].toFixed(6) && this.pan[1].toFixed(6) === targetPan[1].toFixed(6)) {
+        if (compareComplex(this.pan, targetPan, 6)) {
             console.log(`Already at the target pan. Skipping.`);
             console.groupEnd();
             return;
@@ -626,7 +626,7 @@ export class FractalRenderer {
             return;
         }
 
-        if (this.pan[0].toFixed(6) === targetPan[0].toFixed(6) && this.pan[1].toFixed(6) === targetPan[1].toFixed(6)) {
+        if (compareComplex(this.pan, targetPan, 6)) {
             console.log(`Already at the target pan. Zooming.`);
             await this.animateZoom(targetZoom, Math.round(duration / 2));
             console.groupEnd();
@@ -795,6 +795,47 @@ export class FractalRenderer {
      */
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         throw new Error('The animateTravelToPreset method must be implemented in child classes');
+    }
+
+    /**
+     * Animates given parameter without duration through given step size. The duration is then derived.
+     * TODO make generic for both 1 and 2 dimensional params
+     * @param {*} currentParam
+     * @param {number} targetParam
+     * @param {number} stepSize
+     * @return {Promise<void>}
+     */
+    async animateParamsWithStep(currentParam, targetParam, stepSize) {
+        this.stopCurrentNonColorAnimation();
+
+        // const isArray = currentParam.isArray();
+
+        await new Promise(resolve => {
+            const step = () => {
+                const dx = targetParam[0] - currentParam[0];
+                const dy = targetParam[1] - currentParam[1];
+                const distance = Math.hypot(dx, dy);
+
+                // If we're within one step, snap to target and finish.
+                if (distance <= stepSize) {
+                    currentParam[0] = targetParam[0];
+                    currentParam[1] = targetParam[1];
+                    this.draw();
+
+                    resolve();
+                } else {
+                    // Move one step toward the target.
+                    currentParam[0] += (dx / distance) * stepSize;
+                    currentParam[1] += (dy / distance) * stepSize;
+                    this.draw();
+                    updateInfo(true);
+
+                    this.currentAnimationFrame = requestAnimationFrame(step);
+                }
+            };
+
+            this.currentAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     // endregion--------------------------------------------------------------------------------------------------------
