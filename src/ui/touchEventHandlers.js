@@ -1,10 +1,10 @@
-import {updateURLParams, clearURLParams} from './utils.js';
+import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
 import {
     isJuliaMode,
     MODE_JULIA,
     MODE_MANDELBROT,
     resetActivePresetIndex,
-    resetPresetAndDiveButtons,
+    resetPresetAndDiveButtonStates,
     updateInfo
 } from './ui.js';
 
@@ -194,7 +194,7 @@ function handleTouchMove(event) {
         // Update rotation.
         const angleDifference = currentAngle - pinchStartAngle;
         if (Math.abs(angleDifference) > 0.05) {
-            fractalApp.rotation += angleDifference * ROTATION_SENSITIVITY;
+            fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
         }
 
         // Recalculate the fractal center from the midpoint.
@@ -242,8 +242,8 @@ function handleTouchEnd(event) {
                 console.log(`Double-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
-                        resetPresetAndDiveButtons();
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
+                        resetPresetAndDiveButtonStates();
                         resetActivePresetIndex();
                         clearURLParams();
                     });
@@ -256,15 +256,15 @@ function handleTouchEnd(event) {
                     } else {
                         updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                     }
-                    fractalApp.animatePanAndZoomTo([fx, fy], fractalApp.zoom, 500, () => {
-                        resetPresetAndDiveButtons();
+                    fractalApp.animatePan([fx, fy], 500).then(() => {
+                        resetPresetAndDiveButtonStates();
                         resetActivePresetIndex();
                     });
                     touchClickTimeout = null;
                 }, doubleTapThreshold);
             }
         }
-        resetPresetAndDiveButtons();
+        resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
         clearURLParams();
         isTouchDragging = false;

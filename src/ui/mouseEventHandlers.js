@@ -1,10 +1,10 @@
-import {updateURLParams, clearURLParams} from './utils.js';
+import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
 import {
     MODE_JULIA,
     MODE_MANDELBROT,
     updateInfo,
     toggleDebugLines,
-    resetPresetAndDiveButtons,
+    resetPresetAndDiveButtonStates,
     isJuliaMode, resetActivePresetIndex
 } from './ui.js';
 
@@ -86,7 +86,7 @@ export function unregisterMouseEventHandlers() {
 function handleWheel(event, fractalApp) {
     event.preventDefault();
     clearURLParams();
-    resetPresetAndDiveButtons();
+    resetPresetAndDiveButtonStates();
     resetActivePresetIndex();
 
     // Get the CSS coordinate of the mouse relative to the canvas
@@ -174,7 +174,7 @@ function handleMouseMove(event) {
         const rotationSpeed = 0.01; // Adjust rotation speed as needed
 
         fractalApp.rotation += deltaX * rotationSpeed;
-        fractalApp.rotation = (fractalApp.rotation % (2 * Math.PI) + (2 * Math.PI)) % (2 * Math.PI);
+        fractalApp.rotation = normalizeRotation(fractalApp.rotation);
 
         startX = event.clientX; // Update starting point for smooth rotation
         canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
@@ -189,11 +189,6 @@ function handleMouseUp(event) {
 
     event.preventDefault(); // Stop browser-specific behaviors
     event.stopPropagation(); // Prevent bubbling to parent elements
-
-    if (event.button === 2) { // Right mouse button released
-        isRightDragging = false;
-        clearURLParams();
-    }
 
     if (event.button === 1) { // Middle-click toggles the lines
         console.log("Middle Click: Toggling lines");
@@ -220,9 +215,9 @@ function handleMouseUp(event) {
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
                         clearURLParams();
-                        resetPresetAndDiveButtons();
+                        resetPresetAndDiveButtonStates();
                         resetActivePresetIndex();
                     });
                 }
@@ -232,13 +227,13 @@ function handleMouseUp(event) {
                     console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                     // Centering action:
-                    fractalApp.animatePan([fx, fy], 500, () => {
+                    fractalApp.animatePan([fx, fy], 500).then(() => {
                         if (isJuliaMode()) {
                             updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
                             updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                         }
-                        resetPresetAndDiveButtons();
+                        resetPresetAndDiveButtonStates();
                         resetActivePresetIndex();
                     });
 
@@ -255,7 +250,7 @@ function handleMouseUp(event) {
             }
         } else {
             clearURLParams();
-            resetPresetAndDiveButtons();
+            resetPresetAndDiveButtonStates();
             resetActivePresetIndex();
             isDragging = false;
         }
@@ -266,6 +261,8 @@ function handleMouseUp(event) {
             isRightDragging = false;
 
             clearURLParams();
+            resetPresetAndDiveButtonStates();
+            resetActivePresetIndex();
             // Reset cursor to default after rotation ends
             canvas.style.cursor = 'crosshair';
             return; // Prevent further processing if it was a drag
@@ -285,9 +282,9 @@ function handleMouseUp(event) {
             console.log("Double Right Click: Zooming out");
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, () => {
+                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
                     clearURLParams();
-                    resetPresetAndDiveButtons();
+                    resetPresetAndDiveButtonStates();
                     resetActivePresetIndex();
                 });
             }
