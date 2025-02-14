@@ -112,11 +112,13 @@ export class MandelbrotRenderer extends FractalRenderer {
 
     }
 
+    // region > ANIMATION METHODS --------------------------------------------------------------------------------------
+
     /**
      * Animates travel to a preset. It first zooms out to the default zoom, then rotates, then animates pan and zoom-in.
      * If any of the final params is the same as the target, it won't animate it.
      *
-     * @param {Preset} preset An instance-specific object to define exact spot in the fractal
+     * @param {MANDELBROT_PRESET} preset An instance-specific object to define exact spot in the fractal
      * @param {number} [zoomOutDuration] in ms
      * @param {number} [zoomInDuration] in ms
      * @return {Promise<void>}
@@ -166,7 +168,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      *   2. Pan transition.
      *   3. Zoom-in with rotation.
      *
-     * @param {Object} preset The target preset object with properties: pan, c, zoom, rotation.
+     * @param {MANDELBROT_PRESET} preset The target preset object with properties: pan, c, zoom, rotation.
      * @param {number} zoomOutDuration Duration (ms) for the zoom-out stage.
      * @param {number} panDuration Duration (ms) for the pan stage.
      * @param {number} zoomInDuration Duration (ms) for the zoom-in stage.
@@ -203,4 +205,6 @@ export class MandelbrotRenderer extends FractalRenderer {
         console.log(this.currentAnimationFrame);
         console.groupEnd();
     }
+
+    // endregion--------------------------------------------------------------------------------------------------------
 }

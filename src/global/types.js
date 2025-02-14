@@ -36,6 +36,15 @@ export const FRACTAL_TYPE = {
  */
 // ---------------------------------------------------------------------------------------------------------------------
 /**
+ * @typedef MANDELBROT_PRESET {Object}
+ *      @property {number} zoom
+ *      @property {number} [rotation]
+ *      @property {COMPLEX} pan
+ *      @global
+ * @see {@link JULIA_PRESET}
+ * @description Mandelbrot-specific presets
+// ---------------------------------------------------------------------------------------------------------------------
+/**
  * @typedef JULIA_PRESET {Object}
  *      @property {COMPLEX} c
  *      @property {number} zoom

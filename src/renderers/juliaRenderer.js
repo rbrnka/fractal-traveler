@@ -1,6 +1,7 @@
-import {updateInfo, updateJuliaSliders} from "./ui";
+import {updateInfo, updateJuliaSliders} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {easeInOut, isTouchDevice, lerp} from "./utils";
+import {easeInOut, isTouchDevice, lerp} from "../global/utils";
+import '../global/types';
 
 /**
  * Julia set renderer
@@ -16,6 +17,7 @@ export class JuliaRenderer extends FractalRenderer {
 
         this.DEFAULT_ZOOM = 3.5;
         // Use less detailed initial set for less performant devices
+        /** @type COMPLEX */
         this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64];
 
         this.zoom = this.DEFAULT_ZOOM;
@@ -23,21 +25,10 @@ export class JuliaRenderer extends FractalRenderer {
         this.rotation = this.DEFAULT_ROTATION;
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
-        /**
-         * The "c"
-         * @typedef C {Array.<{cx, cy}>}
-         */
+        /** @type COMPLEX */
         this.c = this.DEFAULT_C.slice();
 
-        /**
-         * Julia-specific presets
-         * @typedef JuliaPreset {Object}
-         *      @property {c} c
-         *      @property {number} zoom
-         *      @property {number} [rotation]
-         *      @property {number} pan
-         */
-        /** @type {Array.<JuliaPreset>} */
+        /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
             {c: this.DEFAULT_C, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION, pan: this.DEFAULT_PAN},
             {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
@@ -51,28 +42,7 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]} // Deep zoom
         ];
 
-        /**
-         *  Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
-         *  then it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
-         *  direction. If phases are defined, it follows their order.
-         *  @typedef {Object} Dive
-         *  @property {number} cxDirection Use -1/+1 for negative/positive direction of the animation
-         *  @property {number} cyDirection Use -1/+1 for negative/positive direction of the animation
-         *  @property {Array.<{number, number, number, number}>} [phases]
-         *      1: animate cx toward dive.endC[0],
-         *      2: animate cy toward dive.endC[1],
-         *      3: animate cx back toward dive.startC[0],
-         *      4: animate cy back toward dive.startC[1]
-         * @property {Array.<{panX, panY}>} pan
-         * @property {Array.<{cx, cy}>} startC
-         * @property {Array.<{cx, cy}>} endC
-         * @property {number} zoom
-         * @property {number} step
-         */
-
-        /**
-         * @type {Array.<Dive>}
-         */
+        /** @type {Array.<DIVE>} */
         this.DIVES = [
             {
                 pan: [0, 0],
@@ -294,14 +264,12 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.uniform3fv(this.innerStopsLoc, innerStopsArray);
     }
 
-    // -----------------------------------------------------------------------------------------------------------------
-    // Animation Methods
-    // -----------------------------------------------------------------------------------------------------------------
+    // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
     /**
      * Animates Julia from current C to target C
      *
-     * @param {C} [targetC] Defaults to default C
+     * @param {COMPLEX} [targetC] Defaults to default C
      * @param {number} [duration] in ms
      * @return {Promise<void>}
      */
@@ -349,15 +317,11 @@ export class JuliaRenderer extends FractalRenderer {
 
     /**
      * Animates travel to a preset.
-     * @param {object} preset
-     *      @param {Array} preset.c [x, yi]
-     *      @param {Array} preset.pan [fx, fy]
-     *      @param {number} preset.zoom
-     *      @param {number} preset.rotation in rad
-     * @param {number} duration in ms
-     * @param {function()} onFinishedCallback A callback method executed once the animation is finished
+     * @param {JULIA_PRESET} preset
+     * @param {number} [duration] in ms
+     * @return {Promise<void>}
      */
-    async animateTravelToPreset(preset, duration, onFinishedCallback = null) {
+    async animateTravelToPreset(preset, duration = 500) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, 'color: #bada55');
         this.stopCurrentNonColorAnimation();
 
@@ -420,4 +384,6 @@ export class JuliaRenderer extends FractalRenderer {
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         return Promise.resolve(); // TODO implement someday if needed
     }
+
+    // endregion--------------------------------------------------------------------------------------------------------
 }

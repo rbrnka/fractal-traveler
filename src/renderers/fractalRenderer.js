@@ -1,5 +1,5 @@
-import {DEBUG_MODE, updateInfo} from "./ui";
-import {hslToRgb, lerp, normalizeRotation, rgbToHsl} from "./utils";
+import {DEBUG_MODE, updateInfo} from "../ui/ui";
+import {hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
 
 /**
  * FractalRenderer
@@ -33,20 +33,15 @@ export class FractalRenderer {
         // Default values:
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
+        /** @type {COMPLEX} */
         this.DEFAULT_PAN = [0, 0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
 
-        /**
-         * Preset is an object containing properties of specific point in the fractal on the scene.
-         * @typedef Preset {Object}
-         *      @property {number} zoom
-         *      @property {number} [rotation]
-         *      @property {number} pan
-         */
+
         /** Interesting zoom-ins
-         *  @type {Array.<Preset>}
+         *  @type {Array.<PRESET>}
          */
         this.PRESETS = [];
 
@@ -56,13 +51,7 @@ export class FractalRenderer {
          */
         this.zoom = this.DEFAULT_ZOOM;
 
-        /**
-         * Coordinates in fractal units
-         * @typedef {Array.<number>} Pan
-         * @property {number} panX
-         * @property {number} panY
-         */
-        /** @type Pan */
+        /** @type {COMPLEX} */
         this.pan = this.DEFAULT_PAN.slice(); // Copy
 
         /**
@@ -81,14 +70,8 @@ export class FractalRenderer {
         this.iterations = 0;
         this.extraIterations = 0;
 
-        /**
-         * Color palette
-         * @typedef {Float32List} Palette
-         * @property {number} R Red
-         * @property {number} G Green
-         * @property {number} B Blue
-         */
-        /** @type Palette */
+
+        /** @type PALETTE */
         this.colorPalette = this.DEFAULT_PALETTE.slice();
 
         /**  Vertex shader initialization snippet */
@@ -303,7 +286,7 @@ export class FractalRenderer {
      *
      * @param {number} screenX
      * @param {number} screenY
-     * @returns {Pan} fractal plane coords [x, yi]
+     * @returns {COMPLEX} fractal plane coords [x, yi]
      */
     screenToFractal(screenX, screenY) {
         const dpr = window.devicePixelRatio || 1;
@@ -381,16 +364,12 @@ export class FractalRenderer {
     }
 
     /**
-     * Method that handles gradual color changes
-     * @callback coloringCallback
-     */
-    /**
      * Smoothly transitions fractalApp.colorPalette from its current value
      * to the provided newPalette over the specified duration (in milliseconds).
      *
-     * @param {Palette} newPalette - The target palette as [r, g, b] (each in [0,1]).
+     * @param {PALETTE} newPalette - The target palette as [r, g, b] (each in [0,1]).
      * @param {number} [duration] - Duration of the transition in milliseconds.
-     * @param {coloringCallback} [coloringCallback] A method called at every animation step
+     * @param {Function} [coloringCallback] A method called at every animation step
      * @return {Promise<void>}
      */
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
@@ -474,7 +453,7 @@ export class FractalRenderer {
     /**
      * Animates pan from current position to the new one
      *
-     * @param {Pan} targetPan
+     * @param {COMPLEX} targetPan
      * @param [duration] in ms
      * @return {Promise<void>}
      */
@@ -615,7 +594,7 @@ export class FractalRenderer {
     /**
      * Animates sequential pan and then zooms into the target location.
      *
-     * @param {Pan} targetPan
+     * @param {COMPLEX} targetPan
      * @param {number} targetZoom
      * @param {number} panDuration in milliseconds
      * @param {number} zoomDuration in milliseconds
@@ -631,7 +610,7 @@ export class FractalRenderer {
     /**
      * Animates pan and zoom simultaneously.
      *
-     * @param {Pan} targetPan
+     * @param {COMPLEX} targetPan
      * @param {number} targetZoom
      * @param {number} [duration] in milliseconds
      * @return {Promise<void>}
@@ -749,7 +728,7 @@ export class FractalRenderer {
     /**
      * Animates pan, zoom and rotation simultaneously
      *
-     * @param {Pan} targetPan
+     * @param {COMPLEX} targetPan
      * @param {number} targetZoom
      * @param {number} targetRotation
      * @param {number} [duration] in milliseconds
@@ -809,7 +788,7 @@ export class FractalRenderer {
      *   3. Zoom-in with rotation.
      *
      * @abstract
-     * @param {Preset} preset - The target preset object with properties: pan, c, zoom, rotation.
+     * @param {PRESET} preset - The target preset object with properties: pan, c, zoom, rotation.
      * @param {number} zoomOutDuration - Duration (ms) for the zoom-out stage.
      * @param {number} panDuration - Duration (ms) for the pan stage.
      * @param {number} zoomInDuration - Duration (ms) for the zoom-in stage.
