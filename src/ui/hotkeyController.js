@@ -53,8 +53,11 @@ let rotationActive = false;
 
 let fractalApp;
 
-
-/** Keydown event handler */
+/**
+ * Keydown event handler
+ * @param {KeyboardEvent} event
+ * @return {Promise<void>}
+ */
 async function onKeyDown(event) {
     //event.preventDefault();
 
@@ -74,6 +77,9 @@ async function onKeyDown(event) {
         // TODO add shift/non-shift to slow down or speed up the rotation instead of stop when the speed or direction is different
         case 'KeyQ': // Rotation counter-clockwise
         case 'KeyW': // Rotation clockwise
+            event.preventDefault();
+            event.stopPropagation();
+
             if (rotationActive) {
                 fractalApp.stopCurrentRotationAnimation();
                 rotationActive = false;
@@ -88,10 +94,16 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyR': // Reset
+            event.preventDefault();
+            event.stopPropagation();
+
             if (event.shiftKey) switchFractalMode(isJuliaMode() ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT);
             break;
 
         case 'KeyT': // Random colors
+            event.preventDefault();
+            event.stopPropagation();
+
             if (event.altKey) {
                 await fractalApp.animateColorPaletteTransition(fractalApp.DEFAULT_PALETTE, 250, updateColorTheme);
             } else if (event.shiftKey) {
@@ -156,8 +168,7 @@ async function onKeyDown(event) {
             }
             break;
 
-        default:
-            // Case nums:
+        default: // Case nums:
             const match = event.code.match(/^(Digit|Numpad)([1-9])$/);
             if (match) {
                 const index = match[2]; // match[2] contains the digit pressed
@@ -170,6 +181,7 @@ async function onKeyDown(event) {
             break;
     }
 
+    // Handling pan changes
     if (deltaPanX || deltaPanY) {
         let r = fractalApp.rotation;
         let deltaX = deltaPanX * Math.cos(r) - deltaPanY * Math.sin(r);
@@ -178,12 +190,11 @@ async function onKeyDown(event) {
         resetAppState();
     }
 
+    // Handling C changes
     if ((deltaCx || deltaCy) && isJuliaMode()) {
         await fractalApp.animateToC([fractalApp.c[0] + deltaCx, fractalApp.c[1] + deltaCy], JULIA_HOTKEY_C_SPEED);
         resetAppState();
     }
-
-    console.groupEnd();
 }
 
 /**
@@ -192,5 +203,5 @@ async function onKeyDown(event) {
  */
 export function initHotKeys(app) {
     fractalApp = app;
-    document.addEventListener("keydown", onKeyDown, {});
+    document.addEventListener("keydown", onKeyDown);
 }
