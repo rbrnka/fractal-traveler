@@ -101,7 +101,7 @@ export class FractalRenderer {
     /** WebGL init & initial uniforms setting */
     init() {
         this.initGLProgram();  // Initialize WebGL program and uniforms
-        this.updateUniforms(); // Cache uniform locations
+        this.draw();
     }
 
     /** Updates the canvas size based on the current visual viewport and redraws the fractal */
@@ -385,7 +385,7 @@ export class FractalRenderer {
     stopDemo() {
         console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         this.demoActive = false;
-        this.stopCurrentColorAnimations();
+        this.stopCurrentNonColorAnimations();
     }
 
     /**
@@ -718,7 +718,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateInfiniteRotation(direction, step = 0.001) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateInfiniteRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         this.stopCurrentRotationAnimation();
 
         const dir = direction >= 0 ? 1 : -1; // Normalize

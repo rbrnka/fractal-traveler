@@ -21,10 +21,10 @@ export class JuliaRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.DEFAULT_ZOOM = 3.5;
+        this.DEFAULT_ZOOM = 2.5;
         // Use less detailed initial set for less performant devices
         /** @type COMPLEX */
-        this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64];
+        this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64235];
 
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = [...this.DEFAULT_PAN]; // Copy
@@ -468,6 +468,8 @@ export class JuliaRenderer extends FractalRenderer {
         this.stopCurrentNonColorAnimations();
 
         console.log(`Demoing...`);
+
+        this.demoActive = true; // Not used in Julia but the demo is active
 
         // Return a Promise that never resolves (continuous animation)
         await new Promise(() => {
