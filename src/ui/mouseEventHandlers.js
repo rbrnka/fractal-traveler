@@ -4,17 +4,12 @@
  * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
  */
 
-import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
-import {
-    updateInfo,
-    toggleDebugLines,
-    resetPresetAndDiveButtonStates,
-    isJuliaMode, resetActivePresetIndex
-} from './ui.js';
+import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
 import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
 
-const doubleClickThreshold = 300;
-const dragThreshold = 5;
+const DOUBLE_CLICK_THRESHOLD = 300;
+const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // Common for both zoom-in and out
 
 /** Global variable to track registration */
@@ -57,10 +52,10 @@ export function registerMouseEventHandlers() {
         return;
     }
 
-    handleWheelEvent = (event) => handleWheel(event, fractalApp);
-    handleMouseDownEvent = (event) => handleMouseDown(event, fractalApp);
-    handleMouseMoveEvent = (event) => handleMouseMove(event, fractalApp);
-    handleMouseUpEvent = (event) => handleMouseUp(event, fractalApp);
+    handleWheelEvent = (event) => handleWheel(event);
+    handleMouseDownEvent = (event) => handleMouseDown(event);
+    handleMouseMoveEvent = (event) => handleMouseMove(event);
+    handleMouseUpEvent = (event) => handleMouseUp(event);
 
     canvas.addEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.addEventListener('mousedown', handleMouseDownEvent);
@@ -89,11 +84,10 @@ export function unregisterMouseEventHandlers() {
 
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
-function handleWheel(event, fractalApp) {
+function handleWheel(event) {
     event.preventDefault();
-    clearURLParams();
-    resetPresetAndDiveButtonStates();
-    resetActivePresetIndex();
+
+    resetAppState();
 
     // Get the CSS coordinate of the mouse relative to the canvas
     const rect = fractalApp.canvas.getBoundingClientRect();
@@ -111,7 +105,7 @@ function handleWheel(event, fractalApp) {
         return;
     }
 
-    fractalApp.zoom *= zoomFactor;
+    fractalApp.zoom *= zoomFactor; // No animation, direct change.
 
     // Get fractal coordinates after zooming (using the same mouse position)
     const [fxNew, fyNew] = fractalApp.screenToFractal(mouseX, mouseY);
@@ -142,7 +136,7 @@ function handleMouseMove(event) {
         const dx = event.clientX - mouseDownX;
         const dy = event.clientY - mouseDownY;
 
-        if (!isDragging && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
+        if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isDragging = true;
         }
 
@@ -197,7 +191,7 @@ function handleMouseUp(event) {
     event.stopPropagation(); // Prevent bubbling to parent elements
 
     if (event.button === 1) { // Middle-click toggles the lines
-        console.log("Middle Click: Toggling lines");
+        console.log(`%c handleMouseUp: %c Middle Click - Toggling lines`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
         toggleDebugLines();
         return; // Exit early since middle-click doesn't involve dragging or centering.
@@ -212,52 +206,43 @@ function handleMouseUp(event) {
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
             // If there is already a pending click, then we have a double-click.
-            if (clickTimeout !== null) {
+            if (clickTimeout !== null) { // --- Double-click action ---
                 clearTimeout(clickTimeout);
                 clickTimeout = null;
 
-                // --- Double-click action ---
-                console.log(`Double Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
+                console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}]`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
-                        clearURLParams();
-                        resetPresetAndDiveButtonStates();
-                        resetActivePresetIndex();
-                    });
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
                 }
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
+                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords ${expandComplexToString([fx, fy])}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
                     // Centering action:
                     fractalApp.animatePanTo([fx, fy], 500).then(() => {
+                        resetAppState();
                         if (isJuliaMode()) {
                             updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
                             updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                         }
-                        resetPresetAndDiveButtonStates();
-                        resetActivePresetIndex();
                     });
 
                     // Copy URL to clipboard:
                     navigator.clipboard.writeText(window.location.href).then(function () {
-                        console.log('Copied URL to clipboard!');
+                        console.log(`%c handleMouseUp: %c Copied URL to clipboard!`, 'color: #fff');
                     }, function (err) {
-                        console.error('Not copied to clipboard!', err);
+                        console.error(`%c handleMouseUp: %cNot copied to clipboard! ${err}`, 'color: #fff');
                     });
 
-                    updateInfo(event);
                     clickTimeout = null; // Clear the timeout.
-                }, doubleClickThreshold);
+                }, DOUBLE_CLICK_THRESHOLD);
             }
         } else {
-            clearURLParams();
-            resetPresetAndDiveButtonStates();
-            resetActivePresetIndex();
+            resetAppState();
             isDragging = false;
         }
     }
@@ -266,9 +251,7 @@ function handleMouseUp(event) {
         if (isRightDragging) {
             isRightDragging = false;
 
-            clearURLParams();
-            resetPresetAndDiveButtonStates();
-            resetActivePresetIndex();
+            resetAppState();
             // Reset cursor to default after rotation ends
             canvas.style.cursor = 'crosshair';
             return; // Prevent further processing if it was a drag
@@ -288,17 +271,13 @@ function handleMouseUp(event) {
             console.log("Double Right Click: Zooming out");
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
-                    clearURLParams();
-                    resetPresetAndDiveButtonStates();
-                    resetActivePresetIndex();
-                });
+                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
             }
         } else {
             // Set timeout for single click
             clickTimeout = setTimeout(() => {
                 clickTimeout = null;
-            }, doubleClickThreshold);
+            }, DOUBLE_CLICK_THRESHOLD);
         }
         isRightDragging = false;
     }
