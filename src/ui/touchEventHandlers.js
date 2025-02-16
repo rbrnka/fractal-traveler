@@ -1,18 +1,17 @@
-import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
-import {
-    isJuliaMode,
-    MODE_JULIA,
-    MODE_MANDELBROT,
-    resetActivePresetIndex,
-    resetPresetAndDiveButtonStates,
-    updateInfo
-} from './ui.js';
-
 /**
  * @module TouchEventHandlers
  * @author Radim Brnka
  * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
  */
+
+import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
+import {
+    isJuliaMode,
+    resetActivePresetIndex,
+    resetPresetAndDiveButtonStates,
+    updateInfo
+} from './ui.js';
+import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
 
 let fractalApp;
 let canvas;
@@ -41,7 +40,10 @@ const doubleTapThreshold = 300;
 const ZOOM_STEP = 0.05;
 const ROTATION_SENSITIVITY = 1;
 
-
+/**
+ * Initialization and registering of the event handlers.
+ * @param {FractalRenderer} app
+ */
 export function initTouchHandlers(app) {
     fractalApp = app;
     canvas = app.canvas;
@@ -50,41 +52,41 @@ export function initTouchHandlers(app) {
     registerTouchEventHandlers(app);
 }
 
+/** Registers touch handlers. */
 export function registerTouchEventHandlers() {
     if (touchHandlersRegistered) {
-        console.warn('Touch event handlers already registered.');
-        return; // Prevent duplicate registration
+        console.warn(`%c registerTouchEventHandlers: %c Event handlers already registered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        return;
     }
 
-    console.log('Touch event handlers registered.');
-
-    // Define event handler functions
     handleTouchStartEvent = (event) => handleTouchStart(event);
     handleTouchMoveEvent = (event) => handleTouchMove(event);
     handleTouchEndEvent = (event) => handleTouchEnd(event);
-    // Attach handlers
+
     canvas.addEventListener('touchstart', handleTouchStartEvent, {passive: false});
     canvas.addEventListener('touchmove', handleTouchMoveEvent, {passive: false});
     canvas.addEventListener('touchend', handleTouchEndEvent, {passive: false});
 
     touchHandlersRegistered = true;
+    console.log(`%c registerTouchEventHandlers: %c Touch event handlers registered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 }
 
-
+/** Unregisters touch handlers. */
 export function unregisterTouchEventHandlers() {
     if (!touchHandlersRegistered) {
-        console.warn('Touch event handlers are not registered so cannot be unregistered.');
+        console.warn(`%c unregisterTouchEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         return;
     }
-
-    console.warn('Touch event handlers unregistered.');
 
     canvas.removeEventListener('touchstart', handleTouchStartEvent, {passive: false});
     canvas.removeEventListener('touchmove', handleTouchMoveEvent, {passive: false});
     canvas.removeEventListener('touchend', handleTouchEndEvent, {passive: false});
 
     touchHandlersRegistered = false;
+    console.warn(`%c unregisterTouchEventHandlers: %c Event handlers unregistered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 }
+
+// region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
 function handleTouchStart(event) {
     if (event.touches.length === 1) {
@@ -108,7 +110,7 @@ function handleTouchStart(event) {
             touch0.clientY - touch1.clientY
         );
         pinchStartZoom = fractalApp.zoom;
-        pinchStartPan = fractalApp.pan.slice();
+        pinchStartPan = [...fractalApp.pan];
         pinchStartAngle = Math.atan2(
             touch1.clientY - touch0.clientY,
             touch1.clientX - touch0.clientX
@@ -182,7 +184,7 @@ function handleTouchMove(event) {
             pinchStartDistance = currentDistance;
             pinchStartZoom = fractalApp.zoom;
             pinchStartAngle = currentAngle;
-            pinchStartPan = fractalApp.pan.slice();
+            pinchStartPan = [...fractalApp.pan];
             pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
             return;
         }
@@ -252,9 +254,9 @@ function handleTouchEnd(event) {
                 touchClickTimeout = setTimeout(() => {
                     console.log(`Single-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
                     if (isJuliaMode()) {
-                        updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                        updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                     } else {
-                        updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                        updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                     }
                     fractalApp.animatePan([fx, fy], 500).then(() => {
                         resetPresetAndDiveButtonStates();
@@ -271,3 +273,4 @@ function handleTouchEnd(event) {
     }
 }
 
+// endregion -----------------------------------------------------------------------------------------------------------

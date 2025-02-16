@@ -1,25 +1,26 @@
+/**
+ * @module MouseEventHandlers
+ * @author Radim Brnka
+ * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
+ */
+
 import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
 import {
-    MODE_JULIA,
-    MODE_MANDELBROT,
     updateInfo,
     toggleDebugLines,
     resetPresetAndDiveButtonStates,
     isJuliaMode, resetActivePresetIndex
 } from './ui.js';
-
-/**
- * @module MouseEventhandlers
- * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
- * @author Radim Brnka
- */
+import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
 
 const doubleClickThreshold = 300;
 const dragThreshold = 5;
 const ZOOM_STEP = 0.05; // Common for both zoom-in and out
 
-let mouseHandlersRegistered = false; // Global variable to track registration
-// Store references to event handler functions
+/** Global variable to track registration */
+let mouseHandlersRegistered = false;
+
+// Stored references to event handler functions
 let handleWheelEvent;
 let handleMouseDownEvent;
 let handleMouseMoveEvent;
@@ -37,6 +38,10 @@ let isDragging = false;
 let isRightDragging = false;
 let startX = 0;
 
+/**
+ * Initialization and registering of the event handlers.
+ * @param {FractalRenderer} app
+ */
 export function initMouseHandlers(app) {
     fractalApp = app;
     canvas = fractalApp.canvas;
@@ -45,35 +50,33 @@ export function initMouseHandlers(app) {
     registerMouseEventHandlers(app);
 }
 
+/** Registers mouse handlers. */
 export function registerMouseEventHandlers() {
     if (mouseHandlersRegistered) {
-        console.warn('Mouse event handlers already registered.');
-        return; // Prevent duplicate registration
+        console.warn(`%c registerMouseEventHandlers: %c Mouse event handlers already registered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        return;
     }
 
-    console.log('Mouse event handlers registered.');
-    mouseHandlersRegistered = true;
-
-    // Define event handler functions
     handleWheelEvent = (event) => handleWheel(event, fractalApp);
     handleMouseDownEvent = (event) => handleMouseDown(event, fractalApp);
     handleMouseMoveEvent = (event) => handleMouseMove(event, fractalApp);
     handleMouseUpEvent = (event) => handleMouseUp(event, fractalApp);
 
-    // Add event listeners using stored references
     canvas.addEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.addEventListener('mousedown', handleMouseDownEvent);
     canvas.addEventListener('mousemove', handleMouseMoveEvent);
     canvas.addEventListener('mouseup', handleMouseUpEvent);
+
+    mouseHandlersRegistered = true;
+    console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 }
 
+/** Unregisters mouse handlers. */
 export function unregisterMouseEventHandlers() {
     if (!mouseHandlersRegistered) {
-        console.warn('Mouse event handlers are not registered.');
+        console.warn(`%c registerMouseEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         return;
     }
-
-    console.warn('Mouse event handlers unregistered.');
 
     canvas.removeEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.removeEventListener('mousedown', handleMouseDownEvent);
@@ -81,7 +84,10 @@ export function unregisterMouseEventHandlers() {
     canvas.removeEventListener('mouseup', handleMouseUpEvent);
 
     mouseHandlersRegistered = false;
+    console.warn(`%c registerMouseEventHandlers: %c Event handlers unregistered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 }
+
+// region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
 function handleWheel(event, fractalApp) {
     event.preventDefault();
@@ -227,11 +233,11 @@ function handleMouseUp(event) {
                     console.log(`Single Left Click: Centering on ${mouseX}, ${mouseY} which is fractal coords ${fx}, ${fy}`);
 
                     // Centering action:
-                    fractalApp.animatePan([fx, fy], 500).then(() => {
+                    fractalApp.animatePanTo([fx, fy], 500).then(() => {
                         if (isJuliaMode()) {
-                            updateURLParams(MODE_JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                            updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
-                            updateURLParams(MODE_MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
                         }
                         resetPresetAndDiveButtonStates();
                         resetActivePresetIndex();
@@ -299,3 +305,4 @@ function handleMouseUp(event) {
     canvas.style.cursor = 'crosshair';
 }
 
+// endregion -----------------------------------------------------------------------------------------------------------
