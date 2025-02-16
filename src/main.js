@@ -1,29 +1,32 @@
-import './css/style.css';
-import {JuliaRenderer} from "./renderers/juliaRenderer";
-import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
-import {initUI, MODE_JULIA, MODE_MANDELBROT, resetActivePresetIndex, resetPresetAndDiveButtonStates} from "./ui/ui";
-import {clearURLParams, loadFractalParamsFromURL} from "./global/utils";
-
 /**
  * @module Main
  * @author Radim Brnka
  * @description The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), initializes the UI and the fractal.
  */
 
+import './css/style.css';
+import {JuliaRenderer} from "./renderers/juliaRenderer";
+import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
+import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates} from "./ui/ui";
+import {clearURLParams, loadFractalParamsFromURL} from "./global/utils";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
+
 /**
  * Initializes the canvas, reads URL params and triggers respective fractal rendering
  */
-function start() {
+async function initFractalApp() {
+    console.groupCollapsed(`%c initFractalApp`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+
     const canvas = document.getElementById('fractalCanvas');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
     const params = loadFractalParamsFromURL();
-    console.log(`%c start: %c Reading URL: ${JSON.stringify(params)}`, 'color: #bada55', 'color: #fff');
+    console.log(`URL Params found:  ${JSON.stringify(params)}`);
 
     // Do we have all the params needed for initial travel?
-    const validMandelbrotPreset = params.px != null && params.py != null && params.zoom != null && params.r != null;
-    const validJuliaPreset = validMandelbrotPreset && params.cx != null && params.cy != null;
+    const validMandelbrotTravelPreset = params.px != null && params.py != null && params.zoom != null && params.r != null;
+    const validJuliaTravelPreset = validMandelbrotTravelPreset && params.cx != null && params.cy != null;
     const preset = {
         pan: [params.px, params.py],
         zoom: params.zoom,
@@ -31,9 +34,8 @@ function start() {
         rotation: params.r
     };
 
-    console.log(`%c start: %c Decoded preset: ${JSON.stringify(preset)}`, 'color: #bada55', 'color: #fff');
-
     const onDefault = () => {
+        console.log(`Default fractal settings used.`);
         fractalApp.reset();
         clearURLParams();
     }
@@ -44,26 +46,27 @@ function start() {
         /************
          * JULIA SET
          ************/
-        case MODE_JULIA:
+        case FRACTAL_TYPE.JULIA:
+            console.log(`Constructing Julia.`);
             fractalApp = new JuliaRenderer(canvas);
-            if (validJuliaPreset) {
-                fractalApp.animateTravelToPreset(preset, 500);
-                console.log(`%c start: %c Constructing Julia from URL params.`, 'color: #bada55', 'color: #fff');
+            if (validJuliaTravelPreset) {
+                console.log(`Traveling to URL params.`);
+                await fractalApp.animateTravelToPreset(preset, 500);
             } else {
-                console.log(`%c start: %c Constructing default Julia.`, 'color: #bada55', 'color: #fff');
                 onDefault();
             }
             break;
+
         /****************
          * MANDELBROT SET
          ****************/
-        case MODE_MANDELBROT:
+        case FRACTAL_TYPE.MANDELBROT:
+            console.log(`Constructing Mandelbrot.`);
             fractalApp = new MandelbrotRenderer(canvas);
-            if (validMandelbrotPreset) {
-                fractalApp.animatePanZoomRotate(preset.pan, preset.zoom, preset.rotation, 500);
-                console.log(`%c start: %c Constructing Mandelbrot from URL params.`, 'color: #bada55', 'color: #fff');
+            if (validMandelbrotTravelPreset) {
+                console.log(`Traveling to URL params.`);
+                await fractalApp.animatePanZoomRotationTo(preset.pan, preset.zoom, preset.rotation, 500);
             } else {
-                console.log(`%c start: %c Constructing default Mandelbrot from URL params.`, 'color: #bada55', 'color: #fff');
                 onDefault();
             }
             break;
@@ -73,19 +76,20 @@ function start() {
             break;
     }
 
-    initUI(fractalApp);
+    await initUI(fractalApp);
 
     // If URL contains a preset, reset buttons
-    if (validMandelbrotPreset || validJuliaPreset) {
+    if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
         resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
     }
-    console.log('Init complete.');
+    console.groupEnd();
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOMContentLoaded triggered');
-        start();
+document.addEventListener('DOMContentLoaded', async () => {
+        if (DEBUG_MODE) console.log('%c DOMContentLoaded triggered. Initializing fractal.', 'color: #ff0');
+        await initFractalApp();
+        console.log('%c Fractal init complete.', 'color: #0f0');
     },
     {
         once: true
