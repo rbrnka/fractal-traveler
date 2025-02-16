@@ -66,8 +66,6 @@ const sliderUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 
-let rotationAnimationFrame = null; // For hotkey rotation only
-
 export function switchFractalMode(mode) {
     clearURLParams();
 
@@ -104,6 +102,13 @@ export function updateColorTheme(palette) {
     root.style.setProperty('--accent-color', accentColor);
 }
 
+/** Resets buttons, active presets and URL */
+export function resetAppState() {
+    resetPresetAndDiveButtonStates();
+    resetActivePresetIndex();
+    clearURLParams();
+}
+
 function resetJuliaSliders() {
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
@@ -135,6 +140,25 @@ function enableJuliaSliders() {
 }
 
 /**
+ * Updates the real/imaginary sliders appropriately
+ */
+export function updateJuliaSliders() {
+    const now = performance.now();
+    const timeSinceLastUpdate = now - lastSliderUpdate;
+
+    if (timeSinceLastUpdate < sliderUpdateThrottleLimit) {
+        return; // Skip update if called too soon
+    }
+
+    // Update the last update time
+    lastSliderUpdate = now;
+    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+}
+
+/**
  * Updates the bottom info bar
  * @param {boolean} [traveling] if inside animation
  */
@@ -153,7 +177,7 @@ export function updateInfo(traveling = false) {
         return;
     }
 
-    let text = (animationActive ? ` [DEMO] ` : ``);
+    let text = (animationActive ? ` [AUTO] ` : ``);
 
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
@@ -184,23 +208,8 @@ export function updateInfo(traveling = false) {
     infoText.textContent = text;
 }
 
-/**
- * Updates the real/imaginary sliders appropriately
- */
-export function updateJuliaSliders() {
-    const now = performance.now();
-    const timeSinceLastUpdate = now - lastSliderUpdate;
-
-    if (timeSinceLastUpdate < sliderUpdateThrottleLimit) {
-        return; // Skip update if called too soon
-    }
-
-    // Update the last update time
-    lastSliderUpdate = now;
-    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+export function isAnimationActive() {
+    return animationActive;
 }
 
 function exitAnimationMode() {
@@ -264,27 +273,24 @@ function initAnimationMode() {
     console.groupEnd();
 }
 
-export function toggleDemo() {
-    console.groupCollapsed(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+export async function toggleDemo() {
+    console.log(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (animationActive) {
         resetPresetAndDiveButtonStates();
-        stopRotationAnimation();
-        exitAnimationMode();
         activeJuliaDiveIndex = -1;
         fractalApp.stopDemo();
+        exitAnimationMode();
         return;
     }
 
     initAnimationMode();
 
     switch (fractalMode) {
-        case FRACTAL_TYPE.MANDELBROT:
-            startMandelbrotDemo();
-            break
-        case FRACTAL_TYPE.JULIA:
-            startJuliaDemo();
-            break
+        case FRACTAL_TYPE.MANDELBROT: await startMandelbrotDemo(); break;
+
+        case FRACTAL_TYPE.JULIA: await startJuliaDemo(); break;
+
         default:
             console.warn('No demo defined for mode ' + fractalMode);
             exitAnimationMode();
@@ -305,11 +311,6 @@ async function startMandelbrotDemo() {
     await fractalApp.animateDemo();
 
     console.log("Demo ended");
-    // When animationActive is false, reset the fractal.
-    // resetPresetAndDiveButtonStates();
-    // stopRotationAnimation();
-    // exitAnimationMode();
-
     console.groupEnd();
 }
 
@@ -394,13 +395,6 @@ async function startJuliaDemo() {
     exitAnimationMode();
 
     console.groupEnd();
-}
-
-function stopRotationAnimation() {
-    if (rotationAnimationFrame !== null) {
-        cancelAnimationFrame(rotationAnimationFrame);
-        rotationAnimationFrame = null;
-    }
 }
 
 export async function travelToPreset(presets, index) {
@@ -554,25 +548,13 @@ function initHeaderEvents() {
 }
 
 function initControlButtonEvents() {
+    resetButton.addEventListener('click', () => { switchFractalMode(fractalMode); });
 
-    resetButton.addEventListener('click', () => {
-        switchFractalMode(fractalMode);
-    });
+    randomizeColorsButton.addEventListener('click', randomizeColors);
 
-    randomizeColorsButton.addEventListener('click', () => {
-        randomizeColors().then(() => {
+    demoButton.addEventListener('click', toggleDemo);
 
-        });
-    });
-
-    demoButton.addEventListener('click', () => {
-        toggleDemo();
-    });
-
-    screenshotButton.addEventListener('click', () => {
-        captureScreenshot();
-    });
-
+    screenshotButton.addEventListener('click', captureScreenshot);
 }
 
 function initPresetButtonEvents() {

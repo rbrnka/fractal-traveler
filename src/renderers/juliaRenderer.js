@@ -464,10 +464,8 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDemo() {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         this.stopCurrentNonColorAnimations();
-
-        console.log(`Demoing...`);
 
         this.demoActive = true; // Not used in Julia but the demo is active
 
