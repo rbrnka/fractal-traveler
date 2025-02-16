@@ -1,5 +1,6 @@
-import {DEBUG_MODE, updateInfo} from "../ui/ui";
+import {updateInfo} from "../ui/ui";
 import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -60,8 +61,12 @@ export class FractalRenderer {
          */
         this.rotation = this.DEFAULT_ROTATION;
 
-        this.currentAnimationFrame = null;
+        this.currentPanAnimationFrame = null;
+        this.currentZoomAnimationFrame = null;
+        this.currentRotationAnimationFrame = null;
         this.currentColorAnimationFrame = null;
+
+        this.demoActive = false;
 
         /**
          * Determines the level of fractal rendering detail
@@ -72,7 +77,7 @@ export class FractalRenderer {
 
 
         /** @type PALETTE */
-        this.colorPalette = this.DEFAULT_PALETTE.slice();
+        this.colorPalette = [...this.DEFAULT_PALETTE];
 
         /**  Vertex shader initialization snippet */
         this.vertexShaderSource = `
@@ -86,7 +91,7 @@ export class FractalRenderer {
 
         this.canvas.addEventListener('webglcontextlost', (event) => {
             event.preventDefault();
-            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, 'color: #bada55', 'color: #fff');
+            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
             this.init(); // Reinitialize WebGL context
         });
     }
@@ -101,7 +106,7 @@ export class FractalRenderer {
 
     /** Updates the canvas size based on the current visual viewport and redraws the fractal */
     resizeCanvas() {
-        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, 'color: #bada55');
+        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         console.log(`Canvas before resize: ${this.canvas.width}x${this.canvas.height}`);
 
         // Use visual viewport if available, otherwise fallback to window dimensions.
@@ -159,7 +164,7 @@ export class FractalRenderer {
      * @return {WebGLShader|null}
      */
     compileShader(source, type) {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, 'color: #bada55');
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         console.log(`Shader GLenum type: ${type}`);
         console.log(`Shader code: ${source}`);
 
@@ -181,7 +186,7 @@ export class FractalRenderer {
      * Initializes the WebGL program, shaders and sets initial position
      */
     initGLProgram() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, 'color: #bada55');
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
@@ -264,12 +269,12 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, 'color: #bada55');
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        this.stopCurrentNonColorAnimation();
-        this.stopCurrentColorAnimation();
+        this.stopCurrentNonColorAnimations();
+        this.stopCurrentColorAnimations();
 
-        this.colorPalette = this.DEFAULT_PALETTE.slice();
+        this.colorPalette = [...this.DEFAULT_PALETTE];
         this.pan = [...this.DEFAULT_PAN];
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
@@ -328,28 +333,59 @@ export class FractalRenderer {
     // endregion--------------------------------------------------------------------------------------------------------
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
-    /**
-     * Stops currently running animation that is not a color transition
-     */
-    stopCurrentNonColorAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentNonColorAnimation`, 'color: #bada55', 'color: #fff');
+    /** Stops all currently running animations that are not a color transition */
+    stopCurrentNonColorAnimations() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
-        if (this.currentAnimationFrame !== null) {
-            cancelAnimationFrame(this.currentAnimationFrame);
-            this.currentAnimationFrame = null;
+        this.stopCurrentPanAnimation();
+        this.stopCurrentZoomAnimation()
+        this.stopCurrentRotationAnimation();
+    }
+
+    /** Stops currently running pan animation */
+    stopCurrentPanAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentPanAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+        if (this.currentPanAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentPanAnimationFrame);
+            this.currentPanAnimationFrame = null;
         }
     }
 
-    /**
-     * Stops currently running color animation
-     */
-    stopCurrentColorAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, 'color: #bada55', 'color: #fff');
+    /** Stops currently running zoom animation */
+    stopCurrentZoomAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentZoomAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+        if (this.currentZoomAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentZoomAnimationFrame);
+            this.currentZoomAnimationFrame = null;
+        }
+    }
+
+    /** Stops currently running rotation animation */
+    stopCurrentRotationAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentRotationAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+        if (this.currentRotationAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentRotationAnimationFrame);
+            this.currentRotationAnimationFrame = null;
+        }
+    }
+
+    /** Stops currently running color animation */
+    stopCurrentColorAnimations() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
         if (this.currentColorAnimationFrame !== null) {
             cancelAnimationFrame(this.currentColorAnimationFrame);
             this.currentColorAnimationFrame = null;
         }
+    }
+
+    stopDemo() {
+        console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        this.demoActive = false;
+        this.stopCurrentColorAnimations();
     }
 
     /**
@@ -373,8 +409,8 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, 'color: #bada55');
-        this.stopCurrentColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentColorAnimations();
 
         if (comparePalettes(this.colorPalette, newPalette)) {
             console.warn(`Identical palette found. Skipping.`);
@@ -382,7 +418,7 @@ export class FractalRenderer {
         }
         console.log(`Animating to ${newPalette}.`);
 
-        const startPalette = this.colorPalette.slice();
+        const startPalette = [...this.colorPalette];
 
         await new Promise(resolve => {
             let startTime = null;
@@ -404,7 +440,7 @@ export class FractalRenderer {
                 if (progress < 1) {
                     this.currentColorAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    this.stopCurrentColorAnimation();
+                    this.stopCurrentColorAnimations();
                     console.groupEnd();
                     resolve();
                 }
@@ -421,10 +457,8 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateFullColorSpaceCycle(duration = 15000) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, 'color: #bada55');
-        this.stopCurrentColorAnimation();
-
-        console.log(`Starting.`);
+        console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentColorAnimations();
 
         const currentRGB = this.colorPalette;
         const hsl = rgbToHsl(currentRGB[0], currentRGB[1], currentRGB[2]);
@@ -455,11 +489,12 @@ export class FractalRenderer {
      *
      * @param {COMPLEX} targetPan
      * @param [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animatePan(targetPan, duration = 200) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePan`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animatePanTo(targetPan, duration = 200, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentPanAnimation();
 
         if (compareComplex(this.pan, targetPan, 6)) {
             console.log(`Already at the target pan. Skipping.`);
@@ -468,7 +503,7 @@ export class FractalRenderer {
         }
         console.log(`Panning to ${targetPan}.`);
 
-        const startPan = this.pan.slice();
+        const startPan = [...this.pan];
 
         await new Promise(resolve => {
             let startTime = null;
@@ -477,22 +512,24 @@ export class FractalRenderer {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
-                this.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
-                this.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
+                const easedProgress = easeFunction(progress);
+
+                this.pan[0] = lerp(startPan[0], targetPan[0], easedProgress);
+                this.pan[1] = lerp(startPan[1], targetPan[1], easedProgress);
                 this.draw();
 
                 updateInfo(true);
 
-                if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
+                if (easedProgress < 1) {
+                    this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    this.stopCurrentNonColorAnimation();
+                    this.stopCurrentPanAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
             };
-            this.currentAnimationFrame = requestAnimationFrame(step);
+            this.currentPanAnimationFrame = requestAnimationFrame(step);
         });
     }
 
@@ -501,11 +538,12 @@ export class FractalRenderer {
      *
      * @param {number} targetZoom
      * @param {number} [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animateZoom(targetZoom, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoom`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentZoomAnimation();
 
         if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
             console.log(`Already at the target zoom. Skipping.`);
@@ -522,22 +560,23 @@ export class FractalRenderer {
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
+                const easedProgress = easeFunction(progress);
 
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, easedProgress);
                 this.draw();
 
                 updateInfo(true);
 
                 if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
+                    this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    this.stopCurrentNonColorAnimation();
+                    this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
             };
-            this.currentAnimationFrame = requestAnimationFrame(step);
+            this.currentZoomAnimationFrame = requestAnimationFrame(step);
         });
     }
 
@@ -546,11 +585,12 @@ export class FractalRenderer {
      *
      * @param {number} targetRotation
      * @param {number} [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animateRotation(targetRotation, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateRotation`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animateRotationTo(targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentRotationAnimation();
 
         // Normalize
         targetRotation = normalizeRotation(targetRotation);
@@ -570,24 +610,23 @@ export class FractalRenderer {
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
+                const easedProgress = easeFunction(progress);
 
-                // this.rotation = startRotation + (targetRotation - startRotation) * progress;
-                this.rotation = lerp(startRotation, targetRotation, progress);
-
+                this.rotation = lerp(startRotation, targetRotation, easedProgress);
                 this.draw();
 
                 updateInfo(true);
 
                 if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
+                    this.currentRotationAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    this.stopCurrentNonColorAnimation();
+                    this.stopCurrentRotationAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
             };
-            this.currentAnimationFrame = requestAnimationFrame(step);
+            this.currentRotationAnimationFrame = requestAnimationFrame(step);
         });
     }
 
@@ -598,12 +637,15 @@ export class FractalRenderer {
      * @param {number} targetZoom
      * @param {number} panDuration in milliseconds
      * @param {number} zoomDuration in milliseconds
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animatePanThenZoom(targetPan, targetZoom, panDuration, zoomDuration) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoom`, 'color: #bada55');
-        await this.animatePan(targetPan, panDuration);
-        await this.animateZoom(targetZoom, zoomDuration);
+    async animatePanThenZoomTo(targetPan, targetZoom, panDuration, zoomDuration, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+
+        await this.animatePanTo(targetPan, panDuration, easeFunction);
+        await this.animateZoomTo(targetZoom, zoomDuration, easeFunction);
+
         console.groupEnd();
     }
 
@@ -613,56 +655,18 @@ export class FractalRenderer {
      * @param {COMPLEX} targetPan
      * @param {number} targetZoom
      * @param {number} [duration] in milliseconds
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animatePanAndZoomTo(targetPan, targetZoom, duration = 1000) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animatePanAndZoomTo(targetPan, targetZoom, duration = 1000, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
-            console.log(`Already at the target zoom. Panning.`);
-            await this.animatePan(targetPan, Math.round(duration / 2));
-            console.groupEnd();
-            return;
-        }
+        await Promise.all([
+            this.animatePanTo(targetPan, duration, easeFunction),
+            this.animateZoomTo(targetZoom, duration, easeFunction)
+        ]);
 
-        if (compareComplex(this.pan, targetPan, 6)) {
-            console.log(`Already at the target pan. Zooming.`);
-            await this.animateZoom(targetZoom, Math.round(duration / 2));
-            console.groupEnd();
-            return;
-        }
-
-        console.log(`Panning and zooming in parallel.`);
-
-        const startPan = this.pan.slice();
-        const startZoom = this.zoom;
-
-        await new Promise(resolve => {
-            let startTime = null;
-
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-
-                this.pan[0] = lerp(startPan[0], targetPan[0], progress);
-                this.pan[1] = lerp(startPan[1], targetPan[1], progress);
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-                this.draw();
-
-                updateInfo(true);
-
-                if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
-                } else {
-                    this.stopCurrentNonColorAnimation();
-                    this.onAnimationFinished();
-                    console.groupEnd();
-                    resolve();
-                }
-            };
-            this.currentAnimationFrame = requestAnimationFrame(step);
-        });
+        console.groupEnd();
     }
 
     /**
@@ -671,58 +675,18 @@ export class FractalRenderer {
      * @param {number} targetZoom
      * @param {number} targetRotation
      * @param {number} [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animateZoomRotation(targetZoom, targetRotation, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotation`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animateZoomRotationTo(targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        // Normalize
-        targetRotation = normalizeRotation(targetRotation);
+        await Promise.all([
+            this.animateZoomTo(targetZoom, duration, easeFunction),
+            this.animateRotationTo(targetRotation, duration, easeFunction)
+        ]);
 
-        if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
-            console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
-            await this.animateZoom(targetZoom, duration);
-            console.groupEnd();
-            return;
-        }
-
-        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
-            console.log(`Already at the target zoom. Panning.`);
-            await this.animateRotation(targetRotation, duration);
-            console.groupEnd();
-            return;
-        }
-
-        console.log(`Rotating from ${this.rotation.toFixed(6)} to ${targetRotation.toFixed(6)}.`);
-
-        const startRotation = this.rotation;
-        const startZoom = this.zoom;
-
-        await new Promise(resolve => {
-            let startTime = null;
-
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-
-                this.rotation = lerp(startRotation, targetRotation, progress);
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-                this.draw();
-
-                updateInfo(true);
-
-                if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
-                } else {
-                    this.stopCurrentNonColorAnimation();
-                    this.onAnimationFinished();
-                    console.groupEnd();
-                    resolve();
-                }
-            };
-            this.currentAnimationFrame = requestAnimationFrame(step);
-        });
+        console.groupEnd();
     }
 
     /**
@@ -732,52 +696,56 @@ export class FractalRenderer {
      * @param {number} targetZoom
      * @param {number} targetRotation
      * @param {number} [duration] in milliseconds
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animatePanZoomRotate(targetPan, targetZoom, targetRotation, duration = 500) {
-        this.stopCurrentNonColorAnimation();
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotate`, 'color: #bada55');
-        console.log(`Panning, zooming and rotating in parallel.`);
+    async animatePanZoomRotationTo(targetPan, targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        // Simply does the animation without the need for other combinations of animation methods.
-        const startPan = this.pan.slice();
-        const startZoom = this.zoom;
-        const startRotation = this.rotation;
+        await Promise.all([
+            this.animatePanTo(targetPan, duration, easeFunction),
+            this.animateZoomTo(targetZoom, duration, easeFunction),
+            this.animateRotationTo(targetRotation, duration, easeFunction)
+        ]);
 
-        await new Promise(resolve => {
-            let startTime = null;
+        console.groupEnd();
+    }
 
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1)
+    /**
+     *
+     * @param {ROTATION_DIRECTION} direction
+     * @param {number} step Speed in rad/frame
+     * @return {Promise<void>}
+     */
+    async animateInfiniteRotation(direction, step = 0.001) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInfiniteRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentRotationAnimation();
 
-                this.pan[0] = startPan[0] + (targetPan[0] - startPan[0]) * progress;
-                this.pan[1] = startPan[1] + (targetPan[1] - startPan[1]) * progress;
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress);
-                this.rotation = lerp(startRotation, targetRotation, progress);
+        const dir = direction >= 0 ? 1 : -1; // Normalize
+
+        await new Promise(() => {
+
+            const rotationStep = () => {
+                this.rotation = normalizeRotation(this.rotation + dir * step + 2 * Math.PI);
                 this.draw();
 
                 updateInfo(true);
 
-                if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
-                } else {
-                    this.stopCurrentNonColorAnimation();
-                    this.onAnimationFinished();
-                    console.groupEnd();
-                    resolve();
-                }
+                this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
             };
-            this.currentAnimationFrame = requestAnimationFrame(step);
+
+            this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
         });
+        console.groupEnd();
     }
 
     /**
      * Animates travel to preset.
      * @abstract
+     * @param {...*} args - Parameters for the animation.
      * @return {Promise<void>}
      */
-    async animateTravelToPreset() {
+    async animateTravelToPreset(...args) {
         throw new Error('The animateTravelToPreset method must be implemented in child classes');
     }
 
@@ -795,47 +763,6 @@ export class FractalRenderer {
      */
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         throw new Error('The animateTravelToPreset method must be implemented in child classes');
-    }
-
-    /**
-     * Animates given parameter without duration through given step size. The duration is then derived.
-     * TODO make generic for both 1 and 2 dimensional params
-     * @param {*} currentParam
-     * @param {number} targetParam
-     * @param {number} stepSize
-     * @return {Promise<void>}
-     */
-    async animateParamsWithStep(currentParam, targetParam, stepSize) {
-        this.stopCurrentNonColorAnimation();
-
-        // const isArray = currentParam.isArray();
-
-        await new Promise(resolve => {
-            const step = () => {
-                const dx = targetParam[0] - currentParam[0];
-                const dy = targetParam[1] - currentParam[1];
-                const distance = Math.hypot(dx, dy);
-
-                // If we're within one step, snap to target and finish.
-                if (distance <= stepSize) {
-                    currentParam[0] = targetParam[0];
-                    currentParam[1] = targetParam[1];
-                    this.draw();
-
-                    resolve();
-                } else {
-                    // Move one step toward the target.
-                    currentParam[0] += (dx / distance) * stepSize;
-                    currentParam[1] += (dy / distance) * stepSize;
-                    this.draw();
-                    updateInfo(true);
-
-                    this.currentAnimationFrame = requestAnimationFrame(step);
-                }
-            };
-
-            this.currentAnimationFrame = requestAnimationFrame(step);
-        });
     }
 
     // endregion--------------------------------------------------------------------------------------------------------

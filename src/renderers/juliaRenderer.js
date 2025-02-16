@@ -1,7 +1,13 @@
 import {updateInfo, updateJuliaSliders} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {compareComplex, easeInOut, easeInOutCubic, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
+import {
+    compareComplex,
+    isTouchDevice,
+    lerp,
+    normalizeRotation
+} from "../global/utils";
 import '../global/types';
+import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE,} from "../global/constants";
 
 /**
  * Julia set renderer
@@ -21,7 +27,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64];
 
         this.zoom = this.DEFAULT_ZOOM;
-        this.pan = this.DEFAULT_PAN.slice(); // Copy
+        this.pan = [...this.DEFAULT_PAN]; // Copy
         this.rotation = this.DEFAULT_ROTATION;
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
@@ -113,6 +119,7 @@ export class JuliaRenderer extends FractalRenderer {
             // }
         ];
 
+        this.currentCAnimationFrame = null;
         this.demoTime = 0;
 
         this.init();
@@ -243,7 +250,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @inheritDoc
      */
     reset() {
-        this.c =  [...this.DEFAULT_C];
+        this.c = [...this.DEFAULT_C];
         super.reset();
     }
 
@@ -268,16 +275,37 @@ export class JuliaRenderer extends FractalRenderer {
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
+    /** Stops currently running pan animation */
+    stopCurrentCAnimation() {
+        console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+        if (this.currentCAnimationFrame !== null) {
+            cancelAnimationFrame(this.currentCAnimationFrame);
+            this.currentCAnimationFrame = null;
+        }
+    }
+
+    /**
+     * @inheritDoc
+     * @override
+     */
+    stopCurrentNonColorAnimations() {
+        this.stopCurrentCAnimation();
+
+        super.stopCurrentNonColorAnimations();
+    }
+
     /**
      * Animates Julia from current C to target C
      *
      * @param {COMPLEX} [targetC] Defaults to default C
      * @param {number} [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
-    async animateToC(targetC = [...this.DEFAULT_C], duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+    async animateToC(targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentCAnimation();
 
         if (compareComplex(this.c, targetC)) {
             console.log(`Already at the target c. Skipping.`);
@@ -297,24 +325,45 @@ export class JuliaRenderer extends FractalRenderer {
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
                 // Interpolate `c` smoothly
-                const easedProgress = easeInOut(progress);
+                const easedProgress = easeFunction(progress);
                 this.c[0] = lerp(startC[0], targetC[0], easedProgress);
                 this.c[1] = lerp(startC[1], targetC[1], easedProgress);
                 this.draw();
 
                 updateInfo(true);
+                updateJuliaSliders();
 
                 if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
+                    this.currentCAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    this.stopCurrentNonColorAnimation();
+                    this.stopCurrentCAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
             };
-            this.currentAnimationFrame = requestAnimationFrame(step);
+            this.currentCAnimationFrame = requestAnimationFrame(step);
         });
+    }
+
+    /**
+     * Animates Julia from current C and zoom to target C and zoom
+     *
+     * @param {number} [targetZoom] Target zoom
+     * @param {COMPLEX} [targetC] Defaults to default C
+     * @param {number} [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
+     * @return {Promise<void>}
+     */
+    async animateToZoomAndC(targetZoom, targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToZoomAndC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentCAnimation();
+
+        await Promise.all([
+            this.animateZoomTo(targetZoom, duration, easeFunction),
+            this.animateToC(targetC, duration, easeFunction)
+        ]);
+        console.groupEnd();
     }
 
     /**
@@ -324,60 +373,21 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateTravelToPreset(preset, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentNonColorAnimations();
 
-        // Phase 1: Adjust to default zoom and pan
-        if (this.pan[0].toFixed(6) === this.DEFAULT_PAN[0].toFixed(6) && this.pan[1].toFixed(6) === this.DEFAULT_PAN[1].toFixed(6)) {
-            console.log(`Already at the target pan. Zooming only.`);
-            await this.animateZoom(preset.zoom, 500);
-        } else if (this.zoom.toFixed(6) === this.DEFAULT_ZOOM.toFixed(6)) {
-            console.log(`Already at the target zoom. Panning only.`);
-            await this.animatePan(preset.pan, 500);
-        } else {
-            await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 500);
-        }
+        // Phase 1: Setting default params.
+        await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 500);
 
-        console.log(`Animating to preset.`);
+        // Phase 2: Animating to preset.
+        await Promise.all([
+            this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT),
+            this.animateToC(preset.c, duration, EASE_TYPE.QUINT),
+            this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
+            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
+        ]);
 
-        // Transition logic after adjusting to default zoom and pan to defaults
-        await new Promise(resolve => {
-            const startC = this.c.slice(); // Copy current `c`
-            const startZoom = this.zoom;
-            const startPan = this.pan.slice();
-            const startRotation = this.rotation;
-            let startTime = null;
-
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-
-                // Apply eased progress
-                const easedProgress = easeInOutCubic(progress);
-
-                // Interpolate `c` smoothly
-                this.c[0] = lerp(startC[0], preset.c[0], easedProgress);
-                this.c[1] = lerp(startC[1], preset.c[1], easedProgress);
-                this.rotation = lerp(startRotation, preset.rotation, progress);
-                this.pan[0] = lerp(startPan[0], preset.pan[0], progress);
-                this.pan[1] = lerp(startPan[1], preset.pan[1], progress);
-                this.zoom = lerp(startZoom, preset.zoom, progress);
-                this.draw();
-
-                updateInfo(true);
-                updateJuliaSliders();
-
-                if (progress < 1) {
-                    this.currentAnimationFrame = requestAnimationFrame(step);
-                } else {
-                    this.stopCurrentNonColorAnimation();
-                    this.onAnimationFinished();
-                    console.groupEnd();
-                    resolve();
-                }
-            };
-            this.currentAnimationFrame = requestAnimationFrame(step);
-        });
+        console.groupEnd();
     }
 
     /**
@@ -393,8 +403,8 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDive(dive) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentCAnimation();
 
         console.log(`Diving to ${dive}.`);
 
@@ -443,9 +453,9 @@ export class JuliaRenderer extends FractalRenderer {
                 updateInfo(true);
                 updateJuliaSliders();
 
-                this.currentAnimationFrame = requestAnimationFrame(diveStep);
+                this.currentCAnimationFrame = requestAnimationFrame(diveStep);
             };
-            this.currentColorAnimationFrame = requestAnimationFrame(diveStep);
+            this.currentCAnimationFrame = requestAnimationFrame(diveStep);
         });
     }
 
@@ -454,8 +464,8 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDemo() {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentNonColorAnimations();
 
         console.log(`Demoing...`);
 
@@ -473,9 +483,9 @@ export class JuliaRenderer extends FractalRenderer {
                 updateInfo(true);
                 updateJuliaSliders();
 
-                this.currentAnimationFrame = requestAnimationFrame(step);
+                this.currentCAnimationFrame = requestAnimationFrame(step);
             };
-            this.currentColorAnimationFrame = requestAnimationFrame(step);
+            this.currentCAnimationFrame = requestAnimationFrame(step);
         });
     }
 

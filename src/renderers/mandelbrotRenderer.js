@@ -1,4 +1,6 @@
 import {FractalRenderer} from './fractalRenderer.js';
+import {asyncDelay} from "../global/utils";
+import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
 
 /**
  * MandelbrotRenderer
@@ -13,7 +15,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         super(canvas);
 
         this.DEFAULT_PAN = [-0.5, 0];
-        this.pan = this.DEFAULT_PAN.slice();
+        this.pan = [...this.DEFAULT_PAN];
         /** Mandelbrot-specific presets
          */
         this.PRESETS = [
@@ -124,41 +126,18 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateTravelToPreset(preset, zoomOutDuration = 1000, zoomInDuration = 3500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
-        // Already at the position, just wrong zoom?
-        if (this.pan[0].toFixed(6) === preset.pan[0].toFixed(6) && this.pan[1].toFixed(6) === preset.pan[1].toFixed(6)) {
-            console.log(`Already at the right pan, zooming only.`);
-            await this.animateZoom(preset.zoom);
-            console.groupEnd();
-            return;
-        }
-
-        // Right zoom level but pan is off?
-        if (this.zoom.toFixed(6) === preset.zoom.toFixed(6)) {
-            console.log(`Already at default zoom, panning and zooming only.`);
-            await this.animatePan(preset.pan.slice(), 1000);
-            console.groupEnd();
-            return;
-        }
-
-        console.log(`Preset: ${JSON.stringify(preset)}`);
-
-        // Stage 1: Zoom-out
-        console.log(`Stage 1: Zoom-out`);
-        await this.animateZoom(this.DEFAULT_ZOOM, zoomOutDuration);
-
-        // Stage 2: Rotation
-        console.log(`Stage 2: Rotation`);
         const targetRotation = preset.rotation || 0;
-        await this.animateRotation(targetRotation, 100);
 
-        // Stage 3: PanZoom transition with adjusted duration based on the Euclidean distance between startPan and targetPan.
-        console.log(`Stage 3: PanThenZoom`);
-        const duration = Math.round(500 * Math.hypot(preset.pan[0] - this.pan[0], preset.pan[1] - this.pan[1]));
-        console.log(`Adjusted pan duration ${duration}ms`);
-        await this.animatePanThenZoom(preset.pan, preset.zoom, duration, zoomInDuration);
+        await this.animateZoomTo(this.DEFAULT_ZOOM, zoomOutDuration)
+        await Promise.all([
+            this.animatePanThenZoomTo(preset.pan, preset.zoom, 500, zoomInDuration, EASE_TYPE.QUAD),
+            this.animateRotationTo(targetRotation, 500, EASE_TYPE.QUINT)
+        ]);
+
+        console.log(`Travel complete.`);
         console.groupEnd();
     }
 
@@ -174,35 +153,67 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @param {number} zoomInDuration Duration (ms) for the zoom-in stage.
      */
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, 'color: #bada55');
-        this.stopCurrentNonColorAnimation();
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         // Generate random rotations for a more dynamic effect.
-        const startRotation = this.rotation;
-        const zoomOutRotation = startRotation + (Math.random() * Math.PI * 2 - Math.PI);
+        const zoomOutRotation = this.rotation + (Math.random() * Math.PI * 2 - Math.PI);
         const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
 
-        // Stage 1: Zoom-out with rotation.
-        console.log(`Stage 1: Zoom-out with rotation.`);
-        if (this.zoom.toFixed(6) !== this.DEFAULT_ZOOM.toFixed(6)) {
-            await this.animateZoomRotation(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration);
-        } else {
-            console.log(`Already at default zoom, skipping rotation.`); // Rotation at default zoom looks weird.
-            await this.animateZoom(this.DEFAULT_ZOOM, zoomOutDuration);
+        if (this.rotation !== this.DEFAULT_ROTATION) {
+            await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUAD)
+        }
+        await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC)
+        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration)
+
+        console.groupEnd();
+    }
+
+    /**
+     * Animates infinite demo loop of traveling to the presets
+     * @param {boolean} random Determines whether presets are looped in order from 1-9 or ordered randomly
+     * @return {Promise<void>}
+     */
+    async animateDemo(random = true) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentNonColorAnimations();
+
+        if (!this.PRESETS.length) {
+            console.warn('No presets defined for Mandelbrot mode ');
+            return;
         }
 
-        // Stage 2: Pan transition.
-        console.log(`Stage 2: Pan transition.`);
-        await this.animatePan(preset.pan, panDuration);
+        this.demoActive = true;
 
-        // Stage 3: Zoom-in with rotation.
-        console.log(`Stage 3: Zoom-in with rotation.`);
-        await this.animateZoomRotation(preset.zoom, zoomInRotation, zoomInDuration);
+        const getNextPresetIndex = (random) => {
+            if (random) {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * this.PRESETS.length);
+                } while (index === currentPresetIndex || index === 0);
+                return index;
+            } else {
+                // Sequential: increment index, but if it wraps to 0, skip to 1.
+                const nextIdx = (currentPresetIndex + 1) % this.PRESETS.length;
+                return nextIdx === 0 ? 1 : nextIdx;
+            }
+        };
 
-        this.stopCurrentNonColorAnimation();
-        this.onAnimationFinished();
+        let currentPresetIndex = 0;
 
-        console.log(this.currentAnimationFrame);
+        // Continue cycling through presets while demo is active.
+        while (this.demoActive) {
+            currentPresetIndex = getNextPresetIndex(random);
+            const currentPreset = this.PRESETS[currentPresetIndex];
+            console.log(`Animating to preset ${currentPresetIndex}`);
+
+            // Animate to the current preset.
+            await this.animateTravelToPresetWithRandomRotation(currentPreset, 1000, 500, 5000);
+
+            // Wait after the animation completes.
+            await asyncDelay(3500);
+        }
+
+        console.log(`Demo interrupted.`);
         console.groupEnd();
     }
 
