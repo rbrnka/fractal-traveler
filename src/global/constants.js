@@ -10,7 +10,7 @@ import {easeInOut, easeInOutCubic, easeInOutQuint} from "./utils";
  * DEBUG MODE. Set to false for prod deployment!
  * @type {boolean}
  */
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
