@@ -67,6 +67,7 @@ export class FractalRenderer {
         this.currentColorAnimationFrame = null;
 
         this.demoActive = false;
+        this.currentPresetIndex = 0;
 
         /**
          * Determines the level of fractal rendering detail
@@ -98,8 +99,15 @@ export class FractalRenderer {
 
     //region > CONTROL METHODS -----------------------------------------------------------------------------------------
 
+    generatePresetIDs() {
+        this.PRESETS.forEach((preset, index) => {
+            preset.id = index;
+        });
+    }
+
     /** WebGL init & initial uniforms setting */
     init() {
+        this.generatePresetIDs();
         this.initGLProgram();  // Initialize WebGL program and uniforms
         this.draw();
     }
@@ -165,8 +173,8 @@ export class FractalRenderer {
      */
     compileShader(source, type) {
         if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        console.log(`Shader GLenum type: ${type}`);
-        console.log(`Shader code: ${source}`);
+        if (DEBUG_MODE) console.log(`Shader GLenum type: ${type}`);
+        if (DEBUG_MODE) console.log(`Shader code: ${source}`);
 
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
@@ -279,6 +287,7 @@ export class FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
         this.extraIterations = 0;
+        this.currentPresetIndex = 0;
         this.resizeCanvas();
         this.draw();
 
@@ -382,15 +391,15 @@ export class FractalRenderer {
         }
     }
 
+    /** Stops current demo and resets demo variables */
     stopDemo() {
         console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         this.demoActive = false;
+        this.currentPresetIndex = 0;
         this.stopCurrentNonColorAnimations();
     }
 
-    /**
-     * Default callback after every animation that requires on-screen info update
-     */
+    /** Default callback after every animation that requires on-screen info update */
     onAnimationFinished() {
         this.resizeCanvas();
 
@@ -538,7 +547,7 @@ export class FractalRenderer {
      *
      * @param {number} targetZoom
      * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction
+     * @param {EASE_TYPE|Function} easeFunction If none is provided, it defaults to exponential.
      * @return {Promise<void>}
      */
     async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
@@ -560,9 +569,14 @@ export class FractalRenderer {
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
-                const easedProgress = easeFunction(progress);
 
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, easedProgress);
+                if (easeFunction !== EASE_TYPE.NONE) {
+                    const easedProgress = easeFunction(progress);
+                    this.zoom = lerp(startZoom, targetZoom, easedProgress);
+                } else {
+                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress); // Default to exponential
+                }
+
                 this.draw();
 
                 updateInfo(true);

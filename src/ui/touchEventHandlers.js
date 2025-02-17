@@ -4,28 +4,34 @@
  * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
  */
 
-import {updateURLParams, clearURLParams, normalizeRotation} from '../global/utils.js';
-import {
-    isJuliaMode,
-    resetActivePresetIndex,
-    resetPresetAndDiveButtonStates,
-    updateInfo
-} from './ui.js';
+import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
 
-let fractalApp;
+/** How long should we wait before distinguish between double tap and two single taps. */
+const DOUBLE_TAP_THRESHOLD = 300;
+/** Tolerance of finger movements before drag starts with move gesture. */
+const DRAG_THRESHOLD = 5;
+const ZOOM_STEP = 0.05;
+/** Tolerance of finger movements before rotation starts with pinch gesture. */
+const ROTATION_THRESHOLD = 0.05;
+const ROTATION_SENSITIVITY = 1;
+
 let canvas;
+let fractalApp;
+
+/** Global variable to track registration */
 let touchHandlersRegistered = false;
 
-// Store references to touch event handler functions
+// Stored references to event handler functions
 let handleTouchStartEvent;
 let handleTouchMoveEvent;
 let handleTouchEndEvent;
 
-let isTouchDragging = false;
-let touchClickTimeout = null;
 let touchDownX = 0, touchDownY = 0;
 let lastTouchX = 0, lastTouchY = 0;
+let touchClickTimeout = null;
+let isTouchDragging = false;
 
 // Pinch state variables
 let isPinching = false;
@@ -34,11 +40,6 @@ let pinchStartZoom = null;
 let pinchStartPan = null;
 let pinchStartCenterFractal = null;
 let pinchStartAngle = null;
-
-const dragThreshold = 5;
-const doubleTapThreshold = 300;
-const ZOOM_STEP = 0.05;
-const ROTATION_SENSITIVITY = 1;
 
 /**
  * Initialization and registering of the event handlers.
@@ -130,7 +131,7 @@ function handleTouchMove(event) {
         const dx = touch.clientX - touchDownX;
         const dy = touch.clientY - touchDownY;
 
-        if (!isTouchDragging && (Math.abs(dx) > dragThreshold || Math.abs(dy) > dragThreshold)) {
+        if (!isTouchDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isTouchDragging = true;
             if (touchClickTimeout) {
                 clearTimeout(touchClickTimeout);
@@ -140,22 +141,21 @@ function handleTouchMove(event) {
 
         if (isTouchDragging) {
             const rect = canvas.getBoundingClientRect();
-            const moveX = touch.clientX - lastTouchX;
-            const moveY = touch.clientY - lastTouchY;
+            // Calculate pan delta from the current and last touch positions.
+            const [deltaX, deltaY] = calculatePanDelta(
+                touch.clientX, touch.clientY, lastTouchX, lastTouchY, rect,
+                fractalApp.rotation, fractalApp.zoom
+            );
 
-            const cosR = Math.cos(-fractalApp.rotation);
-            const sinR = Math.sin(-fractalApp.rotation);
-            const rotatedMoveX = cosR * moveX - sinR * moveY; // Apply rotation matrix
-            const rotatedMoveY = sinR * moveX + cosR * moveY;
+            fractalApp.pan[0] += deltaX;
+            fractalApp.pan[1] += deltaY;
 
-            fractalApp.pan[0] -= (rotatedMoveX / rect.width) * fractalApp.zoom;
-            fractalApp.pan[1] += (rotatedMoveY / rect.height) * fractalApp.zoom;
-
+            // Update last touch coordinates.
             lastTouchX = touch.clientX;
             lastTouchY = touch.clientY;
 
             fractalApp.draw();
-            updateInfo();
+            updateInfo(true);
         }
         return;
     }
@@ -190,12 +190,14 @@ function handleTouchMove(event) {
         }
 
         // Update zoom from pinch distance.
-        const zoomFactor = pinchStartDistance / currentDistance;
-        fractalApp.zoom = pinchStartZoom * zoomFactor;
+        const targetZoom = pinchStartDistance / currentDistance * pinchStartZoom;
+        if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
+            fractalApp.zoom = targetZoom;
+        }
 
         // Update rotation.
         const angleDifference = currentAngle - pinchStartAngle;
-        if (Math.abs(angleDifference) > 0.05) {
+        if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
             fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
         }
 
@@ -241,34 +243,31 @@ function handleTouchEnd(event) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
 
-                console.log(`Double-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
+                console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} which is fractal coords [${expandComplexToString([fx, fy])}]`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(() => {
-                        resetPresetAndDiveButtonStates();
-                        resetActivePresetIndex();
-                        clearURLParams();
-                    });
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
                 }
             } else {
                 touchClickTimeout = setTimeout(() => {
-                    console.log(`Single-tap: Centering on ${touchX}, ${touchY} -> fractal coords ${fx}, ${fy}`);
-                    if (isJuliaMode()) {
-                        updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
-                    } else {
-                        updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
-                    }
-                    fractalApp.animatePan([fx, fy], 500).then(() => {
-                        resetPresetAndDiveButtonStates();
-                        resetActivePresetIndex();
+                    console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} which is fractal coords ${expandComplexToString([fx, fy])}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+                    // Centering action:
+                    fractalApp.animatePanTo([fx, fy], 400).then(() => {
+                        resetAppState();
+                        if (isJuliaMode()) {
+                            updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                        } else {
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                        }
                     });
+
                     touchClickTimeout = null;
-                }, doubleTapThreshold);
+                }, DOUBLE_TAP_THRESHOLD);
             }
         }
-        resetPresetAndDiveButtonStates();
-        resetActivePresetIndex();
-        clearURLParams();
+        resetAppState();
         isTouchDragging = false;
     }
 }

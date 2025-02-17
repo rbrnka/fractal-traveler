@@ -1,142 +1,121 @@
-// src/tests/mouseEventHandlers.test.js
+// __tests__/mouseEventHandlers.test.js
+import {initMouseHandlers, unregisterMouseEventHandlers} from '../ui/mouseEventHandlers';
+import {mouseLeftDownEvent, mouseLeftMoveEvent, mouseLeftUpEvent, mouseWheelYEvent} from "./eventDefaults";
 
-import { registerMouseEventHandlers } from '../mouseEventHandlers.js';
-import {clearURLParams} from "../utils";
-
-beforeAll(() => {
-    // If clipboard isn't defined, set up a mock implementation.
-    if (!navigator.clipboard) {
-        navigator.clipboard = {
-            writeText: jest.fn().mockResolvedValue(),
-        };
-    } else {
-        // If it is defined, you can spy on it:
-        jest.spyOn(navigator.clipboard, 'writeText').mockResolvedValue();
-    }
-});
-
-
-describe('Mouse Event Handlers', () => {
+describe('MouseEventHandlers', () => {
     let canvas, fractalApp;
 
     beforeEach(() => {
-        // Set up a basic DOM structure.
-        document.body.innerHTML = `
-      <canvas id="fractalCanvas" width="800" height="600"></canvas>
-    `;
-        canvas = document.getElementById('fractalCanvas');
+        // Clear document body and create a dummy canvas.
+        document.body.innerHTML = '';
+        canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        canvas.id = 'fractalCanvas';
+        document.body.appendChild(canvas);
 
-        // Create a dummy fractalApp with the minimum properties needed.
+        // Create a mock fractalApp with required properties and methods.
         fractalApp = {
             canvas,
-            pan: [-0.5, 0.0],
-            zoom: 3.0,
+            MAX_ZOOM: 0.000017,
+            MIN_ZOOM: 40,
+            pan: [0, 0],
+            c: [0, 0],
+            rotation: 0,
+            zoom: 3.5,
             draw: jest.fn(),
-            animatePanAndZoomTo: jest.fn(),
-            // For testing, a simple screenToFractal that just does a trivial conversion:
-            screenToFractal: (x, y) => {
-                // For example, map center of canvas (400,300) to the current pan.
-                // Here we simply return [x/100, y/100] for testing purposes.
-                return [x / 100, y / 100];
-            }
+            updateInfo: jest.fn(),
+            updateJuliaSliders: jest.fn(),
+            screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
+            stopCurrentNonColorAnimations: jest.fn(),
+            // If needed, other methods can be mocked.
+            animatePanTo: jest.fn(() => Promise.resolve()),
+            animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
         };
 
-        // Ensure that URL parameters are cleared before tests.
-        clearURLParams();
+        // Ensure mouse handlers are not already registered.
+        unregisterMouseEventHandlers();
+        // Initialize mouse handlers
+        initMouseHandlers(fractalApp);
 
-        // Register the mouse event handlers on the dummy fractalApp.
-        registerMouseEventHandlers(fractalApp);
+        // Use fake timers to simulate time passage.
+        jest.useFakeTimers();
     });
 
     afterEach(() => {
-        // Clear any timeouts if needed.
-        jest.clearAllTimers();
+        // Clean up by removing the canvas.
+        if (canvas && canvas.parentNode) {
+            canvas.parentNode.removeChild(canvas);
+        }
+        document.body.innerHTML = '';
+
+        jest.useRealTimers();
     });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should register mouse event handlers and respond to mousemove (panning)', async () => {
 
-    test('wheel event should update zoom and call draw', () => {
-        // Set up an initial zoom value.
-        fractalApp.zoom = 3.0;
-        fractalApp.pan = [-0.5, 0.0];
+        canvas.dispatchEvent(mouseLeftDownEvent(100, 100));
+        jest.advanceTimersByTime(100);
+        canvas.dispatchEvent(mouseLeftMoveEvent(200, 200));
+        jest.advanceTimersByTime(100);
+        canvas.dispatchEvent(mouseLeftUpEvent(200, 200));
 
-        // Create a wheel event with deltaY > 0 (e.g., simulating a zoom out)
-        const wheelEvent = new WheelEvent('wheel', {
-            deltaY: 100,
-            clientX: 400, // center
-            clientY: 300, // center
-            bubbles: true
-        });
+        jest.runAllTimers();
+        await Promise.resolve();
 
-        canvas.dispatchEvent(wheelEvent);
-
-        // Check that draw has been called (meaning the event was processed)
-        expect(fractalApp.draw).toHaveBeenCalled();
-
-        // Also verify that zoom has been updated (it should not equal the original 3.0).
-        expect(fractalApp.zoom).not.toEqual(3.0);
+        expect(fractalApp.pan[0]).not.toEqual(0);
+        expect(fractalApp.pan[1]).not.toEqual(0);
     });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should register mouse event handlers and respond to single click (pan)', async () => {
 
-    test('mousedown and mousemove should pan the fractal and call draw', () => {
-        // Set up starting positions.
-        fractalApp.zoom = 3.0;
-        fractalApp.pan = [-0.5, 0.0];
+        canvas.dispatchEvent(mouseLeftDownEvent());
+        jest.advanceTimersByTime(50);
+        canvas.dispatchEvent(mouseLeftUpEvent());
 
-        // Simulate mousedown on the canvas with left button.
-        const mousedownEvent = new MouseEvent('mousedown', {
-            button: 0,
-            clientX: 100,
-            clientY: 100,
-            bubbles: true
-        });
-        canvas.dispatchEvent(mousedownEvent);
+        jest.runAllTimers();
+        await Promise.resolve();
 
-        // Simulate a mousemove that exceeds the drag threshold.
-        const mousemoveEvent = new MouseEvent('mousemove', {
-            buttons: 1,
-            clientX: 200,
-            clientY: 200,
-            bubbles: true
-        });
-        canvas.dispatchEvent(mousemoveEvent);
-
-        // Check that draw is called, indicating that panning occurred.
-        expect(fractalApp.draw).toHaveBeenCalled();
-
-        // And since panning adjusts values, the pan should be updated.
-        expect(fractalApp.pan[0]).not.toEqual(-0.5);
-        expect(fractalApp.pan[1]).not.toEqual(0.0);
+        expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should register mouse event handlers and respond to double click (zoom-in/out)', async () => {
 
-    test('mouseup without drag triggers click action (single-click center)', (done) => {
-        // Simulate a click (no significant movement)
-        fractalApp.zoom = 3.0;
-        fractalApp.pan = [-0.5, 0.0];
+        canvas.dispatchEvent(mouseLeftDownEvent());
+        canvas.dispatchEvent(mouseLeftUpEvent());
 
-        // Simulate mousedown.
-        const mousedownEvent = new MouseEvent('mousedown', {
-            button: 0,
-            clientX: 300,
-            clientY: 300,
-            bubbles: true
-        });
-        canvas.dispatchEvent(mousedownEvent);
+        jest.advanceTimersByTime(100);
 
-        // Immediately simulate mouseup, indicating a click.
-        const mouseupEvent = new MouseEvent('mouseup', {
-            button: 0,
-            clientX: 300,
-            clientY: 300,
-            bubbles: true
-        });
-        canvas.dispatchEvent(mouseupEvent);
+        canvas.dispatchEvent(mouseLeftDownEvent());
+        canvas.dispatchEvent(mouseLeftUpEvent());
 
-        // Our mouseup handler uses a timeout for the single click action.
-        // Wait a little longer than the doubleClickThreshold (300ms) to let the timeout complete.
-        setTimeout(() => {
-            // We expect that updateURLParams was called and animatePanAndZoomTo was used to center.
-            // Since we cannot directly verify updateURLParams without a spy unless we mock it,
-            // we check that animatePanAndZoomTo was called.
-            expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
-            done();
-        }, 350);
+        // Advance timers to trigger any pending timeouts.
+        jest.runAllTimers();
+        // Wait for any pending promises in the event handler.
+        await Promise.resolve();
+
+        expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
     });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should register and then unregister mouse event handlers', async () => {
+        // Unregister event handlers.
+        unregisterMouseEventHandlers();
+
+        canvas.dispatchEvent(mouseLeftDownEvent());
+        canvas.dispatchEvent(mouseLeftUpEvent());
+
+        jest.runAllTimers();
+        // Wait for any pending promises in the event handler.
+        await Promise.resolve();
+
+        // Expect that after unregistration, the handlers are not called.
+        expect(fractalApp.animatePanTo).not.toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should handle wheel events for zooming/panning', () => {
+        let zoom = fractalApp.zoom;
+        canvas.dispatchEvent(mouseWheelYEvent());
+        expect(zoom).not.toEqual(fractalApp.zoom);
+    });
+    // -----------------------------------------------------------------------------------------------------------------
 });

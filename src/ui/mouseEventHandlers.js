@@ -4,13 +4,19 @@
  * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
  */
 
-import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
-import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 
+/** How long should we wait before distinguish between double click and two single clicks. */
 const DOUBLE_CLICK_THRESHOLD = 300;
+/** Tolerance of mouse movement before drag starts. */
 const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // Common for both zoom-in and out
+const ROTATION_SENSITIVITY = 0.01;
+
+let canvas;
+let fractalApp;
 
 /** Global variable to track registration */
 let mouseHandlersRegistered = false;
@@ -21,13 +27,11 @@ let handleMouseDownEvent;
 let handleMouseMoveEvent;
 let handleMouseUpEvent;
 
-let canvas;
-let fractalApp;
-
 let mouseDownX = 0, mouseDownY = 0;
 let lastX = 0, lastY = 0;
 let clickTimeout = null;
 let isDragging = false;
+let wasRotated = false;
 
 // Rotation
 let isRightDragging = false;
@@ -39,7 +43,7 @@ let startX = 0;
  */
 export function initMouseHandlers(app) {
     fractalApp = app;
-    canvas = fractalApp.canvas;
+    canvas = app.canvas;
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     registerMouseEventHandlers(app);
@@ -126,16 +130,15 @@ function handleMouseDown(event) {
         lastX = event.clientX;
         lastY = event.clientY;
     } else if (event.button === 2) { // Right-click
-        isRightDragging = true;
         startX = event.clientX;
     }
 }
 
 function handleMouseMove(event) {
-    if (event.buttons === 1) {
-        const dx = event.clientX - mouseDownX;
-        const dy = event.clientY - mouseDownY;
+    const dx = event.clientX - mouseDownX;
+    const dy = event.clientY - mouseDownY;
 
+    if (event.buttons === 1) {
         if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isDragging = true;
         }
@@ -148,38 +151,42 @@ function handleMouseMove(event) {
             }
 
             const rect = canvas.getBoundingClientRect();
-            const moveX = event.clientX - lastX;
-            const moveY = event.clientY - lastY;
+            // Calculate pan delta from the current and last mouse positions.
+            const [deltaX, deltaY] = calculatePanDelta(
+                event.clientX, event.clientY, lastX, lastY, rect,
+                fractalApp.rotation, fractalApp.zoom
+            );
 
-            // Adjust panning to account for rotation
-            const cosR = Math.cos(-fractalApp.rotation); // Negative for counterclockwise rotation
-            const sinR = Math.sin(-fractalApp.rotation);
-            const rotatedMoveX = cosR * moveX - sinR * moveY; // Apply rotation matrix
-            const rotatedMoveY = sinR * moveX + cosR * moveY;
+            fractalApp.pan[0] += deltaX;
+            fractalApp.pan[1] += deltaY;
 
-            fractalApp.pan[0] -= (rotatedMoveX / rect.width) * fractalApp.zoom;
-            fractalApp.pan[1] += (rotatedMoveY / rect.height) * fractalApp.zoom;
-
+            // Update last mouse coordinates.
             lastX = event.clientX;
             lastY = event.clientY;
 
             fractalApp.draw();
-            updateInfo();
+            updateInfo(true);
         }
     }
 
-    if (isRightDragging) {
-        event.preventDefault(); // Prevent default actions during dragging
-        const deltaX = event.clientX - startX;
-        const rotationSpeed = 0.01; // Adjust rotation speed as needed
+    if (event.buttons === 2) {
 
-        fractalApp.rotation += deltaX * rotationSpeed;
-        fractalApp.rotation = normalizeRotation(fractalApp.rotation);
+        if (!isRightDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
+            isRightDragging = true;
+        }
 
-        startX = event.clientX; // Update starting point for smooth rotation
-        canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
-        fractalApp.draw(); // Redraw with the updated rotation
-        updateInfo();
+        if (isRightDragging) {
+            event.preventDefault(); // Prevent default actions during dragging
+            const deltaX = event.clientX - startX;
+
+            fractalApp.rotation = normalizeRotation(fractalApp.rotation + deltaX * ROTATION_SENSITIVITY);
+            fractalApp.draw(); // Redraw with the updated rotation
+
+            startX = event.clientX; // Update starting point for smooth rotation
+            wasRotated = true;
+            canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
+            updateInfo();
+        }
     }
 }
 
@@ -210,11 +217,12 @@ function handleMouseUp(event) {
                 clearTimeout(clickTimeout);
                 clickTimeout = null;
 
-                console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}]`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
+                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
+                } else {
+                    console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
                 }
             } else {
                 // Set a timeout for the single-click action.
@@ -251,7 +259,10 @@ function handleMouseUp(event) {
         if (isRightDragging) {
             isRightDragging = false;
 
-            resetAppState();
+            if (DEBUG_MODE) console.log(`%c handleMouseUp: %c Single Right Click: Doing nothing.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+
+            if (wasRotated) resetAppState();
+            wasRotated = false;
             // Reset cursor to default after rotation ends
             canvas.style.cursor = 'crosshair';
             return; // Prevent further processing if it was a drag
@@ -268,10 +279,12 @@ function handleMouseUp(event) {
             clearTimeout(clickTimeout);
             clickTimeout = null;
 
-            console.log("Double Right Click: Zooming out");
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
+                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
                 fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
+            } else {
+                console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
             }
         } else {
             // Set timeout for single click

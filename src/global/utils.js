@@ -63,7 +63,7 @@ export function loadFractalParamsFromURL() {
 
     if (!hash) {
         if (DEBUG_MODE) console.log(`No hash found in the URL, return default mode.`);
-        console.groupEnd();
+        if (DEBUG_MODE) console.groupEnd();
         return {mode: FRACTAL_TYPE.MANDELBROT}; // Return default if no hash is present
     }
 
@@ -72,7 +72,7 @@ export function loadFractalParamsFromURL() {
 
     if (!queryString) {
         if (DEBUG_MODE) console.log(`No query string is found in the URL, returning mode only.`);
-        console.groupEnd();
+        if (DEBUG_MODE) console.groupEnd();
         return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT};
     }
 
@@ -85,7 +85,7 @@ export function loadFractalParamsFromURL() {
         const decodedParams = JSON.parse(atob(encodedParams));
         if (DEBUG_MODE) console.log(`Decoded params: ${JSON.stringify(decodedParams)}`);
         urlParamsSet = true;
-        console.groupEnd();
+        if (DEBUG_MODE) console.groupEnd();
         // Return the parsed parameters
         return {
             mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT,
@@ -99,7 +99,7 @@ export function loadFractalParamsFromURL() {
     } catch (e) {
         console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         urlParamsSet = true;
-        console.groupEnd();
+        if (DEBUG_MODE) console.groupEnd();
         return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT}; // Return only the mode if no query string is found
     }
 }
@@ -147,15 +147,21 @@ export function expandComplexToString(c, precision = 6, withI = true) {
     if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     const invalidValues = [NaN, undefined, null, ''];
+    const isNumber = (value) => {
+        return typeof value === 'number' && isFinite(value)
+    };
+
     let expanded = `[`;
 
-    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1])) {
-        expanded += `?, ?`;
-        console.warn(`Invalid complex number: ${c}`);
+    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0] || !isNumber(c[1]))) {
+        expanded += `?, ?]`;
+        console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        return expanded;
     } else {
         expanded += `${c[0].toFixed(precision)}, ${c[1].toFixed(precision)}`;
     }
-    console.groupEnd();
+
+    if (DEBUG_MODE) console.groupEnd();
     return expanded + (withI ? 'i]' : ']');
 }
 
@@ -363,4 +369,35 @@ export function getAnimationDuration(seed, current, target, weights = {}) {
  */
 export async function asyncDelay(timeout) {
     return new Promise(resolve => setTimeout(resolve, timeout));
+}
+
+/**
+ * Calculates the change in pan based on the movement delta, the canvas rectangle, current zoom, and rotation.
+ *
+ * @param {number} currentX The current X coordinate (clientX or touch.clientX).
+ * @param {number} currentY The current Y coordinate.
+ * @param {number} lastX The previous X coordinate.
+ * @param {number} lastY The previous Y coordinate.
+ * @param {DOMRect} rect The canvas bounding rectangle.
+ * @param {number} rotation The current rotation (in radians).
+ * @param {number} zoom The current zoom factor.
+ * @returns {Array<number>} An array [deltaPanX, deltaPanY] that should be added to the current pan.
+ */
+export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotation, zoom) {
+    const moveX = currentX - lastX;
+    const moveY = currentY - lastY;
+
+    const ref = Math.min(rect.width, rect.height);
+
+    // Apply inverse rotation to the movement, so it aligns with fractal pan direction.
+    const cosR = Math.cos(-rotation);
+    const sinR = Math.sin(-rotation);
+    const rotatedMoveX = cosR * moveX - sinR * moveY;
+    const rotatedMoveY = sinR * moveX + cosR * moveY;
+
+    // Scale movement relative to canvas size and zoom.
+    const deltaPanX = -(rotatedMoveX /ref) * zoom;
+    const deltaPanY = +(rotatedMoveY / ref) * zoom;
+
+    return [deltaPanX, deltaPanY];
 }

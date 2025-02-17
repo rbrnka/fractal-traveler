@@ -387,6 +387,8 @@ export class JuliaRenderer extends FractalRenderer {
             this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
         ]);
 
+        this.currentPresetIndex = preset.id || 0;
+
         console.groupEnd();
     }
 
