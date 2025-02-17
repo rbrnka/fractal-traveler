@@ -147,14 +147,20 @@ export function expandComplexToString(c, precision = 6, withI = true) {
     if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     const invalidValues = [NaN, undefined, null, ''];
+    const isNumber = (value) => {
+        return typeof value === 'number' && isFinite(value)
+    };
+
     let expanded = `[`;
 
-    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1])) {
-        expanded += `?, ?`;
+    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0] || !isNumber(c[1]))) {
+        expanded += `?, ?]`;
         console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        return expanded;
     } else {
         expanded += `${c[0].toFixed(precision)}, ${c[1].toFixed(precision)}`;
     }
+
     if (DEBUG_MODE) console.groupEnd();
     return expanded + (withI ? 'i]' : ']');
 }
@@ -381,6 +387,8 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
     const moveX = currentX - lastX;
     const moveY = currentY - lastY;
 
+    const ref = Math.min(rect.width, rect.height);
+
     // Apply inverse rotation to the movement, so it aligns with fractal pan direction.
     const cosR = Math.cos(-rotation);
     const sinR = Math.sin(-rotation);
@@ -388,8 +396,8 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
     const rotatedMoveY = sinR * moveX + cosR * moveY;
 
     // Scale movement relative to canvas size and zoom.
-    const deltaPanX = - (rotatedMoveX / rect.width) * zoom;
-    const deltaPanY = + (rotatedMoveY / rect.height) * zoom;
+    const deltaPanX = -(rotatedMoveX /ref) * zoom;
+    const deltaPanY = +(rotatedMoveY / ref) * zoom;
 
     return [deltaPanX, deltaPanY];
 }
