@@ -1,95 +1,145 @@
-// src/tests/utils.test.js
-import { updateURLParams, loadFractalParamsFromURL, clearURLParams, isMobile } from '../utils.js';
+// __tests__/utils.test.js
 
-describe('Utils Module', () => {
-    // Helper: Setup a fake URL on window.location
-    function setFakeURL(search) {
-        Object.defineProperty(window, 'location', {
-            value: {
-                search,
-                protocol: 'http:',
-                host: 'localhost',
-                pathname: '/index.html',
-                hash: ''
-            },
-            writable: true,
+// Mock constants used in the file.
+import {
+    asyncDelay, calculatePanDelta,
+    compareComplex,
+    comparePalettes,
+    easeInOut, easeInOutCubic, easeInOutQuint,
+    expandComplexToString, getAnimationDuration,
+    hsbToRgb,
+    hslToRgb, lerp, normalizeRotation,
+    rgbToHsl
+} from "../global/utils";
+
+
+describe('Utils', () => {
+    describe('expandComplexToString', () => {
+        test('returns formatted string for valid complex number', () => {
+            const result = expandComplexToString([1.23456789, -0.987654321], 4, true);
+            expect(result).toBe(`[1.2346, -0.9877i]`);
         });
-    }
-
-    beforeEach(() => {
-        // Reset location
-        setFakeURL('');
-        window.history.replaceState({}, '', '/index.html');
+        test('returns "[]" for invalid complex number', () => {
+            const result = expandComplexToString([NaN, 0.5]);
+            expect(result).toBe('[?, ?]');
+        });
     });
 
-    test('updateURLParams should update URL parameters', () => {
-        // Mock pushState to update window.location.search
-        const pushStateMock = jest.spyOn(window.history, 'pushState').mockImplementation((state, title, url) => {
-            // Simulate updating the URL's search string
-            window.location.search = url.split('?')[1] || '';
+    describe('compareComplex', () => {
+        test('returns true for equal complex numbers with given precision', () => {
+            const c1 = [1.234567, -0.987654];
+            const c2 = [1.234568, -0.987653];
+            expect(compareComplex(c1, c2, 5)).toBe(true);
         });
-
-        updateURLParams(0.123456, 0.654321, 3.0);
-
-        const params = new URLSearchParams(window.location.search);
-        expect(params.get('cx')).toBe('0.123456');
-        expect(params.get('cy')).toBe('0.654321');
-        expect(params.get('zoom')).toBe('3.000000');
-
-        pushStateMock.mockRestore();
+        test('returns false when complex numbers differ', () => {
+            const c1 = [1.23, -0.98];
+            const c2 = [1.24, -0.98];
+            expect(compareComplex(c1, c2, 2)).toBe(false);
+        });
     });
 
-    test('loadFractalParamsFromURL should load parameters into fractalApp', () => {
-        setFakeURL('?cx=0.111111&cy=0.222222&zoom=3.333333');
-        const fractalAppMock = {
-            pan: [0, 0],
-            zoom: 0
-        };
-
-        loadFractalParamsFromURL(fractalAppMock);
-        expect(fractalAppMock.pan[0]).toBeCloseTo(0.111111, 6);
-        expect(fractalAppMock.pan[1]).toBeCloseTo(0.222222, 6);
-        expect(fractalAppMock.zoom).toBeCloseTo(3.333333, 6);
+    describe('comparePalettes', () => {
+        test('returns true for identical palettes', () => {
+            const p1 = [0.1, 0.2, 0.3];
+            const p2 = [0.1, 0.2, 0.3];
+            expect(comparePalettes(p1, p2, 6)).toBe(true);
+        });
+        test('returns false for different palettes', () => {
+            const p1 = [0.1, 0.2, 0.3];
+            const p2 = [0.1, 0.2, 0.4];
+            expect(comparePalettes(p1, p2, 6)).toBe(false);
+        });
     });
 
-    test('clearURLParams should remove URL parameters if they were set', () => {
-        // First, we call updateURLParams so that the flag is set.
-        const pushStateMock = jest.spyOn(window.history, 'pushState').mockImplementation((state, title, url) => {
-            window.location.search = url.split('?')[1] || '';
+    describe('hsbToRgb', () => {
+        test('converts hsb to rgb correctly', () => {
+            // Test with a known value.
+            const rgb = hsbToRgb(0, 1, 1);
+            // hsb (0,1,1) should be red: [1,0,0]
+            expect(rgb.map(v => parseFloat(v.toFixed(2)))).toEqual([1, 0, 0]);
         });
-        updateURLParams(0.123456, 0.654321, 3.0);
-        pushStateMock.mockRestore();
-
-        // Now, mock replaceState to update window.location.
-        const replaceStateMock = jest.spyOn(window.history, 'replaceState').mockImplementation((state, title, url) => {
-            window.location = new URL(url, 'http://localhost');
-        });
-        clearURLParams();
-        expect(window.location.search).toBe('');
-        replaceStateMock.mockRestore();
     });
 
-    test('isMobile returns correct values based on userAgent', () => {
-        const originalUserAgent = navigator.userAgent;
-
-        // Mobile UA test.
-        Object.defineProperty(navigator, 'userAgent', {
-            value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko)',
-            configurable: true
+    describe('hslToRgb and rgbToHsl', () => {
+        test('hslToRgb converts and rgbToHsl reverses', () => {
+            const hsl = [0.33, 0.5, 0.5];
+            const rgb = hslToRgb(...hsl);
+            const hsl2 = rgbToHsl(...rgb);
+            // Allow for small rounding differences.
+            expect(hsl2.map(v => parseFloat(v.toFixed(2)))).toEqual(hsl.map(v => parseFloat(v.toFixed(2))));
         });
-        expect(isMobile()).toBe(true);
+    });
 
-        // Desktop UA test.
-        Object.defineProperty(navigator, 'userAgent', {
-            value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36',
-            configurable: true
+    describe('easing functions', () => {
+        test('easeInOut returns expected value', () => {
+            expect(easeInOut(0)).toBe(0);
+            expect(easeInOut(1)).toBe(1);
+            // Intermediate value
+            expect(easeInOut(0.5)).toBeCloseTo(0.5);
         });
-        expect(isMobile()).toBe(false);
 
-        // Restore the original UA.
-        Object.defineProperty(navigator, 'userAgent', {
-            value: originalUserAgent,
-            configurable: true
+        test('easeInOutCubic returns expected value', () => {
+            expect(easeInOutCubic(0)).toBe(0);
+            expect(easeInOutCubic(1)).toBe(1);
+            expect(easeInOutCubic(0.5)).toBeCloseTo(0.5, 1);
+        });
+
+        test('easeInOutQuint returns expected value', () => {
+            expect(easeInOutQuint(0)).toBe(0);
+            expect(easeInOutQuint(1)).toBe(1);
+            expect(easeInOutQuint(0.5)).toBeCloseTo(0.5, 1);
+        });
+    });
+
+    describe('lerp', () => {
+        test('lerp interpolates linearly', () => {
+            expect(lerp(0, 10, 0.5)).toBe(5);
+        });
+    });
+
+    describe('normalizeRotation', () => {
+        test('returns a value between 0 and 2*PI', () => {
+            const twoPi = 2 * Math.PI;
+            expect(normalizeRotation(-1)).toBeGreaterThanOrEqual(0);
+            expect(normalizeRotation(-1)).toBeLessThan(twoPi);
+            expect(normalizeRotation(7)).toBeGreaterThanOrEqual(0);
+            expect(normalizeRotation(7)).toBeLessThan(twoPi);
+        });
+    });
+
+    describe('getAnimationDuration', () => {
+        test('calculates duration for given parameters', () => {
+            const current = { pan: [0, 0], zoom: 1, c: [0, 0] };
+            const target = { pan: [3, 4], zoom: 2, c: [1, 1] };
+            // For a seed of 100, duration should be roughly proportional to the weighted sum of differences.
+            const duration = getAnimationDuration(100, current, target, { pan: 1, zoom: 1, c: 1 });
+            expect(typeof duration).toBe('number');
+            expect(duration).toBeGreaterThan(0);
+        });
+    });
+
+    describe('asyncDelay', () => {
+        jest.useFakeTimers();
+
+        test('resolves after delay', async () => {
+            const promise = asyncDelay(1000);
+            jest.advanceTimersByTime(1000);
+            await expect(promise).resolves.toBeUndefined();
+        });
+
+        afterEach(() => {
+            jest.useRealTimers();
+        });
+    });
+
+    describe('calculatePanDelta', () => {
+        test('calculates correct delta given movement', () => {
+            const rect = { width: 800, height: 600 };
+            // No rotation, zoom 1.
+            const [deltaX, deltaY] = calculatePanDelta(410, 310, 400, 300, rect, 0, 1);
+            // Movement: 10,10; normalized: 10/800 and 10/600 respectively.
+            expect(deltaX).toBeCloseTo(-10/800);
+            expect(deltaY).toBeCloseTo(10/600);
         });
     });
 });
