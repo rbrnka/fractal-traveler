@@ -4,13 +4,19 @@
  * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
  */
 
-import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
 import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
 
+/** How long should we wait before distinguish between double click and two single clicks. */
 const DOUBLE_CLICK_THRESHOLD = 300;
+/** Tolerance of mouse movement before drag starts. */
 const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // Common for both zoom-in and out
+const ROTATION_SENSITIVITY = 0.01;
+
+let canvas;
+let fractalApp;
 
 /** Global variable to track registration */
 let mouseHandlersRegistered = false;
@@ -20,9 +26,6 @@ let handleWheelEvent;
 let handleMouseDownEvent;
 let handleMouseMoveEvent;
 let handleMouseUpEvent;
-
-let canvas;
-let fractalApp;
 
 let mouseDownX = 0, mouseDownY = 0;
 let lastX = 0, lastY = 0;
@@ -39,7 +42,7 @@ let startX = 0;
  */
 export function initMouseHandlers(app) {
     fractalApp = app;
-    canvas = fractalApp.canvas;
+    canvas = app.canvas;
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
     registerMouseEventHandlers(app);
@@ -148,33 +151,29 @@ function handleMouseMove(event) {
             }
 
             const rect = canvas.getBoundingClientRect();
-            const moveX = event.clientX - lastX;
-            const moveY = event.clientY - lastY;
+            // Calculate pan delta from the current and last mouse positions.
+            const [deltaX, deltaY] = calculatePanDelta(
+                event.clientX, event.clientY, lastX, lastY, rect,
+                fractalApp.rotation, fractalApp.zoom
+            );
 
-            // Adjust panning to account for rotation
-            const cosR = Math.cos(-fractalApp.rotation); // Negative for counterclockwise rotation
-            const sinR = Math.sin(-fractalApp.rotation);
-            const rotatedMoveX = cosR * moveX - sinR * moveY; // Apply rotation matrix
-            const rotatedMoveY = sinR * moveX + cosR * moveY;
+            fractalApp.pan[0] += deltaX;
+            fractalApp.pan[1] += deltaY;
 
-            fractalApp.pan[0] -= (rotatedMoveX / rect.width) * fractalApp.zoom;
-            fractalApp.pan[1] += (rotatedMoveY / rect.height) * fractalApp.zoom;
-
+            // Update last mouse coordinates.
             lastX = event.clientX;
             lastY = event.clientY;
 
             fractalApp.draw();
-            updateInfo();
+            updateInfo(true);
         }
     }
 
     if (isRightDragging) {
         event.preventDefault(); // Prevent default actions during dragging
         const deltaX = event.clientX - startX;
-        const rotationSpeed = 0.01; // Adjust rotation speed as needed
 
-        fractalApp.rotation += deltaX * rotationSpeed;
-        fractalApp.rotation = normalizeRotation(fractalApp.rotation);
+        fractalApp.rotation = normalizeRotation(fractalApp.rotation + deltaX * ROTATION_SENSITIVITY);
 
         startX = event.clientX; // Update starting point for smooth rotation
         canvas.style.cursor = 'grabbing'; // Use a grabbing cursor for rotation
