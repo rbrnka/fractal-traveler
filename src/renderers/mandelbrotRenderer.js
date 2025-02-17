@@ -1,5 +1,5 @@
 import {FractalRenderer} from './fractalRenderer.js';
-import {asyncDelay} from "../global/utils";
+import {asyncDelay, compareComplex} from "../global/utils";
 import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
 
 /**
@@ -131,11 +131,23 @@ export class MandelbrotRenderer extends FractalRenderer {
 
         const targetRotation = preset.rotation || 0;
 
-        await this.animateZoomTo(this.DEFAULT_ZOOM, zoomOutDuration)
+        if (preset.zoom.toFixed(6) === this.zoom.toFixed(6)) {
+            // If only pan is changed, adjust pan
+            await this.animatePanTo(preset.pan, zoomOutDuration);
+        } else if (compareComplex(preset.pan, this.pan)) {
+            // If only zoom is changed, adjust zoom-in
+            await this.animateZoomTo(preset.zoom, zoomOutDuration);
+        } else {
+            // Otherwise zoom-out
+            await this.animateZoomTo(this.DEFAULT_ZOOM, zoomOutDuration);
+        }
+
         await Promise.all([
             this.animatePanThenZoomTo(preset.pan, preset.zoom, 500, zoomInDuration, EASE_TYPE.QUAD),
             this.animateRotationTo(targetRotation, 500, EASE_TYPE.QUINT)
         ]);
+
+        this.currentPresetIndex = preset.id || 0;
 
         console.log(`Travel complete.`);
         console.groupEnd();
@@ -162,8 +174,11 @@ export class MandelbrotRenderer extends FractalRenderer {
         if (this.rotation !== this.DEFAULT_ROTATION) {
             await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUAD)
         }
-        await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC)
-        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration)
+
+        await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
+        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration);
+
+        this.currentPresetIndex = preset.id || 0;
 
         console.groupEnd();
     }
@@ -189,22 +204,20 @@ export class MandelbrotRenderer extends FractalRenderer {
                 let index;
                 do {
                     index = Math.floor(Math.random() * this.PRESETS.length);
-                } while (index === currentPresetIndex || index === 0);
+                } while (index === this.currentPresetIndex || index === 0);
                 return index;
             } else {
                 // Sequential: increment index, but if it wraps to 0, skip to 1.
-                const nextIdx = (currentPresetIndex + 1) % this.PRESETS.length;
+                const nextIdx = (this.currentPresetIndex + 1) % this.PRESETS.length;
                 return nextIdx === 0 ? 1 : nextIdx;
             }
         };
 
-        let currentPresetIndex = 0;
-
         // Continue cycling through presets while demo is active.
         while (this.demoActive) {
-            currentPresetIndex = getNextPresetIndex(random);
-            const currentPreset = this.PRESETS[currentPresetIndex];
-            console.log(`Animating to preset ${currentPresetIndex}`);
+            this.currentPresetIndex = getNextPresetIndex(random);
+            const currentPreset = this.PRESETS[this.currentPresetIndex];
+            console.log(`Animating to preset ${this.currentPresetIndex}`);
 
             // Animate to the current preset.
             await this.animateTravelToPresetWithRandomRotation(currentPreset, 1000, 500, 5000);
