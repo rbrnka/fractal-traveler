@@ -547,7 +547,7 @@ export class FractalRenderer {
      *
      * @param {number} targetZoom
      * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction
+     * @param {EASE_TYPE|Function} easeFunction If none is provided, it defaults to exponential.
      * @return {Promise<void>}
      */
     async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
@@ -569,9 +569,14 @@ export class FractalRenderer {
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
-                const easedProgress = easeFunction(progress);
 
-                this.zoom = startZoom * Math.pow(targetZoom / startZoom, easedProgress);
+                if (easeFunction !== EASE_TYPE.NONE) {
+                    const easedProgress = easeFunction(progress);
+                    this.zoom = lerp(startZoom, targetZoom, easedProgress);
+                } else {
+                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress); // Default to exponential
+                }
+
                 this.draw();
 
                 updateInfo(true);
