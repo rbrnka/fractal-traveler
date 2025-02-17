@@ -1,14 +1,14 @@
 # Synaptory Fractal Traveler
-![image](https://github.com/user-attachments/assets/447755dd-1f67-4be7-9df5-1ae939fae216)
+![image](https://github.com/user-attachments/assets/e3591847-c76d-46a2-bf01-4508a4bc7032)
 
-Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease.
+
+Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease. Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&showWelcomeOnShare=false) article on my Substack blog.
 
 > [!IMPORTANT]
 **High-end GPU is recommended!**
 
-Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&showWelcomeOnShare=false) article on my Substack blog.
 
-> Live app is available [here](https://fractal.brnka.com).
+### Live app is available [here](https://fractal.brnka.com).
 
 ## Features
 - **Interactive Exploration:**
