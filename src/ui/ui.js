@@ -274,7 +274,7 @@ function initAnimationMode() {
 }
 
 export async function toggleDemo() {
-    console.log(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (animationActive) {
         resetPresetAndDiveButtonStates();
@@ -284,6 +284,7 @@ export async function toggleDemo() {
         return;
     }
 
+    resetPresetAndDiveButtonStates();
     initAnimationMode();
 
     switch (fractalMode) {
@@ -292,7 +293,7 @@ export async function toggleDemo() {
         case FRACTAL_TYPE.JULIA: await startJuliaDemo(); break;
 
         default:
-            console.warn('No demo defined for mode ' + fractalMode);
+            console.warn(`No demo defined for mode ${fractalMode}`);
             exitAnimationMode();
             break;
     }
@@ -467,7 +468,7 @@ export function toggleDebugLines() {
 }
 
 export function resetPresetAndDiveButtonStates() {
-    console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
     presetButtons.concat(diveButtons).forEach(b => b.classList.remove('active'));
 }
 
