@@ -1,9 +1,7 @@
 # Synaptory Fractal Traveler
 ![image](https://github.com/user-attachments/assets/447755dd-1f67-4be7-9df5-1ae939fae216)
 
-Interactive fractal explorer that lets explore the mesmerizing depths of the Mandelbrot and Julia sets.
-Built with modern JavaScript, ES6, and WebGL, this app provides smooth animations and
-intuitive controls allowing you to travel through intricate fractal landscapes with ease.
+Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease.
 
 > [!IMPORTANT]
 **High-end GPU is recommended!**
@@ -13,22 +11,22 @@ Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/un
 > Live app is available [here](https://fractal.brnka.com).
 
 ## Features
-- Interactive Exploration:
-Explore the fractal plane via mouse, multi-touch gestures or keyboard.
+- **Interactive Exploration:**
+Explore the high resolution fractal plane via mouse, multi-touch gestures or keyboard. Fractals can be zoomed, panned, rotated and changed in real-time.
 
-- Smooth Animations:
+- **Smooth Animations:**
 Enjoy smooth transitions with animations that dynamically interpolate between states.
 
-- Preset Views ad Dives:
+- **Preset Views ad Dives:**
 Instantly travel to a series of predefined fractal presets using dedicated buttons or enjoy animated dives into well selected intricate regions and watch them to evolve in real time. 
 
-- Responsive UI:
+- **Responsive UI:**
 Designed with both desktop and mobile users in mind, featuring touch-friendly controls and dynamic resizing.
 
-- Modern Development:
+- **Modern Development:**
 Uses WebGL for rendering, ES6 for a modular codebase, and webpack for bundling and production optimization. Unit tests are implemented with Jest to ensure robust functionality.
 
-- Extensibility:
+- **Extensibility:**
 The architecture supports additional fractal types and further customization of rendering options.
 
 ## Getting Started
@@ -48,8 +46,19 @@ The architecture supports additional fractal types and further customization of 
 - `npm run dev-nowatch` for local build without watch mode (incl. source maps)
 - `npm run dev-watch` for local build with watch mode (incl. source maps)
 - `npm run test` to run test suites
+- `jsdoc -r ./src/ ./README.md -d ./doc/ ` to build documentation
 
 ## Changelog
+### v1.8
+- Fully asynchronous animations
+- Improved controls (new hotkeys)
+- Dev: Added full documentation
+- Dev: Improved logging
+- Bugs fixed:
+  - URL presets with zero value params now work properly
+  - Animation collisions are no longer happening
+  - Normalized rotation
+
 ### v1.7
 - Julia dives added (super smooth detailed animated c-transitions)
 - Num hotkeys support for presets and dives
@@ -88,7 +97,6 @@ The architecture supports additional fractal types and further customization of 
 - Stops current animation when a new one is invoked
 - CSS minification on prod build
 - Nicer buttons
-
 - Bugs fixed:
   - Double initialization of event listeners
   - infoText not updating properly
@@ -124,12 +132,12 @@ The entry point that imports modules, creates the fractal renderer instance (pas
 
 ## Controls:
 ### Mouse
-- Left Drag: Pan
-- Right Drag: Rotate
-- Wheel: Zoom
-- Left Single Click: Center & Generate URL link
-- Double click: Zoom-in/out & Center
-- Middle Click: Toggle guiding lines
+- `Left Button Drag`: Pan
+- `Right Button Drag`: Rotate
+- `Wheel`: Zoom
+- `Left Button Single Click`: Center & Generate URL link
+- `Double click`: Zoom-in/out & Center
+- `Middle Click`: Toggle guiding lines
 ### Keyboard
 - `F11`: Toggle fullscreen
 - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
@@ -137,19 +145,21 @@ The entry point that imports modules, creates the fractal renderer instance (pas
 - `Shift + R`: Reset
 - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
 - `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Shift: zoom-out)
+- `Space`: Zoom-in (Ctrl: Zoom-out)
 - `A`: Force resize
-- `Left / Right`: Julia: Real part (cx) stepping / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
-- `Up / Down`: Julia: Imaginary part (cy) stepping / Mandelbrot: Vertical pan (Shift: Smooth stepping)
+- `Left / Right`: Horizontal pan (Shift: smoother step)
+- `Up / Down`: Vertical pan(Shift: Smooth step)
+- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
+- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
 - `Num 1-9`: Load Preset (Shift: Start dive)
 
 ### Touch
-- One finger pan: Pan
-- One finger tap: Center & Generate URL link
-- One finger double-tap: Zoom-in/out & Center
-- Pinch: Pan & Zoom & Rotate
+- `One Finger Pan`: Pan
+- `One Finger Tap`: Center & Generate URL link
+- `One Finger Double-tap`: Zoom-in/out & Center
+- `Pinch`: Pan & Zoom & Rotate
 
 ## License
 MIT License. See for details.
 
-Radim Brnka © 2025, Inspired by the intricate beauty of fractals, developed for interactive exploration and learning.
+*By Radim Brnka © 2025, Inspired by the intricate beauty of fractals, developed for interactive exploration and learning.*
