@@ -1,23 +1,50 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
  * @module Utils
  * @author Radim Brnka
  * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
-import {DEBUG_MODE, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui";
+import {DEBUG_MODE, isJuliaMode, MODE_JULIA, MODE_MANDELBROT} from "./ui/ui";
 
 let urlParamsSet = false;
 
 /**
  * Updates browser URL with params of the selected point and zoom in the fractal
- * @param mode number {MODE_JULIA|MODE_MANDELBROT}
- * @param px panX
- * @param py panY
- * @param cx Julia only
- * @param cy Julia only
- * @param zoom
- * @param rotation
- */
+ * @param {FRACTAL_TYPE} mode
+ * @param {number} px panX
+ * @param {number} py panY
+ * @param {number} cx Julia only
+ * @param {number} cy Julia only
+ * @param {number} zoom
+ * @param {number} rotation */
 export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
     const params = {
         mode: mode != null ? mode.toFixed(0) : MODE_MANDELBROT,
@@ -29,15 +56,15 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
         cy: cy != null ? cy.toFixed(6) : null,
     };
 
-    if (DEBUG_MODE) console.log("URL: " + JSON.stringify(params));
+    if (DEBUG_MODE) console.log('%c updateURLParams: %c Setting URL:' + JSON.stringify(params), 'color: #bada55', 'color: #fff');
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
-        console.error("Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
+        console.error("updateURLParams: Fractal params incomplete, can't generate URL! " + JSON.stringify(params));
         return;
     }
 
-    if (isJuliaMode() && [cx, cy].some(el => el == null)) {
-        console.error("Julia params incomplete, can't generate URL!");
+    if (isJuliaMode() &amp;&amp; [cx, cy].some(el => el == null)) {
+        console.error("updateURLParams: Julia params incomplete, can't generate URL!");
         return;
     }
 
@@ -53,14 +80,15 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx, cy) {
 
 /**
  * Fetches and recalculates coords and zoom from URL and sets them to the fractalApp instance
- * @return {{mode: number}|{mode: (number), r: (number|number), cx: (number|null), cy: (number|null), px: (number|null), py: (number|null), zoom: (number|null)}|{mode: (number)}}
+ * @return {URL_PRESET}
  */
 export function loadFractalParamsFromURL() {
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
 
     if (!hash) {
-        console.log("No hash found in the URL");
+        if (DEBUG_MODE) console.log(`%c loadFractalParamsFromURL: ` + ` %c No hash found in the URL, return default mode.`, 'color: #bada55', 'color: #fff');
+
         return {mode: MODE_MANDELBROT}; // Return default if no hash is present
     }
 
@@ -78,20 +106,20 @@ export function loadFractalParamsFromURL() {
     try {
         // Decode the Base64 string and parse the JSON object
         const decodedParams = JSON.parse(atob(encodedParams));
-
+        if (DEBUG_MODE) console.log('%c loadFractalParamsFromURL: %c Decoded params: ' + JSON.stringify(decodedParams), 'color: #bada55', 'color: #fff');
         urlParamsSet = true;
         // Return the parsed parameters
         return {
             mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT,
-            px: parseFloat(decodedParams.px) || null,
-            py: parseFloat(decodedParams.py) || null,
+            px: decodedParams.px != null ? parseFloat(decodedParams.px) : null,
+            py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
             zoom: parseFloat(decodedParams.zoom) || null,
             r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
-            cx: parseFloat(decodedParams.cx) || null,
-            cy: parseFloat(decodedParams.cy) || null,
+            cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
+            cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
     } catch (e) {
-        console.error('Error decoding URL parameters:', e);
+        console.error('loadFractalParamsFromURL: Error decoding URL parameters:', e);
         urlParamsSet = true;
         return {mode: mode === 'julia' ? MODE_JULIA : MODE_MANDELBROT}; // Return only the mode if no query string is found
     }
@@ -102,7 +130,9 @@ export function loadFractalParamsFromURL() {
  */
 export function clearURLParams() {
     if (!urlParamsSet) return;
-    console.log("Clearing URL params");
+
+    if (DEBUG_MODE) console.log('%c clearURLParams: %c Clearing URL params.', 'color: #bada55', 'color: #fff');
+
     const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
     const newUrl = `${window.location.origin}/${hash}`;
     window.history.pushState({}, '', newUrl);
@@ -178,14 +208,14 @@ export function hslToRgb(h, s, l) {
         r = g = b = l; // achromatic
     } else {
         const hue2rgb = (p, q, t) => {
-            if (t < 0) t += 1;
+            if (t &lt; 0) t += 1;
             if (t > 1) t -= 1;
-            if (t < 1 / 6) return p + (q - p) * 6 * t;
-            if (t < 1 / 2) return q;
-            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            if (t &lt; 1 / 6) return p + (q - p) * 6 * t;
+            if (t &lt; 1 / 2) return q;
+            if (t &lt; 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
             return p;
         };
-        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const q = l &lt; 0.5 ? l * (1 + s) : l + s - l * s;
         const p = 2 * l - q;
         r = hue2rgb(p, q, h + 1 / 3);
         g = hue2rgb(p, q, h);
@@ -199,7 +229,7 @@ export function hslToRgb(h, s, l) {
  * @param r
  * @param g
  * @param b
- * @return [h, s, l]
+ * @return {Array.&lt;number, number, number>} [h, s, l]
  */
 export function rgbToHsl(r, g, b) {
     let max = Math.max(r, g, b), min = Math.min(r, g, b);
@@ -210,7 +240,7 @@ export function rgbToHsl(r, g, b) {
         let d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
         if (max === r) {
-            h = (g - b) / d + (g < b ? 6 : 0);
+            h = (g - b) / d + (g &lt; b ? 6 : 0);
         } else if (max === g) {
             h = (b - r) / d + 2;
         } else {
@@ -223,20 +253,52 @@ export function rgbToHsl(r, g, b) {
 
 /**
  * Helper function for ease-in-out timing
- * @param t time step
+ * @param {number} time time step
  * @return {number}
  */
-export function easeInOut(t) {
-    return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+export function easeInOut(time) {
+    return time &lt; 0.5 ? 2 * time * time : -1 + (4 - 2 * time) * time;
 }
 
 /**
  * Helper function for linear interpolation
- * @param start
- * @param end
- * @param t
- * @return {*}
+ * @param {number} start
+ * @param {number}end
+ * @param {number} time
+ * @return {number}
  */
-export function lerp(start, end, t) {
-    return start + (end - start) * t;
+export function lerp(start, end, time) {
+    return start + (end - start) * time;
 }
+
+/**
+ * Normalizes rotation into into [0, 2*PI] interval
+ * @param {number} rotation in rad
+ * @return {number} rotation in rad
+ */
+export function normalizeRotation(rotation) {
+    const twoPi = 2 * Math.PI;
+    return (rotation % twoPi + twoPi) % twoPi;
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventhandlers.html">MouseEventhandlers</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#FRACTAL_TYPE">FRACTAL_TYPE</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Fri Feb 14 2025 14:59:12 GMT+0100 (středoevropský standardní čas)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

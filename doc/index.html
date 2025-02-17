@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Home</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Home</h1>
+
+    
+
+
+
+    
+
+
+    <h3> </h3>
+
+
+
+
+
+
+
+
+
+
+    
+
+
+
+
+    <section>
+        <article><h1>Synaptory Fractal Traveler</h1>
+<p><img src="https://github.com/user-attachments/assets/447755dd-1f67-4be7-9df5-1ae939fae216" alt="image"></p>
+<p>Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript, ES6, and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease.</p>
+<blockquote>
+<p>[!IMPORTANT]
+<strong>High-end GPU is recommended!</strong></p>
+</blockquote>
+<p>Developed for the <a href="https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&amp;utm_campaign=post&amp;utm_medium=web&amp;showWelcomeOnShare=false">Unmasking Chaos</a> article on my Substack blog.</p>
+<blockquote>
+<p>Live app is available <a href="https://fractal.brnka.com">here</a>.</p>
+</blockquote>
+<h2>Features</h2>
+<ul>
+<li>
+<p>Interactive Exploration:
+Explore the fractal plane via mouse, multi-touch gestures or keyboard.</p>
+</li>
+<li>
+<p>Smooth Animations:
+Enjoy smooth transitions with animations that dynamically interpolate between states.</p>
+</li>
+<li>
+<p>Preset Views ad Dives:
+Instantly travel to a series of predefined fractal presets using dedicated buttons or enjoy animated dives into well selected intricate regions and watch them to evolve in real time.</p>
+</li>
+<li>
+<p>Responsive UI:
+Designed with both desktop and mobile users in mind, featuring touch-friendly controls and dynamic resizing.</p>
+</li>
+<li>
+<p>Modern Development:
+Uses WebGL for rendering, ES6 for a modular codebase, and webpack for bundling and production optimization. Unit tests are implemented with Jest to ensure robust functionality.</p>
+</li>
+<li>
+<p>Extensibility:
+The architecture supports additional fractal types and further customization of rendering options.</p>
+</li>
+</ul>
+<h2>Getting Started</h2>
+<h3>Prerequisites</h3>
+<ul>
+<li>Node.js (v12 or later)</li>
+<li>npm (or yarn)</li>
+</ul>
+<h3>Installation</h3>
+<ol>
+<li><code>git clone https://github.com/yourusername/fractal-traveler.git</code></li>
+<li><code>cd fractal-traveler</code></li>
+<li><code>npm install</code></li>
+</ol>
+<h3>Usage:</h3>
+<ul>
+<li><code>npm run start</code> to start localhost webserver and run the app (<code>localhost:8080</code>)</li>
+<li><code>npm run build</code> for production build (minified files, FTP deploy without maps using .env configuration)</li>
+<li><code>npm run dev-nowatch</code> for local build without watch mode (incl. source maps)</li>
+<li><code>npm run dev-watch</code> for local build with watch mode (incl. source maps)</li>
+<li><code>npm run test</code> to run test suites</li>
+</ul>
+<h2>Changelog</h2>
+<h3>v1.8</h3>
+<ul>
+<li>Fully async animations</li>
+<li>Restyled</li>
+<li>Header can be shown any time by hitting Enter</li>
+<li>Bugs fixed:
+<ul>
+<li>URL presets with zero params now work properly</li>
+<li>Animation collision</li>
+</ul>
+</li>
+</ul>
+<h3>v1.7</h3>
+<ul>
+<li>Julia dives added (super smooth detailed animated c-transitions)</li>
+<li>Num hotkeys support for presets and dives</li>
+<li>Arrow hotkeys pan in Mandelbrot mode</li>
+<li>Bugs fixed:
+<ul>
+<li>Centering after resize</li>
+</ul>
+</li>
+</ul>
+<h3>v1.6</h3>
+<ul>
+<li>Improved Julia coloring</li>
+<li>Improved Julia demo</li>
+<li>Proper defaulting of pan and centering on init</li>
+<li>Preparation for improved Julia color randomization</li>
+<li>Hotkeys Q-T to rotate, reset and randomize colors</li>
+<li>Arrow hotkeys to smoothly animate Julia set</li>
+<li>Default Julia state changed to more appealing and to less detailed in mobile version</li>
+<li>Disabled graphics of sliders during Julia demo</li>
+<li>Demo active color to more visible</li>
+<li>GL performance optimizations</li>
+<li>Dev: FTP upload in prod deploy using .env</li>
+<li>Bugs fixed:
+<ul>
+<li>Off-center after screen resize</li>
+<li>Aspect ratio on high DPR devices</li>
+</ul>
+</li>
+</ul>
+<h3>v1.5</h3>
+<ul>
+<li>Julia set support</li>
+<li>Presets with transitions</li>
+<li>Sliders to control the Julia fractal added and updated with changing the set</li>
+<li>Screenshot adds fractal coords and settings into watermark</li>
+<li>Responsive header height</li>
+</ul>
+<h3>v1.4</h3>
+<ul>
+<li>Screenshot button added</li>
+<li>Touch device optimizations for simultaneous pan, zoom and rotate</li>
+<li>Added demo mode that takes you through all the Mandelbrot presets in a loop</li>
+<li>Added support for rotating the fractal</li>
+<li>Stops current animation when a new one is invoked</li>
+<li>CSS minification on prod build</li>
+<li>Nicer buttons</li>
+<li>Bugs fixed:
+<ul>
+<li>Double initialization of event listeners</li>
+<li>infoText not updating properly</li>
+<li>Header closing on click</li>
+</ul>
+</li>
+</ul>
+<h3>v1.3</h3>
+<ul>
+<li>This version contains the directory and build structure, previous versions were simple PoCs</li>
+</ul>
+<h2>Structure</h2>
+<ul>
+<li>
+<p><code>fractalRenderer.js</code>:
+This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.</p>
+</li>
+<li>
+<p><code>mandelbrotRenderer.js</code>:
+This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.</p>
+</li>
+<li>
+<p><code>juliaRenderer.js</code>:
+This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.</p>
+</li>
+<li>
+<p><code>mouseEventHandlers.js</code>:
+This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.</p>
+</li>
+<li>
+<p><code>touchEventHandlers.js</code>:
+This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.</p>
+</li>
+<li>
+<p><code>ui.js</code>:
+Contains code to manage the UI (header interactions, buttons, infoText update, etc.).</p>
+</li>
+<li>
+<p><code>utils.js</code>:
+Contains helper functions for working with URL parameters, colors, etc.</p>
+</li>
+<li>
+<p><code>main.js</code>:
+The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), registers events, initializes the UI and the fractal.</p>
+</li>
+</ul>
+<h2>Controls:</h2>
+<h3>Mouse</h3>
+<ul>
+<li><code>Left Button Drag</code>: Pan</li>
+<li><code>Right Button Drag</code>: Rotate</li>
+<li><code>Wheel</code>: Zoom</li>
+<li><code>Left Button Single Click</code>: Center &amp; Generate URL link</li>
+<li><code>Double click</code>: Zoom-in/out &amp; Center</li>
+<li><code>Middle Click</code>: Toggle guiding lines</li>
+</ul>
+<h3>Keyboard</h3>
+<ul>
+<li><code>F11</code>: Toggle fullscreen</li>
+<li><code>Q / W</code>: Rotate counter-clockwise/clockwise (Shift: Slower speed)</li>
+<li><code>E</code>: Toggle guiding lines</li>
+<li><code>Shift + R</code>: Reset</li>
+<li><code>T</code>: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)</li>
+<li><code>Shift + S</code>: Take screenshot</li>
+<li><code>Space</code>: Zoom-in (Ctrl: Zoom-out)</li>
+<li><code>A</code>: Force resize</li>
+<li><code>Left / Right</code>: Horizontal pan (Shift: smoother step)</li>
+<li><code>Up / Down</code>: Vertical pan(Shift: Smooth step)</li>
+<li><code>Ctrl + Left / Right</code>: Julia: Real part (cx) stepping (Shift: Smooth step)</li>
+<li><code>Ctrl + Up / Down</code>: Julia: Imaginary part (cy) stepping (Shift: Smooth step)</li>
+<li><code>Num 1-9</code>: Load Preset (Shift: Start dive)</li>
+</ul>
+<h3>Touch</h3>
+<ul>
+<li><code>One Finger Pan</code>: Pan</li>
+<li><code>One Finger Tap</code>: Center &amp; Generate URL link</li>
+<li><code>One Finger Double-tap</code>: Zoom-in/out &amp; Center</li>
+<li><code>Pinch</code>: Pan &amp; Zoom &amp; Rotate</li>
+</ul>
+<h2>License</h2>
+<p>MIT License. See for details.</p>
+<p><em>By Radim Brnka © 2025, Inspired by the intricate beauty of fractals, developed for interactive exploration and learning.</em></p></article>
+    </section>
+
+
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 17 2025 08:53:25 GMT+0100 (středoevropský standardní čas)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
