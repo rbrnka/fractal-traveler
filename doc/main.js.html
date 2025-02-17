@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: main.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: main.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>/**
+ * @module Main
+ * @author Radim Brnka
+ * @description The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), initializes the UI and the fractal.
+ */
+
+import './css/style.css';
+import {JuliaRenderer} from "./renderers/juliaRenderer";
+import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
+import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates} from "./ui/ui";
+import {clearURLParams, loadFractalParamsFromURL} from "./global/utils";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
+
+/**
+ * Initializes the canvas, reads URL params and triggers respective fractal rendering
+ */
+async function initFractalApp() {
+    console.groupCollapsed(`%c initFractalApp`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+
+    const canvas = document.getElementById('fractalCanvas');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const params = loadFractalParamsFromURL();
+    console.log(`URL Params found:  ${JSON.stringify(params)}`);
+
+    // Do we have all the params needed for initial travel?
+    const validMandelbrotTravelPreset = params.px != null &amp;&amp; params.py != null &amp;&amp; params.zoom != null &amp;&amp; params.r != null;
+    const validJuliaTravelPreset = validMandelbrotTravelPreset &amp;&amp; params.cx != null &amp;&amp; params.cy != null;
+    const preset = {
+        pan: [params.px, params.py],
+        zoom: params.zoom,
+        c: [params.cx, params.cy],
+        rotation: params.r
+    };
+
+    const onDefault = () => {
+        console.log(`Default fractal settings used.`);
+        fractalApp.reset();
+        clearURLParams();
+    }
+
+    let fractalApp;
+
+    switch (params.mode) {
+        /************
+         * JULIA SET
+         ************/
+        case FRACTAL_TYPE.JULIA:
+            console.log(`Constructing Julia.`);
+            fractalApp = new JuliaRenderer(canvas);
+            if (validJuliaTravelPreset) {
+                console.log(`Traveling to URL params.`);
+                await fractalApp.animateTravelToPreset(preset, 500);
+            } else {
+                onDefault();
+            }
+            break;
+
+        /****************
+         * MANDELBROT SET
+         ****************/
+        case FRACTAL_TYPE.MANDELBROT:
+            console.log(`Constructing Mandelbrot.`);
+            fractalApp = new MandelbrotRenderer(canvas);
+            if (validMandelbrotTravelPreset) {
+                console.log(`Traveling to URL params.`);
+                await fractalApp.animatePanZoomRotationTo(preset.pan, preset.zoom, preset.rotation, 500);
+            } else {
+                onDefault();
+            }
+            break;
+
+        default:
+            console.error('Unknown fractal mode: ' + params.mode);
+            break;
+    }
+
+    await initUI(fractalApp);
+
+    // If URL contains a preset, reset buttons
+    if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
+        resetPresetAndDiveButtonStates();
+        resetActivePresetIndex();
+    }
+    console.groupEnd();
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+        if (DEBUG_MODE) console.log('%c DOMContentLoaded triggered. Initializing fractal.', 'color: #ff0');
+        await initFractalApp();
+        console.log('%c Fractal init complete.', 'color: #0f0');
+    },
+    {
+        once: true
+    }
+);</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 17 2025 08:53:25 GMT+0100 (středoevropský standardní čas)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
