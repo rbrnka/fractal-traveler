@@ -12,11 +12,11 @@ export const MOUSE_EVENT_TYPE = {
     MOVE: 'mousemove',
     WHEEL: 'wheel'
 }
+
 export const KEYBOARD_EVENT_TYPE = {
     UP: 'keyup',
     DOWN: 'keydown',
 }
-
 
 /** Simulated mosue button event */
 export const defaultMouseButtonEvent = (type, button, x = 100, y = 100) => {

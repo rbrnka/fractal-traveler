@@ -25,11 +25,9 @@ function getFilename() {
  */
 function getWatermarkText(fractalApp) {
     const fractalType = fractalApp.constructor.name;
-    let watermarkText = `Created by ${APP_NAME} `;
-    watermarkText += '(' + fractalType.substring(0, fractalType.length - 8) + ': '; // Remove the "Renderer" string
-    watermarkText += `p=${expandComplexToString(fractalApp.pan, 6)}, zoom=${fractalApp.zoom.toFixed(6)}`;
-    watermarkText += (fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`;
-    return watermarkText;
+    return `Created by ${APP_NAME} (${fractalType.substring(0, fractalType.length - 8 /* Remove the "Renderer" string */)}: ` +
+        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toFixed(6)}` +
+        `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`}`;
 }
 
 /**
