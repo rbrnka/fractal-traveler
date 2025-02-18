@@ -1,5 +1,10 @@
 import {
-    clearURLParams, getAnimationDuration, hsbToRgb, isTouchDevice, updateURLParams
+    clearURLParams,
+    destroyArrayOfButtons,
+    getAnimationDuration,
+    hsbToRgb,
+    isTouchDevice,
+    updateURLParams
 } from '../global/utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
 import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandlers} from "./touchEventHandlers";
@@ -10,9 +15,19 @@ import {
     DEFAULT_ACCENT_COLOR,
     DEFAULT_BG_COLOR,
     DEFAULT_CONSOLE_GROUP_COLOR,
+    DEFAULT_JULIA_THEME_COLOR,
+    DEFAULT_MANDELBROT_THEME_COLOR,
     FRACTAL_TYPE
 } from "../global/constants";
-import {initHotKeys} from "./hotkeyController";
+import {destroyHotKeys, initHotKeys} from "./hotkeyController";
+import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
+import {
+    destroyJuliaSliders,
+    disableJuliaSliders,
+    enableJuliaSliders,
+    initJuliaSliders,
+    resetJuliaSliders
+} from "./juliaSlidersController";
 
 /**
  * @module UI
@@ -29,6 +44,7 @@ const DEMO_BUTTON_DEFAULT_TEXT = 'Demo';
 const DEMO_BUTTON_STOP_TEXT = 'Stop';
 
 let accentColor = DEFAULT_ACCENT_COLOR;
+let midColor = DEFAULT_BG_COLOR; // TODO use?
 let bgColor = DEFAULT_BG_COLOR;
 
 let headerMinimizeTimeout = null;
@@ -37,12 +53,11 @@ let headerToggled = false;
 
 let animationActive = false;
 let activeJuliaDiveIndex = -1;
-let activePresetIndex = -1;
+let activePresetIndex = 0;
 let resizeTimeout;
 
 // HTML elements
 let header;
-let handle;
 let mandelbrotSwitch;
 let juliaSwitch;
 let resetButton;
@@ -55,50 +70,104 @@ let allButtons = [];
 let infoLabel;
 let infoText;
 
-// Julia sliders
-let realSlider;
-let imagSlider;
-let realSliderValue;
-let imagSliderValue;
-let lastSliderUpdate = 0; // Tracks the last time the sliders were updated
-const sliderUpdateThrottleLimit = 10; // Throttle limit in milliseconds
-
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 
 export function switchFractalMode(mode) {
-    clearURLParams();
+    if (mode === fractalMode) return;
 
-    window.location.hash = mode === FRACTAL_TYPE.JULIA ? '#julia' : ''; // Update URL hash
-    window.location.reload();
+    fractalApp.destroy();
+
+    if (mode === FRACTAL_TYPE.MANDELBROT) {
+        enableMandelbrotMode();
+    } else {
+        enableJuliaMode();
+    }
+
+    // Register control events
+    if (isTouchDevice()) {
+        unregisterTouchEventHandlers();
+        initTouchHandlers(fractalApp);
+    } else {
+        destroyHotKeys();
+        initHotKeys(fractalApp);
+
+        unregisterMouseEventHandlers();
+        initMouseHandlers(fractalApp);
+    }
+
+    fractalApp.reset();
 }
 
 export function isJuliaMode() {
     return fractalMode === FRACTAL_TYPE.JULIA;
 }
 
+export function enableMandelbrotMode() {
+    juliaSwitch.classList.remove('active');
+    mandelbrotSwitch.classList.add('active');
+
+    destroyArrayOfButtons(diveButtons);
+    const diveBlock = document.getElementById('dives');
+    diveBlock.style.display = 'none';
+
+    destroyJuliaSliders();
+
+    fractalApp = new MandelbrotRenderer(canvas);
+    fractalMode = FRACTAL_TYPE.MANDELBROT;
+
+    // Remove each button from the DOM and reinitialize
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
+
+    window.location.hash = ''; // Update URL hash
+}
+
 export function enableJuliaMode() {
+    fractalApp = new JuliaRenderer(canvas);
     fractalMode = FRACTAL_TYPE.JULIA;
 
     juliaSwitch.classList.add('active');
     mandelbrotSwitch.classList.remove('active');
+
+    // Remove each button from the DOM and reinitialize
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    initJuliaSliders(fractalApp);
+
+    destroyArrayOfButtons(diveButtons);
+    const diveBlock = document.getElementById('dives');
+    diveBlock.style.display = 'none';
+
+    initDiveButtons();
+
+    updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
+    // Darker backgrounds for Julia as it renders on white
+    header.style.background = 'rgba(20, 20, 20, 0.8)';
+    infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
+
+    window.location.hash = '#julia'; // Update URL hash
 }
 
 /**
  * Updates color scheme
- * @param [palette] defaults to the fractal palette
+ * @param {PALETTE} [palette] defaults to the fractal palette
  */
 export function updateColorTheme(palette) {
     palette ||= [...fractalApp.colorPalette];
 
-    const brightnessFactor = 1.9; // Increase brightness by 90%
-    const adjustChannel = (value) => Math.min(255, Math.floor(value * 255 * brightnessFactor));
+    const adjustChannel = (value, brightnessFactor = 1.9) => Math.min(255, Math.floor(value * 255 * brightnessFactor));
 
     accentColor = `rgba(${adjustChannel(palette[0])}, ${adjustChannel(palette[1])}, ${adjustChannel(palette[2])}, 1)`;
+    midColor = `rgba(${adjustChannel(palette[0], .5)}, ${adjustChannel(palette[1], .5)}, ${adjustChannel(palette[2], .5)}, 0.2)`;
     bgColor = `rgba(${Math.floor(palette[0] * 200)}, ${Math.floor(palette[1] * 200)}, ${Math.floor(palette[2] * 200)}, 0.1)`; // Slightly dimmed for borders
 
     let root = document.querySelector(':root');
     root.style.setProperty('--bg-color', bgColor);
+    root.style.setProperty('--mid-color', midColor);
     root.style.setProperty('--accent-color', accentColor);
 }
 
@@ -107,55 +176,6 @@ export function resetAppState() {
     resetPresetAndDiveButtonStates();
     resetActivePresetIndex();
     clearURLParams();
-}
-
-function resetJuliaSliders() {
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
-    realSliderValue.innerText = realSlider.value;
-    imagSliderValue.innerText = imagSlider.value + 'i';
-    fractalApp.demoTime = 0;
-}
-
-/**
- * Disable slider controls
- */
-function disableJuliaSliders() {
-    imagSlider.disabled = true;
-    realSlider.disabled = true;
-
-    realSlider.classList.add('thumbDisabled');
-    imagSlider.classList.add('thumbDisabled');
-}
-
-/**
- * Enable slider controls
- */
-function enableJuliaSliders() {
-    imagSlider.disabled = false;
-    realSlider.disabled = false;
-
-    realSlider.classList.remove('thumbDisabled');
-    imagSlider.classList.remove('thumbDisabled');
-}
-
-/**
- * Updates the real/imaginary sliders appropriately
- */
-export function updateJuliaSliders() {
-    const now = performance.now();
-    const timeSinceLastUpdate = now - lastSliderUpdate;
-
-    if (timeSinceLastUpdate < sliderUpdateThrottleLimit) {
-        return; // Skip update if called too soon
-    }
-
-    // Update the last update time
-    lastSliderUpdate = now;
-    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
 }
 
 /**
@@ -182,10 +202,7 @@ export function updateInfo(traveling = false) {
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
 
-    // TODO refactor using expandComplexToString
-    if (fractalMode === FRACTAL_TYPE.MANDELBROT || (fractalMode === FRACTAL_TYPE.JULIA && !animationActive)) {
-        text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i] · `;
-    }
+    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i] · `;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
@@ -212,6 +229,7 @@ export function isAnimationActive() {
     return animationActive;
 }
 
+/** Enables controls, resets demo button */
 function exitAnimationMode() {
     console.groupCollapsed(`%c exitAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
@@ -241,9 +259,7 @@ function exitAnimationMode() {
     }, 150);
 }
 
-/**
- * Disable controls, activates demo button
- */
+/** Disables controls, activates demo button */
 function initAnimationMode() {
     console.groupCollapsed(`%c initAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
@@ -273,6 +289,10 @@ function initAnimationMode() {
     console.groupEnd();
 }
 
+/**
+ * Turns demo on/off and/or stops current animation
+ * @return {Promise<void>}
+ */
 export async function toggleDemo() {
     console.groupCollapsed(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
@@ -301,11 +321,7 @@ export async function toggleDemo() {
     console.groupEnd();
 }
 
-/**
- * Starts the Mandelbrot demo using async/await.
- * It animates through the presets (from fractalApp.PRESETS) by waiting for the
- * preset animation to finish and then pausing for 3500ms before moving on.
- */
+/** Starts the Mandelbrot demo */
 async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
@@ -315,6 +331,7 @@ async function startMandelbrotDemo() {
     console.groupEnd();
 }
 
+/** Starts the Julia dive infinite animation */
 async function startJuliaDive(dives, index) {
     if (animationActive && index === activeJuliaDiveIndex) {
         console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
@@ -371,6 +388,7 @@ async function startJuliaDive(dives, index) {
     ]);
 }
 
+/** Starts the Julia demo */
 async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
@@ -398,6 +416,12 @@ async function startJuliaDemo() {
     console.groupEnd();
 }
 
+/**
+ * Travels to preset at given index
+ * @param {Array<PRESET>} presets
+ * @param {number} index Preset array index
+ * @return {Promise<void>}
+ */
 export async function travelToPreset(presets, index) {
     if (animationActive) {
         console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
@@ -419,7 +443,7 @@ export async function travelToPreset(presets, index) {
 
     if (isJuliaMode()) {
         fractalApp.demoTime = 0;
-        await fractalApp.animateTravelToPreset(presets[index], 750);
+        await fractalApp.animateTravelToPreset(presets[index], 1500);
     } else {
         await fractalApp.animateTravelToPreset(presets[index]);
     }
@@ -428,10 +452,9 @@ export async function travelToPreset(presets, index) {
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
 }
 
+/** Inits debug bar with various information permanently shown on the screen */
 function initDebugMode() {
-    console.warn('DEBUG MODE ENABLED');
-
-    infoLabel.style.height = '100px';
+    infoLabel.style.height = '80px';
 
     const debugInfo = document.getElementById('debugInfo');
     debugInfo.style.display = 'block';
@@ -454,6 +477,7 @@ function initDebugMode() {
     toggleDebugLines();
 }
 
+/** Toggles x/y axes */
 export function toggleDebugLines() {
     const verticalLine = document.getElementById('verticalLine');
     const horizontalLine = document.getElementById('horizontalLine');
@@ -476,7 +500,7 @@ export function resetPresetAndDiveButtonStates() {
  * This needs to happen on any fractal change
  */
 export function resetActivePresetIndex() {
-    activePresetIndex = -1;
+    activePresetIndex = 0;
 }
 
 export async function randomizeColors() {
@@ -489,11 +513,35 @@ export async function randomizeColors() {
     // Convert HSB/HSV to RGB
     const newPalette = hsbToRgb(hue, saturation, brightness);
 
-    await fractalApp.animateColorPaletteTransition(newPalette, 250, updateColorTheme); // Update app colors
+    await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
+        updateColorTheme(newPalette);
+    }); // Update app colors
 }
 
 export function captureScreenshot() {
     takeScreenshot(canvas, fractalApp, accentColor);
+}
+
+export function toggleHeader() {
+    let header = document.getElementById('headerContainer');
+
+    if (!headerToggled) {
+        header.classList.remove('minimized');
+    } else {
+        header.classList.add('minimized');
+    }
+
+    headerToggled = !headerToggled;
+}
+
+export async function reset() {
+    updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
+    fractalApp.reset();
+    if (isJuliaMode()) {
+        resetJuliaSliders();
+    }
+    resetAppState();
+    presetButtons[0].classList.add('active');
 }
 
 // region > INITIALIZERS -----------------------------------------------------------------------------------------------
@@ -505,36 +553,16 @@ function initHeaderEvents() {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
         }
-        handle.style.display = "none";
         header.classList.remove('minimized');
     });
 
-    header.addEventListener('pointerleave', () => {
+    header.addEventListener('pointerleave', async () => {
         // Only minimize if it hasn't been toggled manually
         if (!headerToggled && !DEBUG_MODE) {
             headerMinimizeTimeout = setTimeout(() => {
-                header.classList.add('minimized');
-                handle.style.display = "block";
+                toggleHeader();
                 headerMinimizeTimeout = null;
-            }, 1000);
-        }
-    });
-
-    // Toggle header state when header is clicked/tapped and stop auto-close
-    handle.addEventListener('pointerdown', (event) => {
-        if (!headerToggled) {
-            header.classList.remove('minimized');
-            handle.style.display = "none";
-        } else {
-            header.classList.add('minimized');
-            handle.style.display = "block";
-        }
-
-        headerToggled = !headerToggled;
-
-        if (headerMinimizeTimeout) {
-            clearTimeout(headerMinimizeTimeout);
-            headerMinimizeTimeout = null;
+            }, 3000);
         }
     });
 
@@ -543,13 +571,14 @@ function initHeaderEvents() {
         if (DEBUG_MODE) return;
 
         header.classList.add('minimized');
-        handle.style.display = "block";
         headerToggled = false;
     });
 }
 
 function initControlButtonEvents() {
-    resetButton.addEventListener('click', () => { switchFractalMode(fractalMode); });
+    resetButton.addEventListener('click', async () => {
+        await reset();
+    });
 
     randomizeColorsButton.addEventListener('click', randomizeColors);
 
@@ -560,8 +589,8 @@ function initControlButtonEvents() {
 
 function initPresetButtonEvents() {
     const presetBlock = document.getElementById('presets');
-    presetBlock.innerHTML = 'Presets: ';
-
+    // presetBlock.innerHTML = 'Presets: ';
+    //
     presetButtons = [];
 
     const presets = [...fractalApp.PRESETS];
@@ -569,9 +598,10 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
+        btn.title = preset.title || ('Preset ' + index);
         btn.textContent = (index).toString();
-        btn.addEventListener('click', () => {
-            travelToPreset(presets, index);
+        btn.addEventListener('click', async () => {
+            await travelToPreset(presets, index);
         });
 
         presetBlock.appendChild(btn);
@@ -601,7 +631,7 @@ function initCommonButtonEvents() {
 function initDiveButtons() {
     if (isJuliaMode()) {
         const diveBlock = document.getElementById('dives');
-        diveBlock.innerHTML = 'Dives: ';
+        //diveBlock.innerHTML = 'Dives: ';
 
         diveButtons = [];
 
@@ -610,9 +640,10 @@ function initDiveButtons() {
             const btn = document.createElement('button');
             btn.id = 'dive' + (index);
             btn.className = 'dive';
+            btn.title = dive.title || ('Preset ' + index);
             btn.textContent = (index).toString();
-            btn.addEventListener('click', () => {
-                startJuliaDive(dives, index);
+            btn.addEventListener('click', async () => {
+                await startJuliaDive(dives, index);
             });
 
             diveBlock.appendChild(btn);
@@ -624,41 +655,13 @@ function initDiveButtons() {
 }
 
 function initFractalSwitchButtons() {
-    mandelbrotSwitch.addEventListener('click', (event) => {
-        if (isJuliaMode()) switchFractalMode(FRACTAL_TYPE.MANDELBROT);
+    mandelbrotSwitch.addEventListener('click', () => {
+        switchFractalMode(FRACTAL_TYPE.MANDELBROT);
     });
 
-    juliaSwitch.addEventListener('click', (event) => {
-        if (!isJuliaMode()) switchFractalMode(FRACTAL_TYPE.JULIA);
+    juliaSwitch.addEventListener('click', () => {
+        switchFractalMode(FRACTAL_TYPE.JULIA);
     });
-}
-
-function initJuliaSliders() {
-    resetJuliaSliders();
-
-    // Update `c` dynamically when sliders are moved
-    realSlider.addEventListener('input', () => {
-        fractalApp.c[0] = parseFloat(realSlider.value);
-        realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-        fractalApp.draw();
-        updateInfo();
-        clearURLParams();
-        resetPresetAndDiveButtonStates();
-        fractalApp.demoTime = 0;
-    });
-
-    imagSlider.addEventListener('input', () => {
-        fractalApp.c[1] = parseFloat(imagSlider.value);
-        imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
-        fractalApp.draw();
-        updateInfo();
-        clearURLParams();
-        resetPresetAndDiveButtonStates();
-        fractalApp.demoTime = 0;
-    });
-
-    let sliderContainer = document.getElementById('sliders');
-    sliderContainer.style.display = 'flex';
 }
 
 function initWindowEvents() {
@@ -683,10 +686,6 @@ function initInfoText() {
     });
 }
 
-function initKeyboardShortcuts() {
-    initHotKeys(fractalApp);
-}
-
 /**
  * Initializes the UI and registers UI event handlers
  * @param fractalRenderer
@@ -701,14 +700,9 @@ export async function initUI(fractalRenderer) {
     canvas = fractalApp.canvas;
 
     // Element binding
-    realSlider = document.getElementById('realSlider');
-    realSliderValue = document.getElementById('realSliderValue');
-    imagSlider = document.getElementById('imagSlider');
-    imagSliderValue = document.getElementById('imagSliderValue');
     mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
     juliaSwitch = document.getElementById('juliaSwitch');
     header = document.getElementById('headerContainer');
-    handle = document.getElementById('handle'); // Header click icon
     infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
@@ -718,36 +712,31 @@ export async function initUI(fractalRenderer) {
 
     if (fractalRenderer instanceof JuliaRenderer) {
         enableJuliaMode();
-        initJuliaSliders();
-        initDiveButtons();
-        updateColorTheme([0.298, 0.298, 0.741]);
-        // Darker backgrounds for Julia as it renders on white
-        header.style.background = 'rgba(20, 20, 20, 0.8)';
-        infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
+    } else {
+        enableMandelbrotMode();
     }
 
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
-    initPresetButtonEvents();
     initInfoText();
     initFractalSwitchButtons();
-    initKeyboardShortcuts();
     initCommonButtonEvents(); // After all dynamic buttons are set
-
 
     // Register control events
     if (isTouchDevice()) {
         initTouchHandlers(fractalApp);
     } else {
+        initHotKeys(fractalApp);
         initMouseHandlers(fractalApp);
     }
 
     if (DEBUG_MODE) {
-        //initDebugMode();
+        initDebugMode();
     }
 
     uiInitialized = true;
+    header.style.display = 'block';
 }
 
 // endregion------------------------------------------------------------------------------------------------------------
