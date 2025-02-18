@@ -1,4 +1,4 @@
-import {updateInfo, updateJuliaSliders} from "../ui/ui";
+import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
 import {
     compareComplex,
@@ -8,6 +8,7 @@ import {
 } from "../global/utils";
 import '../global/types';
 import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE,} from "../global/constants";
+import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
  * Julia set renderer
@@ -36,16 +37,16 @@ export class JuliaRenderer extends FractalRenderer {
 
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
-            {c: this.DEFAULT_C, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION, pan: this.DEFAULT_PAN},
+            {c: this.DEFAULT_C, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION, pan: this.DEFAULT_PAN, title: 'Default view'},
             {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
-            {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]}, // Near Julia set border
+            {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'Near Julia set border'},
             {c: [0.45, 0.1428], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
             {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0]},
             {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]},
-            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Spiral structure
-            {c: [-0.75, 0.1], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Main cardioid
-            {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]}, // Seahorse Valley
-            {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]} // Deep zoom
+            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Spiral structure'},
+            {c: [-0.75, 0.1], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Main cardioid'},
+            {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Seahorse Valley'},
+            {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Deep zoom'}
         ];
 
         /** @type {Array.<DIVE>} */
@@ -60,6 +61,8 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: 1,
                 cyDirection: 1,
                 endC: [-0.2298, 0.67],
+
+                title: 'Orbiting Black holes'
             },
             {
                 pan: [0, 0],
@@ -70,6 +73,8 @@ export class JuliaRenderer extends FractalRenderer {
                 rotation: 0,
                 zoom: 0.05,
                 step: 0.00000005,
+
+                title: 'Dimensional Collision'
             },
             {
                 pan: [-0.31106298032702495, 0.39370074960517293],
@@ -81,6 +86,8 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: -1,
                 cyDirection: -1,
                 endC: [-0.335, 0.62],
+
+                title: 'Life of a Star'
             },
             {
                 pan: [-0.6838279169792393, 0.46991716118236204],
@@ -92,6 +99,8 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: -1,
                 cyDirection: -1,
                 endC: [-0.247, 0.638],
+
+                title: 'Tipping points'
             },
             {
                 pan: [0.5160225367869309, -0.05413028639548453],
@@ -103,6 +112,8 @@ export class JuliaRenderer extends FractalRenderer {
                 cxDirection: 1,
                 cyDirection: 1,
                 endC: [-0.7425, 0.25],
+
+                title: 'Hypnosis'
             }//, {
             //     pan: [0.47682225091699837, 0.09390869977189013],
             //     rotation: 5.827258771281306,
@@ -377,12 +388,12 @@ export class JuliaRenderer extends FractalRenderer {
         this.stopCurrentNonColorAnimations();
 
         // Phase 1: Setting default params.
-        await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 500);
+        await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
 
         // Phase 2: Animating to preset.
         await Promise.all([
             this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT),
-            this.animateToC(preset.c, duration, EASE_TYPE.QUINT),
+            this.animateToC(preset.c, duration),
             this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
             this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
         ]);
