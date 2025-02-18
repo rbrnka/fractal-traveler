@@ -137,33 +137,35 @@ export function isMobileDevice() {
 }
 
 /**
- * Generates string in [x, yi] format from the given complex number.
+ * Generates string in [x, yi] format from the given complex number. Trailing zeroes are trimmed.
  * @param {COMPLEX} c
  * @param {number} precision Decimal point precision
- * @param {boolean} [withI] Append "i" to the 2nd member?
- * @return {string}
+ * @param {boolean} [withI] Append "i" to the imaginary member? Ignored if zero.
+ * @return {string} [x, yi]|[x, 0]|[?, ?]
  */
 export function expandComplexToString(c, precision = 6, withI = true) {
     if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     const invalidValues = [NaN, undefined, null, ''];
-    const isNumber = (value) => {
-        return typeof value === 'number' && isFinite(value)
-    };
+    const isNumber = (value) => typeof value === 'number' && isFinite(value);
 
     let expanded = `[`;
 
-    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0] || !isNumber(c[1]))) {
+    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0]) || !isNumber(c[1])) {
         expanded += `?, ?]`;
         console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupEnd();
         return expanded;
     } else {
-        expanded += `${c[0].toFixed(precision)}, ${c[1].toFixed(precision)}`;
+        const trimmedReal = parseFloat(c[0].toFixed(precision)).toString();
+        const trimmedImag = parseFloat(c[1].toFixed(precision)).toString();
+        expanded += `${trimmedReal}, ${trimmedImag}`;
     }
 
     if (DEBUG_MODE) console.groupEnd();
-    return expanded + (withI ? 'i]' : ']');
+    return expanded + ((withI && c[1] !== 0) ? 'i]' : ']');
 }
+
 
 /**
  * Compares two complex numbers / arrays of two numbers with given precision
