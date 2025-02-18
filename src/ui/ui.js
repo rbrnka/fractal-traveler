@@ -54,7 +54,7 @@ let headerVisible = true;
 
 let animationActive = false;
 let activeJuliaDiveIndex = -1;
-let activePresetIndex = -1;
+let activePresetIndex = 0;
 let resizeTimeout;
 
 // HTML elements
@@ -119,7 +119,7 @@ export function enableMandelbrotMode() {
 
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
-    resetActivePresetIndex();
+    if (activePresetIndex !== 0)  resetActivePresetIndex();
     initPresetButtonEvents();
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
@@ -147,7 +147,7 @@ export function enableJuliaMode() {
 
     initDiveButtons();
 
-    resetActivePresetIndex();
+    if (activePresetIndex !== 0)  resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
     // Darker backgrounds for Julia as it renders on white
@@ -443,7 +443,6 @@ export async function travelToPreset(presets, index) {
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
-    activePresetIndex = index;
     presetButtons[index].classList.add('active');
 
     if (isJuliaMode()) {
@@ -452,6 +451,7 @@ export async function travelToPreset(presets, index) {
     } else {
         await fractalApp.animateTravelToPreset(presets[index]);
     }
+    activePresetIndex = index;
 
     exitAnimationMode();
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
@@ -505,7 +505,7 @@ export function resetPresetAndDiveButtonStates() {
  * This needs to happen on any fractal change
  */
 export function resetActivePresetIndex() {
-    activePresetIndex = 0;
+    activePresetIndex = -1;
 }
 
 export async function randomizeColors() {
