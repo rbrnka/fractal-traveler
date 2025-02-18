@@ -113,11 +113,12 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @override
      */
     draw() {
+        this.gl.useProgram(this.program);
+
         const baseIters = Math.floor(5000 * Math.pow(2, -Math.log2(this.zoom)));
         this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
         super.draw();
-
     }
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------

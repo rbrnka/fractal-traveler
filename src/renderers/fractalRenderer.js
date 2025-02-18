@@ -264,6 +264,7 @@ export class FractalRenderer {
      * Updates uniforms (should be done on every redraw)
      */
     updateUniforms() {
+        this.gl.useProgram(this.program);
         // Cache the uniform locations.
         this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
         this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
@@ -278,8 +279,6 @@ export class FractalRenderer {
      * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
      */
     draw() {
-        this.gl.useProgram(this.program);
-
         const w = this.canvas.width;
         const h = this.canvas.height;
 

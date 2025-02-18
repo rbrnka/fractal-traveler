@@ -249,6 +249,8 @@ export class JuliaRenderer extends FractalRenderer {
      * @override
      */
     draw() {
+        this.gl.useProgram(this.program);
+
         const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
         this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
