@@ -30,10 +30,11 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} MANDELBROT_PRESET
- *      @property {number} id
+ *      @property {number} [id] If present, helps unique demo rotation
  *      @property {number} zoom
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
+ *      @property {string} [title] HTML element title (on hover)
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
  */
@@ -42,11 +43,12 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} JULIA_PRESET
- *      @property {number} id
+ *      @property {number} [id] If present, helps unique demo rotation
  *      @property {COMPLEX} c
  *      @property {number} zoom
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
+ *      @property {string} [title] HTML element title (on hover)
  * @see {@link MANDELBROT_PRESET}
  * @description Julia-specific presets
  */
