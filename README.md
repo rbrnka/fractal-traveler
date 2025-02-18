@@ -58,6 +58,7 @@ The architecture supports additional fractal types and further customization of 
   - URL presets with zero value params now work properly
   - Animation collisions are no longer happening
   - Normalized rotation
+  - Keyboard controls now consider zoom depth and affect the properties proportionally
 
 ### v1.7
 - Julia dives added (super smooth detailed animated c-transitions)
@@ -140,17 +141,18 @@ The entry point that imports modules, creates the fractal renderer instance (pas
 - `Middle Click`: Toggle guiding lines
 ### Keyboard
 - `F11`: Toggle fullscreen
+- `Enter`: Toggle controls
 - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
 - `E`: Toggle guiding lines
 - `Shift + R`: Reset
-- `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
+- `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
 - `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Ctrl: Zoom-out)
+- `Space`: Zoom-in (Ctrl: Zoom-out, Shift: Smoother step)
 - `A`: Force resize
-- `Left / Right`: Horizontal pan (Shift: smoother step)
-- `Up / Down`: Vertical pan(Shift: Smooth step)
-- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
-- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
+- `Left / Right`: Horizontal pan (Shift: Smoother step)
+- `Up / Down`: Vertical pan (Shift: Smoother step)
+- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
+- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
 - `Num 1-9`: Load Preset (Shift: Start dive)
 
 ### Touch
