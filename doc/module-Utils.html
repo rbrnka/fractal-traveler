@@ -252,7 +252,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line370">line 370</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line372">line 372</a>
     </li></ul></dd>
     
 
@@ -545,7 +545,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line386">line 386</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line388">line 388</a>
     </li></ul></dd>
     
 
@@ -866,7 +866,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line175">line 175</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line177">line 177</a>
     </li></ul></dd>
     
 
@@ -1099,7 +1099,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line186">line 186</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line188">line 188</a>
     </li></ul></dd>
     
 
@@ -1146,6 +1146,143 @@
 </dl>
 
     
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".destroyArrayOfButtons"><span class="type-signature">(static) </span>destroyArrayOfButtons<span class="signature">(buttons)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Removes array of buttons from the scene and clears it.
+</div>
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>buttons</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array.&lt;HTMLButtonElement></span>
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line411">line 411</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -1258,7 +1395,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line282">line 282</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line284">line 284</a>
     </li></ul></dd>
     
 
@@ -1417,7 +1554,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line292">line 292</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line294">line 294</a>
     </li></ul></dd>
     
 
@@ -1576,7 +1713,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line304">line 304</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line306">line 306</a>
     </li></ul></dd>
     
 
@@ -1642,7 +1779,7 @@
 
 
 <div class="description">
-    Generates string in [x, yi] format from the given complex number.
+    Generates string in [x, yi] format from the given complex number. Trailing zeroes are trimmed.
 </div>
 
 
@@ -1768,7 +1905,7 @@
 
             
 
-            <td class="description last">Append "i" to the 2nd member?</td>
+            <td class="description last">Append "i" to the imaginary member? Ignored if zero.</td>
         </tr>
 
     
@@ -1837,6 +1974,10 @@
 <h5>Returns:</h5>
 
         
+<div class="param-desc">
+    [x, yi]|[x, 0]|[?, ?]
+</div>
+
 
 
 <dl>
@@ -2069,7 +2210,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line340">line 340</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line342">line 342</a>
     </li></ul></dd>
     
 
@@ -2259,7 +2400,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line199">line 199</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line201">line 201</a>
     </li></ul></dd>
     
 
@@ -2464,7 +2605,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line227">line 227</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line229">line 229</a>
     </li></ul></dd>
     
 
@@ -2885,7 +3026,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line317">line 317</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line319">line 319</a>
     </li></ul></dd>
     
 
@@ -3146,7 +3287,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line326">line 326</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line328">line 328</a>
     </li></ul></dd>
     
 
@@ -3351,7 +3492,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line256">line 256</a>
+        <a href="global_utils.js.html">global/utils.js</a>, <a href="global_utils.js.html#line258">line 258</a>
     </li></ul></dd>
     
 
@@ -3706,7 +3847,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 17:10:07 GMT+0100 (středoevropský standardní čas)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 23:24:03 GMT+0100 (středoevropský standardní čas)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -54,7 +54,7 @@ import {
     disableJuliaSliders,
     enableJuliaSliders,
     initJuliaSliders,
-    resetJuliaSliders
+    resetJuliaSliders, updateJuliaSliders
 } from "./juliaSlidersController";
 
 /**
@@ -77,7 +77,8 @@ let bgColor = DEFAULT_BG_COLOR;
 
 let headerMinimizeTimeout = null;
 let uiInitialized = false;
-let headerToggled = false;
+/** @type {boolean} */
+let headerVisible = true;
 
 let animationActive = false;
 let activeJuliaDiveIndex = -1;
@@ -106,12 +107,11 @@ export function switchFractalMode(mode) {
 
     fractalApp.destroy();
 
-    if (mode === 0) {
+    if (mode === FRACTAL_TYPE.MANDELBROT) {
         enableMandelbrotMode();
     } else {
         enableJuliaMode();
     }
-
 
     // Register control events
     if (isTouchDevice()) {
@@ -147,12 +147,12 @@ export function enableMandelbrotMode() {
 
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
+    if (activePresetIndex !== 0)  resetActivePresetIndex();
     initPresetButtonEvents();
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
 
     window.location.hash = ''; // Update URL hash
-
 }
 
 export function enableJuliaMode() {
@@ -167,6 +167,7 @@ export function enableJuliaMode() {
     initPresetButtonEvents();
 
     initJuliaSliders(fractalApp);
+    updateJuliaSliders();
 
     destroyArrayOfButtons(diveButtons);
     const diveBlock = document.getElementById('dives');
@@ -174,7 +175,9 @@ export function enableJuliaMode() {
 
     initDiveButtons();
 
-    updateColorTheme([0.298, 0.298, 0.741]);
+    if (activePresetIndex !== 0)  resetActivePresetIndex();
+
+    updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
     // Darker backgrounds for Julia as it renders on white
     header.style.background = 'rgba(20, 20, 20, 0.8)';
     infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
@@ -338,13 +341,9 @@ export async function toggleDemo() {
     initAnimationMode();
 
     switch (fractalMode) {
-        case FRACTAL_TYPE.MANDELBROT:
-            await startMandelbrotDemo();
-            break;
+        case FRACTAL_TYPE.MANDELBROT: await startMandelbrotDemo(); break;
 
-        case FRACTAL_TYPE.JULIA:
-            await startJuliaDemo();
-            break;
+        case FRACTAL_TYPE.JULIA: await startJuliaDemo(); break;
 
         default:
             console.warn(`No demo defined for mode ${fractalMode}`);
@@ -472,7 +471,6 @@ export async function travelToPreset(presets, index) {
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
-    activePresetIndex = index;
     presetButtons[index].classList.add('active');
 
     if (isJuliaMode()) {
@@ -481,6 +479,7 @@ export async function travelToPreset(presets, index) {
     } else {
         await fractalApp.animateTravelToPreset(presets[index]);
     }
+    activePresetIndex = index;
 
     exitAnimationMode();
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
@@ -534,7 +533,7 @@ export function resetPresetAndDiveButtonStates() {
  * This needs to happen on any fractal change
  */
 export function resetActivePresetIndex() {
-    activePresetIndex = 0;
+    activePresetIndex = -1;
 }
 
 export async function randomizeColors() {
@@ -547,23 +546,31 @@ export async function randomizeColors() {
     // Convert HSB/HSV to RGB
     const newPalette = hsbToRgb(hue, saturation, brightness);
 
-    await fractalApp.animateColorPaletteTransition(newPalette, 250, updateColorTheme); // Update app colors
+    await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
+        updateColorTheme(newPalette);
+    }); // Update app colors
 }
 
 export function captureScreenshot() {
     takeScreenshot(canvas, fractalApp, accentColor);
 }
 
-export function toggleHeader() {
+/**
+ * Shows/hides/toggles header.
+ * @param {boolean|null} show Show header? If null, then toggles current state
+ */
+export function toggleHeader(show = null) {
     let header = document.getElementById('headerContainer');
 
-    if (!headerToggled) {
+    if (show === null) show = !headerVisible;
+
+    if (show) {
         header.classList.remove('minimized');
     } else {
         header.classList.add('minimized');
     }
 
-    headerToggled = !headerToggled;
+    headerVisible = show;
 }
 
 export async function reset() {
@@ -580,19 +587,19 @@ export async function reset() {
 
 function initHeaderEvents() {
 
-    header.addEventListener('pointerenter', () => {
+    document.getElementById('logo').addEventListener('pointerenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
         }
-        header.classList.remove('minimized');
+        toggleHeader(true);
     });
 
     header.addEventListener('pointerleave', async () => {
         // Only minimize if it hasn't been toggled manually
-        if (!headerToggled &amp;&amp; !DEBUG_MODE) {
+        if (headerVisible &amp;&amp; !DEBUG_MODE) {
             headerMinimizeTimeout = setTimeout(() => {
-                toggleHeader();
+                toggleHeader(false);
                 headerMinimizeTimeout = null;
             }, 3000);
         }
@@ -601,9 +608,7 @@ function initHeaderEvents() {
     // When user clicks/taps outside of the header
     canvas.addEventListener('pointerdown', () => {
         if (DEBUG_MODE) return;
-
-        header.classList.add('minimized');
-        headerToggled = false;
+        toggleHeader(false);
     });
 }
 
@@ -768,7 +773,6 @@ export async function initUI(fractalRenderer) {
     }
 
     uiInitialized = true;
-    header.style.display = 'block';
 }
 
 // endregion------------------------------------------------------------------------------------------------------------</code></pre>
@@ -787,7 +791,7 @@ export async function initUI(fractalRenderer) {
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 17:10:07 GMT+0100 (středoevropský standardní čas)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 23:24:03 GMT+0100 (středoevropský standardní čas)
 </footer>
 
 <script> prettyPrint(); </script>
