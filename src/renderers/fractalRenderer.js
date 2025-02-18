@@ -90,11 +90,45 @@ export class FractalRenderer {
 			}
 		`;
 
-        this.canvas.addEventListener('webglcontextlost', (event) => {
-            event.preventDefault();
-            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-            this.init(); // Reinitialize WebGL context
-        });
+        this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+    }
+
+    onWebGLContextLost(event) {
+        event.preventDefault();
+        console.warn(`%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        this.init(); // Reinitialize WebGL context
+    }
+
+    /** Destructor */
+    destroy() {
+        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        // Cancel any ongoing animations.
+        this.stopCurrentNonColorAnimations();
+        this.stopCurrentColorAnimations();
+
+        // Remove event listeners from the canvas.
+        if (this.canvas) {
+            this.canvas.removeEventListener('webglcontextlost', this.onWebGLContextLost);
+        }
+
+        // Free WebGL resources.
+        if (this.program) {
+            this.gl.deleteProgram(this.program);
+            this.program = null;
+        }
+        if (this.vertexShader) {
+            this.gl.deleteShader(this.vertexShader);
+            this.vertexShader = null;
+        }
+        if (this.fragmentShader) {
+            this.gl.deleteShader(this.fragmentShader);
+            this.fragmentShader = null;
+        }
+
+        this.canvas = null;
+        this.gl = null;
+
+        console.groupEnd();
     }
 
     //region > CONTROL METHODS -----------------------------------------------------------------------------------------
@@ -260,11 +294,11 @@ export class FractalRenderer {
             this.gl.uniform2f(this.resolutionLoc, w, h);
         }
 
-        this.gl.uniform2fv(this.panLoc, this.pan);
+        this.gl.uniform2fv(this.panLoc, [...this.pan]);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
         this.gl.uniform1f(this.iterLoc, this.iterations);
-        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        this.gl.uniform3fv(this.colorLoc, [...this.colorPalette]);
 
         this.updateUniforms();
 
@@ -277,7 +311,7 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         this.stopCurrentNonColorAnimations();
         this.stopCurrentColorAnimations();
@@ -291,7 +325,7 @@ export class FractalRenderer {
         this.resizeCanvas();
         this.draw();
 
-        if (DEBUG_MODE) console.groupEnd();
+        console.groupEnd();
         updateInfo();
     }
 
