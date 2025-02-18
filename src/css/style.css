@@ -314,6 +314,10 @@ label, .sliderValue {
     margin: 5px 0 0 0;
 }
 
+#controlButtons button {
+    width: 80px;
+}
+
 p.small {
     font-size: 11px;
 }
