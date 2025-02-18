@@ -71,3 +71,15 @@ export const DEFAULT_BG_COLOR = 'rgba(24, 48, 13, 0.2)';
  */
 export const DEFAULT_CONSOLE_GROUP_COLOR = '#bada55';
 // ---------------------------------------------------------------------------------------------------------------------
+/** Default color used based on the initial Mandelbrot coloring. It's accent color / 1.9 brightness factor that
+ * is hardcoded in the updateColorTheme method.
+ * @type {number[]}
+ */
+export const DEFAULT_MANDELBROT_THEME_COLOR = [95 / 255, 134 / 255, 56 / 255];
+// ---------------------------------------------------------------------------------------------------------------------
+/** Default color used based on the initial Julia coloring. It's accent color / 1.9 brightness factor that
+ * is hardcoded in the updateColorTheme method.
+ * @type {number[]}
+ */
+export const DEFAULT_JULIA_THEME_COLOR = [0.298, 0.298, 0.741];
+// ---------------------------------------------------------------------------------------------------------------------
