@@ -13,7 +13,7 @@ import {
     resetAppState,
     switchFractalMode,
     toggleDebugLines,
-    toggleDemo,
+    toggleDemo, toggleHeader,
     travelToPreset,
     updateColorTheme,
 } from "./ui";
@@ -50,7 +50,7 @@ const JULIA_HOTKEY_C_SMOOTH_STEP = 0.1;
 const JULIA_HOTKEY_C_SPEED = 10;
 
 let rotationActive = false;
-
+let initialized = false;
 let fractalApp;
 
 /**
@@ -61,10 +61,10 @@ let fractalApp;
 async function onKeyDown(event) {
     //event.preventDefault();
 
-    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed ${event.shiftKey ? 'Shift + ' : ''} ${event.ctrlKey ? 'CTRL + ' : ''} ${event.code}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.code}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
 
     const rotationSpeed = event.shiftKey ? 0.01 : 0.1;
-    const rotationDirection = event.code === 'KeyQ' ? ROTATION_DIRECTION.CCW : ROTATION_DIRECTION.CW;
+    let rotationDirection = ROTATION_DIRECTION.CW;
 
     let deltaPanX = 0;
     let deltaPanY = 0;
@@ -76,6 +76,7 @@ async function onKeyDown(event) {
     switch (event.code) {
         // TODO add shift/non-shift to slow down or speed up the rotation instead of stop when the speed or direction is different
         case 'KeyQ': // Rotation counter-clockwise
+            rotationDirection = ROTATION_DIRECTION.CCW;
         case 'KeyW': // Rotation clockwise
             event.preventDefault();
             event.stopPropagation();
@@ -126,7 +127,7 @@ async function onKeyDown(event) {
             break;
 
         case "ArrowLeft":
-            deltaPanX = event.ctrlKey ? 0 : -(event.shiftKey ? 0.01 : 0.1);
+            deltaPanX = event.ctrlKey ? 0 : -(event.shiftKey ? 0.01 : 0.1); // TODO make constants
             deltaCx = event.ctrlKey ? JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_STEP : 1) : 0;
             break;
 
@@ -146,8 +147,8 @@ async function onKeyDown(event) {
             break;
 
         case "Space":
-            const zoomFactor = event.ctrlKey ? 1.1 : 0.9;
-            const targetZoom = fractalApp.zoom * zoomFactor;
+            const zoomFactor = event.ctrlKey ? (event.shiftKey ? 1.01 : 1.1) : (event.shiftKey ? 0.99 : 0.9); // TODO make constants
+            let targetZoom = fractalApp.zoom * zoomFactor;
 
             if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
                 await fractalApp.animateZoomTo(targetZoom, 20);
@@ -156,22 +157,13 @@ async function onKeyDown(event) {
             break;
 
         case "Enter":
-            let handle = document.getElementById('handle');
-            let header = document.getElementById('headerContainer');
-
-            if (handle.style.display === 'block') {
-                header.classList.remove('minimized');
-                handle.style.display = "none";
-            } else {
-                header.classList.add('minimized');
-                handle.style.display = "block";
-            }
+            toggleHeader();
             break;
 
-        default: // Case nums:
-            const match = event.code.match(/^(Digit|Numpad)([1-9])$/);
+        default: // Case nums and others:
+            const match = event.code.match(/^(Digit|Numpad)(\d)$/);
             if (match) {
-                const index = match[2]; // match[2] contains the digit pressed
+                const index = parseInt(match[2], 0); // match[2] contains the digit pressed
                 if (event.shiftKey && isJuliaMode()) {
                     await fractalApp.animateDive(fractalApp.DIVES[index]);
                 } else {
@@ -184,15 +176,21 @@ async function onKeyDown(event) {
     // Handling pan changes
     if (deltaPanX || deltaPanY) {
         let r = fractalApp.rotation;
-        let deltaX = deltaPanX * Math.cos(r) - deltaPanY * Math.sin(r);
-        let deltaY = deltaPanX * Math.sin(r) + deltaPanY * Math.cos(r);
-        await fractalApp.animatePanTo([fractalApp.pan[0] + deltaX, fractalApp.pan[1] + deltaY], PAN_SPEED);
+
+        // Reflect the zoom factor for consistent pan speed at different zoom levels
+        const effectiveDeltaX = (deltaPanX * fractalApp.zoom) * Math.cos(r) - (deltaPanY * fractalApp.zoom) * Math.sin(r);
+        const effectiveDeltaY = (deltaPanX * fractalApp.zoom) * Math.sin(r) + (deltaPanY * fractalApp.zoom) * Math.cos(r);
+
+        await fractalApp.animatePanTo([fractalApp.pan[0] + effectiveDeltaX, fractalApp.pan[1] + effectiveDeltaY], PAN_SPEED);
         resetAppState();
     }
 
     // Handling C changes
     if ((deltaCx || deltaCy) && isJuliaMode()) {
-        await fractalApp.animateToC([fractalApp.c[0] + deltaCx, fractalApp.c[1] + deltaCy], JULIA_HOTKEY_C_SPEED);
+        const effectiveDeltaCx = deltaCx * fractalApp.zoom;
+        const effectiveDeltaCy = deltaCy * fractalApp.zoom;
+
+        await fractalApp.animateToC([fractalApp.c[0] + effectiveDeltaCx, fractalApp.c[1] + effectiveDeltaCy], JULIA_HOTKEY_C_SPEED);
         resetAppState();
     }
 }
@@ -202,6 +200,23 @@ async function onKeyDown(event) {
  * @param {FractalRenderer} app
  */
 export function initHotKeys(app) {
+    if (initialized) {
+        console.warn(`%c initHotKeys: %c Redundant initialization!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    }
+
     fractalApp = app;
     document.addEventListener("keydown", onKeyDown);
+    initialized = true;
+
+    console.log(`%c initHotKeys: %c Initialized.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+}
+
+/** Destructor. Removes event listeners and cleans up */
+export function destroyHotKeys() {
+    fractalApp = null;
+    initialized = false;
+
+    document.removeEventListener("keydown", onKeyDown);
+
+    console.log(`%c destroyHotKeys: %c Destroyed.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
 }
