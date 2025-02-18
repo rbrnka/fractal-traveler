@@ -38,7 +38,6 @@ async function initFractalApp() {
     const onDefault = () => {
         console.log(`Default fractal settings used.`);
         fractalApp.resizeCanvas();
-        fractalApp.draw();
         clearURLParams();
     }
 
