@@ -118,11 +118,45 @@ export class FractalRenderer {
 			}
 		`;
 
-        this.canvas.addEventListener('webglcontextlost', (event) => {
-            event.preventDefault();
-            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-            this.init(); // Reinitialize WebGL context
-        });
+        this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+    }
+
+    onWebGLContextLost(event) {
+        event.preventDefault();
+        console.warn(`%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        this.init(); // Reinitialize WebGL context
+    }
+
+    /** Destructor */
+    destroy() {
+        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        // Cancel any ongoing animations.
+        this.stopCurrentNonColorAnimations();
+        this.stopCurrentColorAnimations();
+
+        // Remove event listeners from the canvas.
+        if (this.canvas) {
+            this.canvas.removeEventListener('webglcontextlost', this.onWebGLContextLost);
+        }
+
+        // Free WebGL resources.
+        if (this.program) {
+            this.gl.deleteProgram(this.program);
+            this.program = null;
+        }
+        if (this.vertexShader) {
+            this.gl.deleteShader(this.vertexShader);
+            this.vertexShader = null;
+        }
+        if (this.fragmentShader) {
+            this.gl.deleteShader(this.fragmentShader);
+            this.fragmentShader = null;
+        }
+
+        this.canvas = null;
+        this.gl = null;
+
+        console.groupEnd();
     }
 
     //region > CONTROL METHODS -----------------------------------------------------------------------------------------
@@ -288,11 +322,11 @@ export class FractalRenderer {
             this.gl.uniform2f(this.resolutionLoc, w, h);
         }
 
-        this.gl.uniform2fv(this.panLoc, this.pan);
+        this.gl.uniform2fv(this.panLoc, [...this.pan]);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
         this.gl.uniform1f(this.iterLoc, this.iterations);
-        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        this.gl.uniform3fv(this.colorLoc, [...this.colorPalette]);
 
         this.updateUniforms();
 
@@ -305,7 +339,7 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         this.stopCurrentNonColorAnimations();
         this.stopCurrentColorAnimations();
@@ -319,7 +353,7 @@ export class FractalRenderer {
         this.resizeCanvas();
         this.draw();
 
-        if (DEBUG_MODE) console.groupEnd();
+        console.groupEnd();
         updateInfo();
     }
 
@@ -818,13 +852,13 @@ export class FractalRenderer {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-JuliaSlidersController.html">JuliaSlidersController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 17 2025 17:44:09 GMT+0100 (středoevropský standardní čas)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 17:10:07 GMT+0100 (středoevropský standardní čas)
 </footer>
 
 <script> prettyPrint(); </script>

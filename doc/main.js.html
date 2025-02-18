@@ -36,13 +36,14 @@ import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
 import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates} from "./ui/ui";
-import {clearURLParams, loadFractalParamsFromURL} from "./global/utils";
+import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
 
 /**
  * Initializes the canvas, reads URL params and triggers respective fractal rendering
  */
 async function initFractalApp() {
+    if (DEBUG_MODE) console.warn(' --- DEBUG MODE ACTIVE! ---');
     console.groupCollapsed(`%c initFractalApp`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     const canvas = document.getElementById('fractalCanvas');
@@ -64,7 +65,11 @@ async function initFractalApp() {
 
     const onDefault = () => {
         console.log(`Default fractal settings used.`);
-        fractalApp.reset();
+        //
+        // document.getElementById('headerContainer').style.top = '0';
+        // document.getElementById('infoLabel').style.bottom = '0';
+
+        fractalApp.draw();
         clearURLParams();
     }
 
@@ -77,12 +82,6 @@ async function initFractalApp() {
         case FRACTAL_TYPE.JULIA:
             console.log(`Constructing Julia.`);
             fractalApp = new JuliaRenderer(canvas);
-            if (validJuliaTravelPreset) {
-                console.log(`Traveling to URL params.`);
-                await fractalApp.animateTravelToPreset(preset, 500);
-            } else {
-                onDefault();
-            }
             break;
 
         /****************
@@ -91,12 +90,6 @@ async function initFractalApp() {
         case FRACTAL_TYPE.MANDELBROT:
             console.log(`Constructing Mandelbrot.`);
             fractalApp = new MandelbrotRenderer(canvas);
-            if (validMandelbrotTravelPreset) {
-                console.log(`Traveling to URL params.`);
-                await fractalApp.animatePanZoomRotationTo(preset.pan, preset.zoom, preset.rotation, 500);
-            } else {
-                onDefault();
-            }
             break;
 
         default:
@@ -104,7 +97,26 @@ async function initFractalApp() {
             break;
     }
 
+    await asyncDelay(100); // Wait a moment for things to stabilize
     await initUI(fractalApp);
+
+    if (validJuliaTravelPreset) {
+        console.log(`Traveling to URL params.`);
+        await fractalApp.animateTravelToPreset(preset, 1000);
+    } else if (validMandelbrotTravelPreset) {
+        console.log(`Traveling to URL params.`);
+        await fractalApp.animateTravelToPreset(preset, 100, 1000);
+    } else {
+        onDefault();
+    }
+
+    await asyncDelay(500); // Wait a moment for things to stabilize
+
+    await new Promise(resolve => {
+        document.getElementById('headerContainer').classList.add('ready');
+        document.getElementById('infoLabel').classList.add('ready');
+        resolve();
+    });
 
     // If URL contains a preset, reset buttons
     if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
@@ -115,7 +127,7 @@ async function initFractalApp() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-        if (DEBUG_MODE) console.log('%c DOMContentLoaded triggered. Initializing fractal.', 'color: #ff0');
+        if (DEBUG_MODE) console.log('%c DOMContentLoaded: %c Initializing fractal.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #ff0');
         await initFractalApp();
         console.log('%c Fractal init complete.', 'color: #0f0');
     },
@@ -132,13 +144,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-JuliaSlidersController.html">JuliaSlidersController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 17 2025 17:44:09 GMT+0100 (středoevropský standardní čas)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 17:10:07 GMT+0100 (středoevropský standardní čas)
 </footer>
 
 <script> prettyPrint(); </script>
