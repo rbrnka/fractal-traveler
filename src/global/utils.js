@@ -401,3 +401,18 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
 
     return [deltaPanX, deltaPanY];
 }
+
+/**
+ * Removes array of buttons from the scene and clears it.
+ * @param {Array<HTMLButtonElement>} buttons
+ */
+export function destroyArrayOfButtons(buttons) {
+    if (Array.isArray(buttons)) {
+        buttons.forEach(btn => {
+            if (btn.parentNode) {
+                btn.parentNode.removeChild(btn);
+            }
+        });
+        buttons.length = 0;
+    }
+}
