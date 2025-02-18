@@ -26,7 +26,7 @@ import {
     disableJuliaSliders,
     enableJuliaSliders,
     initJuliaSliders,
-    resetJuliaSliders
+    resetJuliaSliders, updateJuliaSliders
 } from "./juliaSlidersController";
 
 /**
@@ -49,11 +49,12 @@ let bgColor = DEFAULT_BG_COLOR;
 
 let headerMinimizeTimeout = null;
 let uiInitialized = false;
-let headerToggled = false;
+/** @type {boolean} */
+let headerVisible = true;
 
 let animationActive = false;
 let activeJuliaDiveIndex = -1;
-let activePresetIndex = 0;
+let activePresetIndex = -1;
 let resizeTimeout;
 
 // HTML elements
@@ -118,6 +119,7 @@ export function enableMandelbrotMode() {
 
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
+    resetActivePresetIndex();
     initPresetButtonEvents();
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
@@ -137,12 +139,15 @@ export function enableJuliaMode() {
     initPresetButtonEvents();
 
     initJuliaSliders(fractalApp);
+    updateJuliaSliders();
 
     destroyArrayOfButtons(diveButtons);
     const diveBlock = document.getElementById('dives');
     diveBlock.style.display = 'none';
 
     initDiveButtons();
+
+    resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
     // Darker backgrounds for Julia as it renders on white
@@ -522,16 +527,22 @@ export function captureScreenshot() {
     takeScreenshot(canvas, fractalApp, accentColor);
 }
 
-export function toggleHeader() {
+/**
+ * Shows/hides/toggles header.
+ * @param {boolean|null} show Show header? If null, then toggles current state
+ */
+export function toggleHeader(show = null) {
     let header = document.getElementById('headerContainer');
 
-    if (!headerToggled) {
+    if (show === null) show = !headerVisible;
+
+    if (show) {
         header.classList.remove('minimized');
     } else {
         header.classList.add('minimized');
     }
 
-    headerToggled = !headerToggled;
+    headerVisible = show;
 }
 
 export async function reset() {
@@ -548,19 +559,19 @@ export async function reset() {
 
 function initHeaderEvents() {
 
-    header.addEventListener('pointerenter', () => {
+    document.getElementById('logo').addEventListener('pointerenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
         }
-        header.classList.remove('minimized');
+        toggleHeader(true);
     });
 
     header.addEventListener('pointerleave', async () => {
         // Only minimize if it hasn't been toggled manually
-        if (!headerToggled && !DEBUG_MODE) {
+        if (headerVisible && !DEBUG_MODE) {
             headerMinimizeTimeout = setTimeout(() => {
-                toggleHeader();
+                toggleHeader(false);
                 headerMinimizeTimeout = null;
             }, 3000);
         }
@@ -569,9 +580,7 @@ function initHeaderEvents() {
     // When user clicks/taps outside of the header
     canvas.addEventListener('pointerdown', () => {
         if (DEBUG_MODE) return;
-
-        header.classList.add('minimized');
-        headerToggled = false;
+        toggleHeader(false);
     });
 }
 
@@ -736,7 +745,6 @@ export async function initUI(fractalRenderer) {
     }
 
     uiInitialized = true;
-    header.style.display = 'block';
 }
 
 // endregion------------------------------------------------------------------------------------------------------------
