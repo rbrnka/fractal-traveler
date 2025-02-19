@@ -35,6 +35,7 @@
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
  *      @property {string} [title] HTML element title (on hover)
+ * @extends PRESET
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
  */
@@ -49,6 +50,7 @@
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
  *      @property {string} [title] HTML element title (on hover)
+ * @extends PRESET
  * @see {@link MANDELBROT_PRESET}
  * @description Julia-specific presets
  */
