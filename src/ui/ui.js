@@ -244,7 +244,7 @@ function exitAnimationMode() {
 
     animationActive = false;
 
-    fractalApp.stopCurrentNonColorAnimations();
+    fractalApp.stopAllNonColorAnimations();
 
     demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
     demoButton.classList.remove('active');

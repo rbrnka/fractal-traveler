@@ -197,7 +197,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      */
     async animateDemo(random = true) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
 
         if (!this.PRESETS.length) {
             console.warn('No presets defined for Mandelbrot mode ');

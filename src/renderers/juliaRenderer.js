@@ -302,10 +302,10 @@ export class JuliaRenderer extends FractalRenderer {
      * @inheritDoc
      * @override
      */
-    stopCurrentNonColorAnimations() {
+    stopAllNonColorAnimations() {
         this.stopCurrentCAnimation();
 
-        super.stopCurrentNonColorAnimations();
+        super.stopAllNonColorAnimations();
     }
 
     /**
@@ -387,7 +387,7 @@ export class JuliaRenderer extends FractalRenderer {
      */
     async animateTravelToPreset(preset, duration = 500) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
 
         // Phase 1: Setting default params.
         await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
@@ -480,7 +480,7 @@ export class JuliaRenderer extends FractalRenderer {
      */
     async animateDemo() {
         console.log(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
 
         this.demoActive = true; // Not used in Julia but the demo is active
 

@@ -103,7 +103,7 @@ export class FractalRenderer {
     destroy() {
         console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         // Cancel any ongoing animations.
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
 
         // Remove event listeners from the canvas.
@@ -150,6 +150,8 @@ export class FractalRenderer {
     resizeCanvas() {
         console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         console.log(`Canvas before resize: ${this.canvas.width}x${this.canvas.height}`);
+
+        this.gl.useProgram(this.program);
 
         // Use visual viewport if available, otherwise fallback to window dimensions.
         const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -209,6 +211,8 @@ export class FractalRenderer {
         if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         if (DEBUG_MODE) console.log(`Shader GLenum type: ${type}`);
         if (DEBUG_MODE) console.log(`Shader code: ${source}`);
+
+        this.gl.useProgram(this.program);
 
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
@@ -279,6 +283,8 @@ export class FractalRenderer {
      * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
      */
     draw() {
+        this.gl.useProgram(this.program);
+
         const w = this.canvas.width;
         const h = this.canvas.height;
 
@@ -293,11 +299,11 @@ export class FractalRenderer {
             this.gl.uniform2f(this.resolutionLoc, w, h);
         }
 
-        this.gl.uniform2fv(this.panLoc, [...this.pan]);
+        this.gl.uniform2fv(this.panLoc, this.pan);
         this.gl.uniform1f(this.zoomLoc, this.zoom);
         this.gl.uniform1f(this.rotationLoc, this.rotation);
         this.gl.uniform1f(this.iterLoc, this.iterations);
-        this.gl.uniform3fv(this.colorLoc, [...this.colorPalette]);
+        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
 
         this.updateUniforms();
 
@@ -312,7 +318,7 @@ export class FractalRenderer {
     reset() {
         console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
 
         this.colorPalette = [...this.DEFAULT_PALETTE];
@@ -376,8 +382,8 @@ export class FractalRenderer {
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
     /** Stops all currently running animations that are not a color transition */
-    stopCurrentNonColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    stopAllNonColorAnimations() {
+        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
         this.stopCurrentPanAnimation();
         this.stopCurrentZoomAnimation()
@@ -429,7 +435,7 @@ export class FractalRenderer {
         console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         this.demoActive = false;
         this.currentPresetIndex = 0;
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
     }
 
     /** Default callback after every animation that requires on-screen info update */
@@ -789,10 +795,11 @@ export class FractalRenderer {
     /**
      * Animates travel to preset.
      * @abstract
-     * @param {...*} args - Parameters for the animation.
+     * @param {PRESET} preset - Parameters for the animation.
+     * @param {number} duration - Parameters for the animation.
      * @return {Promise<void>}
      */
-    async animateTravelToPreset(...args) {
+    async animateTravelToPreset(preset, duration) {
         throw new Error('The animateTravelToPreset method must be implemented in child classes');
     }
 
