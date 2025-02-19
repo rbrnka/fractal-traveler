@@ -36,7 +36,7 @@ describe('HotKeyController', () => {
             animateTravelToPreset: jest.fn(() => Promise.resolve()),
             animateDive: jest.fn(() => Promise.resolve()),
             stopCurrentRotationAnimation: jest.fn(),
-            stopCurrentNonColorAnimations: jest.fn(),
+            stopAllNonColorAnimations: jest.fn(),
             draw: jest.fn(),
             updateInfo: jest.fn(),
             updateInfoOnAnimationFinished: jest.fn(),

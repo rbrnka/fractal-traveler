@@ -1,14 +1,15 @@
 import {initTouchHandlers, registerTouchEventHandlers} from '../ui/touchEventHandlers.js';
 
 // Mock utility functions to avoid side effects.
-jest.mock('../global/utils.js', () => ({
-    updateURLParams: jest.fn(),
-    clearURLParams: jest.fn(),
-}));
+// jest.mock('../global/utils.js', () => ({
+//     updateURLParams: jest.fn(),
+//     clearURLParams: jest.fn(),
+// }));
 
-jest.mock('../ui/ui.js', () => ({
-    updateInfo: jest.fn(),
-}));
+// jest.mock('../ui/ui.js', () => ({
+//     updateInfo: jest.fn(),
+//     resetAppState: jest.fn()
+// }));
 
 describe('Touch Event Handlers', () => {
     let canvas, fractalApp;
@@ -38,17 +39,18 @@ describe('Touch Event Handlers', () => {
 
     beforeEach(() => {
         // Set up DOM with a canvas element.
-        document.body.innerHTML = `
-            <canvas id="fractalCanvas" width="800" height="600"></canvas>
-            <div id="infoText">Initial Info</div>
-        `;
-        canvas = document.getElementById('fractalCanvas');
+        document.body.innerHTML = '';
+        canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        canvas.id = 'fractalCanvas';
+        document.body.appendChild(canvas);
 
         // Mock fractalApp with minimum functionality.
         fractalApp = {
             canvas,
             MAX_ZOOM: 0.000017,
-            MIN_ZOOM: 40,
+            MIN_ZOOM: 400,
             pan: [0, 0],
             c: [0, 0],
             rotation: 0,
@@ -57,7 +59,7 @@ describe('Touch Event Handlers', () => {
             updateInfo: jest.fn(),
             updateJuliaSliders: jest.fn(),
             screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
-            stopCurrentNonColorAnimations: jest.fn(),
+            stopAllNonColorAnimations: jest.fn(),
             // If needed, other methods can be mocked.
             animatePanTo: jest.fn(() => Promise.resolve()),
             animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
@@ -73,6 +75,14 @@ describe('Touch Event Handlers', () => {
     });
 
     test('Single touch action triggers centering on tap', () => {
+        jest.useFakeTimers();
 
+        const touch = new Touch({ identifier: 1, target: canvas, clientX: 300, clientY: 300 });
+        canvas.dispatchEvent(new TouchEvent('touchstart', { touches: [touch] }));
+        canvas.dispatchEvent(new TouchEvent('touchend', { changedTouches: [touch] }));
+
+        jest.advanceTimersByTime(500); // Simulate delay for single tap.
+
+        expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
 });
