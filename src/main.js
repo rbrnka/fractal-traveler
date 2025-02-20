@@ -7,7 +7,7 @@
 import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
-import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates} from "./ui/ui";
+import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
 
@@ -66,7 +66,7 @@ async function initFractalApp() {
     }
 
     await asyncDelay(100); // Wait a moment for things to stabilize
-    await initUI(fractalApp);
+    await initUI(fractalApp); // TODO consider initializing after travel
 
     if (validJuliaTravelPreset) {
         console.log(`Traveling to URL params.`);
@@ -91,13 +91,18 @@ async function initFractalApp() {
         resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
     }
+
     console.groupEnd();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
         if (DEBUG_MODE) console.log('%c DOMContentLoaded: %c Initializing fractal.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #ff0');
+
         await initFractalApp();
-        console.log('%c Fractal init complete.', 'color: #0f0');
+        console.log('%c DOMContentLoaded: %c Fractal init complete..', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #0f0');
+
+        await asyncDelay(2000); // Wait a moment for things to stabilize
+        updateInfo();
     },
     {
         once: true
