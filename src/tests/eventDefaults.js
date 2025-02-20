@@ -100,4 +100,5 @@ export const rightArrowPressedEvent = (s = false, c = false, a = false) => defau
 export const downArrowPressedEvent = (s = false, c = false, a = false) => defaultKeyboardEvent('ArrowDown', s, c, a);
 export const upArrowPressedEvent = (s = false, c = false, a = false) => defaultKeyboardEvent('ArrowUp', s, c, a);
 
-export const NumPressedEvent = (num, s = false, c = false, a = false) => defaultKeyboardEvent(`Numpad${num.toString()}`, s, c, a);
+export const numPressedEvent = (num, s = false, c = false, a = false) => defaultKeyboardEvent(`Numpad${num.toString()}`, s, c, a);
+export const charPressedEvent = (char, s = false, c = false, a = false) => defaultKeyboardEvent(`Key${char.toUpperCase()}`, s, c, a);

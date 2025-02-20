@@ -1,15 +1,17 @@
 // __tests__/hotKeyController.test.js
-import {initHotKeys} from '../ui/hotKeyController';
+import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
 
 // Use actual constants if needed:
 import * as UI from "../ui/ui";
 import {
+    charPressedEvent,
     downArrowPressedEvent,
     leftArrowPressedEvent,
-    NumPressedEvent,
+    numPressedEvent,
     rightArrowPressedEvent,
     upArrowPressedEvent
 } from "./eventDefaults";
+import {ROTATION_DIRECTION} from "../global/constants";
 
 describe('HotKeyController', () => {
     let fractalApp;
@@ -51,50 +53,65 @@ describe('HotKeyController', () => {
         // Remove keydown listeners by replacing document's event listeners
         // (Depending on your implementation, you might need to remove them explicitly.)
         document.body.innerHTML = '';
+        destroyHotKeys();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('ArrowLeft without ctrl pans left', async () => {
         document.dispatchEvent(leftArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('ArrowRight with ctrl adjusts Julia c', async () => {
         document.dispatchEvent(rightArrowPressedEvent(false, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateToC).toHaveBeenCalled();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('ArrowDown without ctrl pans down', async () => {
         document.dispatchEvent(downArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('ArrowUp with ctrl adjusts Julia c (imaginary part)', async () => {
         document.dispatchEvent(upArrowPressedEvent(false, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateToC).toHaveBeenCalled();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('Numkeys travel to preset', async () => {
-        document.dispatchEvent(NumPressedEvent(1));
+        document.dispatchEvent(numPressedEvent(1));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(UI.travelToPreset).toHaveBeenCalled();
     });
-
+    // -----------------------------------------------------------------------------------------------------------------
     test('Shift+Numkeys trigger dive in Julia mode or travel to preset otherwise', async () => {
         UI.isJuliaMode = jest.fn(() => false);
 
         // No Julia mode, Shift does not make a difference - travel to preset
-        document.dispatchEvent(NumPressedEvent(1, true));
+        document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(UI.travelToPreset).toHaveBeenCalled();
 
         // In Julia mode, dive is triggered
         UI.isJuliaMode = jest.fn(() => true);
-        document.dispatchEvent(NumPressedEvent(1, true));
+        document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateDive).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('W enter infinite rotation cw, stop, enter again with slower speed and opposite direction', async () => {
+        document.dispatchEvent(charPressedEvent('w'));
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(fractalApp.animateInfiniteRotation).toHaveBeenCalledWith(ROTATION_DIRECTION.CW, 0.1);
+
+        document.dispatchEvent(charPressedEvent('w'));
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(fractalApp.stopCurrentRotationAnimation).toHaveBeenCalled();
+
+        document.dispatchEvent(charPressedEvent('q', true));
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(fractalApp.animateInfiniteRotation).toHaveBeenCalledWith(ROTATION_DIRECTION.CCW, 0.01);
     });
 });
