@@ -29,6 +29,36 @@ Uses WebGL for rendering, ES6 for a modular codebase, and webpack for bundling a
 - **Extensibility:**
 The architecture supports additional fractal types and further customization of rendering options.
 
+## Controls
+### Mouse
+- `Left Button Drag`: Pan
+- `Right Button Drag`: Rotate
+- `Wheel`: Zoom
+- `Left Button Single Click`: Center & Generate URL link
+- `Double click`: Zoom-in/out & Center
+- `Middle Click`: Toggle guiding lines
+### Keyboard
+- `F11`: Toggle fullscreen
+- `Enter`: Toggle controls
+- `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+- `E`: Toggle guiding lines
+- `Shift + R`: Reset
+- `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
+- `Shift + S`: Take screenshot
+- `Space`: Zoom-in (Ctrl: Zoom-out, Shift: Smoother step)
+- `A`: Force resize
+- `Left / Right`: Horizontal pan (Shift: Smoother step)
+- `Up / Down`: Vertical pan (Shift: Smoother step)
+- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
+- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
+- `Num 1-9`: Load Preset (Shift: Start dive)
+
+### Touch
+- `One Finger Pan`: Pan
+- `One Finger Tap`: Center & Generate URL link
+- `One Finger Double-tap`: Zoom-in/out & Center
+- `Pinch`: Pan & Zoom & Rotate
+
 ## Getting Started
 
 ### Prerequisites
@@ -47,6 +77,9 @@ The architecture supports additional fractal types and further customization of 
 - `npm run dev-watch` for local build with watch mode (incl. source maps)
 - `npm run test` to run test suites
 - `jsdoc -r ./src/ ./README.md -d ./doc/ ` to build documentation
+
+## Documentation
+Available [here](https://fractal.brnka.com/docs).
 
 ## Changelog
 ### v1.8
@@ -105,61 +138,6 @@ The architecture supports additional fractal types and further customization of 
 
 ### v1.3
 - This version contains the directory and build structure, previous versions were simple PoCs
-
-## Structure
-- `fractalRenderer.js`:
-This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.
-
-- `mandelbrotRenderer.js`:
-This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
-
-- `juliaRenderer.js`:
-  This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
-
-- `mouseEventHandlers.js`:
-This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
-
-- `touchEventHandlers.js`:
-This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
-
-- `ui.js`:
-Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
-
-- `utils.js`:
-Contains helper functions for working with URL parameters, colors, etc.
-
-- `main.js`:
-The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), registers events, initializes the UI and the fractal.
-
-## Controls:
-### Mouse
-- `Left Button Drag`: Pan
-- `Right Button Drag`: Rotate
-- `Wheel`: Zoom
-- `Left Button Single Click`: Center & Generate URL link
-- `Double click`: Zoom-in/out & Center
-- `Middle Click`: Toggle guiding lines
-### Keyboard
-- `F11`: Toggle fullscreen
-- `Enter`: Toggle controls
-- `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
-- `E`: Toggle guiding lines
-- `Shift + R`: Reset
-- `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
-- `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Ctrl: Zoom-out, Shift: Smoother step)
-- `A`: Force resize
-- `Left / Right`: Horizontal pan (Shift: Smoother step)
-- `Up / Down`: Vertical pan (Shift: Smoother step)
-- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
-- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
-- `Num 1-9`: Load Preset (Shift: Start dive)
-
-### Touch
-- `One Finger Pan`: Pan
-- `One Finger Tap`: Center & Generate URL link
-- `One Finger Double-tap`: Zoom-in/out & Center
-- `Pinch`: Pan & Zoom & Rotate
 
 ## License
 MIT License. See for details.
