@@ -201,7 +201,8 @@ async function onKeyDown(event) {
  */
 export function initHotKeys(app) {
     if (initialized) {
-        console.warn(`%c initHotKeys: %c Redundant initialization!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.warn(`%c initHotKeys: %c Redundant initialization skipped!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        return;
     }
 
     fractalApp = app;
@@ -213,6 +214,11 @@ export function initHotKeys(app) {
 
 /** Destructor. Removes event listeners and cleans up */
 export function destroyHotKeys() {
+    if (!initialized) {
+        console.warn(`%c destroyHotKeys: %c Nothing to destroy!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        return;
+    }
+
     fractalApp = null;
     initialized = false;
 
