@@ -4,6 +4,7 @@ import {
     getAnimationDuration,
     hsbToRgb,
     isTouchDevice,
+    normalizeRotation,
     updateURLParams
 } from '../global/utils.js';
 import {initMouseHandlers, registerMouseEventHandlers, unregisterMouseEventHandlers} from "./mouseEventHandlers";
@@ -26,7 +27,8 @@ import {
     disableJuliaSliders,
     enableJuliaSliders,
     initJuliaSliders,
-    resetJuliaSliders, updateJuliaSliders
+    resetJuliaSliders,
+    updateJuliaSliders
 } from "./juliaSlidersController";
 
 /**
@@ -34,6 +36,8 @@ import {
  * @author Radim Brnka
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
  */
+
+let FEATURE_FLAG_USER_INPUT = false; // TODO
 
 let canvas;
 let fractalApp;
@@ -74,15 +78,37 @@ let infoText;
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 
+/**
+ * Switches among fractal modes
+ * @param {FRACTAL_TYPE} mode
+ */
 export function switchFractalMode(mode) {
-    if (mode === fractalMode) return;
+    console.groupCollapsed(`%c switchFractalMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+
+    if (mode === fractalMode) {
+        console.warn(`Switching to the same mode? Why?`);
+        console.groupEnd();
+        return;
+    }
+
+    exitAnimationMode();
 
     fractalApp.destroy();
 
-    if (mode === FRACTAL_TYPE.MANDELBROT) {
-        enableMandelbrotMode();
-    } else {
-        enableJuliaMode();
+    switch (mode) {
+        case FRACTAL_TYPE.MANDELBROT:
+            enableMandelbrotMode();
+            break;
+
+        case FRACTAL_TYPE.JULIA:
+            enableJuliaMode();
+            break;
+
+        default:
+            console.error(`Unknown fractal mode "${mode}"!`);
+            console.groupEnd();
+            return;
+
     }
 
     // Register control events
@@ -98,12 +124,19 @@ export function switchFractalMode(mode) {
     }
 
     fractalApp.reset();
+
+    console.log(`Switched to ${mode}`);
+    console.groupEnd();
 }
 
 export function isJuliaMode() {
     return fractalMode === FRACTAL_TYPE.JULIA;
 }
 
+/**
+ * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
+ * for Mandelbrot mode.
+ */
 export function enableMandelbrotMode() {
     juliaSwitch.classList.remove('active');
     mandelbrotSwitch.classList.add('active');
@@ -119,7 +152,7 @@ export function enableMandelbrotMode() {
 
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
-    if (activePresetIndex !== 0)  resetActivePresetIndex();
+    if (activePresetIndex !== 0) resetActivePresetIndex();
     initPresetButtonEvents();
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
@@ -142,12 +175,9 @@ export function enableJuliaMode() {
     updateJuliaSliders();
 
     destroyArrayOfButtons(diveButtons);
-    const diveBlock = document.getElementById('dives');
-    diveBlock.style.display = 'none';
-
     initDiveButtons();
 
-    if (activePresetIndex !== 0)  resetActivePresetIndex();
+    if (activePresetIndex !== 0) resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
     // Darker backgrounds for Julia as it renders on white
@@ -227,7 +257,13 @@ export function updateInfo(traveling = false) {
         infoText.classList.remove('animationActive');
     }
 
-    infoText.textContent = text;
+    if (FEATURE_FLAG_USER_INPUT) {
+        if (document.activeElement !== infoText) {
+            infoText.innerHTML = text;
+        }
+    } else {
+        infoText.innerHTML = text;
+    }
 }
 
 export function isAnimationActive() {
@@ -239,10 +275,12 @@ function exitAnimationMode() {
     console.groupCollapsed(`%c exitAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (!animationActive) {
+        console.groupEnd();
         return;
     }
 
     animationActive = false;
+    infoText.classList.remove('animation');
 
     fractalApp.stopAllNonColorAnimations();
 
@@ -262,6 +300,8 @@ function exitAnimationMode() {
     setTimeout(() => {
         updateInfo();
     }, 150);
+
+    console.groupEnd();
 }
 
 /** Disables controls, activates demo button */
@@ -269,10 +309,12 @@ function initAnimationMode() {
     console.groupCollapsed(`%c initAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (animationActive) {
+        console.groupEnd();
         return;
     }
 
     animationActive = true;
+    infoText.classList.add('animation');
 
     // resetPresetAndDiveButtons();
     demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
@@ -306,6 +348,7 @@ export async function toggleDemo() {
         activeJuliaDiveIndex = -1;
         fractalApp.stopDemo();
         exitAnimationMode();
+        console.groupEnd();
         return;
     }
 
@@ -313,6 +356,7 @@ export async function toggleDemo() {
     initAnimationMode();
 
     switch (fractalMode) {
+        // @formatter:off
         case FRACTAL_TYPE.MANDELBROT: await startMandelbrotDemo(); break;
 
         case FRACTAL_TYPE.JULIA: await startJuliaDemo(); break;
@@ -321,6 +365,7 @@ export async function toggleDemo() {
             console.warn(`No demo defined for mode ${fractalMode}`);
             exitAnimationMode();
             break;
+        // @formatter:on
     }
 
     console.groupEnd();
@@ -336,8 +381,13 @@ async function startMandelbrotDemo() {
     console.groupEnd();
 }
 
-/** Starts the Julia dive infinite animation */
-async function startJuliaDive(dives, index) {
+/**
+ * Starts the Julia dive infinite animation
+ * @param {Array<DIVE>} dives
+ * @param {number} index Index of the dive
+ * @return {Promise<void>}
+ */
+export async function startJuliaDive(dives, index) {
     if (animationActive && index === activeJuliaDiveIndex) {
         console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         return;
@@ -398,7 +448,7 @@ async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (animationActive) {
-        console.log(`%c startJuliaDive: %c Animation already in progress. Stopping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`Animation already in progress. Stopping.`);
         exitAnimationMode();
     }
 
@@ -547,6 +597,9 @@ export function toggleHeader(show = null) {
 
 export async function reset() {
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
+
+    exitAnimationMode();
+
     fractalApp.reset();
     if (isJuliaMode()) {
         resetJuliaSliders();
@@ -607,7 +660,7 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.title = preset.title || ('Preset ' + index);
+        btn.title = (preset.title || ('Preset ' + index)) + ` (Num ${index})`;
         btn.textContent = (index).toString();
         btn.addEventListener('click', async () => {
             await travelToPreset(presets, index);
@@ -649,7 +702,7 @@ function initDiveButtons() {
             const btn = document.createElement('button');
             btn.id = 'dive' + (index);
             btn.className = 'dive';
-            btn.title = dive.title || ('Preset ' + index);
+            btn.title = (dive.title || ('Preset ' + index)) + ` (Shift+${index})`;
             btn.textContent = (index).toString();
             btn.addEventListener('click', async () => {
                 await startJuliaDive(dives, index);
@@ -682,17 +735,136 @@ function initWindowEvents() {
     });
 }
 
+/**
+ * Parses a string of the form:
+ *   p = [<panX>, <panY>i] c = [<cX>, <cY>i] zoom = <zoom> r = <rotation>
+ * and returns an object with the parsed numbers.
+ * If a part is invalid or missing, an error message is returned.
+ *
+ * @param {string} input The input string.
+ * @returns {PRESET|Object}
+ */
+export function parseUserInput(input) {
+
+    // https://regex101.com/
+    const panRegex = /\s*p\s*=\s*[\[\(]?\s*(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*[\]\)]?/i;
+    const cRegex = /\s*c\s*=\s*[\[\(]?\s*(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*[\]\)]?/i;
+    const zoomRegex = /\s*zoom\s*=\s*([\d.]+)/i;
+    const rotationRegex = /\s*r\s*=\s*([\d.]+)/i;
+
+    let errors = [];
+
+    // Validate and extract pan.
+    const panMatch = input.match(panRegex);
+    if (!panMatch) {
+        errors.push(`Pan coordinates (p) are missing or invalid.`);
+    }
+    // Validate and extract Julia c in Julia mode
+    const cMatch = input.match(cRegex);
+    if (!cMatch && isJuliaMode()) {
+        errors.push(`Julia constant (c) is missing or invalid.`);
+    }
+    // Validate and extract zoom.
+    const zoomMatch = input.match(zoomRegex);
+    if (!zoomMatch) {
+        errors.push(`Zoom (zoom) value is missing or invalid.`);
+    }
+    // Validate and extract rotation.
+    const rotationMatch = input.match(rotationRegex);
+    if (!rotationMatch) {
+        errors.push(`Rotation (r) value is missing or invalid.`);
+    }
+
+    // If any errors, return error object.
+    if (errors.length > 0) {
+        return {error: errors.join(" ")};
+    }
+
+    // Otherwise, parse values.
+    const panX = parseFloat(panMatch[1]);
+    const panY = parseFloat(panMatch[2]);
+    const z = parseFloat(zoomMatch[1]);
+    const r = normalizeRotation(parseFloat(rotationMatch[1]) * Math.PI / 180);
+
+    // Optionally check for isNaN here too.
+    // if ([panX, panY, cX, cY, z, r].some(v => isNaN(v))) {
+    //     return { error: "One or more numeric values could not be parsed." };
+    // }
+
+    if (isJuliaMode()) {
+        const cX = parseFloat(cMatch[1]);
+        const cY = parseFloat(cMatch[2]);
+
+        return {pan: [panX, panY], c: [cX, cY], zoom: z, rotation: r};
+    } else {
+        return {pan: [panX, panY], zoom: z, rotation: r};
+    }
+
+}
+
 function initInfoText() {
-    infoText.addEventListener('click', () => {
-        let textarea = document.getElementById("infoText");
-        let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`;
-        text += isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`;
-        navigator.clipboard.writeText(text).then(function () {
-            textarea.innerText = 'Copied to clipboard!';
-        }, function (err) {
-            console.error('Not copied to clipboard! ' + err.toString());
+    if (!FEATURE_FLAG_USER_INPUT) {
+        infoText.addEventListener('click', () => {
+            // TODO refactor into a method etc.
+            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}` + isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`;
+
+            navigator.clipboard.writeText(text).then(function () {
+                infoText.innerHTML = 'Copied to clipboard!';
+            }, function (err) {
+                console.error('Not copied to clipboard! ' + err.toString());
+            });
         });
-    });
+    } else {
+        infoText.setAttribute("contenteditable", true);
+
+        // Listen for keydown events.
+        infoText.style.cursor = 'auto';
+        infoText.removeAttribute("readonly");
+
+        infoText.addEventListener('focus', () => {
+            infoLabel.style.zoom = '200%';
+        })
+        // Listen for keydown events.
+        infoText.addEventListener('blur', () => {
+            infoLabel.style.zoom = '120%';
+        })
+
+        if (fractalMode === FRACTAL_TYPE.MANDELBROT) {
+            infoText.addEventListener("keydown", function (e) {
+                e.stopPropagation();
+
+                // If Enter is pressed.
+                if (e.code.match(/^(Arrow)([a-zA-Z])+$/)) {
+                    e.stopPropagation();
+                }
+                if (e.key === "Enter") {
+                    e.preventDefault(); // Prevent a newline
+
+                    //const regex = /\s*p\s*=\s*\[(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*\]\s*·?\s*r\s*=\s*(-?[\d.]+)\s*°?\s*·?\s*zoom\s*=\s*(-?[\d.]+)/;
+                    /* for C capture the same as for P
+                        Allowed complex notations:
+                        p = [ -0.500000000000, 0.000000000000i] · r = 0° · zoom = 3.000000
+                        p = [-0.500000000000 + 0.000000000000i] · r = 0° · zoom = 3.000000
+                        p = [ 0.500000000000, 0.000000000000] · r = 0° · zoom = 3.000000
+                        p = [0.500000000000 + 0.000000000000] · r = 0° · zoom = 3.000000
+                        p = (0.500000000000 + 0.000000000001) · r = 0° · zoom = 3.000000
+                        p = (0.500000000000 - 0.000000000001) · r = 0° · zoom = 3.000000
+                        p = (0.500000000000 - 0.000000000001i) · r = 0 · zoom = -3.000000 (No match)
+
+                     */
+
+                    const result = parseUserInput(infoText.innerHTML);
+                    if (result.error) {
+                        infoLabel.style.color = '#f00';
+                        alert(result.error);
+                    } else {
+                        infoLabel.style.color = '#fff';
+                        fractalApp.animateTravelToPreset(result);
+                    }
+                }
+            });
+        }
+    }
 }
 
 /**
@@ -720,11 +892,22 @@ export async function initUI(fractalRenderer) {
     demoButton = document.getElementById('demo');
 
     if (fractalRenderer instanceof JuliaRenderer) {
-        enableJuliaMode();
-    } else {
-        enableMandelbrotMode();
-    }
+        fractalMode = FRACTAL_TYPE.JULIA;
+        juliaSwitch.classList.add('active');
+        mandelbrotSwitch.classList.remove('active');
 
+        initJuliaSliders(fractalApp);
+        updateJuliaSliders();
+        initDiveButtons();
+
+        updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
+        // Darker backgrounds for Julia as it renders on white
+        header.style.background = 'rgba(20, 20, 20, 0.8)';
+        infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
+
+        window.location.hash = '#julia'; // Update URL hash
+    }
+    initPresetButtonEvents();
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
@@ -741,7 +924,7 @@ export async function initUI(fractalRenderer) {
     }
 
     if (DEBUG_MODE) {
-        initDebugMode();
+        //initDebugMode();
     }
 
     uiInitialized = true;
