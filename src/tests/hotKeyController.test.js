@@ -24,6 +24,7 @@ describe('HotKeyController', () => {
         // Mock isJuliaMode to return true for tests that require it.
         UI.isJuliaMode = jest.fn(() => true);
         UI.travelToPreset = jest.fn(() => Promise.resolve());
+        UI.startJuliaDive = jest.fn(() => Promise.resolve());
 
         // Create a mock fractalApp object with necessary properties/methods.
         fractalApp = {
@@ -98,7 +99,7 @@ describe('HotKeyController', () => {
         UI.isJuliaMode = jest.fn(() => true);
         document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(fractalApp.animateDive).toHaveBeenCalled();
+        expect(UI.startJuliaDive).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('W enter infinite rotation cw, stop, enter again with slower speed and opposite direction', async () => {
