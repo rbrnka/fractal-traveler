@@ -54,7 +54,7 @@ html, body {
 }
 
 #headerContainer.minimized {
-    height: 62px;
+    height: 32px;
     border: 5px solid var(--bg-color);
     border-top: none;
 }
@@ -80,20 +80,16 @@ html, body {
 }
 
 h1 {
-    padding: 4px 5px 5px 5px;
-    margin: 4px auto 0 auto;
+    padding: 0 0 0 0;
+    margin: 6px auto 6px auto;
     color: var(--accent-color, #fff);
-    /*color: #fff;*/
     z-index: 1000;
     font-family: "Bruno Ace SC", sans-serif;
-    font-size: 18px;
+    font-size: 16px;
     letter-spacing: 1px;
     font-style: italic;
-    /*text-shadow: 0 0 10px var(--accent-color);*/
     text-shadow: 0 0 4px #000, 0 0 12px var(--accent-color);
-    /*background: var(--bg-color);*/
-    border-radius: 10px;
-    width: 340px;
+    width: 320px;
 }
 
 p {
@@ -275,6 +271,10 @@ label, .sliderValue {
     display: none;
 }
 
+button.dive {
+    width: 57px;
+}
+
 .switch-field {
     /*border: 1px solid yellow;*/
     display: flex;
@@ -347,7 +347,7 @@ p#presets span, p#dives span {
 #infoLabel {
     width: 370px;
     height: 14px;
-    padding: 3px 5px 5px 5px;
+    padding: 3px 5px 3px 5px;
     background-color: var(--bg-color);
     backdrop-filter: blur(8px);
     z-index: 9999;
@@ -379,7 +379,7 @@ p#presets span, p#dives span {
     font-family: sans-serif;
     /*font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;*/
     width: 100%;
-    font-size: 11px;
+    font-size: 10px;
     background: transparent;
     border: none;
     text-align: center;
@@ -391,13 +391,31 @@ p#presets span, p#dives span {
     user-select: none; /* Standard syntax */
     cursor: pointer;
     text-shadow: 0 0 8px #000;
+    caret-color: var(--accent-color);
 }
 
 #infoText:focus {
     outline: none !important;
 }
 
-#infoText.demoActive {
+
+@keyframes pulse {
+    0% {
+        color: #fff;
+    }
+
+    100% {
+        color: var(--accent-color);
+    }
+}
+
+#infoText.animation {
+    /*animation: pulse;*/
+    /*animation-duration: 1s;*/
+    /*animation-timing-function: ease-in-out;*/
+    /*animation-delay: 0s;*/
+    /*animation-iteration-count: infinite;*/
+    /*animation-direction: alternate;*/
     color: var(--accent-color);
 }
 
