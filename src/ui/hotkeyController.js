@@ -25,7 +25,7 @@ import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE, ROTATION_DIRECTIO
  * Keys not allowed to work in animation mode
  * @type {string[]}
  */
-const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"];
+const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyQ", "KeyW"]; // TODO consider allowing rotation in Julia mode as it doesnt collide with the demo mode
 
 /**
  * Pan movement duration
@@ -76,7 +76,7 @@ async function onKeyDown(event) {
     if (isAnimationActive() && ANIMATION_KEYS_BLACKLIST.includes(event.code)) return;
 
     switch (event.code) {
-        // TODO add shift/non-shift to slow down or speed up the rotation instead of stop when the speed or direction is different
+        // TODO add shift/non-shift to slow down or speed up the rotation instead of stop.
         case 'KeyQ': // Rotation counter-clockwise
             rotationDirection = ROTATION_DIRECTION.CCW;
         case 'KeyW': // Rotation clockwise
