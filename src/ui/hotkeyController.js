@@ -11,9 +11,11 @@ import {
     isJuliaMode,
     randomizeColors,
     resetAppState,
+    startJuliaDive,
     switchFractalMode,
     toggleDebugLines,
-    toggleDemo, toggleHeader,
+    toggleDemo,
+    toggleHeader,
     travelToPreset,
     updateColorTheme,
 } from "./ui";
@@ -165,7 +167,7 @@ async function onKeyDown(event) {
             if (match) {
                 const index = parseInt(match[2], 0); // match[2] contains the digit pressed
                 if (event.shiftKey && isJuliaMode()) {
-                    await fractalApp.animateDive(fractalApp.DIVES[index]);
+                    await startJuliaDive(fractalApp.DIVES, index);
                 } else {
                     await travelToPreset(fractalApp.PRESETS, index);
                 }
