@@ -1,11 +1,6 @@
 import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {
-    compareComplex,
-    isTouchDevice,
-    lerp,
-    normalizeRotation
-} from "../global/utils";
+import {compareComplex, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
 import '../global/types';
 import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
@@ -38,15 +33,18 @@ export class JuliaRenderer extends FractalRenderer {
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
             {c: this.DEFAULT_C, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION, pan: this.DEFAULT_PAN, title: 'Default view'},
-            {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
+            {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'Spiral Galaxies'},
             {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'Near Julia set border'},
-            {c: [0.45, 0.1428], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0]},
-            {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0]},
-            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0]},
-            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Spiral structure'},
+            {c: [-1.76733, 0.00002], zoom: 0.5, rotation: 0, pan: [0, 0], title: 'Mandelbrothers'},
+            {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0], title: 'Black Holes'},
+            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Dancing Snowflakes'},
+            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Kissing Dragons'},
             {c: [-0.75, 0.1], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Main cardioid'},
-            {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Seahorse Valley'},
-            {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Deep zoom'}
+            {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: 30 * (Math.PI / 180), pan: [0, 0], title: 'Seahorse Valley'},
+            {c: [-1.74876455, 0], zoom: 0.45, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'The Cauliflower Medallion'},
+            // {c: [0.45, 0.1428], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: ''},
+            // {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: ''},
+            // {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Deep zoom'}
         ];
 
         /** @type {Array.<DIVE>} */
