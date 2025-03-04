@@ -71,7 +71,17 @@
  *      @property {number} 0 Red
  *      @property {number} 1 Green
  *      @property {number} 2 Blue
- * @description Color palette [R, G ,B]
+ * @description Color palette [R, G ,B] (0-1)
+ */
+// ---------------------------------------------------------------------------------------------------------------------
+// JULIA PALETTE
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * @typedef {Object} JULIA_PALETTE
+ *      @property {Array<number, number, number, number, number>} theme innerStops
+ *      @property {string} id
+ *      @property {number} keyColorIndex
+ * @description Color palette inner stops [RGB, RGB, RGB, RGB, RGB] (0-1)
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // COLOR THEME
