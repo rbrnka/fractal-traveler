@@ -276,7 +276,6 @@ export class FractalRenderer {
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
         this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation');
         this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
-        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
     }
 
     /**

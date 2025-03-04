@@ -2,7 +2,7 @@ import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
 import {compareComplex, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
 import '../global/types';
-import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE,} from "../global/constants";
+import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, DEG, JULIA_PALETTES,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
@@ -32,19 +32,31 @@ export class JuliaRenderer extends FractalRenderer {
 
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
-            {c: this.DEFAULT_C, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION, pan: this.DEFAULT_PAN, title: 'Default view'},
-            {c: [0.34, -0.05], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'Spiral Galaxies'},
-            {c: [0.285, 0.01], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'Near Julia set border'},
+            {
+                c: this.DEFAULT_C,
+                zoom: this.DEFAULT_ZOOM,
+                rotation: this.DEFAULT_ROTATION,
+                pan: this.DEFAULT_PAN,
+                title: 'Default view'
+            },
+            {c: [0.34, -0.05], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: 'Spiral Galaxies'},
+            {c: [0.285, 0.01], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: 'Near Julia set border'},
             {c: [-1.76733, 0.00002], zoom: 0.5, rotation: 0, pan: [0, 0], title: 'Mandelbrothers'},
-            {c: [-0.4, 0.6], zoom: 3.5, rotation: 120 * (Math.PI / 180), pan: [0, 0], title: 'Black Holes'},
-            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Dancing Snowflakes'},
-            {c: [-0.835, -0.232], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Kissing Dragons'},
-            {c: [-0.75, 0.1], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Main cardioid'},
-            {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: 30 * (Math.PI / 180), pan: [0, 0], title: 'Seahorse Valley'},
-            {c: [-1.74876455, 0], zoom: 0.45, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: 'The Cauliflower Medallion'},
-            // {c: [0.45, 0.1428], zoom: 3.5, rotation: 90 * (Math.PI / 180), pan: [0, 0], title: ''},
-            // {c: [-0.1, 0.651], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: ''},
-            // {c: [-1.25066, 0.02012], zoom: 3.5, rotation: 150 * (Math.PI / 180), pan: [0, 0], title: 'Deep zoom'}
+            {c: [-0.4, 0.6], zoom: 3.5, rotation: DEG._120, pan: [0, 0], title: 'Black Holes'},
+            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Dancing Snowflakes'},
+            {c: [-0.835, -0.232], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Kissing Dragons'},
+            {c: [-0.75, 0.1], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Main cardioid'},
+            {
+                c: [-0.744539860355905, 0.121723773894425],
+                zoom: 1.8,
+                rotation: 30 * (Math.PI / 180),
+                pan: [0, 0],
+                title: 'Seahorse Valley'
+            },
+            {c: [-1.74876455, 0], zoom: 0.45, rotation: DEG._90, pan: [0, 0], title: 'The Cauliflower Medallion'},
+            // {c: [0.45, 0.1428], zoom: 3.5, rotation: ROTATION_DEG.R90, pan: [0, 0], title: ''},
+            // {c: [-0.1, 0.651], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: ''},
+            // {c: [-1.25066, 0.02012], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: 'Deep zoom'}
         ];
 
         /** @type {Array.<DIVE>} */
@@ -128,6 +140,9 @@ export class JuliaRenderer extends FractalRenderer {
             // }
         ];
 
+        this.currentPaletteIndex = 0;
+        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
+
         this.currentCAnimationFrame = null;
         this.demoTime = 0;
 
@@ -152,30 +167,26 @@ export class JuliaRenderer extends FractalRenderer {
             uniform float u_rotation;     // Rotation (in radians)
             uniform vec2 u_c;             // Julia set constant
             uniform vec3 u_colorPalette;  // Color palette
+            uniform vec3 u_innerStops[5]; // Color palette inner stops
             
             // Maximum iterations (compile-time constant required by GLSL ES 1.00).
             const int MAX_ITERATIONS = 1000;
             
             // Define color stops as individual constants (RGB values in [0,1]).
             // Default stops (black, orange, white, blue, dark blue).
-            const vec3 stop0 = vec3(0.0, 0.0, 0.0);       // Black
-            const vec3 stop1 = vec3(1.0, 0.647, 0.0);     // Orange
-            const vec3 stop2 = vec3(1.0, 1.0, 1.0);       // White
-            const vec3 stop3 = vec3(0.0, 0.0, 1.0);       // Blue
-            const vec3 stop4 = vec3(0.0, 0.0, 0.5);       // Dark Blue
             
             // Interpolates between the five color stops.
             // 5 stops = 4 segments.
             vec3 getColorFromMap(float t) {
-                float step = 1.0 / 4.0; // size of one segment
-                if(t <= step) {
-                    return mix(stop0, stop1, t / step);
-                } else if(t <= 2.0 * step) {
-                    return mix(stop1, stop2, (t - step) / step);
-                } else if(t <= 3.0 * step) {
-                    return mix(stop2, stop3, (t - 2.0 * step) / step);
+                float segment = 1.0 / 4.0; // 4 segments for 5 stops.
+                if (t <= segment) {
+                    return mix(u_innerStops[0], u_innerStops[1], t / segment);
+                } else if (t <= 2.0 * segment) {
+                    return mix(u_innerStops[1], u_innerStops[2], (t - segment) / segment);
+                } else if (t <= 3.0 * segment) {
+                    return mix(u_innerStops[2], u_innerStops[3], (t - 2.0 * segment) / segment);
                 } else {
-                    return mix(stop3, stop4, (t - 3.0 * step) / step);
+                    return mix(u_innerStops[3], u_innerStops[4], (t - 3.0 * segment) / segment);
                 }
             }
             
@@ -224,7 +235,7 @@ export class JuliaRenderer extends FractalRenderer {
                     vec3 col = getColorFromMap(t);
                     
                     // Use the user-defined color palette as a tint
-                    col *= u_colorPalette;
+                    // col *= u_colorPalette;
                     
                     gl_FragColor = vec4(col, 1.0);
                 }
@@ -240,6 +251,7 @@ export class JuliaRenderer extends FractalRenderer {
         super.updateUniforms();
 
         this.cLoc = this.gl.getUniformLocation(this.program, 'u_c');
+        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
     }
 
     /**
@@ -254,34 +266,21 @@ export class JuliaRenderer extends FractalRenderer {
 
         // Pass Julia constant `c`
         this.gl.uniform2fv(this.cLoc, this.c);
+        this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
+
         super.draw();
     }
 
     /**
      * @inheritDoc
+     * @override
      */
     reset() {
         this.c = [...this.DEFAULT_C];
+        this.innerStops = new Float32Array(JULIA_PALETTES[0].theme);
+        this.currentPaletteIndex = 0;
+
         super.reset();
-    }
-
-    /**
-     * TODO Test function to randomize the inner palette stops.
-     */
-    randomizeInnerPalette() {
-        // Generate three random inner stops.
-        // Each stop is an array of three numbers in [0, 1].
-        const innerStops = [];
-        for (let i = 0; i < 3; i++) {
-            innerStops.push(Math.random()); // red
-            innerStops.push(Math.random()); // green
-            innerStops.push(Math.random()); // blue
-        }
-        // Convert to a Float32Array.
-        const innerStopsArray = new Float32Array(innerStops);
-
-        this.gl.useProgram(this.program);
-        this.gl.uniform3fv(this.innerStopsLoc, innerStopsArray);
     }
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
@@ -304,6 +303,110 @@ export class JuliaRenderer extends FractalRenderer {
         this.stopCurrentCAnimation();
 
         super.stopAllNonColorAnimations();
+    }
+
+    getNextColorThemeId() {
+        return JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length].id;
+    }
+
+    /**
+     * Smoothly transitions the inner color stops (used by the shader for inner coloring)
+     * from the current value to the provided toPalette over the specified duration.
+     * Also updates the colorPalette to match the theme (using the first stop, for example).
+     *
+     * @param {JULIA_PALETTE} toPalette - The target theme as an array of numbers (e.g., 15 numbers for 5 stops).
+     * @param {number} [duration=250] - Duration of the transition in milliseconds.
+     * @param {Function} [callback] - A callback invoked when the transition completes.
+     * @return {Promise<void>}
+     */
+    async animateInnerStopsTransition(toPalette, duration = 250, callback = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        this.stopCurrentColorAnimations();
+        // TODO
+
+        // Initialize innerStops if necessary.
+        // if (!this.innerStops || this.innerStops.length !== toPalette.theme.length) {
+        //     this.innerStops = new Float32Array(toPalette.theme);
+        //     // Also update the colorPalette to match the first stop of the theme.
+        //     console.log('Sameeeee');
+        //     this.colorPalette = [this.innerStops[0], this.innerStops[1], this.innerStops[2]];
+        //     this.updateUniforms();
+        //     this.draw();
+        //     console.groupEnd();
+        //     return;
+        // }
+        // TODO
+
+        // Check if current innerStops are identical to toPalette (using a small tolerance).
+        // const tolerance = 1e-6;
+        // let identical = true;
+        // for (let i = 0; i < this.innerStops.length; i++) {
+        //     if (Math.abs(this.innerStops[i] - toPalette[i]) > tolerance) {
+        //         identical = false;
+        //         break;
+        //     }
+        // }
+        // if (identical) {
+        //     console.warn(`Identical inner stops theme found. Skipping transition.`);
+        //     console.groupEnd();
+        //     return;
+        // }
+
+        // Save the starting stops as a plain array.
+        const startStops = Array.from(this.innerStops);
+
+        await new Promise(resolve => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                // Interpolate each component of the inner stops.
+                const interpolated = startStops.map((v, i) => lerp(v, toPalette.theme[i], progress));
+                this.innerStops = new Float32Array(interpolated);
+
+                // Also update the colorPalette.
+                // For example, use the first stop (first three components) of the new theme:
+                // this.colorPalette = [
+                //     interpolated[2],
+                //     interpolated[3],
+                //     interpolated[4]
+                // ];
+                const stopIndex = toPalette.keyColorIndex; // TODO use only the specific color of the theme, e.g. last row
+                this.colorPalette = [
+                    toPalette.theme[stopIndex*3],
+                    toPalette.theme[stopIndex*3+1],
+                    toPalette.theme[stopIndex*3+2]
+                ];
+
+                // Update the uniform for inner stops.
+                this.gl.useProgram(this.program);
+                if (this.innerStopsLoc) {
+                    this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
+                }
+
+                this.draw();
+
+                if (callback) callback();
+
+                if (progress < 1) {
+                    this.currentColorAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentColorAnimations();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+
+            this.currentColorAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
+        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
+
+        await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
     }
 
     /**
