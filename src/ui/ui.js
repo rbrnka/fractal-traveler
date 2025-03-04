@@ -37,7 +37,7 @@ import {
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
  */
 
-let FEATURE_FLAG_USER_INPUT = false; // TODO
+let FEATURE_FLAG_USER_INPUT = true; // TODO
 
 let canvas;
 let fractalApp;
@@ -108,7 +108,6 @@ export function switchFractalMode(mode) {
             console.error(`Unknown fractal mode "${mode}"!`);
             console.groupEnd();
             return;
-
     }
 
     // Register control events
@@ -215,9 +214,8 @@ export function resetAppState() {
 
 /**
  * Updates the bottom info bar
- * @param {boolean} [traveling] if inside animation
  */
-export function updateInfo(traveling = false) {
+export function updateInfo() {
     const now = performance.now();
     const timeSinceLastUpdate = now - lastInfoUpdate;
 
@@ -559,18 +557,29 @@ export function resetActivePresetIndex() {
 }
 
 export async function randomizeColors() {
-    // Generate a bright random color palette
-    // Generate colors with better separation and higher brightness
-    const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
-    const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
-    const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
+    if (isJuliaMode()) { // TODO fractal switch must reflex this and refactor the duplicate title changing code
+        let nextTheme = fractalApp.getNextColorThemeId();
+        if (nextTheme)
+            randomizeColorsButton.title = 'Next theme: "' + nextTheme + '" (T)';
 
-    // Convert HSB/HSV to RGB
-    const newPalette = hsbToRgb(hue, saturation, brightness);
+        await fractalApp.animateColorPaletteTransition(250, () => {
+            updateColorTheme(fractalApp.colorPalette);
+        });
+        updateColorTheme(fractalApp.colorPalette);
+    } else {
+        // Generate a bright random color palette
+        // Generate colors with better separation and higher brightness
+        const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
+        const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
+        const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
 
-    await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
-        updateColorTheme(newPalette);
-    }); // Update app colors
+        // Convert HSB/HSV to RGB
+        const newPalette = hsbToRgb(hue, saturation, brightness);
+
+        await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
+            updateColorTheme(newPalette);
+        }); // Update app colors
+    }
 }
 
 export function captureScreenshot() {
@@ -643,6 +652,11 @@ function initControlButtonEvents() {
     });
 
     randomizeColorsButton.addEventListener('click', randomizeColors);
+    if (isJuliaMode()) {
+        let nextTheme = fractalApp.getNextColorThemeId();
+        if (nextTheme)
+            randomizeColorsButton.title = nextTheme;
+    }
 
     demoButton.addEventListener('click', toggleDemo);
 
