@@ -112,48 +112,49 @@ export const DEG = {
 export const JULIA_PALETTES = [
     {
         /** Default palette. Keep it first! */
-        id: 'default', theme: [
-            0.0, 0.0, 0.0,      // Stop 0: Black
-            1.0, 0.647, 0.0,    // Stop 1: Orange
-            1.0, 1.0, 1.0,      // Stop 2: White
-            0.0, 0.0, 1.0,      // Stop 3: Blue
-            0.0, 0.0, 0.5       // Stop 4: Dark Blue
-        ], keyColorIndex: 3
+        id: 'Default', keyColor: '#4c4cb3', theme: [
+            0.0, 0.0, 0.0,
+            1.0, 0.647, 0.0,
+            1.0, 1.0, 1.0,
+            0.0, 0.0, 1.0,
+            0.0, 0.0, 0.5
+        ]
+    }, {
+        id: 'Fire', keyColor: '#663300', theme: [
+            0.4, 0.2, 0.0,
+            255 / 255, 144 / 255, 10 / 255,
+            0.2, 0.0, 0.0,
+            0.8, 0.7, 0.0,
+            49 / 255, 45 / 255, 4 / 255,
+        ]
     },
     {
-        id: 'fire', theme: [
-            0.0, 0.0, 0.0,      // Stop 0: Black
-            0.3, 0.0, 0.0,      // Stop 1: Dark red
-            0.7, 0.0, 0.0,      // Stop 2: Red
-            1.0, 0.5, 0.0,      // Stop 3: Orange
-            1.0, 1.0, 0.0       // Stop 4: Yellow
-        ], keyColorIndex: 3
+        id: 'Ocean', keyColor: '#00284d', theme: [
+            230/255, 243/255, 255/255,
+            49 / 255, 141 / 255, 178 / 255,
+            0.0, 13/255, 26/255,
+            4 / 255, 105 / 255, 151 / 255,
+            0, 40/255, 77/255
+        ]
     },
     {
-        id: 'ocean', theme: [
-            0.0, 0.0, 0.0,      // Stop 0: Black
-            0.0, 1.0, 1.0,      // Stop 4: Cyan
-            0.0, 0.0, 0.7,      // Stop 2: Blue
-            0.0, 0.5, 1.0,      // Stop 3: Light blue
-            0.0, 0.0, 0.3,      // Stop 1: Deep blue
-        ], keyColorIndex: 3
+        id: 'Forest', keyColor: '#25591f', theme: [
+            129 / 255, 140 / 255, 60 / 255,
+            37 / 255, 89 / 255, 31 / 255,
+            45 / 255, 22 / 255, 6 / 255,
+            25 / 255, 89 / 255, 13 / 255,
+            0, 21 / 255, 0,
+        ]
     },
     {
-        id: 'forest', theme: [
-            0.7, 1.0, 0.3,      // Stop 4: Yellow-green
-            0.0, 0.0, 0.0,      // Stop 0: Black
-            0.5, 1.0, 0.5,      // Stop 3: Light green
-            0.0, 0.7, 0.0,      // Stop 2: Green
-            0.0, 0.3, 0.0,      // Stop 1: Dark green
-        ], keyColorIndex: 3
-    },
-    {
-        id: 'cosmos', theme: [
-            1.0, 1.0, 1.0,      // Stop 2:
-            1.0, 0.647, 0.0,    // Stop 1:
-            0.0, 0.0, 0.0,      // Stop 0:
-            1.0, 0.347, 0.0,       // Stop 4:
-            0.0, 0.0, 0.0      // Stop 3:
-        ], keyColorIndex: 3
+        id: 'Cosmos', keyColor: '#eeeeee', theme: [
+            0.0, 0.0, 0.0,
+            1.0, 0.647, 0.0,
+            0.0, 0.0, 0.0,
+            1.2, 1.2, 1.0,
+            0.1, 0.1, 0.1
+        ]
     },
 ]
+// ---------------------------------------------------------------------------------------------------------------------
+export const RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE = 'Randomize Color Palette (T)';

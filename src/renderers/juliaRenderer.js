@@ -1,8 +1,8 @@
 import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {compareComplex, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
+import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
 import '../global/types';
-import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, DEG, JULIA_PALETTES,} from "../global/constants";
+import {DEFAULT_CONSOLE_GROUP_COLOR, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
@@ -46,13 +46,7 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-0.70176, -0.3842], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Dancing Snowflakes'},
             {c: [-0.835, -0.232], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Kissing Dragons'},
             {c: [-0.75, 0.1], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Main cardioid'},
-            {
-                c: [-0.744539860355905, 0.121723773894425],
-                zoom: 1.8,
-                rotation: 30 * (Math.PI / 180),
-                pan: [0, 0],
-                title: 'Seahorse Valley'
-            },
+            {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: DEG._30, pan: [0, 0], title: 'Seahorse Valley'},
             {c: [-1.74876455, 0], zoom: 0.45, rotation: DEG._90, pan: [0, 0], title: 'The Cauliflower Medallion'},
             // {c: [0.45, 0.1428], zoom: 3.5, rotation: ROTATION_DEG.R90, pan: [0, 0], title: ''},
             // {c: [-0.1, 0.651], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: ''},
@@ -305,8 +299,14 @@ export class JuliaRenderer extends FractalRenderer {
         super.stopAllNonColorAnimations();
     }
 
+    /**
+     * Returns id/title of the next color theme in the themes array.
+     * @return {string}
+     */
     getNextColorThemeId() {
-        return JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length].id;
+        const nextTheme = JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length];
+
+        return nextTheme.id || 'Random';
     }
 
     /**
@@ -322,35 +322,6 @@ export class JuliaRenderer extends FractalRenderer {
     async animateInnerStopsTransition(toPalette, duration = 250, callback = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         this.stopCurrentColorAnimations();
-        // TODO
-
-        // Initialize innerStops if necessary.
-        // if (!this.innerStops || this.innerStops.length !== toPalette.theme.length) {
-        //     this.innerStops = new Float32Array(toPalette.theme);
-        //     // Also update the colorPalette to match the first stop of the theme.
-        //     console.log('Sameeeee');
-        //     this.colorPalette = [this.innerStops[0], this.innerStops[1], this.innerStops[2]];
-        //     this.updateUniforms();
-        //     this.draw();
-        //     console.groupEnd();
-        //     return;
-        // }
-        // TODO
-
-        // Check if current innerStops are identical to toPalette (using a small tolerance).
-        // const tolerance = 1e-6;
-        // let identical = true;
-        // for (let i = 0; i < this.innerStops.length; i++) {
-        //     if (Math.abs(this.innerStops[i] - toPalette[i]) > tolerance) {
-        //         identical = false;
-        //         break;
-        //     }
-        // }
-        // if (identical) {
-        //     console.warn(`Identical inner stops theme found. Skipping transition.`);
-        //     console.groupEnd();
-        //     return;
-        // }
 
         // Save the starting stops as a plain array.
         const startStops = Array.from(this.innerStops);
@@ -366,19 +337,23 @@ export class JuliaRenderer extends FractalRenderer {
                 const interpolated = startStops.map((v, i) => lerp(v, toPalette.theme[i], progress));
                 this.innerStops = new Float32Array(interpolated);
 
-                // Also update the colorPalette.
-                // For example, use the first stop (first three components) of the new theme:
-                // this.colorPalette = [
-                //     interpolated[2],
-                //     interpolated[3],
-                //     interpolated[4]
-                // ];
-                const stopIndex = toPalette.keyColorIndex; // TODO use only the specific color of the theme, e.g. last row
-                this.colorPalette = [
-                    toPalette.theme[stopIndex*3],
-                    toPalette.theme[stopIndex*3+1],
-                    toPalette.theme[stopIndex*3+2]
-                ];
+                let keyColor;
+
+                if (toPalette.keyColor) {
+                    keyColor = hexToRGB(toPalette.keyColor);
+                    if (keyColor) {
+                        this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
+                    }
+                }
+
+                if (!keyColor) {
+                    const stopIndex = 3;
+                    this.colorPalette = [
+                        toPalette.theme[stopIndex * 3] * 1.5,
+                        toPalette.theme[stopIndex * 3 + 1] * 1.5,
+                        toPalette.theme[stopIndex * 3 + 2] * 1.5
+                    ];
+                }
 
                 // Update the uniform for inner stops.
                 this.gl.useProgram(this.program);
