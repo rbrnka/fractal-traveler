@@ -18,7 +18,9 @@ import {
     DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
-    FRACTAL_TYPE
+    FRACTAL_TYPE,
+    PI,
+    RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
@@ -37,7 +39,7 @@ import {
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
  */
 
-let FEATURE_FLAG_USER_INPUT = true; // TODO
+let FEATURE_FLAG_USER_INPUT = false; // TODO
 
 let canvas;
 let fractalApp;
@@ -156,6 +158,8 @@ export function enableMandelbrotMode() {
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
 
+    updateRecolorButtonTitle();
+
     window.location.hash = ''; // Update URL hash
 }
 
@@ -183,7 +187,18 @@ export function enableJuliaMode() {
     header.style.background = 'rgba(20, 20, 20, 0.8)';
     infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
+    updateRecolorButtonTitle();
+
     window.location.hash = '#julia'; // Update URL hash
+}
+
+export function updateRecolorButtonTitle() {
+    if (isJuliaMode()) {
+        let nextTheme = fractalApp.getNextColorThemeId();
+        if (nextTheme) randomizeColorsButton.title = 'Next theme: "' + nextTheme + '" (T)';
+    } else {
+        randomizeColorsButton.title = RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE;
+    }
 }
 
 /**
@@ -245,7 +260,7 @@ export function updateInfo() {
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
-    const currentRotation = (fractalApp.rotation * 180 / Math.PI) % 360;
+    const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
     text += `r = ${normalizedRotation.toFixed(0)}° · zoom = ${currentZoom.toFixed(6)}`;
 
@@ -557,15 +572,9 @@ export function resetActivePresetIndex() {
 }
 
 export async function randomizeColors() {
-    if (isJuliaMode()) { // TODO fractal switch must reflex this and refactor the duplicate title changing code
-        let nextTheme = fractalApp.getNextColorThemeId();
-        if (nextTheme)
-            randomizeColorsButton.title = 'Next theme: "' + nextTheme + '" (T)';
-
-        await fractalApp.animateColorPaletteTransition(250, () => {
-            updateColorTheme(fractalApp.colorPalette);
-        });
-        updateColorTheme(fractalApp.colorPalette);
+    if (isJuliaMode()) {
+        await fractalApp.animateColorPaletteTransition(250, updateColorTheme);
+        updateRecolorButtonTitle();
     } else {
         // Generate a bright random color palette
         // Generate colors with better separation and higher brightness
@@ -614,6 +623,7 @@ export async function reset() {
         resetJuliaSliders();
     }
     resetAppState();
+    updateRecolorButtonTitle();
     presetButtons[0].classList.add('active');
 }
 
@@ -652,11 +662,6 @@ function initControlButtonEvents() {
     });
 
     randomizeColorsButton.addEventListener('click', randomizeColors);
-    if (isJuliaMode()) {
-        let nextTheme = fractalApp.getNextColorThemeId();
-        if (nextTheme)
-            randomizeColorsButton.title = nextTheme;
-    }
 
     demoButton.addEventListener('click', toggleDemo);
 
@@ -830,54 +835,45 @@ function initInfoText() {
         });
     } else {
         infoText.setAttribute("contenteditable", true);
-
-        // Listen for keydown events.
         infoText.style.cursor = 'auto';
         infoText.removeAttribute("readonly");
 
         infoText.addEventListener('focus', () => {
             infoLabel.style.zoom = '200%';
         })
-        // Listen for keydown events.
+
         infoText.addEventListener('blur', () => {
             infoLabel.style.zoom = '120%';
         })
 
-        if (fractalMode === FRACTAL_TYPE.MANDELBROT) {
-            infoText.addEventListener("keydown", function (e) {
-                e.stopPropagation();
+        infoText.addEventListener("keydown", function (e) {
+            e.stopPropagation();
 
-                // If Enter is pressed.
-                if (e.code.match(/^(Arrow)([a-zA-Z])+$/)) {
-                    e.stopPropagation();
+            if (e.key === "Enter") {
+                e.preventDefault(); // Prevent a newline
+
+                //const regex = /\s*p\s*=\s*\[(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*\]\s*·?\s*r\s*=\s*(-?[\d.]+)\s*°?\s*·?\s*zoom\s*=\s*(-?[\d.]+)/;
+                /* for C capture the same as for P
+                    Allowed complex notations:
+                    p = [ -0.500000000000, 0.000000000000i] · r = 0° · zoom = 3.000000
+                    p = [-0.500000000000 + 2i] · r = 0° · zoom = 3.000000
+                    p = [ 0.500000000000, 0.000000000000] · r = 0° · zoom = 3.000000
+                    p = [0.500000000000 + 0.000000000000] · r = 0° · zoom = 3.000000
+                    p = (0.500000000000 + 0.000000000001) · r = 0° · zoom = 3.000000
+                    p = (0.500000000000 - 0.000000000001) · r = 0° · zoom = 3.000000
+                    p = (0.500000000000 - 0.000000000001i) · r = 0 · zoom = -3.000000 (No match)
+                 */
+
+                const result = parseUserInput(infoText.innerHTML);
+                if (result.error) {
+                    infoLabel.style.color = '#f00';
+                    alert(result.error);
+                } else {
+                    infoLabel.style.color = '#fff';
+                    fractalApp.animateTravelToPreset(result);
                 }
-                if (e.key === "Enter") {
-                    e.preventDefault(); // Prevent a newline
-
-                    //const regex = /\s*p\s*=\s*\[(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*\]\s*·?\s*r\s*=\s*(-?[\d.]+)\s*°?\s*·?\s*zoom\s*=\s*(-?[\d.]+)/;
-                    /* for C capture the same as for P
-                        Allowed complex notations:
-                        p = [ -0.500000000000, 0.000000000000i] · r = 0° · zoom = 3.000000
-                        p = [-0.500000000000 + 0.000000000000i] · r = 0° · zoom = 3.000000
-                        p = [ 0.500000000000, 0.000000000000] · r = 0° · zoom = 3.000000
-                        p = [0.500000000000 + 0.000000000000] · r = 0° · zoom = 3.000000
-                        p = (0.500000000000 + 0.000000000001) · r = 0° · zoom = 3.000000
-                        p = (0.500000000000 - 0.000000000001) · r = 0° · zoom = 3.000000
-                        p = (0.500000000000 - 0.000000000001i) · r = 0 · zoom = -3.000000 (No match)
-
-                     */
-
-                    const result = parseUserInput(infoText.innerHTML);
-                    if (result.error) {
-                        infoLabel.style.color = '#f00';
-                        alert(result.error);
-                    } else {
-                        infoLabel.style.color = '#fff';
-                        fractalApp.animateTravelToPreset(result);
-                    }
-                }
-            });
-        }
+            }
+        });
     }
 }
 
@@ -936,6 +932,8 @@ export async function initUI(fractalRenderer) {
         initHotKeys(fractalApp);
         initMouseHandlers(fractalApp);
     }
+
+    updateRecolorButtonTitle();
 
     if (DEBUG_MODE) {
         //initDebugMode();
