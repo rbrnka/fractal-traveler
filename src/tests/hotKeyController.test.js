@@ -63,8 +63,8 @@ describe('HotKeyController', () => {
         expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('ArrowRight with ctrl adjusts Julia c', async () => {
-        document.dispatchEvent(rightArrowPressedEvent(false, true));
+    test('ArrowRight with Alt adjusts Julia c', async () => {
+        document.dispatchEvent(rightArrowPressedEvent(false, false, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateToC).toHaveBeenCalled();
     });
@@ -75,8 +75,8 @@ describe('HotKeyController', () => {
         expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('ArrowUp with ctrl adjusts Julia c (imaginary part)', async () => {
-        document.dispatchEvent(upArrowPressedEvent(false, true));
+    test('ArrowUp with Alt adjusts Julia c (imaginary part)', async () => {
+        document.dispatchEvent(upArrowPressedEvent(false, false, true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateToC).toHaveBeenCalled();
     });
