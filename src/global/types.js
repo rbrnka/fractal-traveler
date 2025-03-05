@@ -78,10 +78,10 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} JULIA_PALETTE
- *      @property {Array<number, number, number, number, number>} theme innerStops
- *      @property {string} id
- *      @property {number} keyColorIndex
- * @description Color palette inner stops [RGB, RGB, RGB, RGB, RGB] (0-1)
+ *      @property {Array<number, number, number, number, number>} theme 5 innerStops of RGB colors defining the Julia palette
+ *      @property {string} id Identifier / title
+ *      @property {string} [keyColor] Main theme color. If not set, 3. innerStop's color is used.
+ * @description Color palette defined by inner stops
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // COLOR THEME
