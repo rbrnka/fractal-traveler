@@ -44,12 +44,12 @@ The architecture supports additional fractal types and further customization of 
 - `Shift + R`: Reset
 - `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
 - `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Ctrl: Zoom-out, Shift: Smoother step)
+- `Space`: Zoom-in (Alt: Zoom-out, Shift: Smoother step)
 - `A`: Force resize
 - `Left / Right`: Horizontal pan (Shift: Smoother step)
 - `Up / Down`: Vertical pan (Shift: Smoother step)
-- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
-- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
+- `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
+- `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
 - `Num 1-9`: Load Preset (Shift: Start dive)
 
 ### Touch
