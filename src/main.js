@@ -99,7 +99,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (DEBUG_MODE) console.log('%c DOMContentLoaded: %c Initializing fractal.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #ff0');
 
         await initFractalApp();
-        console.log('%c DOMContentLoaded: %c Fractal init complete..', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #0f0');
+        console.log('%c DOMContentLoaded: %c Fractal init complete.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #0f0');
 
         await asyncDelay(2000); // Wait a moment for things to stabilize
         updateInfo();

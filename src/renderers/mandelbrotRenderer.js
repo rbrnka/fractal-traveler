@@ -1,6 +1,6 @@
 import {FractalRenderer} from './fractalRenderer.js';
 import {asyncDelay, compareComplex} from "../global/utils";
-import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
+import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * MandelbrotRenderer
@@ -175,8 +175,8 @@ export class MandelbrotRenderer extends FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         // Generate random rotations for a more dynamic effect.
-        const zoomOutRotation = this.rotation + (Math.random() * Math.PI * 2 - Math.PI);
-        const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
+        const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
+        const zoomInRotation = zoomOutRotation + (Math.random() * PI * 2 - PI);
 
         if (this.rotation !== this.DEFAULT_ROTATION) {
             await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration)

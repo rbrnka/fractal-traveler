@@ -1,6 +1,6 @@
 import {updateInfo} from "../ui/ui";
 import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -40,7 +40,6 @@ export class FractalRenderer {
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
 
-
         /** Interesting zoom-ins
          *  @type {Array.<PRESET>}
          */
@@ -75,7 +74,6 @@ export class FractalRenderer {
          */
         this.iterations = 0;
         this.extraIterations = 0;
-
 
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
@@ -221,6 +219,7 @@ export class FractalRenderer {
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
             console.error(this.gl.getShaderInfoLog(shader));
             this.gl.deleteShader(shader);
+            if (DEBUG_MODE) console.groupEnd();
             return null;
         }
         if (DEBUG_MODE) console.groupEnd();
@@ -778,7 +777,7 @@ export class FractalRenderer {
         await new Promise(() => {
 
             const rotationStep = () => {
-                this.rotation = normalizeRotation(this.rotation + dir * step + 2 * Math.PI);
+                this.rotation = normalizeRotation(this.rotation + dir * step + 2 * PI);
                 this.draw();
 
                 updateInfo(true);
