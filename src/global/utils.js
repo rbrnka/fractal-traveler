@@ -4,7 +4,7 @@
  * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./constants";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE, PI} from "./constants";
 
 let urlParamsSet = false;
 
@@ -18,7 +18,7 @@ let urlParamsSet = false;
  * @param {number} zoom
  * @param {number} rotation
  */
-export function updateURLParams(mode, px, py, zoom, rotation, cx= null, cy= null) {
+export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null) {
     const params = {
         mode: mode != null ? mode.toFixed(0) : FRACTAL_TYPE.MANDELBROT,
         px: px != null ? px.toFixed(6) : null,
@@ -276,6 +276,39 @@ export function rgbToHsl(r, g, b) {
 }
 
 /**
+ * Converts HTML hex color notation to rgb
+ * @param {string} hex HTML hex color
+ * @param {number} normalize interval to normalize onto
+ * @return {{r: number, b: number, g: number}|null}
+ */
+export function hexToRGB(hex, normalize = 255) {
+    // Ensure it's a string and remove any leading #
+    hex = hex.toLowerCase().replace(/^#/, "");
+
+    // Convert shorthand "#abc" → "aabbcc"
+    if (hex.length === 3) {
+        hex = hex.split("").map(char => char + char).join("");
+    }
+
+    // Validate format
+    if (!/^([\da-f]{6})$/i.test(hex)) {
+        return null;
+    }
+
+    // Convert HEX to RGB (0-255)
+    const r = parseInt(hex.substring(0, 2), 16);
+    const g = parseInt(hex.substring(2, 4), 16);
+    const b = parseInt(hex.substring(4, 6), 16);
+
+    // Normalize to 0-1 range
+    return {
+        r: r / normalize,
+        g: g / normalize,
+        b: b / normalize
+    };
+}
+
+/**
  * Helper function for ease-in-out timing. This function accelerates in the first half (using 2*t²) and decelerates in
  * the second half.
  * @param {number} time A value between 0 and 1 representing the progress.
@@ -326,7 +359,7 @@ export function lerp(start, end, time) {
  * @return {number} rotation in rad
  */
 export function normalizeRotation(rotation) {
-    const twoPi = 2 * Math.PI;
+    const twoPi = 2 * PI;
     return (rotation % twoPi + twoPi) % twoPi;
 }
 
@@ -398,7 +431,7 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
     const rotatedMoveY = sinR * moveX + cosR * moveY;
 
     // Scale movement relative to canvas size and zoom.
-    const deltaPanX = -(rotatedMoveX /ref) * zoom;
+    const deltaPanX = -(rotatedMoveX / ref) * zoom;
     const deltaPanY = +(rotatedMoveY / ref) * zoom;
 
     return [deltaPanX, deltaPanY];
