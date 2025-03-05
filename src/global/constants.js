@@ -101,6 +101,7 @@ export const PI = USE_PRECISE_PI ? Math.PI : 3.1415926535;
  * @enum {number} radians
  */
 export const DEG = {
+    _30: 30 * (PI / 180),
     _90: 90 * (PI / 180),
     _120: 120 * (PI / 180),
     _150: 150 * (PI / 180),
@@ -108,6 +109,7 @@ export const DEG = {
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * Set of Julia-specific palettes
+ * @type {Array.<JULIA_PALETTE>}
  */
 export const JULIA_PALETTES = [
     {
