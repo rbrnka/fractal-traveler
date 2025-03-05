@@ -54,9 +54,7 @@ html, body {
 }
 
 #headerContainer.minimized {
-    height: 32px;
-    border: 5px solid var(--bg-color);
-    border-top: none;
+    height: 28px;
 }
 
 @media screen and (min-width: 470px) {
@@ -85,7 +83,7 @@ h1 {
     color: var(--accent-color, #fff);
     z-index: 1000;
     font-family: "Bruno Ace SC", sans-serif;
-    font-size: 16px;
+    font-size: 12pt;
     letter-spacing: 1px;
     font-style: italic;
     text-shadow: 0 0 4px #000, 0 0 12px var(--accent-color);
