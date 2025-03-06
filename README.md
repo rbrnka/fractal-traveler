@@ -1,6 +1,5 @@
 # Synaptory Fractal Traveler
-![image](https://github.com/user-attachments/assets/e3591847-c76d-46a2-bf01-4508a4bc7032)
-
+![ftraveler-header](https://github.com/user-attachments/assets/12f62198-058e-42e5-af15-739256a72425)
 
 Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease. Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&showWelcomeOnShare=false) article on my Substack blog.
 
@@ -29,6 +28,36 @@ Uses WebGL for rendering, ES6 for a modular codebase, and webpack for bundling a
 - **Extensibility:**
 The architecture supports additional fractal types and further customization of rendering options.
 
+## Controls
+### Mouse
+- `Left Button Drag`: Pan
+- `Right Button Drag`: Rotate
+- `Wheel`: Zoom
+- `Left Button Single Click`: Center & Generate URL link
+- `Double click`: Zoom-in/out & Center
+- `Middle Click`: Toggle guiding lines
+### Keyboard
+- `F11`: Toggle fullscreen
+- `Enter`: Toggle controls
+- `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+- `E`: Toggle guiding lines
+- `Shift + R`: Reset
+- `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
+- `Shift + S`: Take screenshot
+- `Space`: Zoom-in (Alt: Zoom-out, Shift: Smoother step)
+- `A`: Force resize
+- `Left / Right`: Horizontal pan (Shift: Smoother step)
+- `Up / Down`: Vertical pan (Shift: Smoother step)
+- `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
+- `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
+- `Num 1-9`: Load Preset (Shift: Start dive)
+
+### Touch
+- `One Finger Pan`: Pan
+- `One Finger Tap`: Center & Generate URL link
+- `One Finger Double-tap`: Zoom-in/out & Center
+- `Pinch`: Pan & Zoom & Rotate
+
 ## Getting Started
 
 ### Prerequisites
@@ -48,6 +77,9 @@ The architecture supports additional fractal types and further customization of 
 - `npm run test` to run test suites
 - `jsdoc -r ./src/ ./README.md -d ./doc/ ` to build documentation
 
+## Documentation
+Available [here](https://fractal.brnka.com/docs).
+
 ## Changelog
 ### v1.8
 - Fully asynchronous animations
@@ -58,6 +90,7 @@ The architecture supports additional fractal types and further customization of 
   - URL presets with zero value params now work properly
   - Animation collisions are no longer happening
   - Normalized rotation
+  - Keyboard controls now consider zoom depth and affect the properties proportionally
 
 ### v1.7
 - Julia dives added (super smooth detailed animated c-transitions)
@@ -104,60 +137,6 @@ The architecture supports additional fractal types and further customization of 
 
 ### v1.3
 - This version contains the directory and build structure, previous versions were simple PoCs
-
-## Structure
-- `fractalRenderer.js`:
-This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.
-
-- `mandelbrotRenderer.js`:
-This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
-
-- `juliaRenderer.js`:
-  This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
-
-- `mouseEventHandlers.js`:
-This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
-
-- `touchEventHandlers.js`:
-This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
-
-- `ui.js`:
-Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
-
-- `utils.js`:
-Contains helper functions for working with URL parameters, colors, etc.
-
-- `main.js`:
-The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), registers events, initializes the UI and the fractal.
-
-## Controls:
-### Mouse
-- `Left Button Drag`: Pan
-- `Right Button Drag`: Rotate
-- `Wheel`: Zoom
-- `Left Button Single Click`: Center & Generate URL link
-- `Double click`: Zoom-in/out & Center
-- `Middle Click`: Toggle guiding lines
-### Keyboard
-- `F11`: Toggle fullscreen
-- `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
-- `E`: Toggle guiding lines
-- `Shift + R`: Reset
-- `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
-- `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Ctrl: Zoom-out)
-- `A`: Force resize
-- `Left / Right`: Horizontal pan (Shift: smoother step)
-- `Up / Down`: Vertical pan(Shift: Smooth step)
-- `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
-- `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
-- `Num 1-9`: Load Preset (Shift: Start dive)
-
-### Touch
-- `One Finger Pan`: Pan
-- `One Finger Tap`: Center & Generate URL link
-- `One Finger Double-tap`: Zoom-in/out & Center
-- `Pinch`: Pan & Zoom & Rotate
 
 ## License
 MIT License. See for details.

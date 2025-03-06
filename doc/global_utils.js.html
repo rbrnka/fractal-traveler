@@ -165,33 +165,35 @@ export function isMobileDevice() {
 }
 
 /**
- * Generates string in [x, yi] format from the given complex number.
+ * Generates string in [x, yi] format from the given complex number. Trailing zeroes are trimmed.
  * @param {COMPLEX} c
  * @param {number} precision Decimal point precision
- * @param {boolean} [withI] Append "i" to the 2nd member?
- * @return {string}
+ * @param {boolean} [withI] Append "i" to the imaginary member? Ignored if zero.
+ * @return {string} [x, yi]|[x, 0]|[?, ?]
  */
 export function expandComplexToString(c, precision = 6, withI = true) {
     if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     const invalidValues = [NaN, undefined, null, ''];
-    const isNumber = (value) => {
-        return typeof value === 'number' &amp;&amp; isFinite(value)
-    };
+    const isNumber = (value) => typeof value === 'number' &amp;&amp; isFinite(value);
 
     let expanded = `[`;
 
-    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0] || !isNumber(c[1]))) {
+    if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0]) || !isNumber(c[1])) {
         expanded += `?, ?]`;
         console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupEnd();
         return expanded;
     } else {
-        expanded += `${c[0].toFixed(precision)}, ${c[1].toFixed(precision)}`;
+        const trimmedReal = parseFloat(c[0].toFixed(precision)).toString();
+        const trimmedImag = parseFloat(c[1].toFixed(precision)).toString();
+        expanded += `${trimmedReal}, ${trimmedImag}`;
     }
 
     if (DEBUG_MODE) console.groupEnd();
-    return expanded + (withI ? 'i]' : ']');
+    return expanded + ((withI &amp;&amp; c[1] !== 0) ? 'i]' : ']');
 }
+
 
 /**
  * Compares two complex numbers / arrays of two numbers with given precision
@@ -428,6 +430,21 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
     const deltaPanY = +(rotatedMoveY / ref) * zoom;
 
     return [deltaPanX, deltaPanY];
+}
+
+/**
+ * Removes array of buttons from the scene and clears it.
+ * @param {Array&lt;HTMLButtonElement>} buttons
+ */
+export function destroyArrayOfButtons(buttons) {
+    if (Array.isArray(buttons)) {
+        buttons.forEach(btn => {
+            if (btn.parentNode) {
+                btn.parentNode.removeChild(btn);
+            }
+        });
+        buttons.length = 0;
+    }
 }</code></pre>
         </article>
     </section>
@@ -438,13 +455,13 @@ export function calculatePanDelta(currentX, currentY, lastX, lastY, rect, rotati
 </div>
 
 <nav>
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-Constants.html">Constants</a></li><li><a href="module-HotKeyController.html">HotKeyController</a></li><li><a href="module-JuliaSlidersController.html">JuliaSlidersController</a></li><li><a href="module-Main.html">Main</a></li><li><a href="module-MouseEventHandlers.html">MouseEventHandlers</a></li><li><a href="module-ScreenshotController.html">ScreenshotController</a></li><li><a href="module-TouchEventHandlers.html">TouchEventHandlers</a></li><li><a href="module-Types.html">Types</a></li><li><a href="module-UI.html">UI</a></li><li><a href="module-Utils.html">Utils</a></li></ul><h3>Classes</h3><ul><li><a href="FractalRenderer.html">FractalRenderer</a></li><li><a href="JuliaRenderer.html">JuliaRenderer</a></li><li><a href="MandelbrotRenderer.html">MandelbrotRenderer</a></li></ul><h3>Global</h3><ul><li><a href="global.html#defaultKeyboardEvent">defaultKeyboardEvent</a></li><li><a href="global.html#defaultMouseButtonEvent">defaultMouseButtonEvent</a></li><li><a href="global.html#defaultMouseWheelEvent">defaultMouseWheelEvent</a></li></ul>
 </nav>
 
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Mon Feb 17 2025 17:44:09 GMT+0100 (středoevropský standardní čas)
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.4</a> on Tue Feb 18 2025 23:24:03 GMT+0100 (středoevropský standardní čas)
 </footer>
 
 <script> prettyPrint(); </script>

@@ -30,6 +30,7 @@ let handleMouseUpEvent;
 let mouseDownX = 0, mouseDownY = 0;
 let lastX = 0, lastY = 0;
 let clickTimeout = null;
+let wheelResetTimeout = null;
 let isDragging = false;
 let wasRotated = false;
 
@@ -91,7 +92,14 @@ export function unregisterMouseEventHandlers() {
 function handleWheel(event) {
     event.preventDefault();
 
-    resetAppState();
+    if (wheelResetTimeout) {
+        clearTimeout(wheelResetTimeout);
+    }
+
+    // Debounce
+    wheelResetTimeout = setTimeout(() => {
+        resetAppState();
+    }, 200);
 
     // Get the CSS coordinate of the mouse relative to the canvas
     const rect = fractalApp.canvas.getBoundingClientRect();

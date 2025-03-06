@@ -1,6 +1,6 @@
 import {FractalRenderer} from './fractalRenderer.js';
 import {asyncDelay, compareComplex} from "../global/utils";
-import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
+import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * MandelbrotRenderer
@@ -16,20 +16,26 @@ export class MandelbrotRenderer extends FractalRenderer {
 
         this.DEFAULT_PAN = [-0.5, 0];
         this.pan = [...this.DEFAULT_PAN];
-        /** Mandelbrot-specific presets
-         */
+
+        /** Mandelbrot-specific presets */
         this.PRESETS = [
-            {pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION},
-            {pan: [0.351424, 0.063866], zoom: 0.000049},
-            {pan: [0.254998, 0.000568], zoom: 0.000045},
-            {pan: [-0.164538, 1.038428], zoom: 0.000127},
-            {pan: [-0.750700, 0.021415], zoom: 0.000110},
-            // {pan: [-1.907294, 0.000000], zoom: 0.000451},
-            {pan: [-0.766863, -0.107475], zoom: 0.000196},
-            {pan: [-0.8535686544080792, -0.21081423598149682], zoom: 0.000126},
-            {pan: [0.337420, 0.047257], zoom: 0.000143},
-            {pan: [0.11650135661082159, -0.6635453818054073], zoom: 0.000104},
-            {pan: [-0.124797, 0.840309], zoom: 0.000628}
+            {
+                id: 0,
+                pan: this.DEFAULT_PAN,
+                zoom: this.DEFAULT_ZOOM,
+                rotation: this.DEFAULT_ROTATION,
+                title: 'Default View'
+            },
+            {id: 1, pan: [0.351424, 0.063866], zoom: 0.000049},
+            {id: 2, pan: [0.254998, 0.000568], zoom: 0.000045},
+            {id: 3, pan: [-0.164538, 1.038428], zoom: 0.000127},
+            {id: 4, pan: [-0.750700, 0.021415], zoom: 0.000110, title: 'Across the Seahorse Valley'},
+            {id: 5, pan: [-0.766863, -0.107475], zoom: 0.000196},
+            {id: 6, pan: [-0.8535686544080792, -0.21081423598149682], zoom: 0.000126},
+            {id: 7, pan: [0.337420, 0.047257], zoom: 0.000143, title: 'Minibrot'},
+            {id: 8, pan: [0.11650135661082159, -0.6635453818054073], zoom: 0.000104, title: 'Misiurewicz Point'},
+            {id: 9, pan: [-0.124797, 0.840309], zoom: 0.000628, title: 'The Rabbits'}
+            // {id: 9, pan: [-0.7469408211592985,0.10721648652717636], rotation: 0, zoom: 0.000985998295121236, title: 'Seahorse Valley'}
         ];
 
         this.init();
@@ -107,11 +113,12 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @override
      */
     draw() {
+        this.gl.useProgram(this.program);
+
         const baseIters = Math.floor(5000 * Math.pow(2, -Math.log2(this.zoom)));
         this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
         super.draw();
-
     }
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
@@ -143,7 +150,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         }
 
         await Promise.all([
-            this.animatePanThenZoomTo(preset.pan, preset.zoom, 500, zoomInDuration, EASE_TYPE.QUAD),
+            this.animatePanThenZoomTo(preset.pan, preset.zoom, 500, zoomInDuration),
             this.animateRotationTo(targetRotation, 500, EASE_TYPE.QUINT)
         ]);
 
@@ -168,11 +175,11 @@ export class MandelbrotRenderer extends FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         // Generate random rotations for a more dynamic effect.
-        const zoomOutRotation = this.rotation + (Math.random() * Math.PI * 2 - Math.PI);
-        const zoomInRotation = zoomOutRotation + (Math.random() * Math.PI * 2 - Math.PI);
+        const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
+        const zoomInRotation = zoomOutRotation + (Math.random() * PI * 2 - PI);
 
         if (this.rotation !== this.DEFAULT_ROTATION) {
-            await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUAD)
+            await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration)
         }
 
         await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
@@ -190,7 +197,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      */
     async animateDemo(random = true) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
 
         if (!this.PRESETS.length) {
             console.warn('No presets defined for Mandelbrot mode ');
@@ -220,7 +227,7 @@ export class MandelbrotRenderer extends FractalRenderer {
             console.log(`Animating to preset ${this.currentPresetIndex}`);
 
             // Animate to the current preset.
-            await this.animateTravelToPresetWithRandomRotation(currentPreset, 1000, 500, 5000);
+            await this.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
 
             // Wait after the animation completes.
             await asyncDelay(3500);

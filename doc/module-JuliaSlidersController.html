@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <title>JSDoc: Module: MouseEventHandlers</title>
+    <title>JSDoc: Module: JuliaSlidersController</title>
 
     <script src="scripts/prettify/prettify.js"> </script>
     <script src="scripts/prettify/lang-css.js"> </script>
@@ -17,7 +17,7 @@
 
 <div id="main">
 
-    <h1 class="page-title">Module: MouseEventHandlers</h1>
+    <h1 class="page-title">Module: JuliaSlidersController</h1>
 
     
 
@@ -38,7 +38,7 @@
     <div class="container-overview">
     
         
-            <div class="description">This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.</div>
+            <div class="description">Controller of Julia slider elements directly interacting with the c-value of Julia fractal.</div>
         
 
         
@@ -94,7 +94,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line1">line 1</a>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line1">line 1</a>
     </li></ul></dd>
     
 
@@ -145,78 +145,26 @@
 
         
             
-<h4 class="name" id="~DOUBLE_CLICK_THRESHOLD"><span class="type-signature">(inner, constant) </span>DOUBLE_CLICK_THRESHOLD<span class="type-signature"></span></h4>
+<h4 class="name" id="~SLIDER_UPDATE_THROTTLE_LIMIT"><span class="type-signature">(inner, constant) </span>SLIDER_UPDATE_THROTTLE_LIMIT<span class="type-signature"> :number</span></h4>
 
 
 
 
 <div class="description">
-    How long should we wait before distinguish between double click and two single clicks.
+    Throttle limit in milliseconds
 </div>
 
 
 
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line12">line 12</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
+    <h5>Type:</h5>
+    <ul>
+        <li>
             
-<h4 class="name" id="~DRAG_THRESHOLD"><span class="type-signature">(inner, constant) </span>DRAG_THRESHOLD<span class="type-signature"></span></h4>
+<span class="param-type">number</span>
 
 
-
-
-<div class="description">
-    Tolerance of mouse movement before drag starts.
-</div>
-
-
+        </li>
+    </ul>
 
 
 
@@ -251,69 +199,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line14">line 14</a>
-    </li></ul></dd>
-    
-
-    
-
-    
-
-    
-</dl>
-
-
-
-
-
-
-        
-            
-<h4 class="name" id="~mouseHandlersRegistered"><span class="type-signature">(inner) </span>mouseHandlersRegistered<span class="type-signature"></span></h4>
-
-
-
-
-<div class="description">
-    Global variable to track registration
-</div>
-
-
-
-
-
-
-
-<dl class="details">
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-    <dt class="tag-source">Source:</dt>
-    <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line22">line 22</a>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line16">line 16</a>
     </li></ul></dd>
     
 
@@ -341,7 +227,7 @@
     
 
     
-    <h4 class="name" id=".initMouseHandlers"><span class="type-signature">(static) </span>initMouseHandlers<span class="signature">(app)</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".destroyJuliaSliders"><span class="type-signature">(static) </span>destroyJuliaSliders<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -349,7 +235,271 @@
 
 
 <div class="description">
-    Initialization and registering of the event handlers.
+    Destructor. Removes listeners and hides elements.
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line75">line 75</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".disableJuliaSliders"><span class="type-signature">(static) </span>disableJuliaSliders<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Disable slider controls
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line120">line 120</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".enableJuliaSliders"><span class="type-signature">(static) </span>enableJuliaSliders<span class="signature">()</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Enable slider controls
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line129">line 129</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+            
+
+    
+
+    
+    <h4 class="name" id=".initJuliaSliders"><span class="type-signature">(static) </span>initJuliaSliders<span class="signature">(app)</span><span class="type-signature"></span></h4>
+    
+
+    
+
+
+
+<div class="description">
+    Initializes the elements and their event listeners
 </div>
 
 
@@ -442,7 +592,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line44">line 44</a>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line31">line 31</a>
     </li></ul></dd>
     
 
@@ -478,7 +628,7 @@
     
 
     
-    <h4 class="name" id=".registerMouseEventHandlers"><span class="type-signature">(static) </span>registerMouseEventHandlers<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".resetJuliaSliders"><span class="type-signature">(static) </span>resetJuliaSliders<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -486,7 +636,7 @@
 
 
 <div class="description">
-    Registers mouse handlers.
+    Resets sliders
 </div>
 
 
@@ -530,7 +680,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line53">line 53</a>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line89">line 89</a>
     </li></ul></dd>
     
 
@@ -566,7 +716,7 @@
     
 
     
-    <h4 class="name" id=".unregisterMouseEventHandlers"><span class="type-signature">(static) </span>unregisterMouseEventHandlers<span class="signature">()</span><span class="type-signature"></span></h4>
+    <h4 class="name" id=".updateJuliaSliders"><span class="type-signature">(static) </span>updateJuliaSliders<span class="signature">()</span><span class="type-signature"></span></h4>
     
 
     
@@ -574,7 +724,7 @@
 
 
 <div class="description">
-    Unregisters mouse handlers.
+    Updates the real/imaginary sliders appropriately
 </div>
 
 
@@ -618,7 +768,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="ui_mouseEventHandlers.js.html">ui/mouseEventHandlers.js</a>, <a href="ui_mouseEventHandlers.js.html#line74">line 74</a>
+        <a href="ui_juliaSlidersController.js.html">ui/juliaSlidersController.js</a>, <a href="ui_juliaSlidersController.js.html#line103">line 103</a>
     </li></ul></dd>
     
 

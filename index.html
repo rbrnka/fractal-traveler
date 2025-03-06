@@ -16,6 +16,10 @@
     <link rel="image_src" href="https://fractal.brnka.com/fractal.png">
     <link rel="icon" href="./img/fractal.png" type="image/png">
 
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
+
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZDM1T1PJ2"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
@@ -30,8 +34,7 @@
 </head>
 <body>
 <div id="headerContainer">
-    <span id="handle" title="Toggle" class="colorable">&#8801;</span>
-    <h1> ~ Synaptory Fractal Traveler ~ </h1>
+    <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
     <p>Mandelbrot and Julia fractal explorer &copy; Radim Brnka 2025<br/>Developed for the <a
             target="_blank"
             title="Unmasking Chaos: Synaptory blog"
@@ -43,8 +46,8 @@
             <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode">Mandelbrot</button><button id="juliaSwitch" class="" title="Julia mode">Julia</button>
         </div>
         <div id="presets-dives">
-            <p id="presets">Presets:</p>
-            <p id="dives">Dives:</p>
+            <p id="presets"><span title="Interesting Fractal Locations">Presets:</span></p>
+            <p id="dives"><span title="Real-time Fractal Calculations">Dives:</span></p>
         </div>
         <div id="sliders">
             <div class="slider-container">
@@ -59,43 +62,47 @@
             </div>
         </div>
         <p id="controlButtons">
-            <button id="reset" class="" title="Shift+R">Reset</button><button id="randomize" class="" title="T">Random Colors</button><button id="screenshot" class="" title="Shift+S">Save Image</button><button id="demo" class="" title="D">Demo</button>
+            <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button><button id="randomize" class="" title="Randomize Color Palette (T)">Recolor</button><button id="screenshot" class="" title="Save Image (Shift+S)">Screenshot</button><button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
         </p>
     </div>
     <p class="small">
         <!--        <img id="pin" src="./img/pin.png"> &middot;-->
         <a target="_blank" title="
 ### Mouse
-    - Left Button Drag: Pan
-    - Right Button Drag: Rotate
-    - Wheel: Zoom
-    - Left Button Single Click: Center & Generate URL link
-    - Double click: Zoom-in/out & Center
-    - Middle Click: Toggle guiding lines
+    - `Left Button Drag`: Pan
+    - `Right Button Drag`: Rotate
+    - `Wheel`: Zoom
+    - `Left Button Single Click`: Center & Generate URL link
+    - `Double click`: Zoom-in/out & Center
+    - `Middle Click`: Toggle guiding lines
 ### Keyboard
-    - F11: Toggle fullscreen
-    - Q / W: Rotate counter-clockwise/clockwise (Shift: Slower speed)
-    - E: Toggle guiding lines
-    - Shift + R: Reset
-    - T: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
-    - Shift + S: Take screenshot
-    - Space: Zoom-in (Shift: zoom-out)
-    - A: Force resize
-    - Left / Right: Julia: Real part (cx) stepping (Ctrl: Horizontal pan) / Mandelbrot: Horizontal pan (Shift: Smooth stepping)
-    - Up / Down: Julia: Imaginary part (cy) stepping (Ctrl: Vertical pan) / Mandelbrot: Vertical pan (Shift: Smooth stepping)
-    - Num 1-9: Load Preset (Shift: Start dive)"
+    - `F11`: Toggle fullscreen
+    - `Enter`: Toggle controls
+    - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+    - `E`: Toggle guiding lines
+    - `Shift + R`: Reset
+    - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
+    - `Shift + S`: Take screenshot
+    - `Space`: Zoom-in (Ctrl: Zoom-out)
+    - `A`: Force resize
+    - `Left / Right`: Horizontal pan (Shift: smoother step)
+    - `Up / Down`: Vertical pan(Shift: Smooth step)
+    - `Ctrl + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
+    - `Ctrl + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
+    - `Num 1-9`: Load Preset (Shift: Start dive)"
            href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#controls">Controls</a>
         <span class="middot">&middot;</span>
-        <a target="_blank" title="Documentation"
+        <a target="_blank" title="Readme &amp; JSDocs"
            href="https://fractal.brnka.com/docs/">Documentation</a>
         <span class="middot">&middot;</span>
-        <a target="_blank" title="Source Code" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
+        <a target="_blank" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
         <span class="middot">&middot;</span>
         <span id="version" title="Current version">v1.8</span>
     </p>
 </div>
 <div id="infoLabel">
-    <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>
+<!--    <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>-->
+    <div id="infoText">Initialized successfully!</div>
     <div id="debugInfo"></div>
 </div>
 <canvas id="fractalCanvas"></canvas>

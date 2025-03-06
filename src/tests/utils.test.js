@@ -19,9 +19,17 @@ describe('Utils', () => {
             const result = expandComplexToString([1.23456789, -0.987654321], 4, true);
             expect(result).toBe(`[1.2346, -0.9877i]`);
         });
-        test('returns "[]" for invalid complex number', () => {
+        test('returns formatted string for nonstandard complex number', () => {
+            const result = expandComplexToString([-0.5000000000, -0.00000000], 6, true);
+            expect(result).toBe(`[-0.5, 0]`);
+        });
+        test('returns "[?, ?]" for invalid complex number', () => {
             const result = expandComplexToString([NaN, 0.5]);
             expect(result).toBe('[?, ?]');
+        });
+        test('returns "[0, 0]" for zero complex number', () => {
+            const result = expandComplexToString([0, 0]);
+            expect(result).toBe('[0, 0]');
         });
     });
 
@@ -109,10 +117,10 @@ describe('Utils', () => {
 
     describe('getAnimationDuration', () => {
         test('calculates duration for given parameters', () => {
-            const current = { pan: [0, 0], zoom: 1, c: [0, 0] };
-            const target = { pan: [3, 4], zoom: 2, c: [1, 1] };
+            const current = {pan: [0, 0], zoom: 1, c: [0, 0]};
+            const target = {pan: [3, 4], zoom: 2, c: [1, 1]};
             // For a seed of 100, duration should be roughly proportional to the weighted sum of differences.
-            const duration = getAnimationDuration(100, current, target, { pan: 1, zoom: 1, c: 1 });
+            const duration = getAnimationDuration(100, current, target, {pan: 1, zoom: 1, c: 1});
             expect(typeof duration).toBe('number');
             expect(duration).toBeGreaterThan(0);
         });
@@ -134,12 +142,12 @@ describe('Utils', () => {
 
     describe('calculatePanDelta', () => {
         test('calculates correct delta given movement', () => {
-            const rect = { width: 800, height: 600 };
+            const rect = {width: 800, height: 600};
             // No rotation, zoom 1.
             const [deltaX, deltaY] = calculatePanDelta(410, 310, 400, 300, rect, 0, 1);
             // Movement: 10,10; normalized: 10/800 and 10/600 respectively.
-            expect(deltaX).toBeCloseTo(-10/800);
-            expect(deltaY).toBeCloseTo(10/600);
+            expect(deltaX).toBeCloseTo(-10 / 800);
+            expect(deltaY).toBeCloseTo(10 / 600);
         });
     });
 });

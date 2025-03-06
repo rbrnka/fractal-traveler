@@ -30,10 +30,12 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} MANDELBROT_PRESET
- *      @property {number} id
+ *      @property {number} [id] If present, helps unique demo rotation
  *      @property {number} zoom
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
+ *      @property {string} [title] HTML element title (on hover)
+ * @extends PRESET
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
  */
@@ -42,11 +44,13 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} JULIA_PRESET
- *      @property {number} id
+ *      @property {number} [id] If present, helps unique demo rotation
  *      @property {COMPLEX} c
  *      @property {number} zoom
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
+ *      @property {string} [title] HTML element title (on hover)
+ * @extends PRESET
  * @see {@link MANDELBROT_PRESET}
  * @description Julia-specific presets
  */
@@ -67,7 +71,17 @@
  *      @property {number} 0 Red
  *      @property {number} 1 Green
  *      @property {number} 2 Blue
- * @description Color palette [R, G ,B]
+ * @description Color palette [R, G ,B] (0-1)
+ */
+// ---------------------------------------------------------------------------------------------------------------------
+// JULIA PALETTE
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * @typedef {Object} JULIA_PALETTE
+ *      @property {Array<number, number, number, number, number>} theme 5 innerStops of RGB colors defining the Julia palette
+ *      @property {string} id Identifier / title
+ *      @property {string} [keyColor] Main theme color. If not set, 3. innerStop's color is used.
+ * @description Color palette defined by inner stops
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // COLOR THEME

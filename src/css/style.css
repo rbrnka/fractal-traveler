@@ -1,6 +1,7 @@
 :root {
     --bg-color: rgba(24, 48, 13, 0.2);
-    --accent-color: #B4FF6A;
+    --mid-color: rgba(72, 144, 52, 0.6);
+    --accent-color: rgba(180, 255, 106, 1);
 }
 
 html, body {
@@ -16,40 +17,44 @@ html, body {
     height: 100%;
 }
 
+@keyframes fadeInTop {
+    0% { top: -320px; }
+    100% { top: 0; }
+}
+
+@keyframes fadeInBottom {
+    0% { bottom: -30px; }
+    100% { bottom: 0; }
+}
+
 #headerContainer {
     position: relative;
     z-index: 9999;
     background-color: var(--bg-color);
     backdrop-filter: blur(6px);
-    width: 390px;
+    width: 380px;
     margin: 0 auto;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
     height: auto;
     overflow: hidden;
-    /*border: 2px solid var(--bg-color);*/
+    border: 5px solid var(--bg-color);
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE 10+ */
     user-select: none; /* Standard syntax */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+    top: -320px;
 }
 
-@media screen and (min-width: 470px) {
-    #headerContainer {
-        zoom: 120%;
-    }
-
-    #infoLabel {
-        zoom: 120%;
-    }
+#headerContainer.ready {
+    animation: fadeInTop 1s forwards;
 }
 
 #headerContainer.minimized {
-    height: 20px;
-    border: 2px solid var(--bg-color);
-    border-top: none;
+    height: 28px;
 }
 
 #fractalCanvas {
@@ -63,16 +68,32 @@ html, body {
 }
 
 h1 {
-    padding: 12px 10px 5px 10px;
-    margin: 0;
+    padding: 0 0 0 0;
+    margin: 6px auto 6px auto;
     color: var(--accent-color, #fff);
-    /*color: #fff;*/
     z-index: 1000;
-    font-size: 20px;
+    font-family: "Bruno Ace SC", sans-serif;
+    font-size: 12pt;
     letter-spacing: 1px;
     font-style: italic;
-    /*text-shadow: 0 0 10px var(--accent-color);*/
-    text-shadow: 0 0 2px var(--accent-color), 0 0 20px var(--accent-color);
+    text-shadow: 0 0 4px #000, 0 0 12px var(--accent-color);
+    width: 320px;
+}
+
+@media screen and (min-width: 471px) {
+    #headerContainer {
+        zoom: 120%;
+    }
+
+    #infoLabel {
+        zoom: 120%;
+    }
+}
+
+@media screen and (max-width: 470px) {
+    h1 {
+        font-size: 10pt;
+    }
 }
 
 p {
@@ -81,24 +102,23 @@ p {
     z-index: 1000;
     font-size: 12px;
     line-height: 14px;
-    text-shadow: 0 0 10px var(--accent-color);
+    text-shadow: 0 0 10px #000;
 }
 
 a {
     color: #fff;
     text-decoration: underline 0.1em rgba(255, 255, 255, 0);
     transition: text-decoration-color 300ms;
+    text-shadow: 0 0 8px var(--accent-color);
 }
-
 a:hover {
-    /*color: var(--accent-color);*/
-    text-decoration: underline;
+    text-decoration-color: var(--accent-color);
 }
 
 span {
     font-size: 12px;
     color: #fff;
-    text-shadow: 0 0 6px var(--accent-color);
+    text-shadow: 0 0 10px #000;
 }
 
 hr {
@@ -170,14 +190,15 @@ button.active {
 button:first-of-type:hover {
     box-shadow: -2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
 }
+
 button:first-of-type.active {
     box-shadow: -4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
 }
 
 button:last-of-type:hover {
     box-shadow: 2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
-
 }
+
 button:last-of-type.active {
     box-shadow: 4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
 }
@@ -254,17 +275,21 @@ label, .sliderValue {
     display: none;
 }
 
+button.dive {
+    width: 57px;
+}
+
 .switch-field {
     /*border: 1px solid yellow;*/
     display: flex;
     overflow: hidden;
     margin: 0 auto;
     width: 240px;
-    padding: 10px 0;
+    padding: 10px 20px;
 }
 
 .switch-field span {
-    padding: 6px 5px 0 0;
+    padding: 8px 5px 0 0;
 }
 
 .switch-field button {
@@ -272,27 +297,11 @@ label, .sliderValue {
 }
 
 #mandelbrotSwitch {
-
+    border-right: 1px solid var(--accent-color);
 }
 
 #juliaSwitch {
 
-}
-
-#handle {
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Standard syntax */
-    cursor: pointer;
-    padding: 2px 150px 2px 150px;
-    display: none;
-    color: var(--accent-color);
-    text-shadow: 0 0 1px var(--accent-color), 0 0 4px var(--accent-color), 0 0 10px var(--accent-color);
-}
-
-#handle.toggled {
-    font-weight: bold;
 }
 
 #controlArea {
@@ -309,6 +318,10 @@ label, .sliderValue {
     margin: 5px 0 0 0;
 }
 
+#controlButtons button {
+    width: 80px;
+}
+
 p.small {
     font-size: 11px;
 }
@@ -321,34 +334,43 @@ p#presets, p#dives {
     color: #fff;
 }
 
+p#presets span, p#dives span {
+    padding: 0 5px 0 0;
+}
+
 .highlight {
     color: #fff;
 }
 
 #version {
     color: var(--accent-color);
+    text-shadow: 0 0 8px var(--accent-color);
     font-size: 11px;
 }
 
 #infoLabel {
     width: 370px;
     height: 14px;
-    padding: 5px 10px 7px 10px;
+    padding: 3px 5px 3px 5px;
     background-color: var(--bg-color);
     backdrop-filter: blur(8px);
     z-index: 9999;
-    border: 2px solid var(--bg-color);
-    border-bottom: none;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     cursor: text;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     overflow: hidden;
+    border: 5px solid var(--bg-color);
     border-bottom: none;
     position: absolute;
-    bottom: 0;
+    bottom: -30px;
     right: 25%;
     left: 50%;
     margin-left: -195px;
+}
+
+#infoLabel.ready {
+    animation: fadeInBottom 1s forwards;
 }
 
 .middot {
@@ -361,7 +383,7 @@ p#presets, p#dives {
     font-family: sans-serif;
     /*font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;*/
     width: 100%;
-    font-size: 11px;
+    font-size: 10px;
     background: transparent;
     border: none;
     text-align: center;
@@ -372,14 +394,32 @@ p#presets, p#dives {
     -ms-user-select: none; /* IE 10+ */
     user-select: none; /* Standard syntax */
     cursor: pointer;
-    text-shadow: 0 0 3px var(--accent-color);
+    text-shadow: 0 0 8px #000;
+    caret-color: var(--accent-color);
 }
 
 #infoText:focus {
     outline: none !important;
 }
 
-#infoText.demoActive {
+
+@keyframes pulse {
+    0% {
+        color: #fff;
+    }
+
+    100% {
+        color: var(--accent-color);
+    }
+}
+
+#infoText.animation {
+    /*animation: pulse;*/
+    /*animation-duration: 1s;*/
+    /*animation-timing-function: ease-in-out;*/
+    /*animation-delay: 0s;*/
+    /*animation-iteration-count: infinite;*/
+    /*animation-direction: alternate;*/
     color: var(--accent-color);
 }
 

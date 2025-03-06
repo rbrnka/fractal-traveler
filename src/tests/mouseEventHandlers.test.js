@@ -1,6 +1,17 @@
 // __tests__/mouseEventHandlers.test.js
 import {initMouseHandlers, unregisterMouseEventHandlers} from '../ui/mouseEventHandlers';
-import {mouseLeftDownEvent, mouseLeftMoveEvent, mouseLeftUpEvent, mouseWheelYEvent} from "./eventDefaults";
+import {
+    mouseLeftDownEvent,
+    mouseLeftMoveEvent,
+    mouseLeftUpEvent,
+    mouseMiddleDownEvent,
+    mouseMiddleUpEvent,
+    mouseRightDownEvent,
+    mouseRightMoveEvent,
+    mouseRightUpEvent,
+    mouseWheelYEvent
+} from "./eventDefaults";
+import * as UI from "../ui/ui";
 
 describe('MouseEventHandlers', () => {
     let canvas, fractalApp;
@@ -18,7 +29,7 @@ describe('MouseEventHandlers', () => {
         fractalApp = {
             canvas,
             MAX_ZOOM: 0.000017,
-            MIN_ZOOM: 40,
+            MIN_ZOOM: 400,
             pan: [0, 0],
             c: [0, 0],
             rotation: 0,
@@ -27,11 +38,14 @@ describe('MouseEventHandlers', () => {
             updateInfo: jest.fn(),
             updateJuliaSliders: jest.fn(),
             screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
-            stopCurrentNonColorAnimations: jest.fn(),
+            stopAllNonColorAnimations: jest.fn(),
             // If needed, other methods can be mocked.
             animatePanTo: jest.fn(() => Promise.resolve()),
             animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
         };
+
+        // Mock UI
+        UI.toggleDebugLines = jest.fn();
 
         // Ensure mouse handlers are not already registered.
         unregisterMouseEventHandlers();
@@ -52,7 +66,7 @@ describe('MouseEventHandlers', () => {
         jest.useRealTimers();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('should register mouse event handlers and respond to mousemove (panning)', async () => {
+    test('should respond to mousemove (panning)', async () => {
 
         canvas.dispatchEvent(mouseLeftDownEvent(100, 100));
         jest.advanceTimersByTime(100);
@@ -67,7 +81,21 @@ describe('MouseEventHandlers', () => {
         expect(fractalApp.pan[1]).not.toEqual(0);
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('should register mouse event handlers and respond to single click (pan)', async () => {
+    test('should respond to mousemove (rotating)', async () => {
+
+        canvas.dispatchEvent(mouseRightDownEvent(100, 100));
+        jest.advanceTimersByTime(100);
+        canvas.dispatchEvent(mouseRightMoveEvent(200, 200));
+        jest.advanceTimersByTime(100);
+        canvas.dispatchEvent(mouseRightUpEvent(200, 200));
+
+        jest.runAllTimers();
+        await Promise.resolve();
+
+        expect(fractalApp.rotation).not.toEqual(0);
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should respond to single click (pan)', async () => {
 
         canvas.dispatchEvent(mouseLeftDownEvent());
         jest.advanceTimersByTime(50);
@@ -79,7 +107,7 @@ describe('MouseEventHandlers', () => {
         expect(fractalApp.animatePanTo).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('should register mouse event handlers and respond to double click (zoom-in/out)', async () => {
+    test('should respond to left double click (zoom-in) within bounds', async () => {
 
         canvas.dispatchEvent(mouseLeftDownEvent());
         canvas.dispatchEvent(mouseLeftUpEvent());
@@ -95,9 +123,28 @@ describe('MouseEventHandlers', () => {
         await Promise.resolve();
 
         expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
+
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('should register and then unregister mouse event handlers', async () => {
+    test('should respond to right double click (zoom-out) within bounds', async () => {
+
+        canvas.dispatchEvent(mouseRightDownEvent());
+        canvas.dispatchEvent(mouseRightUpEvent());
+
+        jest.advanceTimersByTime(100);
+
+        canvas.dispatchEvent(mouseRightDownEvent());
+        canvas.dispatchEvent(mouseRightUpEvent());
+
+        // Advance timers to trigger any pending timeouts.
+        jest.runAllTimers();
+        // Wait for any pending promises in the event handler.
+        await Promise.resolve();
+
+        expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should unregister mouse event handlers and make them not working', async () => {
         // Unregister event handlers.
         unregisterMouseEventHandlers();
 
@@ -116,6 +163,13 @@ describe('MouseEventHandlers', () => {
         let zoom = fractalApp.zoom;
         canvas.dispatchEvent(mouseWheelYEvent());
         expect(zoom).not.toEqual(fractalApp.zoom);
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should toggle debug lines on middle click', () => {
+        canvas.dispatchEvent(mouseMiddleUpEvent());
+        canvas.dispatchEvent(mouseMiddleDownEvent());
+
+        expect(UI.toggleDebugLines).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
 });

@@ -1,6 +1,6 @@
 import {updateInfo} from "../ui/ui";
 import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE} from "../global/constants";
+import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -40,7 +40,6 @@ export class FractalRenderer {
         this.MAX_ZOOM = 0.000017;
         this.MIN_ZOOM = 40;
 
-
         /** Interesting zoom-ins
          *  @type {Array.<PRESET>}
          */
@@ -76,7 +75,6 @@ export class FractalRenderer {
         this.iterations = 0;
         this.extraIterations = 0;
 
-
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
@@ -90,11 +88,45 @@ export class FractalRenderer {
 			}
 		`;
 
-        this.canvas.addEventListener('webglcontextlost', (event) => {
-            event.preventDefault();
-            console.warn(`%c ${this.constructor.name}: %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-            this.init(); // Reinitialize WebGL context
-        });
+        this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+    }
+
+    onWebGLContextLost(event) {
+        event.preventDefault();
+        console.warn(`%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        this.init(); // Reinitialize WebGL context
+    }
+
+    /** Destructor */
+    destroy() {
+        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        // Cancel any ongoing animations.
+        this.stopAllNonColorAnimations();
+        this.stopCurrentColorAnimations();
+
+        // Remove event listeners from the canvas.
+        if (this.canvas) {
+            this.canvas.removeEventListener('webglcontextlost', this.onWebGLContextLost);
+        }
+
+        // Free WebGL resources.
+        if (this.program) {
+            this.gl.deleteProgram(this.program);
+            this.program = null;
+        }
+        if (this.vertexShader) {
+            this.gl.deleteShader(this.vertexShader);
+            this.vertexShader = null;
+        }
+        if (this.fragmentShader) {
+            this.gl.deleteShader(this.fragmentShader);
+            this.fragmentShader = null;
+        }
+
+        this.canvas = null;
+        this.gl = null;
+
+        console.groupEnd();
     }
 
     //region > CONTROL METHODS -----------------------------------------------------------------------------------------
@@ -116,6 +148,8 @@ export class FractalRenderer {
     resizeCanvas() {
         console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         console.log(`Canvas before resize: ${this.canvas.width}x${this.canvas.height}`);
+
+        this.gl.useProgram(this.program);
 
         // Use visual viewport if available, otherwise fallback to window dimensions.
         const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
@@ -176,6 +210,8 @@ export class FractalRenderer {
         if (DEBUG_MODE) console.log(`Shader GLenum type: ${type}`);
         if (DEBUG_MODE) console.log(`Shader code: ${source}`);
 
+        this.gl.useProgram(this.program);
+
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
         this.gl.compileShader(shader);
@@ -183,6 +219,7 @@ export class FractalRenderer {
         if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
             console.error(this.gl.getShaderInfoLog(shader));
             this.gl.deleteShader(shader);
+            if (DEBUG_MODE) console.groupEnd();
             return null;
         }
         if (DEBUG_MODE) console.groupEnd();
@@ -230,6 +267,7 @@ export class FractalRenderer {
      * Updates uniforms (should be done on every redraw)
      */
     updateUniforms() {
+        this.gl.useProgram(this.program);
         // Cache the uniform locations.
         this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
         this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
@@ -237,7 +275,6 @@ export class FractalRenderer {
         this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
         this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation');
         this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
-        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
     }
 
     /**
@@ -277,9 +314,9 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
 
         this.colorPalette = [...this.DEFAULT_PALETTE];
@@ -291,7 +328,7 @@ export class FractalRenderer {
         this.resizeCanvas();
         this.draw();
 
-        if (DEBUG_MODE) console.groupEnd();
+        console.groupEnd();
         updateInfo();
     }
 
@@ -343,8 +380,8 @@ export class FractalRenderer {
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
     /** Stops all currently running animations that are not a color transition */
-    stopCurrentNonColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    stopAllNonColorAnimations() {
+        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
         this.stopCurrentPanAnimation();
         this.stopCurrentZoomAnimation()
@@ -396,7 +433,7 @@ export class FractalRenderer {
         console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
         this.demoActive = false;
         this.currentPresetIndex = 0;
-        this.stopCurrentNonColorAnimations();
+        this.stopAllNonColorAnimations();
     }
 
     /** Default callback after every animation that requires on-screen info update */
@@ -740,7 +777,7 @@ export class FractalRenderer {
         await new Promise(() => {
 
             const rotationStep = () => {
-                this.rotation = normalizeRotation(this.rotation + dir * step + 2 * Math.PI);
+                this.rotation = normalizeRotation(this.rotation + dir * step + 2 * PI);
                 this.draw();
 
                 updateInfo(true);
@@ -756,10 +793,11 @@ export class FractalRenderer {
     /**
      * Animates travel to preset.
      * @abstract
-     * @param {...*} args - Parameters for the animation.
+     * @param {PRESET} preset - Parameters for the animation.
+     * @param {number} duration - Parameters for the animation.
      * @return {Promise<void>}
      */
-    async animateTravelToPreset(...args) {
+    async animateTravelToPreset(preset, duration) {
         throw new Error('The animateTravelToPreset method must be implemented in child classes');
     }
 
