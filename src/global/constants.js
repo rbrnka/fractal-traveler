@@ -10,7 +10,7 @@ import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils"
  * DEBUG MODE. Set to false for prod deployment!
  * @type {boolean}
  */
-export const DEBUG_MODE = true;
+export const DEBUG_MODE = false;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FEATURE FLAGS
 /** Allows to switch between fractal while keeping the params to allow Mandelbrot and Julia match each other */

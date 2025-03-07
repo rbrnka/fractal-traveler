@@ -49,6 +49,7 @@ The architecture supports additional fractal types and further customization of 
 - `Shift + S`: Take screenshot
 - `Space`: Zoom-in (Alt: Zoom-out, Shift: Smoother step)
 - `A`: Force resize
+- `Z`: Switch fractals with persisting params (Shows respective fractal counterpart). Julia c translates to Mandelbrot p and vice versa. (CTRL + Switch Fractal Mode Button has the same effect)
 - `Left / Right`: Horizontal pan (Shift: Smoother step)
 - `Up / Down`: Vertical pan (Shift: Smoother step)
 - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
