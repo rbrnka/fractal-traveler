@@ -7,6 +7,7 @@
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 import {APP_NAME, DEFAULT_CONSOLE_GROUP_COLOR} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
+import {isJuliaMode} from "./ui";
 
 /**
  * Generates filename based on current timestamp
@@ -24,8 +25,9 @@ function getFilename() {
  * @return {string}
  */
 function getWatermarkText(fractalApp) {
-    const fractalType = fractalApp.constructor.name;
-    return `Created by ${APP_NAME} (${fractalType.substring(0, fractalType.length - 8 /* Remove the "Renderer" string */)}: ` +
+    const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
+
+    return `Created by ${APP_NAME} (${fractalType}: ` +
         `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toFixed(6)}` +
         `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`}`;
 }

@@ -10,7 +10,14 @@ import {easeInOut, easeInOutCubic, easeInOutQuint} from "./utils";
  * DEBUG MODE. Set to false for prod deployment!
  * @type {boolean}
  */
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = true;
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// FEATURE FLAGS
+/** Allows to switch between fractal while keeping the params to allow Mandelbrot and Julia match each other */
+export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
+
+/** Enables bottom bar for user input for custom coords */
+export const FF_USER_INPUT_ALLOWED = false;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
@@ -131,7 +138,7 @@ export const JULIA_PALETTES = [
         ]
     },
     {
-        id: 'Ocean', keyColor: '#00284d', theme: [
+        id: 'Ocean', keyColor: '#0F52BA', theme: [
             230/255, 243/255, 255/255,
             49 / 255, 141 / 255, 178 / 255,
             0.0, 13/255, 26/255,
@@ -149,7 +156,7 @@ export const JULIA_PALETTES = [
         ]
     },
     {
-        id: 'Cosmos', keyColor: '#eeeeee', theme: [
+        id: 'Cosmos', keyColor: '#fefeee', theme: [
             0.0, 0.0, 0.0,
             1.0, 0.647, 0.0,
             0.0, 0.0, 0.0,
