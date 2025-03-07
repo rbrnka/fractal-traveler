@@ -2,13 +2,20 @@
 
 // Mock constants used in the file.
 import {
-    asyncDelay, calculatePanDelta,
+    asyncDelay,
+    calculatePanDelta,
     compareComplex,
     comparePalettes,
-    easeInOut, easeInOutCubic, easeInOutQuint,
-    expandComplexToString, getAnimationDuration,
+    easeInOut,
+    easeInOutCubic,
+    easeInOutQuint,
+    expandComplexToString,
+    getAnimationDuration,
+    hexToRGBArray,
     hsbToRgb,
-    hslToRgb, lerp, normalizeRotation,
+    hslToRgb,
+    lerp,
+    normalizeRotation,
     rgbToHsl
 } from "../global/utils";
 
@@ -75,6 +82,15 @@ describe('Utils', () => {
             const hsl2 = rgbToHsl(...rgb);
             // Allow for small rounding differences.
             expect(hsl2.map(v => parseFloat(v.toFixed(2)))).toEqual(hsl.map(v => parseFloat(v.toFixed(2))));
+        });
+    });
+
+    describe('hexToRgb', () => {
+        test('converts hex to rgb correctly', () => {
+            // Test with a known value.
+            const hex = '#f00';
+            // hsb (0,1,1) should be red: [1,0,0]
+            expect(hexToRGBArray(hex)).toEqual([1, 0, 0]);
         });
     });
 

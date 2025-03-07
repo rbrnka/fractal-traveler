@@ -10,9 +10,10 @@ import {
     isAnimationActive,
     isJuliaMode,
     randomizeColors,
+    reset,
     resetAppState,
     startJuliaDive,
-    switchFractalMode,
+    switchFractalModeWithPersistence,
     toggleDebugLines,
     toggleDemo,
     toggleHeader,
@@ -24,6 +25,7 @@ import {
     DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
+    FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
     ROTATION_DIRECTION
 } from "../global/constants";
@@ -148,7 +150,13 @@ async function onKeyDown(event) {
             event.preventDefault();
             event.stopPropagation();
 
-            if (event.shiftKey) switchFractalMode(isJuliaMode() ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT);
+            if (event.shiftKey) await reset();
+            break;
+
+        case 'KeyZ': // Switch between fractals with constant p/c
+            if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
+
+            await switchFractalModeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
             break;
 
         case 'KeyT': // Random colors

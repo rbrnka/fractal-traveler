@@ -18,6 +18,7 @@ import {
     DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
+    FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
     PI,
     RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
@@ -38,8 +39,6 @@ import {
  * @author Radim Brnka
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
  */
-
-let FEATURE_FLAG_USER_INPUT = false; // TODO
 
 let canvas;
 let fractalApp;
@@ -83,8 +82,9 @@ const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
 /**
  * Switches among fractal modes
  * @param {FRACTAL_TYPE} mode
+ * @param {PRESET} [preset] If present, it's set as the default state through travelToPreset
  */
-export function switchFractalMode(mode) {
+export async function switchFractalMode(mode, preset = null) {
     console.groupCollapsed(`%c switchFractalMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
     if (mode === fractalMode) {
@@ -126,7 +126,49 @@ export function switchFractalMode(mode) {
 
     fractalApp.reset();
 
-    console.log(`Switched to ${mode}`);
+    if (preset) {
+        console.log(`Preset found, setting: ${JSON.stringify(preset)}`)
+        if (isJuliaMode()) {
+            await fractalApp.animateTravelToPreset({
+                pan: [0, 0], c: preset.c, zoom: 0.5, rotation: 0
+            }, 1000);
+        } else {
+            await fractalApp.animateTravelToPreset({
+                pan: preset.pan, zoom: 0.00005, rotation: 0
+            }, 500, 1000);
+        }
+    }
+
+    console.log(`Switched to ${mode === FRACTAL_TYPE.MANDELBROT ? 'Mandelbrot' : 'Julia'}`);
+    console.groupEnd();
+}
+
+/**
+ * Switches among fractal modes but keeps the c/pan settings so the fractals match each other.
+ * @param {FRACTAL_TYPE} mode
+ * @return {Promise<void>}
+ */
+export async function switchFractalModeWithPersistence(mode) {
+    console.groupCollapsed(`%c switchFractalModeWithPersistence`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+
+    if (mode === fractalMode) {
+        console.warn(`Switching to the same mode? Why?`);
+        console.groupEnd();
+        return;
+    }
+
+    if (mode === FRACTAL_TYPE.MANDELBROT) {
+        console.log('MAND')
+        await switchFractalMode(FRACTAL_TYPE.MANDELBROT, {
+            pan: fractalApp.c.slice(), zoom: 0.00005, rotation: 0
+        });
+    } else {
+        console.log('JUL')
+        await switchFractalMode(FRACTAL_TYPE.JULIA, {
+            pan: [0, 0], c: fractalApp.pan.slice(), zoom: 0.5, rotation: 0
+        });
+    }
+
     console.groupEnd();
 }
 
@@ -270,7 +312,7 @@ export function updateInfo() {
         infoText.classList.remove('animationActive');
     }
 
-    if (FEATURE_FLAG_USER_INPUT) {
+    if (FF_USER_INPUT_ALLOWED) {
         if (document.activeElement !== infoText) {
             infoText.innerHTML = text;
         }
@@ -736,12 +778,22 @@ function initDiveButtons() {
 }
 
 function initFractalSwitchButtons() {
-    mandelbrotSwitch.addEventListener('click', () => {
-        switchFractalMode(FRACTAL_TYPE.MANDELBROT);
+    mandelbrotSwitch.addEventListener('click', async (e) => {
+        if (e.ctrlKey) {
+            console.log('mandelbrotSwitch clicked (with persistence).');
+            await switchFractalModeWithPersistence(FRACTAL_TYPE.MANDELBROT);
+        } else {
+            console.log('mandelbrotSwitch clicked.');
+            await switchFractalMode(FRACTAL_TYPE.MANDELBROT);
+        }
     });
 
-    juliaSwitch.addEventListener('click', () => {
-        switchFractalMode(FRACTAL_TYPE.JULIA);
+    juliaSwitch.addEventListener('click', async (e) => {
+        if (e.ctrlKey) {
+            await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
+        } else {
+            await switchFractalMode(FRACTAL_TYPE.JULIA);
+        }
     });
 }
 
@@ -822,7 +874,7 @@ export function parseUserInput(input) {
 }
 
 function initInfoText() {
-    if (!FEATURE_FLAG_USER_INPUT) {
+    if (!FF_USER_INPUT_ALLOWED) {
         infoText.addEventListener('click', () => {
             // TODO refactor into a method etc.
             let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}` + isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`;

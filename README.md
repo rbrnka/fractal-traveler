@@ -1,11 +1,14 @@
 # Synaptory Fractal Traveler
+![Release](https://img.shields.io/github/v/release/rbrnka/fractal-traveler)
+![Status](https://img.shields.io/badge/Status-stable-darkgreen)
+![GitHub Release Date](https://img.shields.io/github/release-date/rbrnka/fractal-traveler)
+
 ![ftraveler-header](https://github.com/user-attachments/assets/12f62198-058e-42e5-af15-739256a72425)
 
 Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease. Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&showWelcomeOnShare=false) article on my Substack blog.
 
 > [!IMPORTANT]
 **High-end GPU is recommended!**
-
 
 ### Live app is available [here](https://fractal.brnka.com).
 
@@ -46,6 +49,7 @@ The architecture supports additional fractal types and further customization of 
 - `Shift + S`: Take screenshot
 - `Space`: Zoom-in (Alt: Zoom-out, Shift: Smoother step)
 - `A`: Force resize
+- `Z`: Switch fractals with persisting params (Shows respective fractal counterpart). Julia c translates to Mandelbrot p and vice versa. (CTRL + Switch Fractal Mode Button has the same effect)
 - `Left / Right`: Horizontal pan (Shift: Smoother step)
 - `Up / Down`: Vertical pan (Shift: Smoother step)
 - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
@@ -81,6 +85,8 @@ The architecture supports additional fractal types and further customization of 
 Available [here](https://fractal.brnka.com/docs).
 
 ## Changelog
+![GitHub package.json version](https://img.shields.io/github/package-json/v/rbrnka/fractal-traveler)
+![GitHub commit activity](https://img.shields.io/github/commit-activity/t/rbrnka/fractal-traveler)
 ### v1.8
 - Fully asynchronous animations
 - Improved controls (new hotkeys)
@@ -139,6 +145,8 @@ Available [here](https://fractal.brnka.com/docs).
 - This version contains the directory and build structure, previous versions were simple PoCs
 
 ## License
+![GitHub License](https://img.shields.io/github/license/rbrnka/fractal-traveler)
+
 MIT License. See for details.
 
 *By Radim Brnka © 2025, Inspired by the intricate beauty of fractals, developed for interactive exploration and learning.*

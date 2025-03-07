@@ -276,10 +276,10 @@ export function rgbToHsl(r, g, b) {
 }
 
 /**
- * Converts HTML hex color notation to rgb
+ * Converts HTML hex color notation to rgb object
  * @param {string} hex HTML hex color
- * @param {number} normalize interval to normalize onto
- * @return {{r: number, b: number, g: number}|null}
+ * @param {number} [normalize] interval to normalize onto
+ * @return {{r: number, g: number, b: number}|null}
  */
 export function hexToRGB(hex, normalize = 255) {
     // Ensure it's a string and remove any leading #
@@ -306,6 +306,17 @@ export function hexToRGB(hex, normalize = 255) {
         g: g / normalize,
         b: b / normalize
     };
+}
+
+/**
+ * Converts HTML hex color notation to rgb array
+ * @param {string} hex HTML hex color
+ * @param {number} [normalize] interval to normalize onto
+ * @return {number[]|null} [r, g, b]
+ */
+export function hexToRGBArray(hex, normalize = 255) {
+    const rgb = hexToRGB(hex, normalize);
+    return [rgb.r, rgb.g, rgb.b];
 }
 
 /**
