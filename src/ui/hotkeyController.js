@@ -23,10 +23,10 @@ import {
 import {
     DEBUG_MODE,
     DEFAULT_CONSOLE_GROUP_COLOR,
-    DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
+    JULIA_PALETTES,
     ROTATION_DIRECTION
 } from "../global/constants";
 
@@ -164,12 +164,28 @@ async function onKeyDown(event) {
             event.stopPropagation();
 
             if (altKey) {
-                await fractalApp.animateColorPaletteTransition(
-                    isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR,
-                    250,
-                    updateColorTheme);
+                if (isJuliaMode()) {
+                    await fractalApp.animateInnerStopsTransition(
+                        JULIA_PALETTES[0],
+                        250,
+                        updateColorTheme);
+                } else {
+                    await fractalApp.animateColorPaletteTransition(
+                        DEFAULT_MANDELBROT_THEME_COLOR,
+                        250,
+                        updateColorTheme);
+                }
             } else if (event.shiftKey) {
-                await fractalApp.animateFullColorSpaceCycle(15000);
+                if (fractalApp.currentColorAnimationFrame) {
+                    fractalApp.stopCurrentColorAnimations();
+                    break;
+                }
+
+                if (isJuliaMode()) {
+                    await fractalApp.animateFullColorSpaceCycle(10000, updateColorTheme);
+                } else {
+                    await fractalApp.animateFullColorSpaceCycle(15000);
+                }
             } else {
                 await randomizeColors();
             }

@@ -48,9 +48,11 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-0.75, 0.1], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Main cardioid'},
             {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: DEG._30, pan: [0, 0], title: 'Seahorse Valley'},
             {c: [-1.74876455, 0], zoom: 0.45, rotation: DEG._90, pan: [0, 0], title: 'The Cauliflower Medallion'},
-            // {c: [0.45, 0.1428], zoom: 3.5, rotation: ROTATION_DEG.R90, pan: [0, 0], title: ''},
-            // {c: [-0.1, 0.651], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: ''},
-            // {c: [-1.25066, 0.02012], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: 'Deep zoom'}
+            // {c: [-0.1060055299522249,0.9257297130853293], rotation: 5.933185307179583, pan: [0, 0], zoom: 0.11, title: '?'},
+            // {c: [-0.7500162952792153,0.0032826017747574765], zoom: 1.7, rotation: 0, pan: [0, 0], title: 'The Clown'},
+            // {c: [0.45, 0.1428], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
+            // {c: [-0.1, 0.651], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
+            // {c: [-1.25066, 0.02012], zoom: 3.5,rotation: 0, pan: [0, 0], title: 'Deep zoom'}
         ];
 
         /** @type {Array.<DIVE>} */
@@ -378,10 +380,18 @@ export class JuliaRenderer extends FractalRenderer {
         });
     }
 
+    /** @inheritDoc */
     async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
         this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
 
         await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    }
+
+    /** @inheritDoc */
+    async animateFullColorSpaceCycle(duration = 15000, coloringCallback = null) {
+        await new Promise(() => {
+            this.animateColorPaletteTransition(duration, coloringCallback);
+        });
     }
 
     /**
