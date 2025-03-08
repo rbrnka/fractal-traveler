@@ -55,12 +55,13 @@ The architecture supports additional fractal types and further customization of 
 - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
 - `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
 - `Num 1-9`: Load Preset (Shift: Start dive)
-
 ### Touch
 - `One Finger Pan`: Pan
 - `One Finger Tap`: Center & Generate URL link
 - `One Finger Double-tap`: Zoom-in/out & Center
 - `Pinch`: Pan & Zoom & Rotate
+### Others
+- `Bottom bar click`: Copy current settings to clipboard
 
 ## Getting Started
 
@@ -90,6 +91,7 @@ Available [here](https://fractal.brnka.com/docs).
 ### v1.8
 - Fully asynchronous animations
 - Improved controls (new hotkeys)
+- Allows switching between Mandelbrot and Julia sets matching each other
 - Dev: Added full documentation
 - Dev: Improved logging
 - Bugs fixed:
