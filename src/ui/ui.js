@@ -876,8 +876,8 @@ export function parseUserInput(input) {
 function initInfoText() {
     if (!FF_USER_INPUT_ALLOWED) {
         infoText.addEventListener('click', () => {
-            // TODO refactor into a method etc.
-            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}` + isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`;
+            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`
+                + (isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
                 infoText.innerHTML = 'Copied to clipboard!';
