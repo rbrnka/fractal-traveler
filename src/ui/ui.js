@@ -134,7 +134,7 @@ export async function switchFractalMode(mode, preset = null) {
             }, 1000);
         } else {
             await fractalApp.animateTravelToPreset({
-                pan: preset.pan, zoom: 0.00005, rotation: 0
+                pan: preset.pan, zoom: 0.0005, rotation: 0
             }, 500, 1000);
         }
     }
