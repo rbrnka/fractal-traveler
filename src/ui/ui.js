@@ -127,6 +127,9 @@ export async function switchFractalMode(mode, preset = null) {
     fractalApp.reset();
 
     if (preset) {
+        resetPresetAndDiveButtonStates();
+        initAnimationMode();
+
         console.log(`Preset found, setting: ${JSON.stringify(preset)}`)
         if (isJuliaMode()) {
             await fractalApp.animateTravelToPreset({
@@ -137,6 +140,9 @@ export async function switchFractalMode(mode, preset = null) {
                 pan: preset.pan, zoom: 0.0005, rotation: 0
             }, 500, 1000);
         }
+
+        exitAnimationMode();
+        updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
     }
 
     console.log(`Switched to ${mode === FRACTAL_TYPE.MANDELBROT ? 'Mandelbrot' : 'Julia'}`);
