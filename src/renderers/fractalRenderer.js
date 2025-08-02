@@ -265,6 +265,7 @@ export class FractalRenderer {
 
     /**
      * Updates uniforms (should be done on every redraw)
+     * @abstract
      */
     updateUniforms() {
         this.gl.useProgram(this.program);
@@ -279,6 +280,7 @@ export class FractalRenderer {
 
     /**
      * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
+     * @abstract
      */
     draw() {
         this.gl.useProgram(this.program);
