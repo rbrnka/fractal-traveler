@@ -290,7 +290,7 @@ function handleMouseUp(event) {
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
                 console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
+                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
             } else {
                 console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
             }
