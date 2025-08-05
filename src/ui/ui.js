@@ -77,7 +77,7 @@ let infoLabel;
 let infoText;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
-const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
+const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
 
 /**
  * Switches among fractal modes
@@ -298,19 +298,19 @@ export function updateInfo() {
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
 
-    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i] · `;
+    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6) * 1}, ${panY.toFixed(DEBUG_MODE ? 12 : 6) * 1}i] · `;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 2)}, ${cy.toFixed(DEBUG_MODE ? 12 : 2)}i] · `;
+        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 4) * 1}, ${cy.toFixed(DEBUG_MODE ? 12 : 4) * 1}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}° · zoom = ${currentZoom.toFixed(6)}`;
+    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toFixed(6) * 1}`;
 
     if (animationActive) {
         infoText.classList.add('animationActive');
