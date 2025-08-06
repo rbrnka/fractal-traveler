@@ -265,6 +265,7 @@ export class FractalRenderer {
 
     /**
      * Updates uniforms (should be done on every redraw)
+     * @abstract
      */
     updateUniforms() {
         this.gl.useProgram(this.program);
@@ -279,6 +280,7 @@ export class FractalRenderer {
 
     /**
      * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
+     * @abstract
      */
     draw() {
         this.gl.useProgram(this.program);
@@ -500,9 +502,10 @@ export class FractalRenderer {
      * The palette will continuously change hue from 0 to 360 degrees and starts from the current palette
      *
      * @param {number} [duration] - Duration (in milliseconds) for one full color cycle.
+     * @param {Function} [coloringCallback]
      * @return {Promise<void>}
      */
-    async animateFullColorSpaceCycle(duration = 15000) {
+    async animateFullColorSpaceCycle(duration = 15000, coloringCallback = null) {
         console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
         this.stopCurrentColorAnimations();
 
@@ -524,6 +527,9 @@ export class FractalRenderer {
 
                 this.colorPalette = hslToRgb(newHue, fixedS, fixedL);
                 this.draw();
+
+                if (coloringCallback) coloringCallback();
+
                 this.currentColorAnimationFrame = requestAnimationFrame(step);
             };
             this.currentColorAnimationFrame = requestAnimationFrame(step);
