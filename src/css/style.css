@@ -82,11 +82,11 @@ h1 {
 
 @media screen and (min-width: 471px) {
     #headerContainer {
-        zoom: 120%;
+        zoom: 100%;
     }
 
     #infoLabel {
-        zoom: 120%;
+        zoom: 100%;
     }
 }
 
