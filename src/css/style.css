@@ -82,11 +82,11 @@ h1 {
 
 @media screen and (min-width: 471px) {
     #headerContainer {
-        zoom: 120%;
+        zoom: 100%;
     }
 
     #infoLabel {
-        zoom: 120%;
+        zoom: 100%;
     }
 }
 
@@ -134,7 +134,7 @@ hr {
 button {
     position: relative;
     z-index: 10;
-    margin: 4px 0;
+    margin: 4px 1px;
     cursor: pointer;
     align-items: center;
     background-color: initial;
@@ -163,7 +163,7 @@ button {
     -webkit-user-select: none;
     touch-action: manipulation;
     opacity: .85;
-    border-right: 1px solid var(--accent-color);
+    /*border-right: 1px solid var(--accent-color);*/
 }
 
 button:first-of-type {
@@ -171,7 +171,8 @@ button:first-of-type {
     border-left: none;
 }
 
-button:last-of-type {
+button:last-of-type,
+button.last-of-ten {
     border-radius: 0 4px 4px 0;
     border-right: none;
 }
@@ -297,7 +298,7 @@ button.dive {
 }
 
 #mandelbrotSwitch {
-    border-right: 1px solid var(--accent-color);
+    /*border-right: 1px solid var(--accent-color);*/
 }
 
 #juliaSwitch {
@@ -350,13 +351,13 @@ p#presets span, p#dives span {
 
 #infoLabel {
     width: 370px;
-    height: 14px;
+    min-height: 14px;
+    max-height: 30px;
     padding: 3px 5px 3px 5px;
     background-color: var(--bg-color);
     backdrop-filter: blur(8px);
     z-index: 9999;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
-    cursor: text;
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     overflow: hidden;
@@ -387,8 +388,8 @@ p#presets span, p#dives span {
     background: transparent;
     border: none;
     text-align: center;
-    resize: none; /* Prevent user resizing */
-    overflow: hidden; /* Hide scrollbars */
+    resize: none;
+    overflow: auto;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
     -ms-user-select: none; /* IE 10+ */

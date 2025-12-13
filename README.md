@@ -1,6 +1,7 @@
 # Synaptory Fractal Traveler
 ![Release](https://img.shields.io/github/v/release/rbrnka/fractal-traveler)
 ![Status](https://img.shields.io/badge/Status-stable-darkgreen)
+![https://github.com/rbrnka/fractal-traveler?tab=MIT-1-ov-file](https://img.shields.io/github/license/rbrnka/fractal-traveler)
 ![GitHub Release Date](https://img.shields.io/github/release-date/rbrnka/fractal-traveler)
 
 ![ftraveler-header](https://github.com/user-attachments/assets/12f62198-058e-42e5-af15-739256a72425)
@@ -12,6 +13,7 @@ Interactive fractal explorer that lets you explore the mesmerizing depths of the
 
 ### Live app is available [here](https://fractal.brnka.com).
 
+---
 ## Features
 - **Interactive Exploration:**
 Explore the high resolution fractal plane via mouse, multi-touch gestures or keyboard. Fractals can be zoomed, panned, rotated and changed in real-time.
@@ -30,8 +32,19 @@ Uses WebGL for rendering, ES6 for a modular codebase, and webpack for bundling a
 
 - **Extensibility:**
 The architecture supports additional fractal types and further customization of rendering options.
-
+---
 ## Controls
+### Buttons
+- `Mandelbrot/Julia`: Switches between Mandelbrot and Julia fractals. When pressed with Shift, the fractal variables are persisted so you can see the equivalent sets. (Same as the `Z`)
+- `Presets`: Pre-programmed interesting zooms for you to explore (`Num 0-9`)
+- `Dives`: Pre-programmed interesting animated loops in Julia set for you to explore (`Shift+Num 0-9`)
+- `cx/cy`: Sliders to adjust the C value in Julia set (`Alt+Arrows`)
+- `Reset`: Resets current fractal to default view (`Shift+R`)
+- `Recolor`: Randomizes color palette (Mandelbrot mode) / Switches color palette to the next predefined theme (Julia mode) (`T`)
+- `Screenshot`: Takes screenshot of the canvas without the controls. Includes watermark of the current coordinates. (`Shift+S`)
+- `Demo/Stop`: Enables demo mode / Stops current animation (`D`) 
+- `Bottom bar click`: Copy current coordinates to clipboard
+
 ### Mouse
 - `Left Button Drag`: Pan
 - `Right Button Drag`: Rotate
@@ -47,21 +60,21 @@ The architecture supports additional fractal types and further customization of 
 - `Shift + R`: Reset
 - `T`: Randomize color palette, (Shift: Cyclic color change, Alt: Reset colors)
 - `Shift + S`: Take screenshot
-- `Space`: Zoom-in (Alt: Zoom-out, Shift: Smoother step)
+- `Space`: Zoom-in (Option/Ctrl: Zoom-out, Shift: Smoother step)
 - `A`: Force resize
-- `Z`: Switch fractals with persisting params (Shows respective fractal counterpart). Julia c translates to Mandelbrot p and vice versa. (CTRL + Switch Fractal Mode Button has the same effect)
+- `Z`: Switch fractals with persisting params (Shows respective fractal counterpart). Julia `c` translates to Mandelbrot `p` and vice versa. (CTRL + Switch Fractal Mode Button has the same effect)
 - `Left / Right`: Horizontal pan (Shift: Smoother step)
 - `Up / Down`: Vertical pan (Shift: Smoother step)
 - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smoother step)
 - `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smoother step)
-- `Num 1-9`: Load Preset (Shift: Start dive)
-
+- `Num 1-9`: Load Preset (Shift: Start dive in Julia mode)
 ### Touch
 - `One Finger Pan`: Pan
 - `One Finger Tap`: Center & Generate URL link
 - `One Finger Double-tap`: Zoom-in/out & Center
 - `Pinch`: Pan & Zoom & Rotate
 
+---
 ## Getting Started
 
 ### Prerequisites
@@ -81,15 +94,18 @@ The architecture supports additional fractal types and further customization of 
 - `npm run test` to run test suites
 - `jsdoc -r ./src/ ./README.md -d ./doc/ ` to build documentation
 
+---
 ## Documentation
 Available [here](https://fractal.brnka.com/docs).
 
+---
 ## Changelog
 ![GitHub package.json version](https://img.shields.io/github/package-json/v/rbrnka/fractal-traveler)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/t/rbrnka/fractal-traveler)
 ### v1.8
 - Fully asynchronous animations
 - Improved controls (new hotkeys)
+- Allows switching between Mandelbrot and Julia sets matching each other
 - Dev: Added full documentation
 - Dev: Improved logging
 - Bugs fixed:
@@ -144,9 +160,5 @@ Available [here](https://fractal.brnka.com/docs).
 ### v1.3
 - This version contains the directory and build structure, previous versions were simple PoCs
 
-## License
-![GitHub License](https://img.shields.io/github/license/rbrnka/fractal-traveler)
-
-MIT License. See for details.
-
+---
 *By Radim Brnka © 2025, Inspired by the intricate beauty of fractals, developed for interactive exploration and learning.*

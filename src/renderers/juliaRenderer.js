@@ -30,6 +30,7 @@ export class JuliaRenderer extends FractalRenderer {
         /** @type COMPLEX */
         this.c = [...this.DEFAULT_C];
 
+        // @formatter:off
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = [
             {
@@ -48,10 +49,26 @@ export class JuliaRenderer extends FractalRenderer {
             {c: [-0.75, 0.1], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Main cardioid'},
             {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: DEG._30, pan: [0, 0], title: 'Seahorse Valley'},
             {c: [-1.74876455, 0], zoom: 0.45, rotation: DEG._90, pan: [0, 0], title: 'The Cauliflower Medallion'},
-            // {c: [0.45, 0.1428], zoom: 3.5, rotation: ROTATION_DEG.R90, pan: [0, 0], title: ''},
-            // {c: [-0.1, 0.651], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: ''},
-            // {c: [-1.25066, 0.02012], zoom: 3.5, rotation: ROTATION_DEG.R150, pan: [0, 0], title: 'Deep zoom'}
+            // Extended presets
+            {c: [-0.1060055299522249,0.9257297130853293], rotation: 5.933185307179583, pan: [0, 0], zoom: 0.11, title: '?'},
+            {c: [-0.7500162952792153,0.0032826017747574765], zoom: 1.7, rotation: 0, pan: [0, 0], title: 'The Clown'},
+            {pan: [0.1045565992379065,0.0073015054986378], rotation: 5.473185307179595, zoom: 1.6581189769919353, c: [-0.12129038469447653,0.649576297434808]},
+            {c: [-0.1, 0.651], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
+            {c: [-1.25066, 0.02012], zoom: 3.5,rotation: 0, pan: [0, 0], title: 'Deep zoom'},
+            {rotation: 0, zoom: 0.2589096374896196, c: [-1.768967328653661,0.0019446820495425676], pan: [0, 0], title: 'Serpent'},
+            {pan: [0,0], rotation: 5.41318530717958, zoom: 2.1068875547385417, c: [0.3072075408559901,0.48395526205533185], title: ''},
+            {pan: [0, 0], rotation: 2.370000000000001, zoom: 0.12255613179332117, c: [-0.5925376099331446,0.6218581017272109], title: ''},
+            {pan: [0,0], rotation: 0, zoom: 0.29302566239489597, c: [-1.768927341692215,-0.009640117346988308]},
+
+            {pan: [0.12908510596292824,-0.13588306846615342], rotation: 1.699999999999994, zoom: 0.12982442828873209, c: [0.3633977303405407,0.3166912692104581]},
+            {pan: [0.10410036735673252,-0.10610085351477151], rotation: 4.863185307179592, zoom: 1.8513247913869684, c: [0.3586059096423313,0.32287599414730545]},
+            {pan: [0, 0], rotation: 1.9299999999999926, zoom: 1.322314018297482, c: [0.1294753560021048,0.6256313013048348]}
+
+            // TODO CLEANUP AND CENTER
+            // {pan: [0.08428823245534856,0.01811121963121005], rotation: 1.8199999999999967, zoom: 1.600537687038365, c: [0.30700179139276473,0.48388169438789685]}
+            // {c: [0.45, 0.1428], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
         ];
+        // @formatter:on
 
         /** @type {Array.<DIVE>} */
         this.DIVES = [
@@ -378,10 +395,18 @@ export class JuliaRenderer extends FractalRenderer {
         });
     }
 
+    /** @inheritDoc */
     async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
         this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
 
         await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    }
+
+    /** @inheritDoc */
+    async animateFullColorSpaceCycle(duration = 15000, coloringCallback = null) {
+        await new Promise(() => {
+            this.animateColorPaletteTransition(duration, coloringCallback);
+        });
     }
 
     /**
@@ -567,7 +592,7 @@ export class JuliaRenderer extends FractalRenderer {
                     ((Math.sin(this.demoTime) + 1) / 2) * 1.5 - 1,   // Oscillates between -1 and 0.5
                     ((Math.cos(this.demoTime) + 1) / 2) * 1.4 - 0.7  // Oscillates between -0.7 and 0.7
                 ];
-                this.rotation = normalizeRotation(this.rotation + 0.0001);
+                this.rotation = normalizeRotation(this.rotation - 0.001);
                 this.demoTime += 0.0005; // Speed
 
                 this.draw();

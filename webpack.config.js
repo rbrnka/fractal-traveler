@@ -22,13 +22,23 @@ module.exports = (env, argv) => {
         include: ['*', '**/*'],
         exclude: ['*.map'],
     };
+    const configFtpDocs = {
+        user: process.env.FTP_USER,
+        password: process.env.FTP_PASSWORD,
+        host: process.env.FTP_HOST,
+        port: process.env.FTP_PORT || 21,
+        localRoot: path.join(__dirname, 'doc'),
+        remoteRoot: process.env.FTP_REMOTE_DOC_ROOT,
+        include: ['*', '**/*']
+    };
 
     return {
         entry: './src/main.js',
         output: {
             filename: 'js/bundle.js',
             path: path.resolve(__dirname, 'dist'),
-            publicPath: ''
+            publicPath: '',
+            clean: true, // Clean the dist folder before each build
         },
         mode: isProduction ? 'production' : 'development',
         module: {
@@ -80,11 +90,21 @@ module.exports = (env, argv) => {
                     compiler.hooks.done.tap('Deploy to FTP', () => {
                         if (isProduction) {
                             ftpDeploy.deploy(configFtp, function (err) {
+                                console.log('Deploying dist...');
                                 if (err) {
                                     console.log('FTP Deploy Error:', err);
                                 } else {
                                     console.log('FTP Deploy Success!');
                                 }
+                            }).then(() => {
+                                console.log('Deploying docs...');
+                                ftpDeploy.deploy(configFtpDocs, function (err) {
+                                    if (err) {
+                                        console.log('FTP Deploy Docs Error:', err);
+                                    } else {
+                                        console.log('FTP Deploy Docs Success!');
+                                    }
+                                });
                             });
                         }
                     });

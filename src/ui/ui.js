@@ -25,6 +25,7 @@ import {
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
+import {RiemannRenderer} from "../renderers/riemannRenderer";
 import {
     destroyJuliaSliders,
     disableJuliaSliders,
@@ -77,7 +78,7 @@ let infoLabel;
 let infoText;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
-const infoUpdateThrottleLimit = 10; // Throttle limit in milliseconds
+const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
 
 /**
  * Switches among fractal modes
@@ -106,6 +107,10 @@ export async function switchFractalMode(mode, preset = null) {
             enableJuliaMode();
             break;
 
+        case FRACTAL_TYPE.RIEMANN:
+            enableRiemannMode();
+            break;
+
         default:
             console.error(`Unknown fractal mode "${mode}"!`);
             console.groupEnd();
@@ -127,6 +132,9 @@ export async function switchFractalMode(mode, preset = null) {
     fractalApp.reset();
 
     if (preset) {
+        resetPresetAndDiveButtonStates();
+        initAnimationMode();
+
         console.log(`Preset found, setting: ${JSON.stringify(preset)}`)
         if (isJuliaMode()) {
             await fractalApp.animateTravelToPreset({
@@ -134,9 +142,12 @@ export async function switchFractalMode(mode, preset = null) {
             }, 1000);
         } else {
             await fractalApp.animateTravelToPreset({
-                pan: preset.pan, zoom: 0.00005, rotation: 0
+                pan: preset.pan, zoom: 0.0005, rotation: 0
             }, 500, 1000);
         }
+
+        exitAnimationMode();
+        updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
     }
 
     console.log(`Switched to ${mode === FRACTAL_TYPE.MANDELBROT ? 'Mandelbrot' : 'Julia'}`);
@@ -234,6 +245,16 @@ export function enableJuliaMode() {
     window.location.hash = '#julia'; // Update URL hash
 }
 
+export function enableRiemannMode() {
+    fractalApp = new RiemannRenderer(canvas);
+    fractalApp.useAnalyticExtension = false;
+    fractalMode = FRACTAL_TYPE.RIEMANN;
+
+    destroyArrayOfButtons(presetButtons);
+
+    window.location.hash = '#zeta'; // Update URL hash
+}
+
 export function updateRecolorButtonTitle() {
     if (isJuliaMode()) {
         let nextTheme = fractalApp.getNextColorThemeId();
@@ -292,19 +313,19 @@ export function updateInfo() {
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
 
-    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6)}, ${panY.toFixed(DEBUG_MODE ? 12 : 6)}i] · `;
+    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6) * 1}, ${panY.toFixed(DEBUG_MODE ? 12 : 6) * 1}i] · `;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 2)}, ${cy.toFixed(DEBUG_MODE ? 12 : 2)}i] · `;
+        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 4) * 1}, ${cy.toFixed(DEBUG_MODE ? 12 : 4) * 1}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}° · zoom = ${currentZoom.toFixed(6)}`;
+    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toFixed(6) * 1}`;
 
     if (animationActive) {
         infoText.classList.add('animationActive');
@@ -721,11 +742,19 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.title = (preset.title || ('Preset ' + index)) + ` (Num ${index})`;
+        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : '');
         btn.textContent = (index).toString();
         btn.addEventListener('click', async () => {
             await travelToPreset(presets, index);
         });
+
+        // Support for 10+ Presets
+        if (index % 10 === 0) {
+            btn.classList.add("first-of-ten");
+        }
+        if ((index + 1) % 22 === 0) {
+            btn.classList.add("last-of-ten");
+        }
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
@@ -876,8 +905,8 @@ export function parseUserInput(input) {
 function initInfoText() {
     if (!FF_USER_INPUT_ALLOWED) {
         infoText.addEventListener('click', () => {
-            // TODO refactor into a method etc.
-            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}` + isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`;
+            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`
+                + (isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
                 infoText.innerHTML = 'Copied to clipboard!';

@@ -31,7 +31,8 @@ export const APP_NAME = 'Synaptory Fractal Traveler';
  */
 export const FRACTAL_TYPE = {
     MANDELBROT: 0,
-    JULIA: 1
+    JULIA: 1,
+    RIEMANN: 2
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**
@@ -121,7 +122,7 @@ export const JULIA_PALETTES = [
     {
         id: 'Forest', keyColor: '#25591f', theme: [
             129 / 255, 140 / 255, 60 / 255,
-            37 / 255, 89 / 255, 31 / 255,
+            137 / 255, 89 / 255, 31 / 255,
             45 / 255, 22 / 255, 6 / 255,
             25 / 255, 89 / 255, 13 / 255,
             0, 21 / 255, 0,
