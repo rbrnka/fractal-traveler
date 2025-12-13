@@ -31,7 +31,8 @@ export const APP_NAME = 'Synaptory Fractal Traveler';
  */
 export const FRACTAL_TYPE = {
     MANDELBROT: 0,
-    JULIA: 1
+    JULIA: 1,
+    RIEMANN: 2
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**

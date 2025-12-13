@@ -7,6 +7,7 @@
 import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
+import {RiemannRenderer} from "./renderers/riemannRenderer";
 import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
@@ -60,6 +61,14 @@ async function initFractalApp() {
             fractalApp = new MandelbrotRenderer(canvas);
             break;
 
+        /****************
+         * RIEMANN ZETA
+         ****************/
+        case FRACTAL_TYPE.RIEMANN:
+            console.log(`Constructing Riemann Zeta.`);
+            fractalApp = new RiemannRenderer(canvas);
+            break;
+
         default:
             console.error('Unknown fractal mode: ' + params.mode);
             break;
@@ -103,8 +112,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         await asyncDelay(2000); // Wait a moment for things to stabilize
         updateInfo();
-    },
-    {
+    }, {
         once: true
     }
 );

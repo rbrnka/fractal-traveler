@@ -25,6 +25,7 @@ import {
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
+import {RiemannRenderer} from "../renderers/riemannRenderer";
 import {
     destroyJuliaSliders,
     disableJuliaSliders,
@@ -104,6 +105,10 @@ export async function switchFractalMode(mode, preset = null) {
 
         case FRACTAL_TYPE.JULIA:
             enableJuliaMode();
+            break;
+
+        case FRACTAL_TYPE.RIEMANN:
+            enableRiemannMode();
             break;
 
         default:
@@ -238,6 +243,16 @@ export function enableJuliaMode() {
     updateRecolorButtonTitle();
 
     window.location.hash = '#julia'; // Update URL hash
+}
+
+export function enableRiemannMode() {
+    fractalApp = new RiemannRenderer(canvas);
+    fractalApp.useAnalyticExtension = false;
+    fractalMode = FRACTAL_TYPE.RIEMANN;
+
+    destroyArrayOfButtons(presetButtons);
+
+    window.location.hash = '#zeta'; // Update URL hash
 }
 
 export function updateRecolorButtonTitle() {

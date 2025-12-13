@@ -13,6 +13,7 @@ import {
     reset,
     resetAppState,
     startJuliaDive,
+    switchFractalMode,
     switchFractalModeWithPersistence,
     toggleDebugLines,
     toggleDemo,
@@ -110,6 +111,10 @@ let fractalApp;
 async function onKeyDown(event) {
     //event.preventDefault();
 
+    if (!DEBUG_MODE) {
+        event.stopImmediatePropagation();
+    }
+
     if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
 
     const rotationSpeed = event.shiftKey ? ROTATION_ANIMATION_SMOOTH_STEP : ROTATION_ANIMATION_STEP;
@@ -145,6 +150,10 @@ async function onKeyDown(event) {
 
         case 'KeyR': // Reset
             if (event.shiftKey) await reset();
+            break;
+
+        case 'KeyU': // Riemann Mode
+            if (DEBUG_MODE) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
             break;
 
         case 'KeyZ': // Switch between fractals with constant p/c
@@ -192,6 +201,14 @@ async function onKeyDown(event) {
 
         case 'KeyD': // Start/stop demo
             await toggleDemo();
+            break;
+
+        case 'KeyM':
+            if (DEBUG_MODE) {
+                console.log('Analytic Extension toggled.');
+                fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
+                fractalApp.draw();
+            }
             break;
 
         case "ArrowLeft":
