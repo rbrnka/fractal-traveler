@@ -134,7 +134,7 @@ hr {
 button {
     position: relative;
     z-index: 10;
-    margin: 4px 0;
+    margin: 4px 1px;
     cursor: pointer;
     align-items: center;
     background-color: initial;
@@ -163,7 +163,7 @@ button {
     -webkit-user-select: none;
     touch-action: manipulation;
     opacity: .85;
-    border-right: 1px solid var(--accent-color);
+    /*border-right: 1px solid var(--accent-color);*/
 }
 
 button:first-of-type {
@@ -171,7 +171,8 @@ button:first-of-type {
     border-left: none;
 }
 
-button:last-of-type {
+button:last-of-type,
+button.last-of-ten {
     border-radius: 0 4px 4px 0;
     border-right: none;
 }
@@ -297,7 +298,7 @@ button.dive {
 }
 
 #mandelbrotSwitch {
-    border-right: 1px solid var(--accent-color);
+    /*border-right: 1px solid var(--accent-color);*/
 }
 
 #juliaSwitch {
