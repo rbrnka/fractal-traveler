@@ -130,9 +130,6 @@ async function onKeyDown(event) {
         case 'KeyQ': // Rotation counter-clockwise
             rotationDirection = ROTATION_DIRECTION.CCW;
         case 'KeyW': // Rotation clockwise
-            event.preventDefault();
-            event.stopPropagation();
-
             if (rotationActive) {
                 fractalApp.stopCurrentRotationAnimation();
                 rotationActive = false;
@@ -147,9 +144,6 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyR': // Reset
-            event.preventDefault();
-            event.stopPropagation();
-
             if (event.shiftKey) await reset();
             break;
 
@@ -160,9 +154,6 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyT': // Random colors
-            event.preventDefault();
-            event.stopPropagation();
-
             if (altKey) {
                 if (isJuliaMode()) {
                     await fractalApp.animateInnerStopsTransition(
@@ -224,11 +215,8 @@ async function onKeyDown(event) {
             break;
 
         case "Space":
-            event.preventDefault();
-            event.stopPropagation();
-
             const increment = event.shiftKey ? ZOOM_ANIMATION_SMOOTH_STEP : ZOOM_ANIMATION_STEP;
-            const zoomFactor = altKey ? (1 + increment) : (1 - increment);
+            const zoomFactor = (event.ctrlKey || altKey) ? (1 + increment) : (1 - increment);
 
             let targetZoom = fractalApp.zoom * zoomFactor;
 
