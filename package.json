@@ -34,7 +34,7 @@
     "webpack": "^5.97.1",
     "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^5.2.1",
-    "webpack-ftp-upload-plugin": "^1.0.2"
+    "webpack-ftp-upload-plugin": "^1.0.3"
   },
   "jest": {
     "testEnvironment": "jsdom",
