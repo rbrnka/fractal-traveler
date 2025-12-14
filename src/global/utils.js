@@ -166,6 +166,23 @@ export function expandComplexToString(c, precision = 6, withI = true) {
     return expanded + ((withI && c[1] !== 0) ? 'i]' : ']');
 }
 
+/**
+ * Splits a 64-bit floating point number into two 32-bit parts
+ * (High-Precision / Double-Double math core).
+ * @param {number} value A standard JavaScript 64-bit number.
+ * @returns {{high: number, low: number}}
+ */
+export function splitFloat(value) {
+    // 2^27 + 1 is a common splitting point for 53-bit mantissa (JS number)
+    // The constant K must be large enough to shift the low bits outside the mantissa range.
+    const K = Math.pow(2, 27) + 1;
+
+    let temp = value * K;
+    let high = temp - (temp - value);
+    let low = value - high;
+
+    return { high, low };
+}
 
 /**
  * Compares two complex numbers / arrays of two numbers with given precision

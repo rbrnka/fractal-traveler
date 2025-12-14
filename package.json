@@ -1,6 +1,6 @@
 {
   "name": "fractal-traveler",
-  "version": "1.8.1",
+  "version": "1.9",
   "description": "Synaptory Fractal Traveler",
   "scripts": {
     "build": "webpack --mode production",
