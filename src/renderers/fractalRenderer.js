@@ -1,5 +1,16 @@
 import {updateInfo} from "../ui/ui";
-import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
+import {
+    compareComplex,
+    comparePalettes,
+    ddAdd,
+    ddMake,
+    ddSet,
+    ddValue,
+    hslToRgb,
+    lerp,
+    normalizeRotation,
+    rgbToHsl
+} from "../global/utils";
 import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
 
 /**
@@ -16,14 +27,13 @@ export class FractalRenderer {
      */
     constructor(canvas) {
         this.canvas = canvas;
-        this.gl = this.canvas.getContext('webgl', {
-            antialias: false, // Already disabling anti-aliasing.
-            alpha: false, // Disable the alpha channel (not needed)
-            depth: false, // Disable depth buffer.
-            stencil: false, // Disable stencil buffer.
-            preserveDrawingBuffer: false, // Do not preserve drawing buffer (faster).
-            powerPreference: 'high-performance', // Hint for high-performance GPU.
-            //failIfMajorPerformanceCaveat: true // Fail if forced to use software renderer.
+        this.gl = this.canvas.getContext("webgl", {
+            antialias: false,
+            alpha: false,
+            depth: false,
+            stencil: false,
+            preserveDrawingBuffer: false,
+            powerPreference: "high-performance",
         });
 
         if (!this.gl) {
@@ -51,8 +61,18 @@ export class FractalRenderer {
          */
         this.zoom = this.DEFAULT_ZOOM;
 
-        /** @type {COMPLEX} */
+        /**
+         * IMPORTANT: keep this.pan as the canonical array for backward compatibility.
+         * TODO: Many parts of the app still read/write fractalApp.pan - fix.
+         * @type {COMPLEX}
+         */
         this.pan = [...this.DEFAULT_PAN];
+
+        /** DD accumulator mirrors into this.pan on every update */
+        this.panDD = {
+            x: ddMake(this.pan[0], 0),
+            y: ddMake(this.pan[1], 0),
+        };
 
         /**
          * Rotation in rad
@@ -80,16 +100,51 @@ export class FractalRenderer {
 
         /** Vertex shader */
         this.vertexShaderSource = `
-			precision mediump float;
-			attribute vec4 a_position;
-			void main() {
-				gl_Position = a_position;
-			}
-		`;
+            precision mediump float;
+            attribute vec4 a_position;
+            void main() { gl_Position = a_position; }
+        `;
+
+        // Interaction gating (optional; perturbation renderers can use it)
+        this.interactionActive = false;
 
         this.onWebGLContextLost = this.onWebGLContextLost.bind(this);
         this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
     }
+
+    // --------- Pan API (use these; they keep DD + array in sync) ---------
+
+    getPan() {
+        // Return the canonical array (already synced)
+        return [this.pan[0], this.pan[1]];
+    }
+
+    setPan(x, y) {
+        ddSet(this.panDD.x, x);
+        ddSet(this.panDD.y, y);
+        this.pan[0] = ddValue(this.panDD.x);
+        this.pan[1] = ddValue(this.panDD.y);
+    }
+
+    addPan(dx, dy) {
+        ddAdd(this.panDD.x, dx);
+        ddAdd(this.panDD.y, dy);
+        this.pan[0] = ddValue(this.panDD.x);
+        this.pan[1] = ddValue(this.panDD.y);
+    }
+
+    /**
+     * Set pan so that fractal point (fxAnchor,fyAnchor) remains under a screen point
+     * whose view vector is (vx,vy).
+     */
+    setPanFromAnchor(fxAnchor, fyAnchor, vx, vy) {
+        // pan = fAnchor - v * zoom
+        const px = fxAnchor - vx * this.zoom;
+        const py = fyAnchor - vy * this.zoom;
+        this.setPan(px, py);
+    }
+
+    // --------------------------------------------------------------------
 
     onWebGLContextLost(event) {
         event.preventDefault();
@@ -141,49 +196,33 @@ export class FractalRenderer {
         });
     }
 
-    /** WebGL init & initial uniforms setting */
     init() {
         this.generatePresetIDs();
         this.initGLProgram();
         this.draw();
     }
 
-    /** Updates the canvas size based on the current visual viewport and redraws */
     resizeCanvas() {
         console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
 
         this.gl.useProgram(this.program);
 
-        // 1) Compute the current center fractal coordinate BEFORE resizing (canvas-local center)
+        // Keep center fixed
         const oldRect = this.canvas.getBoundingClientRect();
-        const oldCenterX = oldRect.width / 2;
-        const oldCenterY = oldRect.height / 2;
-        const [centerFx, centerFy] = this.screenToFractal(oldCenterX, oldCenterY);
+        const cx = oldRect.width / 2;
+        const cy = oldRect.height / 2;
 
-        // 2) Resize drawing buffer to match CSS size * DPR
+        const [centerFx, centerFy] = this.screenToFractal(cx, cy);
+
         const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = Math.floor(oldRect.width * dpr);
+        this.canvas.height = Math.floor(oldRect.height * dpr);
 
-        // IMPORTANT: use the canvas element’s CSS size (rect), not visualViewport
-        const cssW = oldRect.width;
-        const cssH = oldRect.height;
-
-        this.canvas.width = Math.floor(cssW * dpr);
-        this.canvas.height = Math.floor(cssH * dpr);
-
-        // 3) Update viewport + resolution uniform
         this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        if (this.resolutionLoc) {
-            this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
-        }
+        if (this.resolutionLoc) this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
 
-        // 4) Recompute pan so that the same center fractal coord stays at screen center AFTER resizing
-        const newRect = this.canvas.getBoundingClientRect();
-        const newCenterX = newRect.width / 2;
-        const newCenterY = newRect.height / 2;
-
-        const [vx, vy] = this.screenToViewVector(newCenterX, newCenterY); // view vector (rotated/aspect corrected)
-        this.pan[0] = centerFx - vx * this.zoom;
-        this.pan[1] = centerFy - vy * this.zoom;
+        const [vx, vy] = this.screenToViewVector(cx, cy);
+        this.setPanFromAnchor(centerFx, centerFy, vx, vy);
 
         this.draw();
 
@@ -207,9 +246,11 @@ export class FractalRenderer {
      * @return {WebGLShader|null}
      */
     compileShader(source, type) {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        if (DEBUG_MODE) console.log(`Shader GLenum type: ${type}`);
-        if (DEBUG_MODE) console.log(`Shader code: ${source}`);
+        if (DEBUG_MODE) {
+            console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+            console.log(`Shader GLenum type: ${type}`);
+            console.log(`Shader code: ${source}`);
+        }
 
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
@@ -255,19 +296,27 @@ export class FractalRenderer {
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
         const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
-        const positionLoc = this.gl.getAttribLocation(this.program, 'a_position');
+        const positionLoc = this.gl.getAttribLocation(this.program, "a_position");
         this.gl.enableVertexAttribArray(positionLoc);
         this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
 
-        // Cache common uniform locations once
         this.updateUniforms();
 
-        // Allow subclasses to set up extra GL resources (textures, extra uniforms, etc.)
-        if (typeof this.onProgramCreated === 'function') {
+        if (typeof this.onProgramCreated === "function") {
             this.onProgramCreated();
         }
 
         if (DEBUG_MODE) console.groupEnd();
+    }
+
+    /** @abstract */
+    onProgramCreated() {
+        throw new Error("The onProgramCreated method must be implemented in child classes");
+    }
+
+    /** @abstract */
+    needsRebase() {
+        throw new Error("The onProgramCreated method must be implemented in child classes");
     }
 
     /**
@@ -275,12 +324,12 @@ export class FractalRenderer {
      */
     updateUniforms() {
         this.gl.useProgram(this.program);
-        this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
-        this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
-        this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
-        this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
-        this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation');
-        this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+        this.panLoc = this.gl.getUniformLocation(this.program, "u_pan");
+        this.zoomLoc = this.gl.getUniformLocation(this.program, "u_zoom");
+        this.iterLoc = this.gl.getUniformLocation(this.program, "u_iterations");
+        this.colorLoc = this.gl.getUniformLocation(this.program, "u_colorPalette");
+        this.rotationLoc = this.gl.getUniformLocation(this.program, "u_rotation");
+        this.resolutionLoc = this.gl.getUniformLocation(this.program, "u_resolution");
     }
 
     /**
@@ -298,7 +347,7 @@ export class FractalRenderer {
 
         if (this.resolutionLoc) this.gl.uniform2f(this.resolutionLoc, w, h);
 
-        // TODO Only set if shader actually uses them
+        // Use canonical pan array
         if (this.panLoc) this.gl.uniform2fv(this.panLoc, this.pan);
         if (this.zoomLoc) this.gl.uniform1f(this.zoomLoc, this.zoom);
         if (this.rotationLoc) this.gl.uniform1f(this.rotationLoc, this.rotation);
@@ -320,11 +369,12 @@ export class FractalRenderer {
         this.stopCurrentColorAnimations();
 
         this.colorPalette = [...this.DEFAULT_PALETTE];
-        this.pan = [...this.DEFAULT_PAN];
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
         this.extraIterations = 0;
         this.currentPresetIndex = 0;
+
         this.resizeCanvas();
         this.draw();
 
@@ -361,10 +411,7 @@ export class FractalRenderer {
         const rotatedX = cosR * stX - sinR * stY;
         const rotatedY = sinR * stX + cosR * stY;
 
-        const fx = rotatedX * this.zoom + this.pan[0];
-        const fy = rotatedY * this.zoom + this.pan[1];
-
-        return [fx, fy];
+        return [rotatedX * this.zoom + this.pan[0], rotatedY * this.zoom + this.pan[1]];
     }
 
     /**
@@ -396,10 +443,7 @@ export class FractalRenderer {
         const cosR = Math.cos(this.rotation);
         const sinR = Math.sin(this.rotation);
 
-        const rotatedX = cosR * stX - sinR * stY;
-        const rotatedY = sinR * stX + cosR * stY;
-
-        return [rotatedX, rotatedY];
+        return [cosR * stX - sinR * stY, sinR * stX + cosR * stY];
     }
 
     /**
@@ -419,7 +463,7 @@ export class FractalRenderer {
         console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
 
         this.stopCurrentPanAnimation();
-        this.stopCurrentZoomAnimation()
+        this.stopCurrentZoomAnimation();
         this.stopCurrentRotationAnimation();
     }
 
@@ -497,7 +541,7 @@ export class FractalRenderer {
 
         const startPalette = [...this.colorPalette];
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
@@ -508,7 +552,7 @@ export class FractalRenderer {
                 this.colorPalette = [
                     lerp(startPalette[0], newPalette[0], progress),
                     lerp(startPalette[1], newPalette[1], progress),
-                    lerp(startPalette[2], newPalette[2], progress)
+                    lerp(startPalette[2], newPalette[2], progress),
                 ];
                 this.draw();
 
@@ -586,22 +630,23 @@ export class FractalRenderer {
 
         const startPan = [...this.pan];
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
-                const easedProgress = easeFunction(progress);
+                const k = easeFunction(t);
 
-                this.pan[0] = lerp(startPan[0], targetPan[0], easedProgress);
-                this.pan[1] = lerp(startPan[1], targetPan[1], easedProgress);
+                const nx = lerp(startPan[0], targetPan[0], k);
+                const ny = lerp(startPan[1], targetPan[1], k);
+                this.setPan(nx, ny);
+
                 this.draw();
-
                 updateInfo(true);
 
-                if (easedProgress < 1) {
+                if (t < 1) {
                     this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentPanAnimation();
@@ -649,29 +694,23 @@ export class FractalRenderer {
 
         const startZoom = this.zoom;
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const t = Math.min((timestamp - startTime) / duration, 1);
 
-                let k = t;
-                if (easeFunction !== EASE_TYPE.NONE) k = easeFunction(t);
+                if (easeFunction !== EASE_TYPE.NONE) {
+                    const k = easeFunction(t);
+                    this.zoom = startZoom + (targetZoom - startZoom) * k;
+                } else {
+                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, t);
+                }
 
-                // Exponential zoom feels best; keep your original behavior
-                const newZoom = (easeFunction !== EASE_TYPE.NONE)
-                    ? (startZoom + (targetZoom - startZoom) * k)
-                    : (startZoom * Math.pow(targetZoom / startZoom, t));
-
-                this.zoom = newZoom;
-
-                // IMPORTANT: adjust pan so that anchor fractal point stays under (anchorX, anchorY)
-                this.pan[0] = fxAnchor - vx * this.zoom;
-                this.pan[1] = fyAnchor - vy * this.zoom;
+                this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
 
                 this.draw();
-
                 updateInfo(true);
 
                 if (t < 1) {
@@ -694,8 +733,9 @@ export class FractalRenderer {
 
         const startZoom = this.zoom;
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
+
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const t = Math.min((timestamp - startTime) / duration, 1);
@@ -738,20 +778,20 @@ export class FractalRenderer {
 
         const startRotation = this.rotation;
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-                const easedProgress = easeFunction(progress);
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
-                this.rotation = lerp(startRotation, targetRotation, easedProgress);
+                const k = easeFunction(t);
+
+                this.rotation = lerp(startRotation, targetRotation, k);
                 this.draw();
-
                 updateInfo(true);
 
-                if (progress < 1) {
+                if (t < 1) {
                     this.currentRotationAnimationFrame = requestAnimationFrame(step);
                 } else {
                     this.stopCurrentRotationAnimation();
@@ -797,7 +837,7 @@ export class FractalRenderer {
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
-            this.animateZoomToNoPan(targetZoom, duration, easeFunction) // travel zoom: pan driven separately
+            this.animateZoomToNoPan(targetZoom, duration, easeFunction),
         ]);
 
         console.groupEnd();

@@ -45,9 +45,8 @@ let startX = 0;
 export function initMouseHandlers(app) {
     fractalApp = app;
     canvas = app.canvas;
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    registerMouseEventHandlers(app);
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    registerMouseEventHandlers();
 }
 
 /** Registers mouse handlers. */
@@ -92,41 +91,26 @@ export function unregisterMouseEventHandlers() {
 function handleWheel(event) {
     event.preventDefault();
 
-    if (wheelResetTimeout) {
-        clearTimeout(wheelResetTimeout);
-    }
+    if (wheelResetTimeout) clearTimeout(wheelResetTimeout);
+    wheelResetTimeout = setTimeout(() => resetAppState(), 200);
 
-    // Debounce
-    wheelResetTimeout = setTimeout(() => {
-        resetAppState();
-    }, 200);
-
-    // Get the CSS coordinate of the mouse relative to the canvas
     const rect = fractalApp.canvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left;
     const mouseY = event.clientY - rect.top;
 
-    // Get fractal coordinates before zooming
-    const [fxOld, fyOld] = fractalApp.screenToFractal(mouseX, mouseY);
+    // Anchor-based zoom: avoids fxNew-fxOld subtraction instability at deep zoom.
+    const [fxAnchor, fyAnchor] = fractalApp.screenToFractal(mouseX, mouseY);
+    const [vx, vy] = fractalApp.screenToViewVector(mouseX, mouseY);
 
-    // Determine zoom factor based on wheel direction
     const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
-
     const targetZoom = fractalApp.zoom * zoomFactor;
-    if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) {
-        return;
-    }
 
-    fractalApp.zoom *= zoomFactor; // No animation, direct change.
+    if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) return;
 
-    // Get fractal coordinates after zooming (using the same mouse position)
-    const [fxNew, fyNew] = fractalApp.screenToFractal(mouseX, mouseY);
+    fractalApp.zoom = targetZoom;
+    fractalApp.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
 
-    // Adjust pan to keep the fractal point under the mouse cursor fixed
-    fractalApp.pan[0] -= fxNew - fxOld;
-    fractalApp.pan[1] -= fyNew - fyOld;
-
-    updateInfo();
+    updateInfo(true);
     fractalApp.draw();
 }
 
@@ -161,12 +145,17 @@ function handleMouseMove(event) {
             const rect = canvas.getBoundingClientRect();
             // Calculate pan delta from the current and last mouse positions.
             const [deltaX, deltaY] = calculatePanDelta(
-                event.clientX, event.clientY, lastX, lastY, rect,
-                fractalApp.rotation, fractalApp.zoom
+                event.clientX,
+                event.clientY,
+                lastX,
+                lastY,
+                rect,
+                fractalApp.rotation,
+                fractalApp.zoom
             );
 
-            fractalApp.pan[0] += deltaX;
-            fractalApp.pan[1] += deltaY;
+            // IMPORTANT: use addPan (keeps DD + array in sync)
+            fractalApp.addPan(deltaX, deltaY);
 
             // Update last mouse coordinates.
             lastX = event.clientX;
@@ -184,11 +173,11 @@ function handleMouseMove(event) {
         }
 
         if (isRightDragging) {
-            event.preventDefault(); // Prevent default actions during dragging
+            event.preventDefault();
             const deltaX = event.clientX - startX;
 
             fractalApp.rotation = normalizeRotation(fractalApp.rotation + deltaX * ROTATION_SENSITIVITY);
-            fractalApp.draw(); // Redraw with the updated rotation
+            fractalApp.draw();
 
             startX = event.clientX; // Update starting point for smooth rotation
             wasRotated = true;
