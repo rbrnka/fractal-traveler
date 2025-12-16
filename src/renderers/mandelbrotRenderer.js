@@ -1,6 +1,6 @@
 import {FractalRenderer} from './fractalRenderer.js';
 import {asyncDelay, compareComplex, splitFloat} from "../global/utils";
-import {DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * MandelbrotRenderer (Rebased Perturbation)
@@ -477,7 +477,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateTravelToPreset(preset, zoomOutDuration = 1000, zoomInDuration = 3500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         console.log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
         const targetRotation = preset.rotation || 0;
@@ -516,7 +516,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @param {number} zoomInDuration Duration (ms) for the zoom-in stage.
      */
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, CONSOLE_GROUP_STYLE);
 
         // Generate random rotations for a more dynamic effect.
         const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
@@ -540,7 +540,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDemo(random = true) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
         if (!this.PRESETS.length) {

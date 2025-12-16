@@ -6,7 +6,7 @@
 
 import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 
 /** How long should we wait before distinguish between double click and two single clicks. */
 const DOUBLE_CLICK_THRESHOLD = 300;
@@ -52,7 +52,7 @@ export function initMouseHandlers(app) {
 /** Registers mouse handlers. */
 export function registerMouseEventHandlers() {
     if (mouseHandlersRegistered) {
-        console.warn(`%c registerMouseEventHandlers: %c Mouse event handlers already registered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c registerMouseEventHandlers: %c Mouse event handlers already registered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -67,13 +67,13 @@ export function registerMouseEventHandlers() {
     canvas.addEventListener('mouseup', handleMouseUpEvent);
 
     mouseHandlersRegistered = true;
-    console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 /** Unregisters mouse handlers. */
 export function unregisterMouseEventHandlers() {
     if (!mouseHandlersRegistered) {
-        console.warn(`%c registerMouseEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c registerMouseEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -83,7 +83,7 @@ export function unregisterMouseEventHandlers() {
     canvas.removeEventListener('mouseup', handleMouseUpEvent);
 
     mouseHandlersRegistered = false;
-    console.warn(`%c registerMouseEventHandlers: %c Event handlers unregistered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.warn(`%c registerMouseEventHandlers: %c Event handlers unregistered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
@@ -195,7 +195,7 @@ function handleMouseUp(event) {
     event.stopPropagation(); // Prevent bubbling to parent elements
 
     if (event.button === 1) { // Middle-click toggles the lines
-        console.log(`%c handleMouseUp: %c Middle Click - Toggling lines`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c handleMouseUp: %c Middle Click - Toggling lines`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         toggleDebugLines();
         return; // Exit early since middle-click doesn't involve dragging or centering.
@@ -216,15 +216,15 @@ function handleMouseUp(event) {
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                     fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
                 } else {
-                    console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping,`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                 }
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords ${expandComplexToString([fx, fy])}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords ${expandComplexToString([fx, fy])}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                     // Centering action:
                     fractalApp.animatePanTo([fx, fy], 500).then(() => {
@@ -238,9 +238,9 @@ function handleMouseUp(event) {
 
                     // Copy URL to clipboard:
                     navigator.clipboard.writeText(window.location.href).then(function () {
-                        console.log(`%c handleMouseUp: %c Copied URL to clipboard!`, 'color: #fff');
+                        console.log(`%c handleMouseUp: %c Copied URL to clipboard!`, CONSOLE_MESSAGE_STYLE);
                     }, function (err) {
-                        console.error(`%c handleMouseUp: %cNot copied to clipboard! ${err}`, 'color: #fff');
+                        console.error(`%c handleMouseUp: %cNot copied to clipboard! ${err}`, CONSOLE_MESSAGE_STYLE);
                     });
 
                     clickTimeout = null; // Clear the timeout.
@@ -256,7 +256,7 @@ function handleMouseUp(event) {
         if (isRightDragging) {
             isRightDragging = false;
 
-            if (DEBUG_MODE) console.log(`%c handleMouseUp: %c Single Right Click: Doing nothing.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+            if (DEBUG_MODE) console.log(`%c handleMouseUp: %c Single Right Click: Doing nothing.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
             if (wasRotated) resetAppState();
             wasRotated = false;
@@ -278,10 +278,10 @@ function handleMouseUp(event) {
 
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                 fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
             } else {
-                console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping,`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
             }
         } else {
             // Set timeout for single click

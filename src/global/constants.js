@@ -6,14 +6,20 @@
 
 import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils";
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+const DEBUG_LEVEL = {
+    NONE: 0,
+    VERBOSE: 1,
+    FULL: 2
+}
+
 /**
  * DEBUG MODE. Set to false for prod deployment!
- * @type {boolean}
+ * @type {DEBUG_LEVEL}
  */
-export const DEBUG_MODE = false;
+export const DEBUG_MODE = DEBUG_LEVEL.NONE;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FEATURE FLAGS
-/** Allows to switch between fractal while keeping the params to allow Mandelbrot and Julia match each other */
+/** Allows switching between fractal while keeping the params to allow Mandelbrot and Julia to match each other */
 export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
 
 /** Enables bottom bar for user input for custom coords */
@@ -36,7 +42,7 @@ export const FRACTAL_TYPE = {
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Ease in-out transition types matching functions in Utils module
+ * Ease in-out transition types matching functions in the Utils module
  * @enum {Function}
  */
 export const EASE_TYPE = {
@@ -77,7 +83,13 @@ export const DEFAULT_BG_COLOR = 'rgba(24, 48, 13, 0.2)';
  * Default color for console group labels
  * @type {string}
  */
-export const DEFAULT_CONSOLE_GROUP_COLOR = '#bada55';
+const DEFAULT_CONSOLE_GROUP_COLOR = '#bada55';
+
+const DEFAULT_CONSOLE_MESSAGE_COLOR = '#fff';
+
+export const CONSOLE_GROUP_STYLE = `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`;
+
+export const CONSOLE_MESSAGE_STYLE = `color: ${DEFAULT_CONSOLE_MESSAGE_COLOR}`;
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * Set of Julia-specific palettes. Keep the default first
@@ -130,7 +142,7 @@ export const JULIA_PALETTES = [
     },
 ]
 // ---------------------------------------------------------------------------------------------------------------------
-/** Default color used based on the initial Mandelbrot coloring. It's accent color / 1.9 brightness factor that
+/** Default color used based on the initial Mandelbrot coloring. It's an accent color / 1.9 brightness factor that
  * is hardcoded in the updateColorTheme method.
  * @type {PALETTE}
  */

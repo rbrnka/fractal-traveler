@@ -4,7 +4,7 @@
  * @description Contains helper functions for working with URL parameters, colors, etc.
  */
 
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE, PI} from "./constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, FRACTAL_TYPE, PI} from "./constants";
 
 let urlParamsSet = false;
 
@@ -29,15 +29,15 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
         cy: cy != null ? cy.toFixed(6) : null,
     };
 
-    if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
-        console.error(`%c updateURLParams: %c Fractal params incomplete, can't generate URL! ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c updateURLParams: %c Fractal params incomplete, can't generate URL! ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
     if (mode === FRACTAL_TYPE.JULIA && [cx, cy].some(el => el == null)) {
-        console.error(`%c updateURLParams: %c Julia params incomplete, can't generate URL! ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c updateURLParams: %c Julia params incomplete, can't generate URL! ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -56,7 +56,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
  * @return {URL_PRESET}
  */
 export function loadFractalParamsFromURL() {
-    if (DEBUG_MODE) console.groupCollapsed(`%c loadFractalParamsFromURL`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    if (DEBUG_MODE) console.groupCollapsed(`%c loadFractalParamsFromURL`, CONSOLE_GROUP_STYLE);
 
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
@@ -97,7 +97,7 @@ export function loadFractalParamsFromURL() {
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
     } catch (e) {
-        console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         urlParamsSet = true;
         if (DEBUG_MODE) console.groupEnd();
         return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT}; // Return only the mode if no query string is found
@@ -108,7 +108,7 @@ export function loadFractalParamsFromURL() {
 export function clearURLParams() {
     if (!urlParamsSet) return;
 
-    if (DEBUG_MODE) console.log(`%c clearURLParams: %c Clearing URL params.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c clearURLParams: %c Clearing URL params.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
     const newUrl = `${window.location.origin}/${hash}`;
@@ -144,7 +144,7 @@ export function isMobileDevice() {
  * @return {string} [x, yi]|[x, 0]|[?, ?]
  */
 export function expandComplexToString(c, precision = 6, withI = true) {
-    if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, CONSOLE_GROUP_STYLE);
 
     const invalidValues = [NaN, undefined, null, ''];
     const isNumber = (value) => typeof value === 'number' && isFinite(value);
@@ -153,7 +153,7 @@ export function expandComplexToString(c, precision = 6, withI = true) {
 
     if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0]) || !isNumber(c[1])) {
         expanded += `?, ?]`;
-        console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, CONSOLE_GROUP_STYLE);
         console.groupEnd();
         return expanded;
     } else {

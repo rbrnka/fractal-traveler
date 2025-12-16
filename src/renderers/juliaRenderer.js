@@ -2,7 +2,7 @@ import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
 import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation, splitFloat,} from "../global/utils";
 import "../global/types";
-import {DEFAULT_CONSOLE_GROUP_COLOR, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
@@ -630,7 +630,7 @@ export class JuliaRenderer extends FractalRenderer {
 
     /** Stops currently running pan animation */
     stopCurrentCAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentCAnimationFrame !== null) {
             cancelAnimationFrame(this.currentCAnimationFrame);
@@ -669,7 +669,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateInnerStopsTransition(toPalette, duration = 250, callback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         // Save the starting stops as a plain array.
@@ -742,7 +742,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateToC(targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         if (compareComplex(this.c, targetC)) {
@@ -797,7 +797,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateToZoomAndC(targetZoom, targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateToZoomAndC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToZoomAndC`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         await Promise.all([
@@ -814,7 +814,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateTravelToPreset(preset, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
         // Phase 1: Setting default params.
@@ -846,7 +846,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDive(dive) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         console.log(`Diving to ${dive}.`);
@@ -907,7 +907,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDemo() {
-        console.log(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
         this.demoActive = true; // Not used in Julia but the demo is active

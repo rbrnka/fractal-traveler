@@ -5,7 +5,7 @@
  */
 
 import {JuliaRenderer} from "../renderers/juliaRenderer";
-import {APP_NAME, DEFAULT_CONSOLE_GROUP_COLOR} from "../global/constants";
+import {APP_NAME, CONSOLE_GROUP_STYLE} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
 import {isJuliaMode} from "./ui";
 
@@ -62,7 +62,7 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
  * @param {string} accentColor
  */
 export function takeScreenshot(canvas, fractalApp, accentColor) {
-    console.groupCollapsed(`%c takeScreenshot`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c takeScreenshot`, CONSOLE_GROUP_STYLE);
 
     // Ensure the fractal is fully rendered before taking a screenshot
     fractalApp.draw();

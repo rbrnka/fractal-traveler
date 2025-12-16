@@ -4,7 +4,7 @@
  * @description Controller of Julia slider elements directly interacting with the c-value of Julia fractal.
  */
 
-import {DEFAULT_CONSOLE_GROUP_COLOR} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE} from "../global/constants";
 import {isJuliaMode, resetPresetAndDiveButtonStates, updateInfo} from "./ui";
 import {clearURLParams} from "../global/utils";
 import {JuliaRenderer} from "../renderers/juliaRenderer";
@@ -30,7 +30,7 @@ let fractalApp;
  */
 export function initJuliaSliders(app) {
     if (!(app instanceof JuliaRenderer)) {
-        console.error(`%c initJuliaSliders: %c Can only attach to JuliaRenderer, not ${app}!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.error(`%c initJuliaSliders: %c Can only attach to JuliaRenderer, not ${app}!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -47,7 +47,7 @@ export function initJuliaSliders(app) {
     sliderContainer = document.getElementById('sliders');
     sliderContainer.style.display = 'flex';
 
-    console.log(`%c initJuliaSliders: %c Initialized.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    console.log(`%c initJuliaSliders: %c Initialized.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 function onSliderChangeFinished() {
@@ -79,16 +79,16 @@ export function destroyJuliaSliders() {
 
         sliderContainer.style.display = 'none';
 
-        console.log(`%c destroyJuliaSliders: %c Destroyed.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.log(`%c destroyJuliaSliders: %c Destroyed.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
     } else {
-        console.warn(`%c destroyJuliaSliders: %c Called on not initialized state!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c destroyJuliaSliders: %c Called on not initialized state!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
     }
 }
 
 /** Resets sliders */
 export function resetJuliaSliders() {
     if (!isJuliaMode()) {
-        console.warn(`%c resetJuliaSliders: %c Not in Julia mode!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c resetJuliaSliders: %c Not in Julia mode!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 

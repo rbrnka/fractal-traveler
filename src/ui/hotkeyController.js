@@ -22,8 +22,9 @@ import {
     updateColorTheme,
 } from "./ui";
 import {
+    CONSOLE_GROUP_STYLE,
+    CONSOLE_MESSAGE_STYLE,
     DEBUG_MODE,
-    DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
@@ -115,7 +116,7 @@ async function onKeyDown(event) {
         event.stopImmediatePropagation();
     }
 
-    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     const rotationSpeed = event.shiftKey ? ROTATION_ANIMATION_SMOOTH_STEP : ROTATION_ANIMATION_STEP;
     let rotationDirection = ROTATION_DIRECTION.CW;
@@ -288,7 +289,7 @@ async function onKeyDown(event) {
  */
 export function initHotKeys(app) {
     if (initialized) {
-        console.warn(`%c initHotKeys: %c Redundant initialization skipped!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.warn(`%c initHotKeys: %c Redundant initialization skipped!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -296,13 +297,13 @@ export function initHotKeys(app) {
     document.addEventListener("keydown", onKeyDown);
     initialized = true;
 
-    console.log(`%c initHotKeys: %c Initialized.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    console.log(`%c initHotKeys: %c Initialized.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 /** Destructor. Removes event listeners and cleans up */
 export function destroyHotKeys() {
     if (!initialized) {
-        console.warn(`%c destroyHotKeys: %c Nothing to destroy!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.warn(`%c destroyHotKeys: %c Nothing to destroy!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -311,5 +312,5 @@ export function destroyHotKeys() {
 
     document.removeEventListener("keydown", onKeyDown);
 
-    console.log(`%c destroyHotKeys: %c Destroyed.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    console.log(`%c destroyHotKeys: %c Destroyed.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }

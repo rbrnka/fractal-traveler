@@ -6,7 +6,7 @@
 
 import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
-import {DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 
 /** How long should we wait before distinguish between double tap and two single taps. */
 const DOUBLE_TAP_THRESHOLD = 300;
@@ -56,7 +56,7 @@ export function initTouchHandlers(app) {
 /** Registers touch handlers. */
 export function registerTouchEventHandlers() {
     if (touchHandlersRegistered) {
-        console.warn(`%c registerTouchEventHandlers: %c Event handlers already registered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c registerTouchEventHandlers: %c Event handlers already registered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -69,13 +69,13 @@ export function registerTouchEventHandlers() {
     canvas.addEventListener('touchend', handleTouchEndEvent, {passive: false});
 
     touchHandlersRegistered = true;
-    console.log(`%c registerTouchEventHandlers: %c Touch event handlers registered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.log(`%c registerTouchEventHandlers: %c Touch event handlers registered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 /** Unregisters touch handlers. */
 export function unregisterTouchEventHandlers() {
     if (!touchHandlersRegistered) {
-        console.warn(`%c unregisterTouchEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c unregisterTouchEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -84,7 +84,7 @@ export function unregisterTouchEventHandlers() {
     canvas.removeEventListener('touchend', handleTouchEndEvent, {passive: false});
 
     touchHandlersRegistered = false;
-    console.warn(`%c unregisterTouchEventHandlers: %c Event handlers unregistered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.warn(`%c unregisterTouchEventHandlers: %c Event handlers unregistered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
@@ -243,7 +243,7 @@ function handleTouchEnd(event) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
 
-                console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} which is fractal coords [${expandComplexToString([fx, fy])}]`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} which is fractal coords [${expandComplexToString([fx, fy])}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
@@ -251,7 +251,7 @@ function handleTouchEnd(event) {
                 }
             } else {
                 touchClickTimeout = setTimeout(() => {
-                    console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} which is fractal coords ${expandComplexToString([fx, fy])}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} which is fractal coords ${expandComplexToString([fx, fy])}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                     // Centering action:
                     fractalApp.animatePanTo([fx, fy], 400).then(() => {

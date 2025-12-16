@@ -11,7 +11,7 @@ import {
     normalizeRotation,
     rgbToHsl
 } from "../global/utils";
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -150,15 +150,15 @@ export class FractalRenderer {
         event.preventDefault();
         console.warn(
             `%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`,
-            `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`,
-            'color: #fff'
+            CONSOLE_GROUP_STYLE,
+            CONSOLE_MESSAGE_STYLE
         );
         this.init();
     }
 
     /** Destructor */
     destroy() {
-        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         // Cancel any ongoing animations.
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
@@ -203,7 +203,7 @@ export class FractalRenderer {
     }
 
     resizeCanvas() {
-        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, CONSOLE_GROUP_STYLE);
 
         this.gl.useProgram(this.program);
 
@@ -247,7 +247,7 @@ export class FractalRenderer {
      */
     compileShader(source, type) {
         if (DEBUG_MODE) {
-            console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+            console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, CONSOLE_GROUP_STYLE);
             console.log(`Shader GLenum type: ${type}`);
             console.log(`Shader code: ${source}`);
         }
@@ -271,7 +271,7 @@ export class FractalRenderer {
      * Initializes WebGL program, shaders, quad, and uniform caches.
      */
     initGLProgram() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, CONSOLE_GROUP_STYLE);
 
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
@@ -363,7 +363,7 @@ export class FractalRenderer {
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: reset`, CONSOLE_GROUP_STYLE);
 
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
@@ -460,7 +460,7 @@ export class FractalRenderer {
 
     /** Stops all currently running animations that are not a color transition */
     stopAllNonColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         this.stopCurrentPanAnimation();
         this.stopCurrentZoomAnimation();
@@ -469,7 +469,7 @@ export class FractalRenderer {
 
     /** Stops currently running pan animation */
     stopCurrentPanAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentPanAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentPanAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentPanAnimationFrame !== null) {
             cancelAnimationFrame(this.currentPanAnimationFrame);
@@ -479,7 +479,7 @@ export class FractalRenderer {
 
     /** Stops currently running zoom animation */
     stopCurrentZoomAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentZoomAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentZoomAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentZoomAnimationFrame !== null) {
             cancelAnimationFrame(this.currentZoomAnimationFrame);
@@ -489,7 +489,7 @@ export class FractalRenderer {
 
     /** Stops currently running rotation animation */
     stopCurrentRotationAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentRotationAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentRotationAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentRotationAnimationFrame !== null) {
             cancelAnimationFrame(this.currentRotationAnimationFrame);
@@ -499,7 +499,7 @@ export class FractalRenderer {
 
     /** Stops currently running color animation */
     stopCurrentColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentColorAnimationFrame !== null) {
             cancelAnimationFrame(this.currentColorAnimationFrame);
@@ -509,7 +509,7 @@ export class FractalRenderer {
 
     /** Stops current demo and resets demo variables */
     stopDemo() {
-        console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopDemo`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         this.demoActive = false;
         this.currentPresetIndex = 0;
         this.stopAllNonColorAnimations();
@@ -530,7 +530,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         if (comparePalettes(this.colorPalette, newPalette)) {
@@ -579,7 +579,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateFullColorSpaceCycle(duration = 15000, coloringCallback = null) {
-        console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         const currentRGB = this.colorPalette;
@@ -618,7 +618,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanTo(targetPan, duration = 200, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentPanAnimation();
 
         if (compareComplex(this.pan, targetPan, 6)) {
@@ -669,7 +669,7 @@ export class FractalRenderer {
      * @param {number|null} [anchorY] CSS px relative to canvas; defaults to canvas center
      */
     async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE, anchorX = null, anchorY = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentZoomAnimation();
 
         // TODO 12 digits enough?
@@ -763,7 +763,7 @@ export class FractalRenderer {
     }
 
     async animateRotationTo(targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
         // Normalize
@@ -815,7 +815,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanThenZoomTo(targetPan, targetZoom, panDuration, zoomDuration, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoomTo`, CONSOLE_GROUP_STYLE);
 
         await this.animatePanTo(targetPan, panDuration, easeFunction);
         await this.animateZoomTo(targetZoom, zoomDuration, easeFunction);
@@ -833,7 +833,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanAndZoomTo(targetPan, targetZoom, duration = 1000, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, CONSOLE_GROUP_STYLE);
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
@@ -853,7 +853,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateZoomRotationTo(targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, CONSOLE_GROUP_STYLE);
 
         await Promise.all([
             this.animateZoomTo(targetZoom, duration, easeFunction),
@@ -874,7 +874,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanZoomRotationTo(targetPan, targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, CONSOLE_GROUP_STYLE);
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
@@ -892,7 +892,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateInfiniteRotation(direction, step = 0.001) {
-        console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
         const dir = direction >= 0 ? 1 : -1; // Normalize

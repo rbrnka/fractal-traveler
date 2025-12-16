@@ -68,10 +68,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Array.<number>} PALETTE
- *      @property {number} 0 Red
- *      @property {number} 1 Green
- *      @property {number} 2 Blue
- * @description Color palette [R, G ,B] (0-1)
+ * @description Color palette [R, G, B] (0-1)
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // JULIA PALETTE
@@ -120,7 +117,7 @@
  *      @property {COMPLEX} endC
  *      @property {number} zoom
  *      @property {number} step
- * @description Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
+ * @description Dive is a special animation loop that first animates cx in given direction and when it reaches a set threshold,
  * then it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
  * direction. If phases are defined, it follows their order.
  */

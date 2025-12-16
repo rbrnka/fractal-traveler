@@ -12,10 +12,11 @@ import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandl
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 import {takeScreenshot} from "./screenshotController";
 import {
+    CONSOLE_GROUP_STYLE,
+    CONSOLE_MESSAGE_STYLE,
     DEBUG_MODE,
     DEFAULT_ACCENT_COLOR,
     DEFAULT_BG_COLOR,
-    DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_USER_INPUT_ALLOWED,
@@ -86,7 +87,7 @@ const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
  * @param {PRESET} [preset] If present, it's set as the default state through travelToPreset
  */
 export async function switchFractalMode(mode, preset = null) {
-    console.groupCollapsed(`%c switchFractalMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c switchFractalMode`, CONSOLE_GROUP_STYLE);
 
     if (mode === fractalMode) {
         console.warn(`Switching to the same mode? Why?`);
@@ -160,7 +161,7 @@ export async function switchFractalMode(mode, preset = null) {
  * @return {Promise<void>}
  */
 export async function switchFractalModeWithPersistence(mode) {
-    console.groupCollapsed(`%c switchFractalModeWithPersistence`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c switchFractalModeWithPersistence`, CONSOLE_GROUP_STYLE);
 
     if (mode === fractalMode) {
         console.warn(`Switching to the same mode? Why?`);
@@ -348,7 +349,7 @@ export function isAnimationActive() {
 
 /** Enables controls, resets demo button */
 function exitAnimationMode() {
-    console.groupCollapsed(`%c exitAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c exitAnimationMode`, CONSOLE_GROUP_STYLE);
 
     if (!animationActive) {
         console.groupEnd();
@@ -382,7 +383,7 @@ function exitAnimationMode() {
 
 /** Disables controls, activates demo button */
 function initAnimationMode() {
-    console.groupCollapsed(`%c initAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c initAnimationMode`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         console.groupEnd();
@@ -417,7 +418,7 @@ function initAnimationMode() {
  * @return {Promise<void>}
  */
 export async function toggleDemo() {
-    console.groupCollapsed(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c toggleDemo`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         resetPresetAndDiveButtonStates();
@@ -449,7 +450,7 @@ export async function toggleDemo() {
 
 /** Starts the Mandelbrot demo */
 async function startMandelbrotDemo() {
-    console.groupCollapsed(`%c startMandelbrotDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo();
 
@@ -465,7 +466,7 @@ async function startMandelbrotDemo() {
  */
 export async function startJuliaDive(dives, index) {
     if (animationActive && index === activeJuliaDiveIndex) {
-        console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -521,7 +522,7 @@ export async function startJuliaDive(dives, index) {
 
 /** Starts the Julia demo */
 async function startJuliaDemo() {
-    console.groupCollapsed(`%c startJuliaDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         console.log(`Animation already in progress. Stopping.`);
@@ -555,16 +556,16 @@ async function startJuliaDemo() {
  */
 export async function travelToPreset(presets, index) {
     if (animationActive) {
-        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         exitAnimationMode();
     }
 
     if (index === activePresetIndex) {
-        console.log(`%c travelToPreset: %c Already on preset ${index}, skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c travelToPreset: %c Already on preset ${index}, skipping.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
-    console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     resetPresetAndDiveButtonStates();
     initAnimationMode();
@@ -623,7 +624,7 @@ export function toggleDebugLines() {
 }
 
 export function resetPresetAndDiveButtonStates() {
-    if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
     presetButtons.concat(diveButtons).forEach(b => b.classList.remove('active'));
 }
 
