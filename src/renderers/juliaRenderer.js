@@ -1,15 +1,20 @@
 import {updateInfo} from "../ui/ui";
 import {FractalRenderer} from "./fractalRenderer";
-import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
-import '../global/types';
+import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation, splitFloat,} from "../global/utils";
+import "../global/types";
 import {DEFAULT_CONSOLE_GROUP_COLOR, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
- * Julia set renderer
+ * JuliaRenderer (Deep Zoom via Perturbation)
  *
  * @author Radim Brnka
  * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
+ * Reference orbit is for current c and a chosen z0_ref (near view center).
+ * For each pixel:
+ *   z0 = pan + zoom * rotated(st)
+ *   dz0 = z0 - z0_ref
+ *   dz_{n+1} = 2*zref*dz + dz^2   (NO +dc each step for Julia!)
  * @extends FractalRenderer
  */
 export class JuliaRenderer extends FractalRenderer {
@@ -26,9 +31,28 @@ export class JuliaRenderer extends FractalRenderer {
         this.pan = [...this.DEFAULT_PAN]; // Copy
         this.rotation = this.DEFAULT_ROTATION;
         this.colorPalette = [...this.DEFAULT_PALETTE];
+        // this.MAX_ZOOM = 0.00006;
 
         /** @type COMPLEX */
         this.c = [...this.DEFAULT_C];
+
+        // --- Perturbation state ---
+        this.refZ0 = [0, 0];
+        this.orbitDirty = true;
+
+        this._prevPan0 = NaN;
+        this._prevPan1 = NaN;
+        this._prevZoom = NaN;
+        this._prevC0 = NaN;
+        this._prevC1 = NaN;
+
+        this.MAX_ITER = 2000;
+        this.REF_SEARCH_GRID = 5;
+        this.REF_SEARCH_RADIUS = 0.50;
+
+        this.orbitTex = null;
+        this.orbitData = null;
+        this.floatTexExt = null;
 
         // @formatter:off
         /** @type {Array.<JULIA_PRESET>} */
@@ -160,36 +184,144 @@ export class JuliaRenderer extends FractalRenderer {
         this.init();
     }
 
+    onProgramCreated() {
+        this.floatTexExt = this.gl.getExtension("OES_texture_float");
+        if (!this.floatTexExt) {
+            console.error("Missing OES_texture_float. Julia deep zoom perturbation requires it.");
+            return;
+        }
+
+        this.orbitTex = this.gl.createTexture();
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.orbitTex);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        this.orbitData = new Float32Array(this.MAX_ITER * 4);
+
+        if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
+        if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
+
+        this.orbitDirty = true;
+    }
+
     /**
      * @inheritDoc
      * @override
      */
     createFragmentShaderSource() {
         return `
-            #ifdef GL_ES
-            precision mediump float;
-            #endif
+            precision highp float;
+        
+            uniform vec2  u_resolution;
+            uniform float u_rotation;
+        
+            // view pan hi/lo
+            uniform vec2  u_pan_h;
+            uniform vec2  u_pan_l;
+        
+            // zoom hi/lo
+            uniform float u_zoom_h;
+            uniform float u_zoom_l;
+        
+            // reference z0 (initial point) hi/lo
+            uniform vec2  u_ref_z0_h;
+            uniform vec2  u_ref_z0_l;
+        
+            // Julia constant
+            uniform vec2  u_c;
             
-            // Uniforms
-            uniform vec2 u_resolution;    // Canvas resolution in pixels
-            uniform vec2 u_pan;           // Pan offset in fractal space
-            uniform float u_zoom;         // Zoom factor
-            uniform float u_iterations;   // For normalizing the smooth iteration count
-            uniform float u_rotation;     // Rotation (in radians)
-            uniform vec2 u_c;             // Julia set constant
-            uniform vec3 u_colorPalette;  // Color palette
-            uniform vec3 u_innerStops[5]; // Color palette inner stops
+            uniform float u_iterations;
+            uniform vec3  u_innerStops[5];
             
-            // Maximum iterations (compile-time constant required by GLSL ES 1.00).
-            const int MAX_ITERATIONS = 1000;
+            uniform sampler2D u_orbitTex;
+            uniform float     u_orbitW;
             
-            // Define color stops as individual constants (RGB values in [0,1]).
-            // Default stops (black, orange, white, blue, dark blue).
+            const int MAX_ITER = ${this.MAX_ITER};
             
-            // Interpolates between the five color stops.
-            // 5 stops = 4 segments.
+            // --- df helpers ---
+            struct df  { float hi; float lo; };
+            struct df2 { df x; df y; };
+            
+            df df_make(float hi, float lo){ df a; a.hi=hi; a.lo=lo; return a; }
+            df df_from(float a){ return df_make(a, 0.0); }
+            float df_to_float(df a){ return a.hi + a.lo; }
+            
+            df twoSum(float a, float b) {
+                float s  = a + b;
+                float bb = s - a;
+                float err = (a - (s - bb)) + (b - bb);
+                return df_make(s, err);
+            }
+        
+            df quickTwoSum(float a, float b) {
+                float s = a + b;
+                float err = b - (s - a);
+                return df_make(s, err);
+            }
+        
+            df df_add(df a, df b) {
+                df s = twoSum(a.hi, b.hi);
+                float t = a.lo + b.lo;
+                df u = twoSum(s.lo, t);
+                df v = twoSum(s.hi, u.hi);
+                float lo = u.lo + v.lo;
+                return quickTwoSum(v.hi, lo);
+            }
+        
+            df df_sub(df a, df b) { return df_add(a, df_make(-b.hi, -b.lo)); }
+        
+            const float SPLIT = 4097.0;
+            
+            df twoProd(float a, float b) {
+                float p = a * b;
+                
+                float aSplit = a * SPLIT;
+                float aHi = aSplit - (aSplit - a);
+                float aLo = a - aHi;
+                
+                float bSplit = b * SPLIT;
+                float bHi = bSplit - (bSplit - b);
+                float bLo = b - bHi;
+                
+                float err = ((aHi * bHi - p) + aHi * bLo + aLo * bHi) + aLo * bLo;
+                return df_make(p, err);
+            }
+        
+            df df_mul(df a, df b) {
+                df p = twoProd(a.hi, b.hi);
+                float err = a.hi * b.lo + a.lo * b.hi + a.lo * b.lo;
+                df s = twoSum(p.lo, err);
+                df r = twoSum(p.hi, s.hi);
+                float lo = s.lo + r.lo;
+                return quickTwoSum(r.hi, lo);
+            }
+        
+            df df_mul_f(df a, float b) { return df_mul(a, df_from(b)); }
+        
+            df2 df2_make(df x, df y){ df2 r; r.x=x; r.y=y; return r; }
+            df2 df2_add(df2 a, df2 b){ return df2_make(df_add(a.x,b.x), df_add(a.y,b.y)); }
+            
+            df2 df2_mul(df2 a, df2 b) {
+                df axbx = df_mul(a.x, b.x);
+                df ayby = df_mul(a.y, b.y);
+                df axby = df_mul(a.x, b.y);
+                df aybx = df_mul(a.y, b.x);
+                return df2_make(df_sub(axbx, ayby), df_add(axby, aybx));
+            }
+        
+            df2 df2_sqr(df2 a){
+                df xx = df_mul(a.x, a.x);
+                df yy = df_mul(a.y, a.y);
+                df xy = df_mul(a.x, a.y);
+                return df2_make(df_sub(xx, yy), df_mul_f(xy, 2.0));
+            }
+        
             vec3 getColorFromMap(float t) {
-                float segment = 1.0 / 4.0; // 4 segments for 5 stops.
+                float segment = 1.0 / 4.0;
                 if (t <= segment) {
                     return mix(u_innerStops[0], u_innerStops[1], t / segment);
                 } else if (t <= 2.0 * segment) {
@@ -200,58 +332,84 @@ export class JuliaRenderer extends FractalRenderer {
                     return mix(u_innerStops[3], u_innerStops[4], (t - 3.0 * segment) / segment);
                 }
             }
-            
+        
+            df2 sampleZRef(int n) {
+                float x = (float(n) + 0.5) / u_orbitW;
+                vec4 t = texture2D(u_orbitTex, vec2(x, 0.5));
+                return df2_make(df_make(t.r, t.g), df_make(t.b, t.a));
+            }
+        
             void main() {
-                // Map fragment coordinates to normalized device coordinates
                 float aspect = u_resolution.x / u_resolution.y;
+                
                 vec2 st = gl_FragCoord.xy / u_resolution;
-                st -= 0.5;       // center at (0,0)
-                st.x *= aspect;  // adjust x for aspect ratio
-            
-                // Apply rotation
+                st -= 0.5;
+                st.x *= aspect;
+                
                 float cosR = cos(u_rotation);
                 float sinR = sin(u_rotation);
-                vec2 rotated = vec2(
+                vec2 r = vec2(
                     st.x * cosR - st.y * sinR,
                     st.x * sinR + st.y * cosR
                 );
+            
+                df zoom = df_make(u_zoom_h, u_zoom_l);
+            
+                df2 pan = df2_make(
+                    df_make(u_pan_h.x, u_pan_l.x),
+                    df_make(u_pan_h.y, u_pan_l.y)
+                );
+            
+                // z0 = pan + zoom * r
+                df2 z0 = df2_add(
+                    pan,
+                    df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y))
+                );
+            
+                // z0ref
+                df2 z0ref = df2_make(
+                    df_make(u_ref_z0_h.x, u_ref_z0_l.x),
+                    df_make(u_ref_z0_h.y, u_ref_z0_l.y)
+                );
+            
+                // For Julia: dz starts as delta initial condition
+                df2 dz = df2_make(df_sub(z0.x, z0ref.x), df_sub(z0.y, z0ref.y));
+            
+                float it = 0.0;
+            
+                for (int n = 0; n < MAX_ITER; n++) {
+                    float fn = float(n);
+                    if (fn >= u_iterations) { it = fn; break; }
+                    
+                    df2 zref = sampleZRef(n);
+                    
+                    float zx = df_to_float(zref.x) + df_to_float(dz.x);
+                    float zy = df_to_float(zref.y) + df_to_float(dz.y);
+                    if (zx*zx + zy*zy > 4.0) { it = fn; break; }
+                    
+                    // Correct Julia perturbation:
+                    // dz_{n+1} = 2*zref*dz + dz^2   (NO +dc term)
+                    df2 zref_dz = df2_mul(zref, dz);
+                    zref_dz.x = df_mul_f(zref_dz.x, 2.0);
+                    zref_dz.y = df_mul_f(zref_dz.y, 2.0);
+                    
+                    df2 dz2 = df2_sqr(dz);
+                    
+                    dz = df2_add(zref_dz, dz2);
+                    
+                    if (n == MAX_ITER - 1) it = u_iterations;
+                }   
                 
-                // Map screen coordinates to Julia space
-                vec2 z = rotated * u_zoom + u_pan;
-                
-                // Determine escape iterations
-                int iterCount = MAX_ITERATIONS;
-                for (int i = 0; i < MAX_ITERATIONS; i++) {
-                    if (dot(z, z) > 4.0) {
-                        iterCount = i;
-                        break;
-                    }
-                    // Julia set iteration.
-                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + u_c;
-                }
-                
-                // If the point never escaped, render as simple color
-                if (iterCount == MAX_ITERATIONS) {
+                if (it >= u_iterations) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    // Compute a smooth iteration value
-                    float smoothColor = float(iterCount) - log2(log2(dot(z, z)));
-                    float t = clamp(smoothColor / u_iterations, 0.0, 1.0);
-                    
-                    // Apply a sine modulation to mimic the "sine" color mapping effect
-                    // Frequency: 4π
+                    float t = clamp(it / u_iterations, 0.0, 1.0);
                     t = 0.5 + 0.6 * sin(t * 4.0 * 3.14159265);
-                    
-                    // Lookup the color from the map
                     vec3 col = getColorFromMap(t);
-                    
-                    // Use the user-defined color palette as a tint
-                    // col *= u_colorPalette;
-                    
                     gl_FragColor = vec4(col, 1.0);
                 }
             }
-         `;
+        `;
     }
 
     /**
@@ -261,23 +419,190 @@ export class JuliaRenderer extends FractalRenderer {
     updateUniforms() {
         super.updateUniforms();
 
-        this.cLoc = this.gl.getUniformLocation(this.program, 'u_c');
-        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
+        this.cLoc = this.gl.getUniformLocation(this.program, "u_c");
+        this.innerStopsLoc = this.gl.getUniformLocation(this.program, "u_innerStops");
+
+        this.panHLoc = this.gl.getUniformLocation(this.program, "u_pan_h");
+        this.panLLoc = this.gl.getUniformLocation(this.program, "u_pan_l");
+        this.zoomHLoc = this.gl.getUniformLocation(this.program, "u_zoom_h");
+        this.zoomLLoc = this.gl.getUniformLocation(this.program, "u_zoom_l");
+        this.refZ0HLoc = this.gl.getUniformLocation(this.program, "u_ref_z0_h");
+        this.refZ0LLoc = this.gl.getUniformLocation(this.program, "u_ref_z0_l");
+
+        this.orbitTexLoc = this.gl.getUniformLocation(this.program, "u_orbitTex");
+        this.orbitWLoc = this.gl.getUniformLocation(this.program, "u_orbitW");
     }
 
-    /**
-     * @inheritDoc
-     * @override
-     */
+    // --- Reference orbit building ---
+
+    escapeItersJulia(zx0, zy0, iters) {
+        let zx = zx0, zy = zy0;
+        const cx = this.c[0], cy = this.c[1];
+        for (let i = 0; i < iters; i++) {
+            const zx2 = zx * zx - zy * zy + cx;
+            const zy2 = 2.0 * zx * zy + cy;
+            zx = zx2; zy = zy2;
+            if (zx * zx + zy * zy > 4.0) return i;
+        }
+        return iters;
+    }
+
+    pickReferenceNearViewCenter() {
+        const grid = this.REF_SEARCH_GRID;
+        const half = (grid - 1) / 2;
+        const step = (2.0 * this.REF_SEARCH_RADIUS) / (grid - 1);
+
+        const base = this.zoom;
+        const probeIters = Math.min(this.MAX_ITER, Math.max(200, Math.floor(this.iterations)));
+
+        let bestX = this.pan[0];
+        let bestY = this.pan[1];
+        let bestScore = -1;
+
+        for (let j = 0; j < grid; j++) {
+            for (let i = 0; i < grid; i++) {
+                const ox = (i - half) * step;
+                const oy = (j - half) * step;
+
+                const zx0 = this.pan[0] + ox * base;
+                const zy0 = this.pan[1] + oy * base;
+
+                const score = this.escapeItersJulia(zx0, zy0, probeIters);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestX = zx0;
+                    bestY = zy0;
+                }
+            }
+        }
+
+        this.refZ0[0] = bestX;
+        this.refZ0[1] = bestY;
+    }
+
+    computeReferenceOrbit() {
+        if (!this.orbitData || !this.orbitTex) return;
+
+        const cx = this.c[0];
+        const cy = this.c[1];
+
+        let zx = this.refZ0[0];
+        let zy = this.refZ0[1];
+
+        for (let n = 0; n < this.MAX_ITER; n++) {
+            const sx = splitFloat(zx);
+            const sy = splitFloat(zy);
+
+            const idx = n * 4;
+            this.orbitData[idx] = sx.high;
+            this.orbitData[idx + 1] = sx.low;
+            this.orbitData[idx + 2] = sy.high;
+            this.orbitData[idx + 3] = sy.low;
+
+            const zx2 = zx * zx - zy * zy + cx;
+            const zy2 = 2.0 * zx * zy + cy;
+            zx = zx2; zy = zy2;
+
+            if (zx * zx + zy * zy > 4.0) {
+                const fx = splitFloat(zx);
+                const fy = splitFloat(zy);
+                for (let k = n + 1; k < this.MAX_ITER; k++) {
+                    const j = k * 4;
+                    this.orbitData[j] = fx.high;
+                    this.orbitData[j + 1] = fx.low;
+                    this.orbitData[j + 2] = fy.high;
+                    this.orbitData[j + 3] = fy.low;
+                }
+                break;
+            }
+        }
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.orbitTex);
+
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            this.MAX_ITER,
+            1,
+            0,
+            this.gl.RGBA,
+            this.gl.FLOAT,
+            this.orbitData
+        );
+
+        if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
+        if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
+    }
+
+    needsRebase() {
+        const dx = this.pan[0] - this.refZ0[0];
+        const dy = this.pan[1] - this.refZ0[1];
+        return Math.hypot(dx, dy) > this.zoom * 0.75;
+    }
+
     draw() {
         this.gl.useProgram(this.program);
 
-        const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
-        this.iterations = Math.min(2000, baseIters + this.extraIterations);
+        const safe = Math.max(this.zoom, 1e-300);
+        const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
+        this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
-        // Pass Julia constant `c`
-        this.gl.uniform2fv(this.cLoc, this.c);
-        this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
+        const panMoved =
+            Number.isFinite(this._prevPan0) && Number.isFinite(this._prevPan1)
+                ? (Math.abs(this.pan[0] - this._prevPan0) + Math.abs(this.pan[1] - this._prevPan1)) > (this.zoom * 1e-6)
+                : true;
+
+        const zoomChanged =
+            Number.isFinite(this._prevZoom)
+                ? Math.abs(this.zoom - this._prevZoom) > (this.zoom * 1e-8)
+                : true;
+
+        const cChanged =
+            Number.isFinite(this._prevC0) && Number.isFinite(this._prevC1)
+                ? (Math.abs(this.c[0] - this._prevC0) + Math.abs(this.c[1] - this._prevC1)) > 0.0
+                : true;
+
+        if (panMoved || zoomChanged || cChanged) {
+            this.orbitDirty = true;
+            this._prevPan0 = this.pan[0];
+            this._prevPan1 = this.pan[1];
+            this._prevZoom = this.zoom;
+            this._prevC0 = this.c[0];
+            this._prevC1 = this.c[1];
+        }
+
+        const shouldRebase =
+            this.orbitDirty &&
+            !this.interactionActive &&
+            (cChanged || zoomChanged || this.needsRebase());
+
+        if (shouldRebase) {
+            this.pickReferenceNearViewCenter();
+            this.computeReferenceOrbit();
+            this.orbitDirty = false;
+        }
+
+        // Upload pan hi/lo
+        const px = splitFloat(this.pan[0]);
+        const py = splitFloat(this.pan[1]);
+        if (this.panHLoc) this.gl.uniform2f(this.panHLoc, px.high, py.high);
+        if (this.panLLoc) this.gl.uniform2f(this.panLLoc, px.low, py.low);
+
+        // Upload zoom hi/lo
+        const z = splitFloat(this.zoom);
+        if (this.zoomHLoc) this.gl.uniform1f(this.zoomHLoc, z.high);
+        if (this.zoomLLoc) this.gl.uniform1f(this.zoomLLoc, z.low);
+
+        // Upload ref z0 hi/lo
+        const rx = splitFloat(this.refZ0[0]);
+        const ry = splitFloat(this.refZ0[1]);
+        if (this.refZ0HLoc) this.gl.uniform2f(this.refZ0HLoc, rx.high, ry.high);
+        if (this.refZ0LLoc) this.gl.uniform2f(this.refZ0LLoc, rx.low, ry.low);
+
+        if (this.cLoc) this.gl.uniform2fv(this.cLoc, this.c);
+        if (this.innerStopsLoc) this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
 
         super.draw();
     }
@@ -290,6 +615,13 @@ export class JuliaRenderer extends FractalRenderer {
         this.c = [...this.DEFAULT_C];
         this.innerStops = new Float32Array(JULIA_PALETTES[0].theme);
         this.currentPaletteIndex = 0;
+
+        this.orbitDirty = true;
+        this._prevPan0 = NaN;
+        this._prevPan1 = NaN;
+        this._prevZoom = NaN;
+        this._prevC0 = NaN;
+        this._prevC1 = NaN;
 
         super.reset();
     }
@@ -343,7 +675,7 @@ export class JuliaRenderer extends FractalRenderer {
         // Save the starting stops as a plain array.
         const startStops = Array.from(this.innerStops);
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
@@ -358,9 +690,7 @@ export class JuliaRenderer extends FractalRenderer {
 
                 if (toPalette.keyColor) {
                     keyColor = hexToRGB(toPalette.keyColor);
-                    if (keyColor) {
-                        this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
-                    }
+                    if (keyColor) this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
                 }
 
                 if (!keyColor) {
@@ -370,12 +700,6 @@ export class JuliaRenderer extends FractalRenderer {
                         toPalette.theme[stopIndex * 3 + 1] * 1.5,
                         toPalette.theme[stopIndex * 3 + 2] * 1.5
                     ];
-                }
-
-                // Update the uniform for inner stops.
-                this.gl.useProgram(this.program);
-                if (this.innerStopsLoc) {
-                    this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
                 }
 
                 this.draw();
@@ -431,7 +755,7 @@ export class JuliaRenderer extends FractalRenderer {
 
         const startC = [...this.c];
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
@@ -442,6 +766,9 @@ export class JuliaRenderer extends FractalRenderer {
                 const easedProgress = easeFunction(progress);
                 this.c[0] = lerp(startC[0], targetC[0], easedProgress);
                 this.c[1] = lerp(startC[1], targetC[1], easedProgress);
+
+                this.orbitDirty = true;
+
                 this.draw();
 
                 updateInfo(true);
