@@ -185,6 +185,45 @@ export function splitFloat(value) {
 }
 
 /**
+ * Double-double (hi, lo) helpers for pan accumulation.
+ */
+export function ddMake(hi = 0, lo = 0) {
+    return { hi, lo };
+}
+
+export function twoSum(a, b) {
+    const s = a + b;
+    const bb = s - a;
+    const err = (a - (s - bb)) + (b - bb);
+    return { s, err };
+}
+
+export function quickTwoSum(a, b) {
+    const s = a + b;
+    const err = b - (s - a);
+    return { s, err };
+}
+
+export function ddAdd(dd, x) {
+    const t = twoSum(dd.hi, x);
+    const lo = dd.lo + t.err;
+    const r = quickTwoSum(t.s, lo);
+    dd.hi = r.s;
+    dd.lo = r.err;
+    return dd;
+}
+
+export function ddSet(dd, x) {
+    dd.hi = x;
+    dd.lo = 0;
+    return dd;
+}
+
+export function ddValue(dd) {
+    return dd.hi + dd.lo;
+}
+
+/**
  * Compares two complex numbers / arrays of two numbers with given precision
  * @param {COMPLEX} c1
  * @param {COMPLEX}c2
