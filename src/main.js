@@ -8,15 +8,15 @@ import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
 import {RiemannRenderer} from "./renderers/riemannRenderer";
-import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
+import {initDebugMode, initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";
 
 /**
  * Initializes the canvas, reads URL params and triggers respective fractal rendering
  */
 async function initFractalApp() {
-    if (DEBUG_MODE) console.warn(' --- DEBUG MODE ACTIVE! ---');
+    if (DEBUG_MODE > DEBUG_LEVEL.VERBOSE) console.warn(' --- FULL DEBUG MODE ACTIVE! ---');
     console.groupCollapsed(`%c initFractalApp`, CONSOLE_GROUP_STYLE);
 
     const canvas = document.getElementById('fractalCanvas');
@@ -99,6 +99,10 @@ async function initFractalApp() {
     if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
         resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
+    }
+
+    if (DEBUG_MODE > DEBUG_LEVEL.VERBOSE) {
+        initDebugMode();
     }
 
     console.groupEnd();

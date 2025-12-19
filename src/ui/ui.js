@@ -1,5 +1,6 @@
 import {
     clearURLParams,
+    ddValue,
     destroyArrayOfButtons,
     getAnimationDuration,
     hsbToRgb,
@@ -21,6 +22,7 @@ import {
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
+    log,
     PI,
     RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
 } from "../global/constants";
@@ -585,20 +587,28 @@ export async function travelToPreset(presets, index) {
 }
 
 /** Inits debug bar with various information permanently shown on the screen */
-function initDebugMode() {
-    infoLabel.style.height = '80px';
+export function initDebugMode() {
+    log("Debug bar enabled");
 
     const debugInfo = document.getElementById('debugInfo');
-    debugInfo.style.display = 'block';
-    const dpr = window.devicePixelRatio;
+    debugInfo.style.display = (debugInfo.style.display === 'block') ? 'none' : 'block';
 
-    const {width, height} = canvas.getBoundingClientRect();
-    const displayWidth = Math.round(width * dpr);
-    const displayHeight = Math.round(height * dpr);
+    const dpr = window.devicePixelRatio;
+    const hp = fractalApp.gl.getShaderPrecisionFormat(fractalApp.gl.FRAGMENT_SHADER, fractalApp.gl.HIGH_FLOAT);
+    const hpInfo = {precision: hp.precision, rangeMin: hp.rangeMin, rangeMax: hp.rangeMax};
+    const rect = canvas.getBoundingClientRect();
     (function update() {
-        debugInfo.innerText = `WINDOW: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio})
-        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width / canvas.height).toFixed(2)} 
-        BoundingRect: ${width}x${height}, display W/H: ${displayWidth}x${displayHeight}`;
+        debugInfo.innerText = `FRAG highp: precision=${hpInfo.precision} range=[${hpInfo.rangeMin}, ${hpInfo.rangeMax}]
+            OES_texture_float: OK
+            zoom=${fractalApp.zoom.toFixed(20)}
+            zoomExp=[${fractalApp.zoom.toExponential(1)}]
+            viewPan=[${ddValue(fractalApp.panDD.x).toFixed(20)}, ${ddValue(fractalApp.panDD.y).toFixed(20)}]
+            refPan =[${fractalApp.pan[0].toFixed(24)}, ${fractalApp.pan[1].toFixed(24)}]
+            iters=${fractalApp.iterations.toFixed(0)} (MAX_ITER=${fractalApp.MAX_ITER})
+            css=${rect.width.toFixed(1)}x${rect.height.toFixed(1)} dpr=${dpr}
+            buf=${canvas.width}x${canvas.height}
+            refPick=${fractalApp ? (fractalApp.bestScore + '/' + fractalApp.probeIters) : 'cached'}
+        `;
         requestAnimationFrame(update);
     })();
 

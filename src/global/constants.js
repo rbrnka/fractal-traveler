@@ -5,10 +5,14 @@
  */
 
 import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils";
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-const DEBUG_LEVEL = {
+// region > DEBUG CONSTANTS ////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * DEBUG_LEVEL
+ * @enum {number}
+ */
+export const DEBUG_LEVEL = {
     NONE: 0,
-    VERBOSE: 1,
+    VERBOSE: 1, /** Logs only */
     FULL: 2
 }
 
@@ -16,8 +20,33 @@ const DEBUG_LEVEL = {
  * DEBUG MODE. Set to false for prod deployment!
  * @type {DEBUG_LEVEL}
  */
-export const DEBUG_MODE = DEBUG_LEVEL.NONE;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+export const DEBUG_MODE = DEBUG_LEVEL.FULL;
+
+/**
+ *
+ * @type {{LOG: string, INFO: string, WARN: string, ERROR: string}}
+ */
+export const LOG_LEVEL = {
+    LOG: 'log',
+    INFO: 'info',
+    WARN: 'warn',
+    ERROR: 'error'
+}
+
+/**
+ *
+ * @param message
+ * @param scope
+ * @param severity
+ */
+export const log = (message, scope = '', severity = LOG_LEVEL.LOG) => {
+    console[severity](
+        `%c${scope}%c ${message}`,
+        CONSOLE_GROUP_STYLE,
+        CONSOLE_MESSAGE_STYLE
+    );
+}
+// endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 // FEATURE FLAGS
 /** Allows switching between fractal while keeping the params to allow Mandelbrot and Julia to match each other */
 export const FF_PERSISTENT_FRACTAL_SWITCHING = true;

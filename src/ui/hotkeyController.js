@@ -7,6 +7,7 @@
 
 import {
     captureScreenshot,
+    initDebugMode,
     isAnimationActive,
     isJuliaMode,
     randomizeColors,
@@ -24,6 +25,7 @@ import {
 import {
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
+    DEBUG_LEVEL,
     DEBUG_MODE,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
@@ -154,7 +156,11 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyU': // Riemann Mode
-            if (DEBUG_MODE) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+            break;
+
+        case 'KeyL': // DEBUG BAR toggle
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) initDebugMode();
             break;
 
         case 'KeyZ': // Switch between fractals with constant p/c
@@ -236,7 +242,7 @@ async function onKeyDown(event) {
             const increment = event.shiftKey ? ZOOM_ANIMATION_SMOOTH_STEP : ZOOM_ANIMATION_STEP;
             const zoomFactor = (event.ctrlKey || altKey) ? (1 + increment) : (1 - increment);
 
-            let targetZoom = fractalApp.zoom * zoomFactor;
+            let targetZoom = fractalApp.zoom * zoomFactor; // TODO
 
             if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
                 await fractalApp.animateZoomTo(targetZoom, 20);

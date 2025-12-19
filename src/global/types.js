@@ -1,7 +1,14 @@
 /**
  * @module Types
- * @author Radim Brnka
+ * @author Radim Brnka (c) 2025-2026
  * @description Data types & DDOs used in the application
+ */
+// ---------------------------------------------------------------------------------------------------------------------
+// DEBUG TYPES
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * @typedef {number} DEBUG_LEVEL
+ * @description Debug level
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // URL_PRESET
@@ -16,7 +23,7 @@
  *      @property {number|null} [zoom]
  *      @property {number|null} [r] rotation
  * @description URL Preset is an object containing properties of specific point in the fractal on the scene compatible
- * with URL encoding.All array values (pan, c) are expanded
+ * with URL encoding. All array values (pan, c) are expanded
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // PRESET
@@ -35,6 +42,7 @@
  *      @property {number} [rotation]
  *      @property {COMPLEX} pan
  *      @property {string} [title] HTML element title (on hover)
+ *      @property {number} [speed] preset animation zoom-in speed
  * @extends PRESET
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
@@ -59,9 +67,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Array.<number>} COMPLEX
- *      @property {number} 0 The real part.
- *      @property {number} 1 The imaginary part.
- * @description The complex number c=x+yi as [x, yi], used as C in Julia or Pan in general.
+  * @description The complex number c=x+yi as [x, y], used as C in Julia or Pan in general. x: the real part, y: the imaginary part.
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // PALETTE
