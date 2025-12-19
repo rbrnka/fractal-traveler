@@ -8,7 +8,7 @@ import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
 import {RiemannRenderer} from "./renderers/riemannRenderer";
-import {initDebugMode, initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
+import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";
 
@@ -99,10 +99,6 @@ async function initFractalApp() {
     if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
         resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
-    }
-
-    if (DEBUG_MODE > DEBUG_LEVEL.VERBOSE) {
-        initDebugMode();
     }
 
     console.groupEnd();

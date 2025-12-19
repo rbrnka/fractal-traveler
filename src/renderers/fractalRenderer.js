@@ -95,6 +95,10 @@ export class FractalRenderer {
         this.iterations = 0;
         this.extraIterations = 0;
 
+        this.bestScore = NaN;
+        this.probeIters = NaN;
+
+
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
