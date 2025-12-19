@@ -19,14 +19,21 @@ let urlParamsSet = false;
  * @param {number} rotation
  */
 export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null) {
+    const formatNumber = (value) => {
+        if (value == null) return null;
+        // 15–17 digits is where JS double precision is meaningfully preserved.
+        // toPrecision also uses scientific notation for very small values (deep zoom).
+        return Number(value).toPrecision(17);
+    };
+
     const params = {
         mode: mode != null ? mode.toFixed(0) : FRACTAL_TYPE.MANDELBROT,
-        px: px != null ? px.toFixed(6) : null,
-        py: py != null ? py.toFixed(6) : null,
-        zoom: zoom != null ? zoom.toFixed(6) : null,
-        r: rotation != null ? rotation.toFixed(6) : 0, // Rotation is not necessary to be defined
-        cx: cx != null ? cx.toFixed(6) : null,
-        cy: cy != null ? cy.toFixed(6) : null,
+        px: formatNumber(px),
+        py: formatNumber(py),
+        zoom: formatNumber(zoom),
+        r: rotation != null ? Number(rotation).toPrecision(17) : 0,
+        cx: formatNumber(cx),
+        cy: formatNumber(cy),
     };
 
     if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -93,6 +100,7 @@ export function loadFractalParamsFromURL() {
             py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
             zoom: parseFloat(decodedParams.zoom) || null,
             r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
+            zoom: decodedParams.zoom != null ? parseFloat(decodedParams.zoom) : null,
             cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
