@@ -350,6 +350,9 @@ export class MandelbrotRenderer extends FractalRenderer {
 
         this.refPan[0] = bestCx;
         this.refPan[1] = bestCy;
+
+        this.bestScore = bestScore;
+        this.probeIters = probeIters;
     }
 
     computeReferenceOrbit() {

@@ -426,7 +426,6 @@ p#presets span, p#dives span {
 
 #debugInfo {
     position: fixed; left: 12px; bottom: 40px;
-    white-space: pre;
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 12px;
     color: #d7d7d7;
@@ -438,19 +437,19 @@ p#presets span, p#dives span {
     /*pointer-events: none;*/
     cursor: grab;
     min-width: 40px;
-    max-width: 760px;
+    max-width: 440px;
     z-index: 10000;
     text-align: left;
     display: none;
     height: fit-content;
-    overflow: auto;
+    text-wrap: pretty;
 }
 
 .dbg-ok    { color: #b8ffb8; }
 .dbg-warn  { color: #ffe28a; }
 .dbg-bad   { color: #ff9aa2; }
 .dbg-dim   { color: rgba(255,255,255,0.55); }
-.dbg-title { color: rgba(255,255,255,0.85); font-weight: 600; }
+.dbg-title { color: rgba(255,255,255,0.95); font-weight: 600; }
 
 .dbg-badge {
     display: inline-block;

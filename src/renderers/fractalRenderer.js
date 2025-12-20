@@ -252,8 +252,7 @@ export class FractalRenderer {
     compileShader(source, type) {
         if (DEBUG_MODE) {
             console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, CONSOLE_GROUP_STYLE);
-            console.log(`Shader GLenum type: ${type}`);
-            console.log(`Shader code: ${source}`);
+            console.log(`Shader GLenum type: ${type}\nShader code: ${source}`);
         }
 
         const shader = this.gl.createShader(type);
@@ -360,7 +359,9 @@ export class FractalRenderer {
 
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        if (DEBUG_MODE === DEBUG_LEVEL.FULL) debugPanel?.beginGpuTimer();
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        if (DEBUG_MODE === DEBUG_LEVEL.FULL) debugPanel?.endGpuTimer();
     }
 
     /**

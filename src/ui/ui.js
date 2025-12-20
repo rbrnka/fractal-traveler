@@ -15,6 +15,7 @@ import {takeScreenshot} from "./screenshotController";
 import {
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
+    DEBUG_LEVEL,
     DEBUG_MODE,
     DEFAULT_ACCENT_COLOR,
     DEFAULT_BG_COLOR,
@@ -22,7 +23,6 @@ import {
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
-    log,
     PI,
     RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
 } from "../global/constants";
@@ -37,6 +37,7 @@ import {
     resetJuliaSliders,
     updateJuliaSliders
 } from "./juliaSlidersController";
+import {DebugPanel} from "./debugPanel";
 
 /**
  * @module UI
@@ -79,6 +80,7 @@ let diveButtons = [];
 let allButtons = [];
 let infoLabel;
 let infoText;
+export let debugPanel;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
@@ -587,129 +589,13 @@ export async function travelToPreset(presets, index) {
 }
 
 /** Inits debug bar with various information permanently shown on the screen */
-export function initDebugMode() {
-    log("Debug bar enabled");
-
-    const debugInfo = document.getElementById('debugInfo');
-    debugInfo.style.display = (debugInfo.style.display === 'block') ? 'none' : 'block';
-
-    const dpr = window.devicePixelRatio;
-    const hp = fractalApp.gl.getShaderPrecisionFormat(fractalApp.gl.FRAGMENT_SHADER, fractalApp.gl.HIGH_FLOAT);
-    const hpInfo = {precision: hp.precision, rangeMin: hp.rangeMin, rangeMax: hp.rangeMax};
-    const rect = canvas.getBoundingClientRect();
-
-    (function update() {
-        const viewPanX = ddValue(fractalApp.panDD.x);
-        const viewPanY = ddValue(fractalApp.panDD.y);
-
-        const refPanX = fractalApp.pan[0];
-        const refPanY = fractalApp.pan[1];
-
-        const zoom = fractalApp.zoom;
-
-        const absPan = Math.hypot(viewPanX, viewPanY);
-        // absRef not used for decision-making; keep only if you want to display it.
-        // const absRef = Math.hypot(refPanX, refPanY);
-
-        const safeZoom = Math.max(zoom, 1e-300);
-
-        // Scale diagnostics
-        const pxPerUnit = canvas.width / safeZoom;   // px per 1.0 complex unit
-        const unitPerPx = safeZoom / canvas.width;   // complex units per pixel
-
-        // Precision stress heuristics
-        const panOverZoom = absPan / safeZoom;                     // cancellation risk indicator
-        const mantissaUsedApprox = Math.log2(Math.max(panOverZoom, 1e-300)); // “bits burned” heuristic
-
-        // Perturbation drift diagnostics
-        const driftAbs = Math.hypot(viewPanX - refPanX, viewPanY - refPanY);
-        const driftViewUnits = driftAbs / safeZoom;
-
-        const orbitStatus = fractalApp.orbitDirty ? 'DIRTY' : 'cached';
-        const zoomBucket = Math.floor(-Math.log10(safeZoom));
-
-        // ---------- Coloring helpers ----------
-        const esc = (s) => String(s)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;');
-
-        function levelClass(level) {
-            if (level === 'bad') return 'dbg-bad';
-            if (level === 'warn') return 'dbg-warn';
-            return 'dbg-ok';
-        }
-
-        // ---------- Health model (simple + explainable) ----------
-        // Score: 100 (best) -> 0 (worst)
-        // Keep thresholds conservative; adjust once you see real-world behavior.
-        let score = 100;
-
-        // 1) cancellation risk: |pan|/zoom
-        // In practice, once log2(|pan|/zoom) gets large, you lose meaningful “camera delta” bits.
-        let panLevel = 'ok';
-        if (mantissaUsedApprox > 44) { panLevel = 'bad'; score -= 40; }
-        else if (mantissaUsedApprox > 34) { panLevel = 'warn'; score -= 20; }
-        else if (mantissaUsedApprox > 28) { panLevel = 'warn'; score -= 10; }
-
-        // 2) ref drift in view units (rebase quality)
-        let driftLevel = 'ok';
-        if (driftViewUnits > 1.0) { driftLevel = 'bad'; score -= 25; }
-        else if (driftViewUnits > 0.5) { driftLevel = 'warn'; score -= 12; }
-        else if (driftViewUnits > 0.25) { driftLevel = 'warn'; score -= 6; }
-
-        // 3) scale / pixel resolution pressure
-        // If unitPerPx gets extremely small, you’re asking for sub-pixel deltas in complex units.
-        let scaleLevel = 'ok';
-        if (pxPerUnit < 0.75) { scaleLevel = 'warn'; score -= 10; }
-        if (pxPerUnit < 0.25) { scaleLevel = 'bad'; score -= 20; }
-
-        score = Math.max(0, Math.min(100, Math.round(score)));
-
-        let healthLevel = 'ok';
-        if (score < 70) { healthLevel = 'warn'; }
-        if (score < 45) { healthLevel = 'bad'; }
-
-        // Optional: show which sub-metric is the worst right now (useful when chasing jitter).
-        const worst =
-            (healthLevel === 'bad' || healthLevel === 'warn')
-                ? ` (pan:${panLevel}, drift:${driftLevel}, scale:${scaleLevel})`
-                : '';
-
-        // ---------- Output ----------
-        debugInfo.innerHTML =
-`<span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]
-<span class="dbg-title">iters</span>=${esc(fractalApp.iterations.toFixed(0))} (MAX_ITER=${esc(fractalApp.MAX_ITER)})
-<span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} dpr=${esc(dpr)}
-<span class="dbg-title">buf</span>=${esc(canvas.width)}x${esc(canvas.height)}
-${esc('')}
-<span class="dbg-title">viewPan(dd)</span>=[${esc(viewPanX.toFixed(20))}, ${esc(viewPanY.toFixed(20))}]
-<span class="dbg-title">refPan</span>     =[${esc(refPanX.toFixed(24))}, ${esc(refPanY.toFixed(24))}]
-<span class="dbg-title">zoom</span>=${esc(zoom.toFixed(20))}
-${esc('')}
-<span class="dbg-title">--- Scale</span>:
-  zoomExp=[${esc(zoom.toExponential(1))}]  <span class="dbg-dim">zoomBucket=1e-${esc(zoomBucket)}</span>
-  px/unit=<span class="${levelClass(scaleLevel)}">${esc(pxPerUnit.toExponential(3))}</span>
-  unit/px=<span class="${levelClass(scaleLevel)}">${esc(unitPerPx.toExponential(3))}</span>
-${esc('')}
-<span class="dbg-title">--- Precision stress (heuristics)</span>:
- Precision health:<span class="dbg-badge ${levelClass(healthLevel)}">${score}/100</span><span class="dbg-dim">${esc(worst)}</span>
- |pan|=${esc(absPan.toExponential(3))}
- |pan|/zoom=<span class="${levelClass(panLevel)}">${esc(panOverZoom.toExponential(3))}</span>
- log2(|pan|/zoom)≈<span class="${levelClass(panLevel)}">${esc(mantissaUsedApprox.toFixed(1))}</span> <span class="dbg-dim">(larger ⇒ more cancellation risk)</span>
-${esc('')}
-<span class="dbg-title">--- Perturbation</span>:
-  ref drift (abs)=${esc(driftAbs.toExponential(3))}
-  ref drift/zoom=<span class="${levelClass(driftLevel)}">${esc(driftViewUnits.toFixed(3))}</span> <span class="dbg-dim">view-units</span>
-  refPick=${esc(fractalApp ? (fractalApp.bestScore + '/' + fractalApp.probeIters) : 'cached')}
-  orbit=<span class="${fractalApp.orbitDirty ? 'dbg-warn' : 'dbg-ok'}">${esc(orbitStatus)}</span>`;
-
-        requestAnimationFrame(update);
-    })();
-
-    debugInfo.addEventListener('click', () => {
-        console.log(debugInfo.innerText);
-    });
+export function toggleDebugMode() {
+    console.log(debugPanel);
+    if (debugPanel) {
+        debugPanel.toggle();
+    } else {
+        debugPanel = new DebugPanel(canvas, fractalApp, accentColor);
+    }
 
     toggleDebugLines();
 }
@@ -1145,7 +1031,7 @@ export async function initUI(fractalRenderer) {
     updateRecolorButtonTitle();
 
     if (DEBUG_MODE === DEBUG_LEVEL.FULL) {
-        initDebugMode();
+        toggleDebugMode();
     }
 
     uiInitialized = true;

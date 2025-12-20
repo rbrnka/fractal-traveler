@@ -7,7 +7,6 @@
 
 import {
     captureScreenshot,
-    initDebugMode,
     isAnimationActive,
     isJuliaMode,
     randomizeColors,
@@ -17,6 +16,7 @@ import {
     switchFractalMode,
     switchFractalModeWithPersistence,
     toggleDebugLines,
+    toggleDebugMode,
     toggleDemo,
     toggleHeader,
     travelToPreset,
@@ -31,6 +31,7 @@ import {
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
     JULIA_PALETTES,
+    log,
     ROTATION_DIRECTION
 } from "../global/constants";
 
@@ -160,7 +161,7 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyL': // DEBUG BAR toggle
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) initDebugMode();
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) toggleDebugMode();
             break;
 
         case 'KeyZ': // Switch between fractals with constant p/c
