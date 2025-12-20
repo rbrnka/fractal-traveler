@@ -5,9 +5,6 @@ export class RiemannRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.MAX_ZOOM = 0;
-        this.MIN_ZOOM = 9999;
-
         this.termCount = 100;
 
         this.useAnalyticExtension = true;
@@ -25,7 +22,6 @@ export class RiemannRenderer extends FractalRenderer {
     draw() {
         this.gl.uniform1i(this.termCountLoc, this.termCount);
         this.gl.uniform1i(this.useAnalyticExtensionLoc, this.useAnalyticExtension ? 1 : 0);
-
 
         super.draw();
     }
@@ -238,6 +234,10 @@ void main() {
   gl_FragColor = vec4(color, 1.0);
 }
 */
+    }
+
+    onProgramCreated() {
+
     }
 
 }
