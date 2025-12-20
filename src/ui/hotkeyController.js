@@ -113,13 +113,24 @@ let fractalApp;
  * @return {Promise<void>}
  */
 async function onKeyDown(event) {
-    //event.preventDefault();
 
-    if (!DEBUG_MODE) {
-        event.stopImmediatePropagation();
-    }
+    // Do not steal hotkeys from user input fields (search boxes, sliders, etc.)
+    const target = /** @type {HTMLElement|null} */ (event.target);
+    const tag = target?.tagName?.toLowerCase();
+    const isTypingTarget =
+        !!target &&
+        (
+            tag === 'input' ||
+            tag === 'textarea' ||
+            tag === 'select' ||
+            target.isContentEditable
+        );
+
+    if (isTypingTarget) return;
 
     if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+    let handled = false;
 
     const rotationSpeed = event.shiftKey ? ROTATION_ANIMATION_SMOOTH_STEP : ROTATION_ANIMATION_STEP;
     let rotationDirection = ROTATION_DIRECTION.CW;
@@ -132,8 +143,10 @@ async function onKeyDown(event) {
     // Treat MAC Option button as Alt
     const altKey = event.altKey || event.code === 'Alt';
 
-    if (isAnimationActive() && ANIMATION_KEYS_BLACKLIST.includes(event.code)) return;
-
+    if (isAnimationActive() && ANIMATION_KEYS_BLACKLIST.includes(event.code)) {
+        event.preventDefault();
+        return;
+    }
     switch (event.code) {
         // TODO add shift/non-shift to slow down or speed up the rotation instead of stop.
         case 'KeyQ': // Rotation counter-clockwise
@@ -146,24 +159,29 @@ async function onKeyDown(event) {
                 rotationActive = true;
                 await fractalApp.animateInfiniteRotation(rotationDirection, rotationSpeed);
             }
+            handled = true;
             break;
 
         case 'KeyE': // Debug lines
             toggleDebugLines();
+            handled = true;
             break;
 
         case 'KeyR': // Reset
             if (event.shiftKey) await reset();
+            handled = true;
             break;
 
         case 'KeyL': // DEBUG BAR toggle
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) toggleDebugMode();
+            handled = true;
             break;
 
         case 'KeyZ': // Switch between fractals with constant p/c
             if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
 
             await switchFractalModeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
+            handled = true;
             break;
 
         case 'KeyT': // Random colors
@@ -193,22 +211,27 @@ async function onKeyDown(event) {
             } else {
                 await randomizeColors();
             }
+            handled = true;
             break;
 
         case 'KeyA': // Forced resize
             fractalApp.resizeCanvas();
+            handled = true;
             break;
 
         case 'KeyS': // Screenshot
             if (event.shiftKey) captureScreenshot();
+            handled = true;
             break;
 
         case 'KeyD': // Start/stop demo
             await toggleDemo();
+            handled = true;
             break;
 
         case 'KeyM': // Riemann Mode
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+            handled = true;
             break;
 
         case 'KeyN':
@@ -217,26 +240,31 @@ async function onKeyDown(event) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 fractalApp.draw();
             }
+            handled = true;
             break;
 
         case "ArrowLeft":
             deltaPanX = altKey ? 0 : -(event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCx = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : 1)) : 0;
+            handled = true;
             break;
 
         case "ArrowRight":
             deltaPanX = altKey ? 0 : (event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCx = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? -JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : -1)) : 0;
+            handled = true;
             break;
 
         case "ArrowDown":
             deltaPanY = altKey ? 0 : -(event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCy = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? -JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : -1)) : 0;
+            handled = true;
             break;
 
         case "ArrowUp":
             deltaPanY = altKey ? 0 : (event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCy = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : 1)) : 0;
+            handled = true;
             break;
 
         case "Space":
@@ -249,10 +277,12 @@ async function onKeyDown(event) {
                 await fractalApp.animateZoomTo(targetZoom, 20);
                 resetAppState();
             }
+            handled = true;
             break;
 
         case "Enter":
             toggleHeader();
+            handled = true;
             break;
 
         default: // Case nums and others:
@@ -264,6 +294,7 @@ async function onKeyDown(event) {
                 } else {
                     await travelToPreset(fractalApp.PRESETS, index);
                 }
+                handled = true;
             }
             break;
     }
@@ -289,6 +320,10 @@ async function onKeyDown(event) {
 
         await fractalApp.animateToC([fractalApp.c[0] + effectiveDeltaCx, fractalApp.c[1] + effectiveDeltaCy], JULIA_HOTKEY_C_SPEED);
         resetAppState();
+    }
+
+    if (handled) {
+        event.preventDefault();
     }
 }
 
