@@ -469,6 +469,76 @@ export class MandelbrotRenderer extends FractalRenderer {
 
     // region > ANIMATION METHODS (unchanged, but ensure presets use setPan via animatePanTo)
 
+    async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
+        // Generate a bright random color palette
+        // Generate colors with better separation and higher brightness
+        // const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
+        // const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
+        // const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
+        //
+        // // Convert HSB/HSV to RGB
+        // newPalette ||= hsbToRgb(hue, saturation, brightness);
+        //
+        // await super.animateColorPaletteTransition(newPalette, 250, coloringCallback);
+        // --- Bright palette generator (HSV + luminance lift) ---
+        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+
+        // Robustly normalize whatever hsbToRgb returns:
+        // - [r,g,b] or {r,g,b}
+        // - either in 0..1 or 0..255
+        const normalizeRgb = (c) => {
+            let r, g, b;
+            if (Array.isArray(c)) [r, g, b] = c;
+            else ({ r, g, b } = c);
+
+            // If it looks like 0..255, normalize.
+            if (r > 1 || g > 1 || b > 1) {
+                r /= 255; g /= 255; b /= 255;
+            }
+            return [r, g, b];
+        };
+
+        // Generate a vivid hue in HSV, but output as a MULTIPLIER palette:
+        // values intentionally > 1 to keep results bright after multiplication.
+        const randomBrightMultiplierPalette = () => {
+            const hue = Math.random();
+            const sat = 0.85 + Math.random() * 0.15; // vivid
+            const val = 0.90 + Math.random() * 0.10; // bright
+
+            let [r, g, b] = normalizeRgb(hsbToRgb(hue, sat, val));
+
+            // Avoid palettes that are effectively gray multipliers (kills vividness)
+            const maxCh = Math.max(r, g, b);
+            const minCh = Math.min(r, g, b);
+            const chroma = maxCh - minCh;
+            if (chroma < 0.25) {
+                // force a more saturated hue by nudging channels
+                r = clamp(r * 1.15, 0, 1);
+                g = clamp(g * 1.15, 0, 1);
+                b = clamp(b * 1.15, 0, 1);
+            }
+
+            // Convert 0..1 RGB into a "gain" (multiplier) palette.
+            // Base gain keeps everything bright; color gain adds hue tint.
+            const baseGain  = 1.20 + Math.random() * 0.50; // 1.20..1.70
+            const colorGain = 0.90 + Math.random() * 1.10; // 0.90..2.00
+
+            // Lift darker channels so no channel is near-zero multiplier (avoids dim output).
+            const lift = 0.25;
+
+            return [
+                baseGain + (lift + r * (1 - lift)) * colorGain,
+                baseGain + (lift + g * (1 - lift)) * colorGain,
+                baseGain + (lift + b * (1 - lift)) * colorGain,
+            ];
+        };
+
+        newPalette ||= randomBrightMultiplierPalette();
+
+        await super.animateColorPaletteTransition(newPalette, duration, coloringCallback);
+
+    }
+
     /**
      * Animates travel to a preset. It first zooms out to the default zoom, then rotates, then animates pan and zoom-in.
      * If any of the final params is the same as the target, it won't animate it.
