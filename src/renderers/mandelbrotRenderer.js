@@ -1,6 +1,6 @@
 import {FractalRenderer} from './fractalRenderer.js';
-import {asyncDelay, compareComplex, splitFloat} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, EASE_TYPE, PI} from "../global/constants";
+import {asyncDelay, compareComplex, hsbToRgb, splitFloat} from "../global/utils";
+import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 
 /**
  * MandelbrotRenderer (Rebased Perturbation)
@@ -29,7 +29,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         this._prevZoom = NaN;
 
         // Orbit / perturbation constants
-        this.MAX_ITER = 2000;          // shader loop upper bound and orbit length
+        this.MAX_ITER = 1500;          // shader loop upper bound and orbit length
         this.REF_SEARCH_GRID = 5;      // 5x5 sampling grid
         this.REF_SEARCH_RADIUS = 0.50; // in "screen units" scaled by zoom (tune 0.25..0.6)
 
@@ -310,7 +310,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
     }
 
-    /** Reference picking + orbit build) */
+    /** Reference picking + orbit build */
     escapeItersDouble(cx, cy, iters) {
         let zx = 0.0, zy = 0.0;
         for (let i = 0; i < iters; i++) {
@@ -326,6 +326,7 @@ export class MandelbrotRenderer extends FractalRenderer {
      * Choose a good refPan near view center:
      * - sample a grid around view center (radius scales with zoom)
      * - pick the point with the highest escape iteration (prefer inside / late escape)
+     * TODO this method (bestScore) causes the color glitches / filling most likely
      */
     pickReferenceNearViewCenter() {
         const grid = this.REF_SEARCH_GRID;
@@ -369,8 +370,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         const cx = this.refPan[0];
         const cy = this.refPan[1];
 
-        let zx = 0.0,
-            zy = 0.0;
+        let zx = 0.0, zy = 0.0;
 
         for (let n = 0; n < this.MAX_ITER; n++) {
             const sx = splitFloat(zx);
@@ -462,11 +462,9 @@ export class MandelbrotRenderer extends FractalRenderer {
         super.draw();
     }
 
+    // NOTE: kept to satisfy FractalRenderer abstract API, but unused in demo-stable policy.
     needsRebase() {
-        const dx = this.pan[0] - this.refPan[0];
-        const dy = this.pan[1] - this.refPan[1];
-        const dist = Math.hypot(dx, dy);
-        return dist > this.zoom * 0.75;
+        return false;
     }
 
     // region > ANIMATION METHODS (unchanged, but ensure presets use setPan via animatePanTo)
@@ -482,15 +480,16 @@ export class MandelbrotRenderer extends FractalRenderer {
      */
     async animateTravelToPreset(preset, zoomOutDuration = 1000, zoomInDuration = 3500) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
-        console.log(`Traveling to preset: ${JSON.stringify(preset)}`);
+        log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
         const targetRotation = preset.rotation || 0;
 
-        if (preset.zoom.toFixed(6) === this.zoom.toFixed(6)) {
+        if (preset.zoom.toFixed(12) === this.zoom.toFixed(12)) {
             // If only pan is changed, adjust pan
             await this.animatePanTo(preset.pan, zoomOutDuration);
         } else if (compareComplex(preset.pan, this.pan)) {
             // If only zoom is changed, adjust zoom-in
+            // TODO zoom-out should be proportionally fast to the zoom depth. If zoomed in too much, the speed is too fast and the image does not render
             await this.animateZoomTo(preset.zoom, zoomOutDuration);
         } else {
             // Otherwise zoom-out
