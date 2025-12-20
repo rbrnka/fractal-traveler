@@ -156,10 +156,6 @@ async function onKeyDown(event) {
             if (event.shiftKey) await reset();
             break;
 
-        case 'KeyU': // Riemann Mode
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
-            break;
-
         case 'KeyL': // DEBUG BAR toggle
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) toggleDebugMode();
             break;
@@ -211,9 +207,13 @@ async function onKeyDown(event) {
             await toggleDemo();
             break;
 
-        case 'KeyM':
+        case 'KeyM': // Riemann Mode
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+            break;
+
+        case 'KeyN':
             if (DEBUG_MODE) {
-                console.log('Analytic Extension toggled.');
+                log('Analytic Extension toggled.');
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 fractalApp.draw();
             }
