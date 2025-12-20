@@ -1,17 +1,6 @@
-import {updateInfo} from "../ui/ui";
-import {
-    compareComplex,
-    comparePalettes,
-    ddAdd,
-    ddMake,
-    ddSet,
-    ddValue,
-    hslToRgb,
-    lerp,
-    normalizeRotation,
-    rgbToHsl
-} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
+import {debugPanel, updateInfo} from "../ui/ui";
+import {compareComplex, comparePalettes, ddAdd, ddMake, ddSet, ddValue, lerp, normalizeRotation} from "../global/utils";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * FractalRenderer
