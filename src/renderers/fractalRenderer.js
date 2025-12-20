@@ -105,6 +105,14 @@ export class FractalRenderer {
         this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
     }
 
+    /**
+     * Optional hook for perturbation renderers (e.g., Mandelbrot) to request orbit rebuild.
+     * Default is no-op so other renderers are unaffected.
+     */
+    markOrbitDirty() {
+        // no-op by default
+    }
+
     // --------- Pan API (use these; they keep DD + array in sync) ---------
 
     getPan() {
@@ -216,6 +224,9 @@ export class FractalRenderer {
 
         const [vx, vy] = this.screenToViewVector(cx, cy);
         this.setPanFromAnchor(centerFx, centerFy, vx, vy);
+
+        // After resizing, request a clean rebuild for perturbation renderers (safe no-op otherwise)
+        this.markOrbitDirty();
 
         this.draw();
 
@@ -370,6 +381,10 @@ export class FractalRenderer {
         this.currentPresetIndex = 0;
 
         this.resizeCanvas();
+
+        // Ensure perturbation renderers rebuild after reset
+        this.markOrbitDirty();
+
         this.draw();
 
         console.groupEnd();
@@ -615,6 +630,9 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentPanAnimation();
 
+        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
+        this.markOrbitDirty();
+
         if (compareComplex(this.pan, targetPan, 6)) {
             console.log(`Already at the target pan. Skipping.`);
             console.groupEnd();
@@ -643,6 +661,10 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    // Final settle: request a clean rebuild at rest
+                    this.markOrbitDirty();
+                    this.draw();
+
                     this.stopCurrentPanAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -680,13 +702,11 @@ export class FractalRenderer {
             anchorY = cy;
         }
 
-        // The fractal point we must keep fixed (computed once)
-        const [fxAnchor, fyAnchor] = this.screenToFractal(anchorX, anchorY);
-
-        // The view vector corresponding to that same screen point (depends on rotation/aspect, not pan/zoom)
-        const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
-
         const startZoom = this.zoom;
+        const ratio = targetZoom / startZoom;
+
+        // orbit boundary policy hook (safe no-op for non-perturbation renderers)
+        this.markOrbitDirty();
 
         await new Promise((resolve) => {
             let startTime = null;
@@ -695,33 +715,60 @@ export class FractalRenderer {
                 if (!startTime) startTime = timestamp;
                 const t = Math.min((timestamp - startTime) / duration, 1);
 
+                const before = this.screenToFractal(anchorX, anchorY);
+
+                // update zoom
                 if (easeFunction !== EASE_TYPE.NONE) {
                     const k = easeFunction(t);
                     this.zoom = startZoom + (targetZoom - startZoom) * k;
                 } else {
-                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, t);
+                    // exponential interpolation
+                    this.zoom = startZoom * Math.pow(ratio, t);
                 }
 
-                this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
+                // after at anchor (with new zoom)
+                const after = this.screenToFractal(anchorX, anchorY);
 
+                // pan += before - after
+                this.addPan(before[0] - after[0], before[1] - after[1]);
+
+                this.markOrbitDirty();
                 this.draw();
                 updateInfo(true);
 
                 if (t < 1) {
                     this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    // final settle
+                    this.markOrbitDirty();
+                    this.draw();
+
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
                     resolve();
                 }
             };
+
             this.currentZoomAnimationFrame = requestAnimationFrame(step);
         });
     }
 
+    /**
+     * Animates zoom from current value to target zoom without adjusting pan position.
+     * Unlike animateZoomTo, this method does not keep any anchor point fixed during zooming.
+     * The fractal will appear to zoom in/out from its current center position.
+     *
+     * @param {number} targetZoom - The target zoom level to animate to
+     * @param {number} [duration=500] - Duration of the animation in milliseconds
+     * @param {EASE_TYPE|Function} [easeFunction=EASE_TYPE.NONE] - Easing function to apply; EASE_TYPE.NONE uses exponential interpolation
+     * @returns {Promise<void>} Promise that resolves when the animation completes
+     */
     async animateZoomToNoPan(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
         this.stopCurrentZoomAnimation();
+
+        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
+        this.markOrbitDirty();
 
         if (this.zoom.toFixed(12) === targetZoom.toFixed(12)) return;
 
@@ -747,6 +794,10 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    // Final settle: request a clean rebuild at rest
+                    this.markOrbitDirty();
+                    this.draw();
+
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     resolve();

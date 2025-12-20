@@ -184,6 +184,13 @@ export class JuliaRenderer extends FractalRenderer {
         this.init();
     }
 
+    /**
+     * Perturbation renderers must expose orbit invalidation to shared interaction/animation code.
+     */
+    markOrbitDirty() {
+        this.orbitDirty = true;
+    }
+
     onProgramCreated() {
         this.floatTexExt = this.gl.getExtension("OES_texture_float");
         if (!this.floatTexExt) {
@@ -573,12 +580,13 @@ export class JuliaRenderer extends FractalRenderer {
             this._prevC1 = this.c[1];
         }
 
-        const shouldRebase =
-            this.orbitDirty &&
-            !this.interactionActive &&
-            (cChanged || zoomChanged || this.needsRebase());
+        // Rebase policy (same intent as Mandelbrot):
+        // - avoid rebuilding orbit every frame during interaction (prevents swim/jitter)
+        // - but if c changes, we must rebuild for correctness
+        const mustRebaseNow = cChanged || this.needsRebase();
+        // const canRebaseNow = !this.interactionActive || mustRebaseNow;
 
-        if (shouldRebase) {
+        if (this.orbitDirty && mustRebaseNow) {
             this.pickReferenceNearViewCenter();
             this.computeReferenceOrbit();
             this.orbitDirty = false;
@@ -767,7 +775,8 @@ export class JuliaRenderer extends FractalRenderer {
                 this.c[0] = lerp(startC[0], targetC[0], easedProgress);
                 this.c[1] = lerp(startC[1], targetC[1], easedProgress);
 
-                this.orbitDirty = true;
+                // c changes require orbit rebuild for correctness (but keep same gating in draw()).
+                this.markOrbitDirty();
 
                 this.draw();
 
@@ -892,6 +901,8 @@ export class JuliaRenderer extends FractalRenderer {
                     }
                 }
 
+                this.markOrbitDirty();
+
                 this.draw();
                 updateInfo(true);
                 updateJuliaSliders();
@@ -921,6 +932,8 @@ export class JuliaRenderer extends FractalRenderer {
                 ];
                 this.rotation = normalizeRotation(this.rotation - 0.001);
                 this.demoTime += 0.0005; // Speed
+
+                this.markOrbitDirty();
 
                 this.draw();
                 updateInfo(true);

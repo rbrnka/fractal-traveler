@@ -63,6 +63,14 @@ export class MandelbrotRenderer extends FractalRenderer {
     }
 
     /**
+     * Explicitly request orbit rebuild on next draw ().
+     * This is the demo-stable approach: only rebuild when we *intend* to, not on float drift.
+     */
+    markOrbitDirty() {
+        this.orbitDirty = true;
+    }
+
+    /**
      * Called by FractalRenderer.initGLProgram() after program creation + common uniform cache.
      * Creates float texture, allocates orbit buffer, and binds texture unit.
      */
@@ -426,15 +434,8 @@ export class MandelbrotRenderer extends FractalRenderer {
         const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
         this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
-        // Detect view changes -> mark orbit dirty
-        if (this.pan[0] !== this._prevPan0 || this.pan[1] !== this._prevPan1 || this.zoom !== this._prevZoom) {
-            this.orbitDirty = true;
-            this._prevPan0 = this.pan[0];
-            this._prevPan1 = this.pan[1];
-            this._prevZoom = this.zoom;
-        }
-
-        // Rebase reference + rebuild orbit when needed
+        // DEMO-STABLE POLICY:
+        // Rebuild orbit only when explicitly requested (orbitDirty == true).
         if (this.orbitDirty) {
             this.pickReferenceNearViewCenter();
             this.computeReferenceOrbit();
