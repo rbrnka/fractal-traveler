@@ -36,7 +36,7 @@ export class FractalRenderer {
         /** @type {COMPLEX} */
         this.DEFAULT_PAN = [0, 0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
-        this.MAX_ZOOM = 1e-300;
+        this.MAX_ZOOM = 1e-20;
         this.MIN_ZOOM = 40;
 
         /** Interesting zoom-ins
@@ -97,9 +97,6 @@ export class FractalRenderer {
             attribute vec4 a_position;
             void main() { gl_Position = a_position; }
         `;
-
-        // Interaction gating (optional; perturbation renderers can use it)
-        this.interactionActive = false;
 
         this.onWebGLContextLost = this.onWebGLContextLost.bind(this);
         this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
@@ -208,7 +205,7 @@ export class FractalRenderer {
 
         this.gl.useProgram(this.program);
 
-        // Keep center fixed
+        // Keep the center fixed
         const oldRect = this.canvas.getBoundingClientRect();
         const cx = oldRect.width / 2;
         const cy = oldRect.height / 2;
@@ -317,7 +314,7 @@ export class FractalRenderer {
         throw new Error("The onProgramCreated method must be implemented in child classes");
     }
 
-    /** @abstract */
+    /** @abstract (kept for compatibility; perturbation renderers may ignore) */
     needsRebase() {
         throw new Error("The onProgramCreated method must be implemented in child classes");
     }
@@ -688,14 +685,13 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentZoomAnimation();
 
-        // TODO 12 digits enough?
-        if (this.zoom.toFixed(12) === targetZoom.toFixed(12)) {
+        if (this.zoom.toFixed(20) === targetZoom.toFixed(20)) {
             console.log(`Already at the target zoom. Skipping.`);
             console.groupEnd();
             return;
         }
 
-        // Default anchor = canvas center (stable, predictable)
+        // Default anchor = canvas center (CSS)
         if (anchorX === null || anchorY === null) {
             const [cx, cy] = this.getCanvasCssCenter();
             anchorX = cx;
@@ -888,15 +884,6 @@ export class FractalRenderer {
         console.groupEnd();
     }
 
-    /**
-     * Animates to target zoom and rotation simultaneously. Rotation is normalized into [0, 2*PI] interval
-     *
-     * @param {number} targetZoom
-     * @param {number} targetRotation
-     * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction
-     * @return {Promise<void>}
-     */
     async animateZoomRotationTo(targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, CONSOLE_GROUP_STYLE);
 
@@ -908,16 +895,6 @@ export class FractalRenderer {
         console.groupEnd();
     }
 
-    /**
-     * Animates pan, zoom and rotation simultaneously
-     *
-     * @param {COMPLEX} targetPan
-     * @param {number} targetZoom
-     * @param {number} targetRotation
-     * @param {number} [duration] in milliseconds
-     * @param {EASE_TYPE|Function} easeFunction
-     * @return {Promise<void>}
-     */
     async animatePanZoomRotationTo(targetPan, targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
         console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, CONSOLE_GROUP_STYLE);
 
@@ -930,12 +907,6 @@ export class FractalRenderer {
         console.groupEnd();
     }
 
-    /**
-     *
-     * @param {ROTATION_DIRECTION} direction
-     * @param {number} step Speed in rad/frame
-     * @return {Promise<void>}
-     */
     async animateInfiniteRotation(direction, step = 0.001) {
         console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
@@ -956,33 +927,6 @@ export class FractalRenderer {
             this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
         });
         console.groupEnd();
-    }
-
-    /**
-     * Animates travel to preset.
-     * @abstract
-     * @param {PRESET} preset - Parameters for the animation.
-     * @param {number} duration - Parameters for the animation.
-     * @return {Promise<void>}
-     */
-    async animateTravelToPreset(preset, duration) {
-        throw new Error('The animateTravelToPreset method must be implemented in child classes');
-    }
-
-    /**
-     * Animate travel to a preset with random rotation. This method waits for three stages:
-     *   1. Zoom-out with rotation.
-     *   2. Pan transition.
-     *   3. Zoom-in with rotation.
-     *
-     * @abstract
-     * @param {PRESET} preset - The target preset object with properties: pan, c, zoom, rotation.
-     * @param {number} zoomOutDuration - Duration (ms) for the zoom-out stage.
-     * @param {number} panDuration - Duration (ms) for the pan stage.
-     * @param {number} zoomInDuration - Duration (ms) for the zoom-in stage.
-     */
-    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        throw new Error('The animateTravelToPreset method must be implemented in child classes');
     }
 
     // endregion--------------------------------------------------------------------------------------------------------
