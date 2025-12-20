@@ -34,12 +34,14 @@ describe('HotKeyController', () => {
             zoom: 1,
             DIVES: [{}, {}, {}],
             animatePanTo: jest.fn(() => Promise.resolve()),
+            animatePanBy: jest.fn(() => Promise.resolve()),
             animateToC: jest.fn(() => Promise.resolve()),
             animateInfiniteRotation: jest.fn(() => Promise.resolve()),
             animateTravelToPreset: jest.fn(() => Promise.resolve()),
             animateDive: jest.fn(() => Promise.resolve()),
             stopCurrentRotationAnimation: jest.fn(),
             stopAllNonColorAnimations: jest.fn(),
+            noteInteraction: jest.fn(),
             draw: jest.fn(),
             updateInfo: jest.fn(),
             updateInfoOnAnimationFinished: jest.fn(),
@@ -60,7 +62,7 @@ describe('HotKeyController', () => {
     test('ArrowLeft without ctrl pans left', async () => {
         document.dispatchEvent(leftArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('ArrowRight with Alt adjusts Julia c', async () => {
@@ -72,7 +74,7 @@ describe('HotKeyController', () => {
     test('ArrowDown without ctrl pans down', async () => {
         document.dispatchEvent(downArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('ArrowUp with Alt adjusts Julia c (imaginary part)', async () => {

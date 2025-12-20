@@ -35,12 +35,19 @@ describe('MouseEventHandlers', () => {
             rotation: 0,
             zoom: 3.5,
             draw: jest.fn(),
-            addPan: jest.fn((x, y) => { fractalApp.pan[0] += x/100; fractalApp.pan[1] += y/100; }),
+            addPan: jest.fn((x, y) => {
+                fractalApp.pan[0] += x / 100;
+                fractalApp.pan[1] += y / 100;
+            }),
             updateInfo: jest.fn(),
             updateJuliaSliders: jest.fn(),
             screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
             screenToViewVector: jest.fn((x, y) => [x / 100, y / 100]),
             stopAllNonColorAnimations: jest.fn(),
+            setZoomKeepingAnchor: jest.fn((z, x, y) => {
+                fractalApp.zoom *= z
+            }),
+            noteInteraction: jest.fn(),
             // If needed, other methods can be mocked.
             animatePanTo: jest.fn(() => Promise.resolve()),
             animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
