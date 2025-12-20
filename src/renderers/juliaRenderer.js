@@ -597,9 +597,9 @@ export class JuliaRenderer extends FractalRenderer {
         // - avoid rebuilding orbit every frame during interaction (prevents swim/jitter)
         // - but if c changes, we must rebuild for correctness
         const mustRebaseNow = cChanged || this.needsRebase();
-        // const canRebaseNow = !this.interactionActive || mustRebaseNow;
+        const canRebaseNow = !this.interactionActive || mustRebaseNow;
 
-        if (this.orbitDirty && mustRebaseNow) {
+        if (this.orbitDirty && canRebaseNow) {
             this.pickReferenceNearViewCenter();
             this.computeReferenceOrbit();
             this.orbitDirty = false;

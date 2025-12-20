@@ -77,6 +77,9 @@ export class FractalRenderer {
         this.demoActive = false;
         this.currentPresetIndex = 0;
 
+        this.interactionActive = false;
+        this.interactionTimer = null;
+
         /**
          * Determines the level of fractal rendering detail
          * @type {number}
@@ -163,6 +166,32 @@ export class FractalRenderer {
         this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
     }
 
+    /**
+     * Marks the app as "in interaction" (drag/wheel/key-pan) and schedules a settle phase.
+     * Perturbation renderers can use this to defer expensive orbit rebuilds until the user stops moving.
+     *
+     * @param {number} settleMs
+     */
+    noteInteraction(settleMs = 160) {
+        this.interactionActive = true;
+
+        if (this.interactionTimer) {
+            clearTimeout(this.interactionTimer);
+            this.interactionTimer = null;
+        }
+
+        this.interactionTimer = setTimeout(() => {
+            this.interactionActive = false;
+
+            // Request a clean rebuild at rest for perturbation renderers (safe no-op otherwise)
+            this.markOrbitDirty();
+
+            // One clean redraw at settle time (prevents “swim” and removes lingering error)
+            this.draw();
+            updateInfo(true);
+        }, settleMs);
+    }
+
     // --------------------------------------------------------------------
 
     onWebGLContextLost(event) {
@@ -199,6 +228,11 @@ export class FractalRenderer {
         if (this.fragmentShader) {
             this.gl.deleteShader(this.fragmentShader);
             this.fragmentShader = null;
+        }
+
+        if (this.interactionTimer) {
+            clearTimeout(this.interactionTimer);
+            this.interactionTimer = null;
         }
 
         this.canvas = null;

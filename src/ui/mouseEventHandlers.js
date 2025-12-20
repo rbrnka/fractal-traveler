@@ -165,6 +165,8 @@ function handleWheel(event) {
     wheelResetTimeout = setTimeout(() => {
         resetAppState();
     }, 150);
+
+    fractalApp.noteInteraction(160);
 }
 
 function handleMouseDown(event) {
@@ -228,6 +230,8 @@ function handleMouseMove(event) {
                 fractalApp.addPan(deltaX, deltaY);
                 // Mark orbit dirty (deferred rebuild)
                 markOrbitDirtySafe();
+
+                fractalApp.noteInteraction(160);
             }
 
             // Update last mouse coordinates.
