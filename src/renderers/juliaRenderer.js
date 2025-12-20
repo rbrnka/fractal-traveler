@@ -9,12 +9,12 @@ import {updateJuliaSliders} from "../ui/juliaSlidersController";
  * JuliaRenderer (Deep Zoom via Perturbation)
  *
  * @author Radim Brnka
- * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
- * Reference orbit is for current c and a chosen z0_ref (near view center).
+ * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal, and sets preset zoom-ins.
+ * Reference orbit is for current c and a chosen z0_ref (near the view center).
  * For each pixel:
  *   z0 = pan + zoom * rotated(st)
  *   dz0 = z0 - z0_ref
- *   dz_{n+1} = 2*zref*dz + dz^2   (NO +dc each step for Julia!)
+ *   dz_{n+1} = 2*zref*dz + dz^2 (NO +dc each step for Julia!)
  * @extends FractalRenderer
  */
 export class JuliaRenderer extends FractalRenderer {
@@ -28,7 +28,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64235];
 
         this.zoom = this.DEFAULT_ZOOM;
-        this.pan = [...this.DEFAULT_PAN]; // Copy
+        // IMPORTANT: use setPan (syncs DD + array) – keep this.pan canonical (TODO remove pan completely at some point)
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
+
         this.rotation = this.DEFAULT_ROTATION;
         this.colorPalette = [...this.DEFAULT_PALETTE];
         // this.MAX_ZOOM = 0.00006;
@@ -367,22 +369,21 @@ export class JuliaRenderer extends FractalRenderer {
                     df_make(u_pan_h.y, u_pan_l.y)
                 );
             
-                // z0 = pan + zoom * r
-                df2 z0 = df2_add(
-                    pan,
-                    df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y))
-                );
-            
                 // z0ref
                 df2 z0ref = df2_make(
                     df_make(u_ref_z0_h.x, u_ref_z0_l.x),
                     df_make(u_ref_z0_h.y, u_ref_z0_l.y)
                 );
-            
-                // For Julia: dz starts as delta initial condition
-                df2 dz = df2_make(df_sub(z0.x, z0ref.x), df_sub(z0.y, z0ref.y));
+                
+                // dz0 = (pan - z0ref) + zoom * r
+                df2 dz = df2_add(
+                    df2_make(df_sub(pan.x, z0ref.x), df_sub(pan.y, z0ref.y)),
+                    df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y))
+                );
             
                 float it = 0.0;
+                float zx = 0.0;
+                float zy = 0.0;
             
                 for (int n = 0; n < MAX_ITER; n++) {
                     float fn = float(n);
@@ -390,8 +391,8 @@ export class JuliaRenderer extends FractalRenderer {
                     
                     df2 zref = sampleZRef(n);
                     
-                    float zx = df_to_float(zref.x) + df_to_float(dz.x);
-                    float zy = df_to_float(zref.y) + df_to_float(dz.y);
+                    zx = df_to_float(zref.x) + df_to_float(dz.x);
+                    zy = df_to_float(zref.y) + df_to_float(dz.y);
                     if (zx*zx + zy*zy > 4.0) { it = fn; break; }
                     
                     // Correct Julia perturbation:
@@ -410,8 +411,14 @@ export class JuliaRenderer extends FractalRenderer {
                 if (it >= u_iterations) {
                     gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
                 } else {
-                    float t = clamp(it / u_iterations, 0.0, 1.0);
+                    float r2 = max(zx*zx + zy*zy, 1e-30);
+                    float smoothColor = it - log2(log2(sqrt(r2)));
+               
+                    // Normalize
+                    float t = clamp(smoothColor / u_iterations, 0.0, 1.0);
+                
                     t = 0.5 + 0.6 * sin(t * 4.0 * 3.14159265);
+                
                     vec3 col = getColorFromMap(t);
                     gl_FragColor = vec4(col, 1.0);
                 }
@@ -543,6 +550,10 @@ export class JuliaRenderer extends FractalRenderer {
         if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
     }
 
+    /**
+     * Julia "needsRebase": keep reference initial condition close to view center.
+     * Same intent as Mandelbrot, but for z0 reference.
+     */
     needsRebase() {
         const dx = this.pan[0] - this.refZ0[0];
         const dy = this.pan[1] - this.refZ0[1];
@@ -552,10 +563,12 @@ export class JuliaRenderer extends FractalRenderer {
     draw() {
         this.gl.useProgram(this.program);
 
+        // Iteration strategy avoids exploding to infinity at tiny zooms
         const safe = Math.max(this.zoom, 1e-300);
         const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
         this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
+        // Detect view changes -> mark orbit dirty (use tolerant checks to avoid noise)
         const panMoved =
             Number.isFinite(this._prevPan0) && Number.isFinite(this._prevPan1)
                 ? (Math.abs(this.pan[0] - this._prevPan0) + Math.abs(this.pan[1] - this._prevPan1)) > (this.zoom * 1e-6)
@@ -840,13 +853,6 @@ export class JuliaRenderer extends FractalRenderer {
         this.currentPresetIndex = preset.id || 0;
 
         console.groupEnd();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        return Promise.resolve(); // TODO implement someday if needed
     }
 
     /**
