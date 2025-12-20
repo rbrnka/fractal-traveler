@@ -98,9 +98,8 @@ export function loadFractalParamsFromURL() {
             mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT,
             px: decodedParams.px != null ? parseFloat(decodedParams.px) : null,
             py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
-            zoom: parseFloat(decodedParams.zoom) || null,
-            r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
             zoom: decodedParams.zoom != null ? parseFloat(decodedParams.zoom) : null,
+            r: decodedParams.r != null ? parseFloat(decodedParams.r) : 0, // Rotation is not necessary to be defined
             cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
