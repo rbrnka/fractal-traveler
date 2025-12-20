@@ -317,20 +317,22 @@ export function updateInfo() {
 
     const panX = fractalApp.pan[0] ?? 0;
     const panY = fractalApp.pan[1] ?? 0;
+    const panX = ddValue(fractalApp.panDD.x) ?? 0;
+    const panY = ddValue(fractalApp.panDD.y) ?? 0;
 
-    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6) * 1}, ${panY.toFixed(DEBUG_MODE ? 12 : 6) * 1}i] · `;
+    text += `p = [${panX.toFixed(8)}, ${panY.toFixed(8)}i] · `;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 4) * 1}, ${cy.toFixed(DEBUG_MODE ? 12 : 4) * 1}i] · `;
+        text += `c = [${cx.toExponential(DEBUG_MODE ? 12 : 2) * 1}, ${cy.toExponential(DEBUG_MODE ? 12 : 2) * 1}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toFixed(6) * 1}`;
+    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toExponential(2) * 1}`;
 
     if (animationActive) {
         infoText.classList.add('animationActive');
@@ -918,6 +920,15 @@ export function parseUserInput(input) {
 
 function initInfoText() {
     if (!FF_USER_INPUT_ALLOWED) {
+
+        infoText.addEventListener('mouseenter', () => {
+            infoText.innerHTML = 'Click to copy fractal state to clipboard.';
+        });
+
+        infoText.addEventListener('mouseleave', () => {
+            updateInfo();
+        });
+
         infoText.addEventListener('click', () => {
             let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`
                 + (isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`);
