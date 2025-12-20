@@ -191,28 +191,59 @@ export function splitFloat(value) {
     return { high, low };
 }
 
+// region > Double-double (hi, lo) helpers -----------------------------------------------------------------------------
+
 /**
- * Double-double (hi, lo) helpers for pan accumulation.
+ * Creates a double-double precision number object with high and low parts.
+ * Used for extended precision arithmetic beyond standard 64-bit floating point.
+ *
+ * @param {number} [hi=0] - The high-order (primary) part of the number.
+ * @param {number} [lo=0] - The low-order (error correction) part of the number.
+ * @returns {{hi: number, lo: number}} A double-double precision number object.
  */
 export function ddMake(hi = 0, lo = 0) {
-    return { hi, lo };
+    return {hi, lo};
 }
 
+/**
+ * Computes the error-free sum of two floating-point numbers using Knuth's two-sum algorithm.
+ * Returns both the sum and the rounding error, enabling extended precision arithmetic.
+ *
+ * @param {number} a - The first number to sum.
+ * @param {number} b - The second number to sum.
+ * @returns {{s: number, err: number}} An object containing the sum (s) and the rounding error (err).
+ */
 export function twoSum(a, b) {
     const s = a + b;
     const bb = s - a;
     const err = (a - (s - bb)) + (b - bb);
-    return { s, err };
+    return {s, err};
 }
 
+/**
+ * Computes the error-free sum of two floating-point numbers where |a| >= |b|.
+ * This is a faster variant of twoSum that assumes the first argument has greater magnitude.
+ *
+ * @param {number} a - The larger magnitude number (must satisfy |a| >= |b|).
+ * @param {number} b - The smaller magnitude number to add.
+ * @returns {{s: number, err: number}} An object containing the sum (s) and the rounding error (err).
+ */
 export function quickTwoSum(a, b) {
     const s = a + b;
     const err = b - (s - a);
-    return { s, err };
+    return {s, err};
 }
 
-export function ddAdd(dd, x) {
-    const t = twoSum(dd.hi, x);
+/**
+ * Adds a standard floating-point number to a double-double precision number.
+ * This function mutates the input double-double object and maintains extended precision.
+ *
+ * @param {{hi: number, lo: number}} dd - The double-double number to modify (mutated in place).
+ * @param {number} n - The standard floating-point number to add.
+ * @returns {{hi: number, lo: number}} The mutated double-double object with the sum.
+ */
+export function ddAdd(dd, n) {
+    const t = twoSum(dd.hi, n);
     const lo = dd.lo + t.err;
     const r = quickTwoSum(t.s, lo);
     dd.hi = r.s;
@@ -220,15 +251,33 @@ export function ddAdd(dd, x) {
     return dd;
 }
 
-export function ddSet(dd, x) {
-    dd.hi = x;
+/**
+ * Sets the value of a double-double precision object from a standard number.
+ * This effectively resets the high-precision value to a single 64-bit float,
+ * clearing any existing low-precision error bits.
+ *
+ * @param {{hi: number, lo: number}} dd - The double-double object to modify.
+ * @param {number} n - The number to assign to the high part.
+ * @returns {{hi: number, lo: number}} The mutated double-double object.
+ */
+export function ddSet(dd, n) {
+    dd.hi = n;
     dd.lo = 0;
     return dd;
 }
 
+/**
+ * Returns the standard 64-bit floating-point approximation of a double-double number.
+ * This combines the high and low parts to reconstruct the full precision value.
+ *
+ * @param {{hi: number, lo: number}} dd The double-double number object with high and low precision parts.
+ * @returns {number} The combined floating-point value.
+ */
 export function ddValue(dd) {
     return dd.hi + dd.lo;
 }
+
+// endregion---------------------------------------------------------------------------------------
 
 /**
  * Compares two complex numbers / arrays of two numbers with given precision
