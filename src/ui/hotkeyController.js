@@ -40,7 +40,7 @@ import {
  * Keys not allowed to work in animation mode
  * @type {string[]}
  */
-const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyQ", "KeyW"]; // TODO consider allowing rotation in Julia mode as it doesnt collide with the demo mode
+const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyQ", "KeyW"];
 
 /**
  * Pan movement animation duration
@@ -273,7 +273,7 @@ async function onKeyDown(event) {
 
             let targetZoom = fractalApp.zoom * zoomFactor; // TODO
 
-            if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
+            if (targetZoom >= fractalApp.MAX_ZOOM && targetZoom <= fractalApp.MIN_ZOOM) {
                 await fractalApp.animateZoomTo(targetZoom, 20);
                 resetAppState();
             }
