@@ -434,9 +434,10 @@ export class MandelbrotRenderer extends FractalRenderer {
         const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
         this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
-        // DEMO-STABLE POLICY:
-        // Rebuild orbit only when explicitly requested (orbitDirty == true).
-        if (this.orbitDirty) {
+        const mustRebaseNow = this.needsRebase();
+        const canRebaseNow = !this.interactionActive || mustRebaseNow;
+
+        if (this.orbitDirty && canRebaseNow) {
             this.pickReferenceNearViewCenter();
             this.computeReferenceOrbit();
             this.orbitDirty = false;
@@ -462,9 +463,13 @@ export class MandelbrotRenderer extends FractalRenderer {
         super.draw();
     }
 
-    // NOTE: kept to satisfy FractalRenderer abstract API, but unused in demo-stable policy.
     needsRebase() {
-        return false;
+        const dx = this.pan[0] - this.refPan[0];
+        const dy = this.pan[1] - this.refPan[1];
+
+        // Rebase threshold is proportional to zoom (view scale).
+        // 0.75 is consistent with the Julia policy.
+        return Math.hypot(dx, dy) > this.zoom * 0.75;
     }
 
     // region > ANIMATION METHODS (unchanged, but ensure presets use setPan via animatePanTo)
