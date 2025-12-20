@@ -4,7 +4,7 @@
  * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
  */
 
-import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 
@@ -33,13 +33,27 @@ let lastTouchX = 0, lastTouchY = 0;
 let touchClickTimeout = null;
 let isTouchDragging = false;
 
+// Cached rect (avoid layout thrash / inconsistencies during drag)
+let dragRectLeft = 0;
+let dragRectTop = 0;
+let hasDragRect = false;
+
 // Pinch state variables
 let isPinching = false;
 let pinchStartDistance = null;
-let pinchStartZoom = null;
-let pinchStartPan = null;
-let pinchStartCenterFractal = null;
 let pinchStartAngle = null;
+
+/**
+ * Mark orbit dirty if the current renderer supports perturbation caching.
+ * IMPORTANT: must NOT trigger orbit rebuild immediately (renderers should defer).
+ */
+function markOrbitDirtySafe() {
+    if (fractalApp && typeof fractalApp.markOrbitDirty === "function") {
+        fractalApp.markOrbitDirty();
+    } else if (fractalApp) {
+        // Fallback: do nothing; non-perturbation renderers won't need it.
+    }
+}
 
 /**
  * Initialization and registering of the event handlers.
@@ -90,43 +104,72 @@ export function unregisterTouchEventHandlers() {
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
 function handleTouchStart(event) {
+    if (!fractalApp) return;
+
     if (event.touches.length === 1) {
         event.preventDefault();
+
         isTouchDragging = false;
         isPinching = false;
+
         pinchStartDistance = null;
+        pinchStartAngle = null;
+
         const touch = event.touches[0];
         touchDownX = touch.clientX;
         touchDownY = touch.clientY;
         lastTouchX = touch.clientX;
         lastTouchY = touch.clientY;
-    } else if (event.touches.length === 2) {
+
+        // Cache rect origin for stable relative coordinates during the drag.
+        const rect = canvas.getBoundingClientRect();
+        dragRectLeft = rect.left;
+        dragRectTop = rect.top;
+        hasDragRect = true;
+
+        return;
+    }
+
+    if (event.touches.length === 2) {
         event.preventDefault();
+
+        // Two-finger gesture: pinch zoom + rotation
         isPinching = true;
+        isTouchDragging = false;
+
+        // Release drag cache (rect on-demand for pinch)
+        hasDragRect = false;
 
         const touch0 = event.touches[0];
         const touch1 = event.touches[1];
+
         pinchStartDistance = Math.hypot(
             touch0.clientX - touch1.clientX,
             touch0.clientY - touch1.clientY
         );
-        pinchStartZoom = fractalApp.zoom;
-        pinchStartPan = [...fractalApp.pan];
+
         pinchStartAngle = Math.atan2(
             touch1.clientY - touch0.clientY,
             touch1.clientX - touch0.clientX
         );
-        // Use the midpoint in screen coordinates
-        const centerScreenX = (touch0.clientX + touch1.clientX) / 2;
-        const centerScreenY = (touch0.clientY + touch1.clientY) / 2;
-        pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
+
+        // Stop any pending single-tap click when pinch starts
+        if (touchClickTimeout) {
+            clearTimeout(touchClickTimeout);
+            touchClickTimeout = null;
+        }
+
+        fractalApp.noteInteraction(160);
     }
 }
 
 function handleTouchMove(event) {
+    if (!fractalApp) return;
+
+    // Single touch drag (pan)
     if (event.touches.length === 1 && !isPinching) {
-        // Handle single touch drag (no changes here)
         event.preventDefault();
+
         const touch = event.touches[0];
         const dx = touch.clientX - touchDownX;
         const dy = touch.clientY - touchDownY;
@@ -140,26 +183,45 @@ function handleTouchMove(event) {
         }
 
         if (isTouchDragging) {
-            const rect = canvas.getBoundingClientRect();
-            // Calculate pan delta from the current and last touch positions.
-            const [deltaX, deltaY] = calculatePanDelta(
-                touch.clientX, touch.clientY, lastTouchX, lastTouchY, rect,
-                fractalApp.rotation, fractalApp.zoom
-            );
+            // Use cached rect origin (fallback if not available).
+            let left = dragRectLeft;
+            let top = dragRectTop;
+            if (!hasDragRect) {
+                const rect = canvas.getBoundingClientRect();
+                left = rect.left;
+                top = rect.top;
+            }
 
-            fractalApp.pan[0] += deltaX;
-            fractalApp.pan[1] += deltaY;
+            // Stable deep-zoom pan delta:
+            // pan += zoom * (vLast - vNow)
+            const lastRelX = lastTouchX - left;
+            const lastRelY = lastTouchY - top;
+            const nowRelX = touch.clientX - left;
+            const nowRelY = touch.clientY - top;
 
-            // Update last touch coordinates.
+            const [vLastX, vLastY] = fractalApp.screenToViewVector(lastRelX, lastRelY);
+            const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
+
+            if (Number.isFinite(fractalApp.zoom)) {
+                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                fractalApp.addPan(deltaX, deltaY);
+                markOrbitDirtySafe();
+                fractalApp.noteInteraction(160);
+            }
+
             lastTouchX = touch.clientX;
             lastTouchY = touch.clientY;
 
             fractalApp.draw();
             updateInfo(true);
         }
+
         return;
     }
 
+    // Two-finger pinch: zoom + rotation around midpoint
     if (event.touches.length === 2) {
         event.preventDefault();
         isPinching = true;
@@ -171,45 +233,54 @@ function handleTouchMove(event) {
             touch0.clientX - touch1.clientX,
             touch0.clientY - touch1.clientY
         );
+
         const currentAngle = Math.atan2(
             touch1.clientY - touch0.clientY,
             touch1.clientX - touch0.clientX
         );
 
-        // Calculate the midpoint in screen space.
-        const centerScreenX = (touch0.clientX + touch1.clientX) / 2;
-        const centerScreenY = (touch0.clientY + touch1.clientY) / 2;
+        // Midpoint in screen space
+        const centerClientX = (touch0.clientX + touch1.clientX) / 2;
+        const centerClientY = (touch0.clientY + touch1.clientY) / 2;
 
-        if (!pinchStartDistance || !pinchStartAngle || !pinchStartCenterFractal) {
+        const rect = canvas.getBoundingClientRect();
+        const centerX = centerClientX - rect.left; // CSS px relative to canvas
+        const centerY = centerClientY - rect.top;
+
+        // Initialize baseline if missing (or if gesture restarted)
+        if (!pinchStartDistance || !pinchStartAngle) {
             pinchStartDistance = currentDistance;
-            pinchStartZoom = fractalApp.zoom;
             pinchStartAngle = currentAngle;
-            pinchStartPan = [...fractalApp.pan];
-            pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
             return;
         }
 
-        // Update zoom from pinch distance.
-        const targetZoom = pinchStartDistance / currentDistance * pinchStartZoom;
-        if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
-            fractalApp.zoom = targetZoom;
+        // Zoom:
+        // If distance increases -> zoom in (smaller zoom value).
+        // So scale zoom proportionally: zoom *= (startDistance / currentDistance)
+        let targetZoom = fractalApp.zoom;
+        if (currentDistance > 0) {
+            const zoomFactor = pinchStartDistance / currentDistance;
+            targetZoom = fractalApp.zoom * zoomFactor;
         }
 
-        // Update rotation.
+        // Clamp (same semantics as your mouse/wheel handlers)
+        if (targetZoom < fractalApp.MAX_ZOOM) targetZoom = fractalApp.MAX_ZOOM;
+        if (targetZoom > fractalApp.MIN_ZOOM) targetZoom = fractalApp.MIN_ZOOM;
+
+        // Apply stable anchor zoom at midpoint (deep-zoom safe)
+        fractalApp.setZoomKeepingAnchor(targetZoom, centerX, centerY);
+
+        // Rotation (incremental, like mouse right-drag)
         const angleDifference = currentAngle - pinchStartAngle;
         if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
             fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
         }
 
-        // Recalculate the fractal center from the midpoint.
-        const newCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
-        // Adjust pan so that the fractal center remains the same.
-        fractalApp.pan[0] += pinchStartCenterFractal[0] - newCenterFractal[0];
-        fractalApp.pan[1] += pinchStartCenterFractal[1] - newCenterFractal[1];
-
-        // Update starting values for the next move.
+        pinchStartDistance = currentDistance;
         pinchStartAngle = currentAngle;
-        pinchStartCenterFractal = fractalApp.screenToFractal(centerScreenX, centerScreenY);
+
+        markOrbitDirtySafe();
+        fractalApp.noteInteraction(160);
 
         fractalApp.draw();
         updateInfo();
@@ -217,23 +288,34 @@ function handleTouchMove(event) {
 }
 
 function handleTouchEnd(event) {
-    // Reset pinch state if fewer than two touches remain.
+    if (!fractalApp) return;
+
+    // Reset pinch baseline when leaving 2-finger gesture.
     if (event.touches.length < 2) {
         pinchStartDistance = null;
-        pinchStartZoom = null;
         pinchStartAngle = null;
-        pinchStartPan = null;
     }
 
+    // When all touches end, decide if it was tap/double-tap or drag/pinch end.
     if (event.touches.length === 0) {
+        // End of a pinch gesture: just settle.
         if (isPinching) {
             isPinching = false;
+            resetAppState();
+
+            // Final settle rebuild request (renderer decides when to rebuild)
+            markOrbitDirtySafe();
+            fractalApp.draw();
+
             return;
         }
 
+        // Release drag cache
+        hasDragRect = false;
+
         if (!isTouchDragging) {
             const touch = event.changedTouches[0];
-            // Use visual viewport or canvas bounding rect for touch position.
+
             const rect = canvas.getBoundingClientRect();
             const touchX = touch.clientX - rect.left;
             const touchY = touch.clientY - rect.top;
@@ -260,14 +342,21 @@ function handleTouchEnd(event) {
                             updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
                             updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
-                        }
+                            }
                     });
 
                     touchClickTimeout = null;
                 }, DOUBLE_TAP_THRESHOLD);
             }
+        } else {
+            resetAppState();
+            isTouchDragging = false;
+
+            // Final settle rebuild request (renderer decides when to rebuild)
+            markOrbitDirtySafe();
+            fractalApp.draw();
         }
-        resetAppState();
+
         isTouchDragging = false;
     }
 }
