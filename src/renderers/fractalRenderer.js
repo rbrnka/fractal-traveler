@@ -694,6 +694,70 @@ export class FractalRenderer {
     }
 
     /**
+     * Animates pan by a delta (DD-stable). Unlike animatePanTo, this avoids computing
+     * targetPan = startPan + delta in a single float64 operation (which breaks in deep zoom).
+     *
+     * This method applies incremental DD pan updates based on animation progress.
+     *
+     * @param {COMPLEX} deltaPan
+     * @param [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
+     * @return {Promise}
+     */
+    async animatePanBy(deltaPan, duration = 200, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanBy`, CONSOLE_GROUP_STYLE);
+        this.stopCurrentPanAnimation();
+
+        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
+        this.markOrbitDirty();
+
+        if (Math.abs(deltaPan[0]) < 1e-30 && Math.abs(deltaPan[1]) < 1e-30) {
+            console.log(`Zero delta pan. Skipping.`);
+            console.groupEnd();
+            return;
+        }
+
+        console.log(`Panning by ${deltaPan}.`);
+
+        await new Promise((resolve) => {
+            let startTime = null;
+            let prevK = 0;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+
+                const t = Math.min((timestamp - startTime) / duration, 1);
+                const k = easeFunction(t);
+
+                // Apply only the incremental delta since last frame (DD-stable).
+                const dk = k - prevK;
+                prevK = k;
+
+                if (dk !== 0) {
+                    this.addPan(deltaPan[0] * dk, deltaPan[1] * dk);
+                }
+
+                this.draw();
+                updateInfo(true);
+
+                if (t < 1) {
+                    this.currentPanAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    // Final settle: request a clean rebuild at rest
+                    this.markOrbitDirty();
+                    this.draw();
+                    this.stopCurrentPanAnimation();
+                    this.onAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+
+            this.currentPanAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    /**
      * Animates zoom while keeping the fractal point under an anchor screen coordinate fixed.
      *
      * @param {number} targetZoom

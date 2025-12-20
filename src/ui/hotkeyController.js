@@ -276,7 +276,7 @@ async function onKeyDown(event) {
         const effectiveDeltaX = (deltaPanX * fractalApp.zoom) * Math.cos(r) - (deltaPanY * fractalApp.zoom) * Math.sin(r);
         const effectiveDeltaY = (deltaPanX * fractalApp.zoom) * Math.sin(r) + (deltaPanY * fractalApp.zoom) * Math.cos(r);
 
-        await fractalApp.animatePanTo([fractalApp.pan[0] + effectiveDeltaX, fractalApp.pan[1] + effectiveDeltaY], PAN_SPEED);
+        await fractalApp.animatePanBy([effectiveDeltaX, effectiveDeltaY], PAN_SPEED);
         resetAppState();
     }
 
