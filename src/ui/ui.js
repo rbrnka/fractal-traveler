@@ -4,6 +4,7 @@ import {
     destroyArrayOfButtons,
     getAnimationDuration,
     hsbToRgb,
+    isMobileDevice,
     isTouchDevice,
     normalizeRotation,
     updateURLParams
@@ -84,6 +85,10 @@ export let debugPanel;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
+
+let pendingInfoTimer = null;
+let pendingInfoForce = false;
+
 
 /**
  * Switches among fractal modes
@@ -297,16 +302,32 @@ export function resetAppState() {
 
 /**
  * Updates the bottom info bar
+ * @param force
  */
-export function updateInfo() {
+export function updateInfo(force = false) {
     const now = performance.now();
     const timeSinceLastUpdate = now - lastInfoUpdate;
 
-    if (timeSinceLastUpdate < infoUpdateThrottleLimit) {
-        return; // Skip update if called too soon
+    // Coalescing throttle: If called too soon, schedule exactly one deferred update instead of dropping updates entirely.
+    if (!force && timeSinceLastUpdate < infoUpdateThrottleLimit) {
+        pendingInfoForce = pendingInfoForce || force;
+
+        if (!pendingInfoTimer) {
+            const delay = Math.max(infoUpdateThrottleLimit - timeSinceLastUpdate, 0);
+
+            pendingInfoTimer = setTimeout(() => {
+                pendingInfoTimer = null;
+
+                const pendingForce = pendingInfoForce;
+                pendingInfoForce = false;
+
+                updateInfo(pendingForce || true);
+            }, delay);
+        }
+
+        return;
     }
 
-    // Update the last update time
     lastInfoUpdate = now;
 
     if (!canvas || !fractalApp) {
@@ -333,20 +354,21 @@ export function updateInfo() {
     text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toExponential(2) * 1}`;
 
     if (animationActive) {
-        infoText.classList.add('animationActive');
+        if (!infoText.classList.contains('animationActive')) infoText.classList.add('animationActive');
     } else {
-        infoText.classList.remove('animationActive');
+        if (infoText.classList.contains('animationActive')) infoText.classList.remove('animationActive');
     }
 
     if (FF_USER_INPUT_ALLOWED) {
         if (document.activeElement !== infoText) {
-            infoText.innerHTML = text;
+            if (infoText.innerHTML !== text) infoText.innerHTML = text;
         }
     } else {
-        infoText.innerHTML = text;
+        if (infoText.innerHTML !== text) infoText.innerHTML = text;
     }
 }
 
+/** @returns {boolean} */
 export function isAnimationActive() {
     return animationActive;
 }
@@ -1039,7 +1061,7 @@ export async function initUI(fractalRenderer) {
 
     updateRecolorButtonTitle();
 
-    if (DEBUG_MODE === DEBUG_LEVEL.FULL) {
+    if (DEBUG_MODE === DEBUG_LEVEL.FULL && !isMobileDevice()) {
         toggleDebugMode();
     }
 
