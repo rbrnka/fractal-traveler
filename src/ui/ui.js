@@ -315,8 +315,6 @@ export function updateInfo() {
 
     let text = (animationActive ? ` [AUTO] ` : ``);
 
-    const panX = fractalApp.pan[0] ?? 0;
-    const panY = fractalApp.pan[1] ?? 0;
     const panX = ddValue(fractalApp.panDD.x) ?? 0;
     const panY = ddValue(fractalApp.panDD.y) ?? 0;
 

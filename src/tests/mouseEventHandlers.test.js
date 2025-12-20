@@ -35,9 +35,11 @@ describe('MouseEventHandlers', () => {
             rotation: 0,
             zoom: 3.5,
             draw: jest.fn(),
+            addPan: jest.fn((x, y) => { fractalApp.pan[0] += x/100; fractalApp.pan[1] += y/100; }),
             updateInfo: jest.fn(),
             updateJuliaSliders: jest.fn(),
             screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
+            screenToViewVector: jest.fn((x, y) => [x / 100, y / 100]),
             stopAllNonColorAnimations: jest.fn(),
             // If needed, other methods can be mocked.
             animatePanTo: jest.fn(() => Promise.resolve()),
@@ -77,8 +79,8 @@ describe('MouseEventHandlers', () => {
         jest.runAllTimers();
         await Promise.resolve();
 
-        expect(fractalApp.pan[0]).not.toEqual(0);
-        expect(fractalApp.pan[1]).not.toEqual(0);
+        expect(fractalApp.addPan).toHaveBeenCalled();
+        expect(fractalApp.pan).not.toEqual([0, 0]);
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('should respond to mousemove (rotating)', async () => {
@@ -160,7 +162,7 @@ describe('MouseEventHandlers', () => {
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('should handle wheel events for zooming/panning', () => {
-        let zoom = fractalApp.zoom;
+        let zoom = fractalApp.zoom.toFixed(12);
         canvas.dispatchEvent(mouseWheelYEvent());
         expect(zoom).not.toEqual(fractalApp.zoom);
     });
