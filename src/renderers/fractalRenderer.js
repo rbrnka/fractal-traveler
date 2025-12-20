@@ -142,6 +142,27 @@ export class FractalRenderer {
         this.setPan(px, py);
     }
 
+    /**
+     * Sets zoom while keeping the fractal point under a given screen anchor fixed.
+     * This avoids catastrophic cancellation (deep-zoom “jumps”) from before/after subtraction.
+     *
+     * @param {number} targetZoom
+     * @param {number} anchorX CSS px relative to canvas
+     * @param {number} anchorY CSS px relative to canvas
+     */
+    setZoomKeepingAnchor(targetZoom, anchorX, anchorY) {
+        // View vector (rotated + aspect corrected) is stable because it does not include pan/zoom.
+        const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
+
+        // Anchor fractal point at the current zoom (stable; avoids subtracting nearly-equal large numbers).
+        const fxAnchor = vx * this.zoom + this.pan[0];
+        const fyAnchor = vy * this.zoom + this.pan[1];
+
+        // Apply zoom, then recompute pan so the same fractal point stays under the anchor.
+        this.zoom = targetZoom;
+        this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
+    }
+
     // --------------------------------------------------------------------
 
     onWebGLContextLost(event) {
@@ -701,6 +722,11 @@ export class FractalRenderer {
         const startZoom = this.zoom;
         const ratio = targetZoom / startZoom;
 
+        // Compute anchor once. During zoom animation, rotation is constant, so view-vector stays valid.
+        const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
+        const fxAnchor = vx * startZoom + this.pan[0];
+        const fyAnchor = vy * startZoom + this.pan[1];
+
         // orbit boundary policy hook (safe no-op for non-perturbation renderers)
         this.markOrbitDirty();
 
@@ -709,9 +735,8 @@ export class FractalRenderer {
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const t = Math.min((timestamp - startTime) / duration, 1);
 
-                const before = this.screenToFractal(anchorX, anchorY);
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
                 // update zoom
                 if (easeFunction !== EASE_TYPE.NONE) {
@@ -722,11 +747,8 @@ export class FractalRenderer {
                     this.zoom = startZoom * Math.pow(ratio, t);
                 }
 
-                // after at anchor (with new zoom)
-                const after = this.screenToFractal(anchorX, anchorY);
-
-                // pan += before - after
-                this.addPan(before[0] - after[0], before[1] - after[1]);
+                // Recompute pan from the fixed anchor point (stable in deep zoom)
+                this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
 
                 this.markOrbitDirty();
                 this.draw();
@@ -738,7 +760,6 @@ export class FractalRenderer {
                     // final settle
                     this.markOrbitDirty();
                     this.draw();
-
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();

@@ -129,11 +129,7 @@ function flushWheelZoom() {
     const mouseX = wheelAnchorX - rect.left; // CSS px
     const mouseY = wheelAnchorY - rect.top;  // CSS px
 
-    // DEMO LOGIC (faithful):
-    // before = screenToFractal at cursor
-    const before = fractalApp.screenToFractal(mouseX, mouseY);
-
-    // Apply accumulated delta (same curve as demo)
+    // Apply accumulated delta
     const zoomFactor = Math.pow(WHEEL_ZOOM_BASE, wheelAccum / WHEEL_DELTA_UNIT);
     const targetZoom = fractalApp.zoom * zoomFactor;
 
@@ -142,13 +138,9 @@ function flushWheelZoom() {
 
     if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) return;
 
-    fractalApp.zoom = targetZoom;
-
-    // after = screenToFractal at the same cursor, with new zoom
-    const after = fractalApp.screenToFractal(mouseX, mouseY);
-
-    // pan += before - after
-    fractalApp.addPan(before[0] - after[0], before[1] - after[1]);
+    // Stable deep-zoom anchor math (no before/after subtraction)
+    // Keeps the fractal point under cursor fixed while changing zoom.
+    fractalApp.setZoomKeepingAnchor(targetZoom, mouseX, mouseY);
 
     // orbit rebuild request for perturbation renderers (deferred by renderer logic)
     markOrbitDirtySafe();
