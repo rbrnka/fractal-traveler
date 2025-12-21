@@ -115,11 +115,18 @@ export class FractalRenderer {
 
     // --------- Pan API (use these; they keep DD + array in sync) ---------
 
+    /** @returns {number[]} the canonical array */
     getPan() {
-        // Return the canonical array (already synced)
         return [this.pan[0], this.pan[1]];
     }
 
+    /**
+     * Sets the pan values for the object.
+     *
+     * @param {number} x - The horizontal pan value.
+     * @param {number} y - The vertical pan value.
+     * @return {void}
+     */
     setPan(x, y) {
         ddSet(this.panDD.x, x);
         ddSet(this.panDD.y, y);
@@ -127,6 +134,13 @@ export class FractalRenderer {
         this.pan[1] = ddValue(this.panDD.y);
     }
 
+    /**
+     * Adjusts the pan values by adding the specified deltas to the current pan values.
+     *
+     * @param {number} dx - The change in the x-direction to be added to the pan.
+     * @param {number} dy - The change in the y-direction to be added to the pan.
+     * @return {void}
+     */
     addPan(dx, dy) {
         ddAdd(this.panDD.x, dx);
         ddAdd(this.panDD.y, dy);
@@ -411,9 +425,9 @@ export class FractalRenderer {
 
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
-        if (DEBUG_MODE === DEBUG_LEVEL.FULL) debugPanel?.beginGpuTimer();
+        debugPanel?.beginGpuTimer();
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
-        if (DEBUG_MODE === DEBUG_LEVEL.FULL) debugPanel?.endGpuTimer();
+        debugPanel?.endGpuTimer();
     }
 
     /**
