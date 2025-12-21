@@ -7,7 +7,7 @@ import {ddValue} from "../global/utils";
  */
 export class DebugPanel {
 
-    panelSelector='debugInfo';
+    panelSelector = 'debugInfo';
 
     constructor(canvas, fractalApp) {
         this.canvas = canvas;
@@ -24,7 +24,7 @@ export class DebugPanel {
         this.debugInfo.style.display =
             this.debugInfo.style.display === "block" ? "none" : "block";
 
-        this.debugInfo.addEventListener("click", (e) => {
+        this.debugInfo.addEventListener("click", () => {
             console.log(this.debugInfo.innerText);
         });
 
@@ -351,7 +351,7 @@ export class DebugPanel {
             <span class="dbg-title">———— GPU ————</span><br/>
             ${esc(gpuVendor)}<br/>
             ${esc(gpuRenderer)}<br/>
-            <span class="dbg-dim">${esc(this.gpu.webglVersion)}</span><br/>
+            <span class="dbg-dim">${esc(this.gpu.webglVersion)} on ${navigator?.userAgentData?.platform || navigator?.platform}</span><br/>
             `;
 
         requestAnimationFrame(this.update);
