@@ -4,7 +4,8 @@
 ![https://github.com/rbrnka/fractal-traveler?tab=MIT-1-ov-file](https://img.shields.io/github/license/rbrnka/fractal-traveler)
 ![GitHub Release Date](https://img.shields.io/github/release-date/rbrnka/fractal-traveler)
 
-![ftraveler-header](https://github.com/user-attachments/assets/12f62198-058e-42e5-af15-739256a72425)
+![fractal-2025-12-14_23-12-50](https://github.com/user-attachments/assets/9bc0e53e-a084-4284-812f-64747bf74323)
+
 
 Interactive fractal explorer that lets you explore the mesmerizing depths of the Mandelbrot and Julia sets. Built with modern JavaScript and WebGL, this app provides smooth animations and intuitive controls, allowing you to travel through intricate fractal landscapes with ease. Developed for the [Unmasking Chaos](https://open.substack.com/pub/synaptory/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&showWelcomeOnShare=false) article on my Substack blog.
 
