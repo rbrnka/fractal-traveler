@@ -28,7 +28,7 @@ import {
     RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
-import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
+import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
 import {RiemannRenderer} from "../renderers/riemannRenderer";
 import {
     destroyJuliaSliders,

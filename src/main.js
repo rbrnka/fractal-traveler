@@ -6,7 +6,7 @@
 
 import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
-import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
+import MandelbrotRenderer from "./renderers/mandelbrotRenderer";
 import {RiemannRenderer} from "./renderers/riemannRenderer";
 import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
