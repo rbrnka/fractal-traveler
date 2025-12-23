@@ -28,7 +28,7 @@ export const DEBUG_MODE = DEBUG_LEVEL.FULL;
  */
 export const LOG_LEVEL = {
     LOG: 'log',
-    INFO: 'info',
+    DEBUG: 'debug',
     WARN: 'warn',
     ERROR: 'error'
 }
