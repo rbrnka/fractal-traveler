@@ -1,4 +1,5 @@
 import {ddValue} from "../global/utils";
+import {log, LOG_LEVEL} from "../global/constants";
 
 /**
  * @author Radim Brnka
@@ -24,8 +25,12 @@ export class DebugPanel {
         this.debugInfo.style.display =
             this.debugInfo.style.display === "block" ? "none" : "block";
 
-        this.debugInfo.addEventListener("click", () => {
-            console.log(this.debugInfo.innerText);
+        this.debugInfo.addEventListener("auxclick", (event) => {
+            if (event.button === 1) {
+                console.group('> DEBUG PANEL DUMP');
+                log(this.debugInfo.innerText, "", LOG_LEVEL.DEBUG);
+                console.groupEnd();
+            }
         });
 
         // ---- Extensions / GPU info (cached) ----
@@ -313,7 +318,7 @@ export class DebugPanel {
             this.gpu.unmaskedRenderer || this.gpu.renderer || "unknown";
 
         this.debugInfo.innerHTML = `
-            <span class="dbg-title">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, draggable)</span><br/>
+            <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, draggable, middle-click to log)</span><br/>
             <span class="dbg-dim">———————————————————————————————————————————————————————————————————</span><br/>
             <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
             <span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} <span class="dbg-dim">dpr=${esc(dpr)}</span><br/>
