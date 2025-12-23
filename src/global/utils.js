@@ -173,13 +173,35 @@ export function expandComplexToString(c, precision = 6, withI = true) {
     return expanded + ((withI && c[1] !== 0) ? 'i]' : ']');
 }
 
+// region > Double helpers ---------------------------------------------------------------------------------------------
+
+/**
+ * @enum
+ * @type {{VELTKAMP_DEKKER: string, GPU_EMULATED_DOUBLE: string}}
+ */
+export const SPLIT_FLOAT_METHOD = {
+    VELTKAMP_DEKKER: 'vd', // Default
+    GPU_EMULATED_DOUBLE: 'ed',
+}
+
 /**
  * Splits a 64-bit floating point number into two 32-bit parts
- * (High-Precision / Double-Double math core).
+ * @param {number} value A standard JavaScript 64-bit number.
+ * @param value
+ * @param method
+ * @returns {{high: number, low: number}}
+ */
+export function splitFloat(value, method = SPLIT_FLOAT_METHOD.VELTKAMP_DEKKER) {
+    return (method === SPLIT_FLOAT_METHOD.GPU_EMULATED_DOUBLE) ? splitFloatED(value) : splitFloatVD(value);
+}
+
+/**
+ * The Veltkamp-Dekker Split: This implementation is the classic Veltkamp-Dekker algorithm. It is designed to split
+ * a 64-bit double into two "half-precision" doubles so that their product can be calculated without losing precision.
  * @param {number} value A standard JavaScript 64-bit number.
  * @returns {{high: number, low: number}}
  */
-export function splitFloat(value) {
+function splitFloatVD(value) {
     // 2^27 + 1 is a common splitting point for 53-bit mantissa (JS number)
     // The constant K must be large enough to shift the low bits outside the mantissa range.
     const K = Math.pow(2, 27) + 1;
@@ -188,10 +210,22 @@ export function splitFloat(value) {
     let high = temp - (temp - value);
     let low = value - high;
 
-    return { high, low };
+    return {high, low};
 }
 
-// region > Double-double (hi, lo) helpers -----------------------------------------------------------------------------
+/**
+ * GPU Emulated Double. This is the standard approach for rendering high-precision or astronomical visualizations).
+ * @param value
+ * @returns {{high: number, low: number}}
+ */
+function splitFloatED(value) {
+    // Force the high part to be *exactly* what will be stored in GPU float32.
+    const high = Math.fround(value);
+    // Residual in double, then quantize to float32 as well (matches GPU storage).
+    const low = Math.fround(value - high);
+
+    return {high, low};
+}
 
 /**
  * Creates a double-double precision number object with high and low parts.
