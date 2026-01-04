@@ -12,61 +12,70 @@ import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
  * Orbit stored in float texture (OES_texture_float)
  * Fragment uses perturbation: dz_{n+1} = 2*zref*dz + dz^2 + dc with dc = (viewPan-refPan) + zoom * r
  */
-export class MandelbrotRenderer extends FractalRenderer {
+class MandelbrotRenderer extends FractalRenderer {
 
     constructor(canvas) {
         super(canvas);
 
         this.DEFAULT_PAN = [-0.5, 0];
-        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]); // IMPORTANT: use setPan (syncs DD + array)
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]); // sync DD + array
 
         // Reference state
         this.refPan = [...this.DEFAULT_PAN];
         this.orbitDirty = true;
 
-        this._prevPan0 = NaN;
-        this._prevPan1 = NaN;
-        this._prevZoom = NaN;
+        /** IMPORTANT: MAX_ITER must remain constant after shader compilation + orbit buffer allocation. */
+        this.MAX_ITER = 2000;
 
-        // Orbit / perturbation constants
-        this.MAX_ITER = 1500;          // shader loop upper bound and orbit length
-        this.REF_SEARCH_GRID = 5;      // 5x5 sampling grid
-        this.REF_SEARCH_RADIUS = 0.50; // in "screen units" scaled by zoom (tune 0.25..0.6)
-
-        // WebGL resources (created in onProgramCreated)
+        // WebGL resources
         this.orbitTex = null;
         this.orbitData = null;
         this.floatTexExt = null;
 
         /** Mandelbrot-specific presets */
+        // @formatter:off
         this.PRESETS = [
-            {
-                id: 0,
-                pan: this.DEFAULT_PAN,
-                zoom: this.DEFAULT_ZOOM,
-                rotation: this.DEFAULT_ROTATION,
-                title: 'Default View'
-            },
-            {id: 1, pan: [0.351423759052521905,0.063866559813292889], rotation: 0, zoom: 3.0177077833226633e-16, speed: 1},
-            {id: 2, pan: [0.2549996194371581,0.0005684340597555177], rotation: 0, zoom: 1.395817829563278e-17, speed: 1},
-            {id: 3, pan: [-0.16454216570937188,1.0384395470826784], rotation: 1.0399999999999796, zoom: 1.0070206965970002e-15, speed: 5},
-            {id: 4, pan: [-0.7436447842537863,0.13182914743633786], rotation: 0, zoom: 3.3846450014686035e-17, speed: 1, title: 'Across the Seahorse Valley'},
-            {id: 5, pan: [-0.7668654471114673,-0.10747310068868203], rotation: 0, zoom: 7.052370221128146e-16, speed: 1},
-            {id: 6, pan: [-0.8535650370330189,-0.21078134581125754], rotation: 4.69962036201309, zoom: 9.911655713144114e-17},
-            {id: 7, pan: [0.3374458157180176,0.04726991269503814], rotation: 2.990096678146248, zoom: 2.7815348174817395e-16, speed: 1},
-            {id: 8, pan: [-0.2281554936539617,1.1151425080399369], rotation: 5.574310838854462, zoom: 3.7267390083662553e-16, title: 'Tip of the branch'},
-            {id: 9, pan: [-0.12479143490517397,0.8403941246800949], rotation: 0.0026613829226800334, zoom: 1.1472429545046962e-18, title: 'The Rabbits', speed: 1},
-            {id: 10, pan: [-1.9990959935546677,3.700008064443964e-12], rotation: 5.438218522169493, zoom: 1.3557433282929746e-15, title: 'Microbrot Detail', speed: 10},
-            {id: 11, pan: [0.11650145207876453,-0.6635454379133249], rotation: 2.610174541746648, zoom: 6.493264360283514e-16,  title: 'Misiurewicz Point', speed: 10},
+            { id: 0,  title: 'Default View',
+                pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION},
+            { id: 1,  title: 'Misiurewicz Point 1', speed: 5,
+                pan: [0.351423759052521905,0.063866559813292889], rotation: 0, zoom: 3.0177077833226633e-16},
+            { id: 2,  title: 'Across the Seahorse Valley', speed: 5,
+                pan: [0.2549996194371581,0.0005684340597555177], rotation: 0, zoom: 1.395817829563278e-17},
+            { id: 3,  title: '', speed: 5,
+                pan: [-0.16454216570937188,1.0384395470826784], rotation: 1.0399999999999796, zoom: 1.0070206965970002e-15},
+            { id: 4,  title: '', speed: 5,
+                pan: [-0.743644784243975,0.13182914354891018], rotation: 0.8749616210243012, zoom: 3.304183377903384e-10},
+            { id: 5,  title: '', speed: 5,
+                pan: [-0.7668654471115035,-0.10747310068867935], rotation: 1.5065924365935786, zoom: 2.266530562848193e-14},
+            { id: 6,  title: '', speed: 5,
+                pan: [-0.8535650370330192,-0.2107813458112579], rotation: 4.217344329507167, zoom: 2.3639582790335785e-22},
+            { id: 7,  title: '', speed: 5,
+                pan: [0.3374458157180176,0.04726991269503814], rotation: 2.990096678146248, zoom: 2.7815348174817395e-16},
+            { id: 8,  title: 'Tip of the branch', speed: 5,
+                pan: [-0.2281554936539617,1.1151425080399369], rotation: 5.574310838854462, zoom: 3.7267390083662553e-16},
+            { id: 9,  title: 'The Rabbits', speed: 5,
+                pan: [-0.12479143490517397,0.8403941246800949], rotation: 0.0026613829226800334, zoom: 1.1472429545046962e-16},
+            { id: 10, title: '', speed: 10,
+                pan: [-1.9990959935546677,3.700008064443964e-12], rotation: 5.438218522169493, zoom: 1.3557433282929746e-15},
+            { id: 11, title: 'Misiurewicz Point 2', speed: 10,
+                pan: [0.11650145207876453,-0.6635454379133249], rotation: 2.610174541746648, zoom: 3.493264360283514e-16},
+            { id: 12, title: 'Microbrot', speed: 5,
+                pan: [0.11654740401415453,-0.6636148998875822], rotation: 2.610174541746648, zoom: 1.0267582908408742e-7},
+            { id: 13, title: 'Tip of the spear', speed: 5,
+                pan: [-1.9990961121566266,2.8541655645072767e-16], rotation: 5.4382185221694925, zoom: 1.2995863762636767e-13},
+            { id: 14, title: 'Tip of the tip', speed: 5,
+                pan: [-1.9999435234863918,-1.4213395057891007e-17], rotation: 0, zoom: 3.214326685343314e-14},
+            { id: 15, title: 'Tip of the tip of the tip', speed: 5,
+                pan: [-1.9999991175876526,9.00355902817349e-20], rotation: 0, zoom: 6.015823178730882e-16},
+            { id: 16, title: 'Where the math ends', speed: 5,
+                pan: [-1.9999991175876528,-3.194092143034014e-39], rotation: 0, zoom: 6.130263511531091e-36}
+            // @formatter:on
         ];
 
         this.init();
     }
 
-    /**
-     * Explicitly request orbit rebuild on next draw ().
-     * This is the demo-stable approach: only rebuild when we *intend* to, not on float drift.
-     */
+    /** Request orbit rebuild (deferred). */
     markOrbitDirty() {
         this.orbitDirty = true;
     }
@@ -315,10 +324,11 @@ export class MandelbrotRenderer extends FractalRenderer {
     escapeItersDouble(cx, cy, iters) {
         let zx = 0.0, zy = 0.0;
         for (let i = 0; i < iters; i++) {
-            const zx2 = zx*zx - zy*zy + cx;
-            const zy2 = 2.0*zx*zy + cy;
-            zx = zx2; zy = zy2;
-            if (zx*zx + zy*zy > 4.0) return i;
+            const zx2 = zx * zx - zy * zy + cx;
+            const zy2 = 2.0 * zx * zy + cy;
+            zx = zx2;
+            zy = zy2;
+            if (zx * zx + zy * zy > 4.0) return i;
         }
         return iters;
     }
@@ -389,6 +399,7 @@ export class MandelbrotRenderer extends FractalRenderer {
             zy = zy2;
 
             if (zx * zx + zy * zy > 4.0) {
+                // Fill remainder with last value (keeps texture defined)
                 const fx = splitFloat(zx);
                 const fy = splitFloat(zy);
                 for (let k = n + 1; k < this.MAX_ITER; k++) {
@@ -448,13 +459,13 @@ export class MandelbrotRenderer extends FractalRenderer {
         const vpx = splitFloat(this.pan[0]);
         const vpy = splitFloat(this.pan[1]);
         if (this.viewPanHLoc) this.gl.uniform2f(this.viewPanHLoc, vpx.high, vpy.high);
-        if (this.viewPanLLoc) this.gl.uniform2f(this.viewPanLLoc, vpx.low,  vpy.low);
+        if (this.viewPanLLoc) this.gl.uniform2f(this.viewPanLLoc, vpx.low, vpy.low);
 
         // Upload refPan hi/lo
         const rpx = splitFloat(this.refPan[0]);
         const rpy = splitFloat(this.refPan[1]);
         if (this.refPanHLoc) this.gl.uniform2f(this.refPanHLoc, rpx.high, rpy.high);
-        if (this.refPanLLoc) this.gl.uniform2f(this.refPanLLoc, rpx.low,  rpy.low);
+        if (this.refPanLLoc) this.gl.uniform2f(this.refPanLLoc, rpx.low, rpy.low);
 
         // Upload zoom hi/lo
         const z = splitFloat(this.zoom);
@@ -473,20 +484,9 @@ export class MandelbrotRenderer extends FractalRenderer {
         return Math.hypot(dx, dy) > this.zoom * 0.75;
     }
 
-    // region > ANIMATION METHODS (unchanged, but ensure presets use setPan via animatePanTo)
+    // region > ANIMATION METHODS
 
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
-        // Generate a bright random color palette
-        // Generate colors with better separation and higher brightness
-        // const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
-        // const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
-        // const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
-        //
-        // // Convert HSB/HSV to RGB
-        // newPalette ||= hsbToRgb(hue, saturation, brightness);
-        //
-        // await super.animateColorPaletteTransition(newPalette, 250, coloringCallback);
-        // --- Bright palette generator (HSV + luminance lift) ---
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
         // Robustly normalize whatever hsbToRgb returns:
@@ -495,11 +495,13 @@ export class MandelbrotRenderer extends FractalRenderer {
         const normalizeRgb = (c) => {
             let r, g, b;
             if (Array.isArray(c)) [r, g, b] = c;
-            else ({ r, g, b } = c);
+            else ({r, g, b} = c);
 
             // If it looks like 0..255, normalize.
             if (r > 1 || g > 1 || b > 1) {
-                r /= 255; g /= 255; b /= 255;
+                r /= 255;
+                g /= 255;
+                b /= 255;
             }
             return [r, g, b];
         };
@@ -526,7 +528,7 @@ export class MandelbrotRenderer extends FractalRenderer {
 
             // Convert 0..1 RGB into a "gain" (multiplier) palette.
             // Base gain keeps everything bright; color gain adds hue tint.
-            const baseGain  = 1.20 + Math.random() * 0.50; // 1.20..1.70
+            const baseGain = 1.20 + Math.random() * 0.50; // 1.20..1.70
             const colorGain = 0.90 + Math.random() * 1.10; // 0.90..2.00
 
             // Lift darker channels so no channel is near-zero multiplier (avoids dim output).
@@ -540,9 +542,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         };
 
         newPalette ||= randomBrightMultiplierPalette();
-
         await super.animateColorPaletteTransition(newPalette, duration, coloringCallback);
-
     }
 
     /**
@@ -560,12 +560,11 @@ export class MandelbrotRenderer extends FractalRenderer {
 
         const targetRotation = preset.rotation || 0;
 
-        if (preset.zoom.toFixed(12) === this.zoom.toFixed(12)) {
-            // If only pan is changed, adjust pan
+        if (preset.zoom.toFixed(24) === this.zoom.toFixed(24)) {
             await this.animatePanTo(preset.pan, zoomOutDuration);
         } else if (compareComplex(preset.pan, this.pan)) {
             // If only zoom is changed, adjust zoom-in
-            // TODO zoom-out should be proportionally fast to the zoom depth. If zoomed in too much, the speed is too fast and the image does not render
+            // TODO zoom-out could be proportionally fast to the zoom depth. If zoomed in too much, the speed is too fast and the image does not render
             await this.animateZoomTo(preset.zoom, zoomOutDuration);
         } else {
             // Otherwise zoom-out
@@ -573,8 +572,8 @@ export class MandelbrotRenderer extends FractalRenderer {
         }
 
         await Promise.all([
-            this.animatePanThenZoomTo(preset.pan, preset.zoom, 500, zoomInDuration),
-            this.animateRotationTo(targetRotation, 500, EASE_TYPE.QUINT),
+            this.animatePanThenZoomTo(preset.pan, preset.zoom, 1000, zoomInDuration * (preset.speed ?? 1)),
+            this.animateRotationTo(targetRotation, 1000, EASE_TYPE.QUINT),
         ]);
 
         this.currentPresetIndex = preset.id || 0;
@@ -597,7 +596,7 @@ export class MandelbrotRenderer extends FractalRenderer {
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, CONSOLE_GROUP_STYLE);
 
-        // Generate random rotations for a more dynamic effect.
+        // Random rotations for a more dynamic effect.
         const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
         const zoomInRotation = zoomOutRotation + (Math.random() * PI * 2 - PI);
 
@@ -606,7 +605,7 @@ export class MandelbrotRenderer extends FractalRenderer {
         }
 
         await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
-        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration);
+        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration * (preset.speed ?? 1));
 
         this.currentPresetIndex = preset.id || 0;
 
@@ -649,10 +648,7 @@ export class MandelbrotRenderer extends FractalRenderer {
             const currentPreset = this.PRESETS[this.currentPresetIndex];
             console.log(`Animating to preset ${this.currentPresetIndex}`);
 
-            // Animate to the current preset.
             await this.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
-
-            // Wait after the animation completes.
             await asyncDelay(3500);
         }
 
@@ -662,3 +658,5 @@ export class MandelbrotRenderer extends FractalRenderer {
 
     // endregion--------------------------------------------------------------------------------------------------------
 }
+
+export default MandelbrotRenderer
