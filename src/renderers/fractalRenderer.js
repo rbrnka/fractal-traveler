@@ -1,6 +1,17 @@
 import {debugPanel, updateInfo} from "../ui/ui";
-import {compareComplex, comparePalettes, ddAdd, ddMake, ddSet, ddValue, lerp, normalizeRotation} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
+import {
+    compareComplex,
+    comparePalettes,
+    ddAdd,
+    ddMake,
+    ddSet,
+    ddValue,
+    hslToRgb,
+    lerp,
+    normalizeRotation,
+    rgbToHsl
+} from "../global/utils";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -30,34 +41,28 @@ export class FractalRenderer {
             return;
         }
 
-        // Default values:
+        // Defaults:
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
         /** @type {COMPLEX} */
         this.DEFAULT_PAN = [0, 0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
-        this.MAX_ZOOM = 1e-20;
+        this.MAX_ZOOM = 1e-80;
         this.MIN_ZOOM = 40;
 
-        /** Interesting zoom-ins
-         *  @type {Array.<PRESET>}
+        /**
+         * Interesting points / details / zooms / views
+         * @type {Array.<PRESET>}
          */
         this.PRESETS = [];
 
-        /**
-         * Zoom. Lower number = higher zoom.
-         * @type {number}
-         */
+        /** @type {number} */
         this.zoom = this.DEFAULT_ZOOM;
 
-        /**
-         * IMPORTANT: keep this.pan as the canonical array for backward compatibility.
-         * TODO: Many parts of the app still read/write fractalApp.pan - fix.
-         * @type {COMPLEX}
-         */
+        /** @type {COMPLEX} canonical */
         this.pan = [...this.DEFAULT_PAN];
 
-        /** DD accumulator mirrors into this.pan on every update */
+        /** DD accumulator mirrors into this.pan */
         this.panDD = {
             x: ddMake(this.pan[0], 0),
             y: ddMake(this.pan[1], 0),
@@ -80,10 +85,7 @@ export class FractalRenderer {
         this.interactionActive = false;
         this.interactionTimer = null;
 
-        /**
-         * Determines the level of fractal rendering detail
-         * @type {number}
-         */
+        /** @type {number} */
         this.iterations = 0;
         this.extraIterations = 0;
 
@@ -106,12 +108,10 @@ export class FractalRenderer {
     }
 
     /**
-     * Optional hook for perturbation renderers (e.g., Mandelbrot) to request orbit rebuild.
-     * Default is no-op so other renderers are unaffected.
+     * Hook for perturbation renderers to request orbit rebuild.
+     * No-op by default.
      */
-    markOrbitDirty() {
-        // no-op by default
-    }
+    markOrbitDirty() {}
 
     // --------- Pan API (use these; they keep DD + array in sync) ---------
 
@@ -153,7 +153,6 @@ export class FractalRenderer {
      * whose view vector is (vx,vy).
      */
     setPanFromAnchor(fxAnchor, fyAnchor, vx, vy) {
-        // pan = fAnchor - v * zoom
         const px = fxAnchor - vx * this.zoom;
         const py = fyAnchor - vy * this.zoom;
         this.setPan(px, py);
@@ -205,8 +204,6 @@ export class FractalRenderer {
             updateInfo(true);
         }, settleMs);
     }
-
-    // --------------------------------------------------------------------
 
     onWebGLContextLost(event) {
         event.preventDefault();
@@ -293,7 +290,6 @@ export class FractalRenderer {
 
         // After resizing, request a clean rebuild for perturbation renderers (safe no-op otherwise)
         this.markOrbitDirty();
-
         this.draw();
 
         console.groupEnd();
@@ -360,7 +356,7 @@ export class FractalRenderer {
         }
         this.gl.useProgram(this.program);
 
-        // Set up a full-screen quad
+        // Full-screen quad
         const positionBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
         const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
@@ -385,11 +381,11 @@ export class FractalRenderer {
 
     /** @abstract (kept for compatibility; perturbation renderers may ignore) */
     needsRebase() {
-        throw new Error("The onProgramCreated method must be implemented in child classes");
+        throw new Error("The needsRebase method must be implemented in child classes");
     }
 
     /**
-     * Cache common uniforms used by many renderers
+     * Cache common uniforms used by all renderers
      */
     updateUniforms() {
         this.gl.useProgram(this.program);
@@ -411,12 +407,9 @@ export class FractalRenderer {
         const w = this.canvas.width;
         const h = this.canvas.height;
 
-        // Update the viewport.
         this.gl.viewport(0, 0, w, h);
 
         if (this.resolutionLoc) this.gl.uniform2f(this.resolutionLoc, w, h);
-
-        // Use canonical pan array
         if (this.panLoc) this.gl.uniform2fv(this.panLoc, this.pan);
         if (this.zoomLoc) this.gl.uniform1f(this.zoomLoc, this.zoom);
         if (this.rotationLoc) this.gl.uniform1f(this.rotationLoc, this.rotation);
@@ -448,9 +441,7 @@ export class FractalRenderer {
 
         this.resizeCanvas();
 
-        // Ensure perturbation renderers rebuild after reset
         this.markOrbitDirty();
-
         this.draw();
 
         console.groupEnd();
@@ -623,7 +614,6 @@ export class FractalRenderer {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
-                // Interpolate each channel.
                 this.colorPalette = [
                     lerp(startPalette[0], newPalette[0], progress),
                     lerp(startPalette[1], newPalette[1], progress),
@@ -696,7 +686,6 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentPanAnimation();
 
-        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
         this.markOrbitDirty();
 
         if (compareComplex(this.pan, targetPan, 6)) {
@@ -727,10 +716,8 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    // Final settle: request a clean rebuild at rest
                     this.markOrbitDirty();
                     this.draw();
-
                     this.stopCurrentPanAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -756,7 +743,6 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animatePanBy`, CONSOLE_GROUP_STYLE);
         this.stopCurrentPanAnimation();
 
-        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
         this.markOrbitDirty();
 
         if (Math.abs(deltaPan[0]) < 1e-30 && Math.abs(deltaPan[1]) < 1e-30) {
@@ -777,7 +763,6 @@ export class FractalRenderer {
                 const t = Math.min((timestamp - startTime) / duration, 1);
                 const k = easeFunction(t);
 
-                // Apply only the incremental delta since last frame (DD-stable).
                 const dk = k - prevK;
                 prevK = k;
 
@@ -791,7 +776,6 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    // Final settle: request a clean rebuild at rest
                     this.markOrbitDirty();
                     this.draw();
                     this.stopCurrentPanAnimation();
@@ -850,12 +834,10 @@ export class FractalRenderer {
 
                 const t = Math.min((timestamp - startTime) / duration, 1);
 
-                // update zoom
                 if (easeFunction !== EASE_TYPE.NONE) {
                     const k = easeFunction(t);
                     this.zoom = startZoom + (targetZoom - startZoom) * k;
                 } else {
-                    // exponential interpolation
                     this.zoom = startZoom * Math.pow(ratio, t);
                 }
 
@@ -869,7 +851,6 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    // final settle
                     this.markOrbitDirty();
                     this.draw();
                     this.stopCurrentZoomAnimation();
@@ -896,7 +877,6 @@ export class FractalRenderer {
     async animateZoomToNoPan(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
         this.stopCurrentZoomAnimation();
 
-        // DEMO-STABLE POLICY: rebuild orbit only at animation boundaries
         this.markOrbitDirty();
 
         if (this.zoom.toFixed(12) === targetZoom.toFixed(12)) return;
@@ -923,10 +903,8 @@ export class FractalRenderer {
                 if (t < 1) {
                     this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
-                    // Final settle: request a clean rebuild at rest
                     this.markOrbitDirty();
                     this.draw();
-
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     resolve();
@@ -940,7 +918,6 @@ export class FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
-        // Normalize
         targetRotation = normalizeRotation(targetRotation);
 
         if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
@@ -1022,7 +999,7 @@ export class FractalRenderer {
 
         await Promise.all([
             this.animateZoomTo(targetZoom, duration, easeFunction),
-            this.animateRotationTo(targetRotation, duration, easeFunction)
+            this.animateRotationTo(targetRotation, duration, EASE_TYPE.CUBIC)
         ]);
 
         console.groupEnd();
@@ -1041,22 +1018,18 @@ export class FractalRenderer {
     }
 
     async animateInfiniteRotation(direction, step = 0.001) {
-        console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, CONSOLE_GROUP_STYLE);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInfiniteRotation`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
-        const dir = direction >= 0 ? 1 : -1; // Normalize
+        const dir = direction >= 0 ? 1 : -1;
 
         await new Promise(() => {
-
             const rotationStep = () => {
                 this.rotation = normalizeRotation(this.rotation + dir * step + 2 * PI);
                 this.draw();
-
                 updateInfo(true);
-
                 this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
             };
-
             this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
         });
         console.groupEnd();
