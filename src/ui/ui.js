@@ -603,6 +603,11 @@ export async function travelToPreset(presets, index) {
         await fractalApp.animateTravelToPreset(presets[index], 1500);
     } else {
         await fractalApp.animateTravelToPreset(presets[index]);
+        if (FF_TRAVEL_TO_PRESET_WITH_ROTATION) {
+            await fractalApp.animateTravelToPresetWithRandomRotation(presets[index], 2000, 500, 1500);
+        } else {
+            await fractalApp.animateTravelToPreset(presets[index]);
+        }
     }
     activePresetIndex = index;
 

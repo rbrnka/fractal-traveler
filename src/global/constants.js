@@ -53,6 +53,9 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
 
 /** Enables bottom bar for user input for custom coords */
 export const FF_USER_INPUT_ALLOWED = false;
+
+/** When enabled, preset travel animations include random rotation during the zoom-in. */
+export const FF_TRAVEL_TO_PRESET_WITH_ROTATION = true;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
