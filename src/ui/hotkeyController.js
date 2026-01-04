@@ -173,7 +173,7 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyL': // DEBUG BAR toggle
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) toggleDebugMode();
+            toggleDebugMode();
             handled = true;
             break;
 
@@ -202,12 +202,7 @@ async function onKeyDown(event) {
                     fractalApp.stopCurrentColorAnimations();
                     break;
                 }
-
-                if (isJuliaMode()) {
-                    await fractalApp.animateFullColorSpaceCycle(10000, updateColorTheme);
-                } else {
-                    await fractalApp.animateFullColorSpaceCycle(15000);
-                }
+                await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
             } else {
                 await randomizeColors();
             }
