@@ -106,16 +106,6 @@ h1 {
     }
 }
 
-@media screen and (min-width: 471px) {
-    #headerContainer {
-        zoom: 100%;
-    }
-
-    #infoLabel {
-        zoom: 100%;
-    }
-}
-
 @media screen and (max-width: 470px) {
     h1 {
         font-size: 10pt;
@@ -305,10 +295,16 @@ label, .sliderValue {
 }
 
 button.dive {
-    width: 100px;
-    height: 40px;
-    text-wrap: wrap;
+    white-space: normal;
     display: inline-flex;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    padding: 15px 10px;
+    color: rgb(from var(--accent-color) r g b / 0.8);
+}
+
+button.dive.active {
+    color: var(--accent-color);
 }
 
 .switch-field {
