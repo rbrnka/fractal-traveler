@@ -5,6 +5,7 @@ import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
 import * as UI from "../ui/ui";
 import {
     charPressedEvent,
+    defaultKeyboardEvent,
     downArrowPressedEvent,
     leftArrowPressedEvent,
     numPressedEvent,
@@ -25,6 +26,9 @@ describe('HotKeyController', () => {
         UI.isJuliaMode = jest.fn(() => true);
         UI.travelToPreset = jest.fn(() => Promise.resolve());
         UI.startJuliaDive = jest.fn(() => Promise.resolve());
+        UI.isAnimationActive = jest.fn(() => false);
+        UI.toggleHeader = jest.fn();
+        UI.randomizeColors = jest.fn();
 
         // Create a mock fractalApp object with necessary properties/methods.
         fractalApp = {
@@ -34,6 +38,7 @@ describe('HotKeyController', () => {
             zoom: 1,
             DIVES: [{}, {}, {}],
             animatePanTo: jest.fn(() => Promise.resolve()),
+            animateZoomTo: jest.fn(() => Promise.resolve()),
             animatePanBy: jest.fn(() => Promise.resolve()),
             animateToC: jest.fn(() => Promise.resolve()),
             animateInfiniteRotation: jest.fn(() => Promise.resolve()),
@@ -116,5 +121,46 @@ describe('HotKeyController', () => {
         document.dispatchEvent(charPressedEvent('q', true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateInfiniteRotation).toHaveBeenCalledWith(ROTATION_DIRECTION.CCW, 0.01);
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Space triggers zoom in', async () => {
+        // Set current zoom to 1.0
+        fractalApp.zoom = 1.0;
+
+        // Define bounds so that any number between 0 and 10 is 'valid'
+        // Deepest zoom (tiny number)
+        fractalApp.MAX_ZOOM = 0.0000000001;
+        // Furthest out (large number)
+        fractalApp.MIN_ZOOM = 100.0;
+
+        // Dispatch the event
+        document.dispatchEvent(charPressedEvent(' ', false, false, false));
+
+        // Use a slightly longer wait to ensure the async switch/case finishes
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        expect(fractalApp.animateZoomTo).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Ignore hotkeys when user is typing in an input field', async () => {
+        // Setup a mock input target
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+
+        // Create event with the input as the target
+        const event = charPressedEvent('t');
+        Object.defineProperty(event, 'target', {value: input, enumerable: true});
+
+        document.dispatchEvent(event);
+        await Promise.resolve();
+
+        // randomization should NOT have been called
+        expect(UI.randomizeColors).not.toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Enter key toggles the UI header', async () => {
+        document.dispatchEvent(defaultKeyboardEvent('Enter'));
+        await Promise.resolve();
+        expect(UI.toggleHeader).toHaveBeenCalled();
     });
 });

@@ -47,6 +47,9 @@
     ],
     "transform": {
       "^.+\\.js$": "babel-jest"
+    },
+    "moduleNameMapper": {
+      "\\.(frag|vert)$": "<rootDir>/src/tests/__mocks__/fileMock.js"
     }
   },
   "dependencies": {

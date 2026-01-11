@@ -1,0 +1,1 @@
+module.exports = 'precision highp float; void main() { __MAX_ITER__; __COLORING__; }';
