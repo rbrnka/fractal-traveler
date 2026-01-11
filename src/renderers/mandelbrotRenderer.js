@@ -1,4 +1,4 @@
-import {FractalRenderer} from './fractalRenderer.js';
+import FractalRenderer from "./fractalRenderer";
 import {asyncDelay, compareComplex, hsbToRgb, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 

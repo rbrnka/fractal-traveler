@@ -32,19 +32,19 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} PRESET
+ *      @property {number} [id] If present, helps unique demo rotation
+ *      @property {string} [title] HTML element title (on hover)
+ *      @property {COMPLEX} pan
+ *      @property {number} zoom
+ *      @property {number} [rotation]
+ *      @property {number} [speed] preset animation speed
  * @description Preset is an object containing properties of specific point in the fractal on the scene.
  */
 // ---------------------------------------------------------------------------------------------------------------------
 //  MANDELBROT_PRESET
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * @typedef {Object} MANDELBROT_PRESET
- *      @property {number} [id] If present, helps unique demo rotation
- *      @property {number} zoom
- *      @property {number} [rotation]
- *      @property {COMPLEX} pan
- *      @property {string} [title] HTML element title (on hover)
- *      @property {number} [speed] preset animation zoom-in speed
+ * @typedef {Object | PRESET} MANDELBROT_PRESET
  * @extends PRESET
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
@@ -53,13 +53,8 @@
 // JULIA_PRESET
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * @typedef {Object} JULIA_PRESET
- *      @property {number} [id] If present, helps unique demo rotation
+ * @typedef {Object | PRESET} JULIA_PRESET
  *      @property {COMPLEX} c
- *      @property {number} zoom
- *      @property {number} [rotation]
- *      @property {COMPLEX} pan
- *      @property {string} [title] HTML element title (on hover)
  * @extends PRESET
  * @see {@link MANDELBROT_PRESET}
  * @description Julia-specific presets

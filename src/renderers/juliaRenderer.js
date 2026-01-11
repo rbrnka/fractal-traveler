@@ -1,5 +1,5 @@
 import {updateInfo} from "../ui/ui";
-import {FractalRenderer} from "./fractalRenderer";
+import FractalRenderer from "./fractalRenderer";
 import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation, splitFloat,} from "../global/utils";
 import "../global/types";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";

@@ -1,4 +1,4 @@
-import {FractalRenderer} from "./fractalRenderer";
+import FractalRenderer from "./fractalRenderer";
 
 export class RiemannRenderer extends FractalRenderer {
 

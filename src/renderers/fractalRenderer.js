@@ -22,7 +22,7 @@ import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, 
  * @license MIT
  * @abstract
  */
-export class FractalRenderer {
+class FractalRenderer {
 
     /**
      * @param {HTMLCanvasElement} canvas
@@ -61,7 +61,7 @@ export class FractalRenderer {
         /** @type {number} */
         this.zoom = this.DEFAULT_ZOOM;
 
-        /** @type {COMPLEX} canonical */
+        /** @type {COMPLEX} */
         this.pan = [...this.DEFAULT_PAN];
 
         /** DD accumulator mirrors into this.pan */
@@ -313,7 +313,7 @@ export class FractalRenderer {
      */
     compileShader(source, type) {
         if (DEBUG_MODE) {
-            console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, CONSOLE_GROUP_STYLE);
+            console.groupCollapsed(`%c ${this.constructor.name}: %c compileShader`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
             console.log(`Shader GLenum type: ${type}\nShader code: ${source}`);
         }
 
@@ -336,7 +336,7 @@ export class FractalRenderer {
      * Initializes WebGL program, shaders, quad, and uniform caches.
      */
     initGLProgram() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, CONSOLE_GROUP_STYLE);
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}:%c initGLProgram`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
@@ -379,7 +379,10 @@ export class FractalRenderer {
         throw new Error("The onProgramCreated method must be implemented in child classes");
     }
 
-    /** @abstract (kept for compatibility; perturbation renderers may ignore) */
+    /**
+     * kept for compatibility; perturbation renderers may ignore
+     * @abstract
+     */
     needsRebase() {
         throw new Error("The needsRebase method must be implemented in child classes");
     }
@@ -486,7 +489,7 @@ export class FractalRenderer {
      *
      * @param {number} screenX CSS pixels relative to canvas (like your handlers use)
      * @param {number} screenY CSS pixels relative to canvas
-     * @returns {[number, number]} view-space rotated vector
+     * @returns {number[]} view-space rotated vector
      */
     screenToViewVector(screenX, screenY) {
         const dpr = window.devicePixelRatio || 1;
@@ -514,7 +517,7 @@ export class FractalRenderer {
 
     /**
      * Compute CSS-space center of the canvas (for default anchored zoom).
-     * @returns {[number, number]}
+     * @returns {number[]}
      */
     getCanvasCssCenter() {
         const rect = this.canvas.getBoundingClientRect();
@@ -1040,3 +1043,5 @@ export class FractalRenderer {
 
     // endregion--------------------------------------------------------------------------------------------------------
 }
+
+export default FractalRenderer;
