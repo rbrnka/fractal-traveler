@@ -13,7 +13,7 @@ import fragmentShaderRaw from '../shaders/mandelbrot.frag';
  * @extends FractalRenderer
  * @copyright Synaptory Fractal Traveler, 2025-2026
  * @license MIT
-  */
+ */
 class MandelbrotRenderer extends FractalRenderer {
 
     constructor(canvas) {
@@ -40,10 +40,7 @@ class MandelbrotRenderer extends FractalRenderer {
         this.init();
     }
 
-    /** Request orbit rebuild (deferred). */
-    markOrbitDirty() {
-        this.orbitDirty = true;
-    }
+    markOrbitDirty = () => this.orbitDirty = true;
 
     /**
      * Called by FractalRenderer.initGLProgram() after program creation + common uniform cache.
@@ -74,14 +71,7 @@ class MandelbrotRenderer extends FractalRenderer {
         this.orbitDirty = true;
     }
 
-    /**
-     * Orbit stored in float texture (OES_texture_float)
-     * Fragment uses perturbation: dz_{n+1} = 2*zref*dz + dz^2 + dc with dc = (viewPan-refPan) + zoom * r
-     * @override
-     */
-    createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
-    }
+    createFragmentShaderSource = () => fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
 
     updateUniforms() {
         super.updateUniforms();

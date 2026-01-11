@@ -84,12 +84,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.init();
     }
 
-    /**
-     * Perturbation renderers must expose orbit invalidation to shared interaction/animation code.
-     */
-    markOrbitDirty() {
-        this.orbitDirty = true;
-    }
+    markOrbitDirty = () => this.orbitDirty = true;
 
     onProgramCreated() {
         this.floatTexExt = this.gl.getExtension("OES_texture_float");
@@ -115,13 +110,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.orbitDirty = true;
     }
 
-    /**
-     * @inheritDoc
-     * @override
-     */
-    createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
-    }
+    createFragmentShaderSource = () => fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
 
     /**
      * @inheritDoc

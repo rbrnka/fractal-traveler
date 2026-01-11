@@ -129,9 +129,7 @@ export function clearURLParams() {
  * Detects touch device
  * @returns {boolean}
  */
-export function isTouchDevice() {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-}
+export const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
 
 /**
  * Detects mobile device
@@ -193,9 +191,8 @@ export const SPLIT_FLOAT_METHOD = {
  * @param method
  * @returns {{high: number, low: number}}
  */
-export function splitFloat(value, method = SPLIT_FLOAT_METHOD.VELTKAMP_DEKKER) {
-    return (method === SPLIT_FLOAT_METHOD.GPU_EMULATED_DOUBLE) ? splitFloatED(value) : splitFloatVD(value);
-}
+export const splitFloat = (value, method = SPLIT_FLOAT_METHOD.VELTKAMP_DEKKER) =>
+    (method === SPLIT_FLOAT_METHOD.GPU_EMULATED_DOUBLE) ? splitFloatED(value) : splitFloatVD(value);
 
 /**
  * The Veltkamp-Dekker Split: This implementation is the classic Veltkamp-Dekker algorithm. It is designed to split
