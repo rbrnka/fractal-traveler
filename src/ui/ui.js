@@ -361,7 +361,7 @@ export function updateInfo(force = false) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c: [${cx.toExponential(DEBUG_MODE ? 12 : 2) * 1}, ${cy.toExponential(DEBUG_MODE ? 12 : 2) * 1}i] · `;
+        text += `c: [${cx.toFixed(4)}, ${cy.toFixed(4)}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
@@ -840,7 +840,7 @@ function initDiveButtons() {
             btn.id = 'dive' + (index);
             btn.className = 'dive';
             btn.title = (dive.title || ('Preset ' + index)) + ` (Shift+${index})`;
-            btn.textContent = (index).toString();
+            btn.textContent = dive.title || (index).toString();
             btn.addEventListener('click', async () => {
                 await startJuliaDive(dives, index);
             });
@@ -849,7 +849,7 @@ function initDiveButtons() {
             diveButtons.push(btn);
         });
 
-        diveBlock.style.display = 'block';
+        diveBlock.style.display = 'inline-flex';
     }
 
     log('Initialized.', 'initDiveButtons');
