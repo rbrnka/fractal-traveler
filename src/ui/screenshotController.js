@@ -5,7 +5,7 @@
  */
 
 import {JuliaRenderer} from "../renderers/juliaRenderer";
-import {APP_NAME, CONSOLE_GROUP_STYLE} from "../global/constants";
+import {APP_NAME, CONSOLE_GROUP_STYLE, SCREENSHOT_JPEG_COMPRESSION_QUALITY} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
 import {isJuliaMode} from "./ui";
 
@@ -28,7 +28,7 @@ function getWatermarkText(fractalApp) {
     const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
 
     return `Created by ${APP_NAME} (${fractalType}: ` +
-        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toFixed(6)}` +
+        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
         `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`}`;
 }
 
@@ -122,7 +122,7 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
 
     // Set the download attributes
     link.setAttribute('download', getFilename());
-    link.setAttribute('href', offscreenCanvas.toDataURL("image/jpeg", 0.95));
+    link.setAttribute('href', offscreenCanvas.toDataURL("image/jpeg", SCREENSHOT_JPEG_COMPRESSION_QUALITY));
     link.click();
 
     console.log('Screenshot successfully taken.');

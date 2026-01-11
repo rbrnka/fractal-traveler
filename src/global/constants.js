@@ -211,3 +211,9 @@ export const DEG = {
 }
 // ---------------------------------------------------------------------------------------------------------------------
 export const RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE = 'Randomize Color Palette (T)';
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * Defines the compression quality for JPEG screenshots (0-1) in %
+ * @type {number}
+ */
+export const SCREENSHOT_JPEG_COMPRESSION_QUALITY = 0.95;
