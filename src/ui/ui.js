@@ -355,19 +355,19 @@ export function updateInfo(force = false) {
     const panX = ddValue(fractalApp.panDD.x) ?? 0;
     const panY = ddValue(fractalApp.panDD.y) ?? 0;
 
-    text += `p = [${panX.toFixed(8)}, ${panY.toFixed(8)}i] · `;
+    text += `p: [${panX.toFixed(8)}, ${panY.toFixed(8)}i] · `;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toExponential(DEBUG_MODE ? 12 : 2) * 1}, ${cy.toExponential(DEBUG_MODE ? 12 : 2) * 1}i] · `;
+        text += `c: [${cx.toExponential(DEBUG_MODE ? 12 : 2) * 1}, ${cy.toExponential(DEBUG_MODE ? 12 : 2) * 1}i] · `;
     }
 
     const currentZoom = fractalApp.zoom ?? 0;
     const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toExponential(2) * 1}`;
+    text += `r: ${normalizedRotation.toFixed(0)}° · zoom:&nbsp;${currentZoom.toExponential(0)}`;
 
     if (animationActive) {
         if (!infoText.classList.contains('animationActive')) infoText.classList.add('animationActive');
