@@ -60,17 +60,19 @@ function onSliderChangeFinished() {
     fractalApp.demoTime = 0;
 }
 
-function onRealSliderChange() {
+const onRealSliderChange = () => {
     fractalApp.c[0] = parseFloat(realSlider.value);
-    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
+    // Increased to 4 decimals to match the new step
+    realSliderValue.textContent = fractalApp.c[0].toFixed(4);
     onSliderChangeFinished();
-}
+};
 
-function onImagSliderChange() {
+const onImagSliderChange = () => {
     fractalApp.c[1] = parseFloat(imagSlider.value);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
+    // Using 4 decimals and template literals for cleaner code
+    imagSliderValue.textContent = `${fractalApp.c[1].toFixed(4)}i`;
     onSliderChangeFinished();
-}
+};
 
 // region > External methods ------------------------------------------------------------------------------------------
 /** Destructor. Removes listeners and hides elements. */
@@ -112,28 +114,24 @@ export function updateJuliaSliders() {
 
     // Update the last update time
     lastSliderUpdate = now;
-    realSliderValue.innerText = fractalApp.c[0].toFixed(2);
-    imagSliderValue.innerText = fractalApp.c[1].toFixed(2) + 'i';
-    realSlider.value = parseFloat(fractalApp.c[0].toFixed(2));
-    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(2));
+    realSliderValue.innerText = fractalApp.c[0].toFixed(4);
+    imagSliderValue.innerText = fractalApp.c[1].toFixed(4) + 'i';
+    realSlider.value = parseFloat(fractalApp.c[0].toFixed(4));
+    imagSlider.value = parseFloat(fractalApp.c[1].toFixed(4));
 }
 
 /** Disable slider controls */
-export function disableJuliaSliders() {
-    imagSlider.disabled = true;
-    realSlider.disabled = true;
-
+export const disableJuliaSliders = () => {
+    imagSlider.disabled = realSlider.disabled = true;
     realSlider.classList.add('thumbDisabled');
     imagSlider.classList.add('thumbDisabled');
-}
+};
 
 /** Enable slider controls */
-export function enableJuliaSliders() {
-    imagSlider.disabled = false;
-    realSlider.disabled = false;
-
+export const enableJuliaSliders = () => {
+    imagSlider.disabled = realSlider.disabled = false;
     realSlider.classList.remove('thumbDisabled');
     imagSlider.classList.remove('thumbDisabled');
-}
+};
 
 // endregion -----------------------------------------------------------------------------------------------------------

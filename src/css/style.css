@@ -248,7 +248,7 @@ button:focus {
     flex-direction: row; /* Align label and slider horizontally */
     align-items: center; /* Vertically align label and slider */
     gap: 0; /* Add spacing between label and slider */
-    width: 310px; /* Ensure consistent width for sliders */
+    width: 80%; /* Ensure consistent width for sliders */
 }
 
 label, .sliderValue {
@@ -260,10 +260,12 @@ label, .sliderValue {
 .slider-container label {
     text-shadow: 0 0 10px var(--accent-color);
     color: #fff;
+    font-weight: bolder;
+    font-size: 12px;
 }
 
 .slider-container span {
-    text-shadow: 0 0 2px var(--accent-color);
+    text-shadow: 0 0 1px var(--accent-color);
 }
 
 .slider {
