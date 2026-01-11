@@ -11,7 +11,7 @@ import {
     normalizeRotation,
     rgbToHsl
 } from "../global/utils";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, PI} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
 
 /**
  * FractalRenderer
@@ -267,7 +267,7 @@ export class FractalRenderer {
     }
 
     resizeCanvas() {
-        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, CONSOLE_GROUP_STYLE);
+        log(`resizeCanvas`, this.constructor.name);
 
         this.gl.useProgram(this.program);
 
@@ -291,8 +291,6 @@ export class FractalRenderer {
         // After resizing, request a clean rebuild for perturbation renderers (safe no-op otherwise)
         this.markOrbitDirty();
         this.draw();
-
-        console.groupEnd();
     }
 
 
@@ -875,6 +873,8 @@ export class FractalRenderer {
      * @returns {Promise<void>} Promise that resolves when the animation completes
      */
     async animateZoomToNoPan(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomToNoPan`, CONSOLE_GROUP_STYLE);
+
         this.stopCurrentZoomAnimation();
 
         this.markOrbitDirty();
@@ -907,6 +907,7 @@ export class FractalRenderer {
                     this.draw();
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
+                    console.groupEnd();
                     resolve();
                 }
             };

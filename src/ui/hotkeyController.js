@@ -336,7 +336,7 @@ export function initHotKeys(app) {
     document.addEventListener("keydown", onKeyDown);
     initialized = true;
 
-    console.log(`%c initHotKeys: %c Initialized.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+    log('Initialized.', 'initHotKeys');
 }
 
 /** Destructor. Removes event listeners and cleans up */

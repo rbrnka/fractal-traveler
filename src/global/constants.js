@@ -34,19 +34,21 @@ export const LOG_LEVEL = {
 }
 
 /**
- *
- * @param message
- * @param scope
- * @param severity
+ * Logs a message with an optional scope and severity level.
+ * @param {string} message - The message to log.
+ * @param {string} [scope=''] - The scope/context of the message.
+ * @param {string} [severity=LOG_LEVEL.LOG] - The severity level from LOG_LEVEL.
  */
 export const log = (message, scope = '', severity = LOG_LEVEL.LOG) => {
+    const formattedScope = scope ? `[${scope}]` : '';
+
     console[severity](
-        `%c${scope}%c ${message}`,
+        `%c${formattedScope}%c ${message}`,
         CONSOLE_GROUP_STYLE,
         CONSOLE_MESSAGE_STYLE
     );
 }
-// endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+// endregion
 // FEATURE FLAGS
 /** Allows switching between fractal while keeping the params to allow Mandelbrot and Julia to match each other */
 export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
@@ -115,7 +117,7 @@ export const DEFAULT_BG_COLOR = 'rgba(24, 48, 13, 0.2)';
  * Default color for console group labels
  * @type {string}
  */
-const DEFAULT_CONSOLE_GROUP_COLOR = '#bada55';
+const DEFAULT_CONSOLE_GROUP_COLOR = DEFAULT_ACCENT_COLOR;
 
 const DEFAULT_CONSOLE_MESSAGE_COLOR = '#fff';
 

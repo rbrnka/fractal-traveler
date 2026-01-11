@@ -25,6 +25,7 @@ import {
     FF_TRAVEL_TO_PRESET_WITH_ROTATION,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
+    log,
     PI,
     RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
 } from "../global/constants";
@@ -746,6 +747,8 @@ function initHeaderEvents() {
         if (DEBUG_MODE) return;
         toggleHeader(false);
     });
+
+    log('Initialized.', 'initHeaderEvents');
 }
 
 function initControlButtonEvents() {
@@ -758,6 +761,8 @@ function initControlButtonEvents() {
     demoButton.addEventListener('click', toggleDemo);
 
     screenshotButton.addEventListener('click', captureScreenshot);
+
+    log('Initialized.', 'initControlButtonEvents');
 }
 
 function initPresetButtonEvents() {
@@ -789,6 +794,8 @@ function initPresetButtonEvents() {
         presetButtons.push(btn);
         presetButtons[0].classList.add('active');
     });
+
+    log('Initialized.', 'initPresetButtonEvents');
 }
 
 /**
@@ -807,6 +814,8 @@ function initCommonButtonEvents() {
             btn.blur();
         });
     });
+
+    log('Initialized.', 'initCommonButtonEvents');
 }
 
 function initDiveButtons() {
@@ -833,6 +842,8 @@ function initDiveButtons() {
 
         diveBlock.style.display = 'block';
     }
+
+    log('Initialized.', 'initDiveButtons');
 }
 
 function initFractalSwitchButtons() {
@@ -853,6 +864,8 @@ function initFractalSwitchButtons() {
             await switchFractalMode(FRACTAL_TYPE.JULIA);
         }
     });
+
+    log('Initialized.', 'initFractalSwitchButtons');
 }
 
 function initWindowEvents() {
@@ -884,6 +897,8 @@ function initWindowEvents() {
             }, {once: true});
         });
     });
+
+    log('Initialized.', 'initWindowEvents');
 }
 
 /**
