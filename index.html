@@ -36,18 +36,19 @@
         <div id="debugInfo" class="draggable"></div>
         <div id="headerContainer">
             <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
-            <p>Mandelbrot and Julia fractal explorer &copy; Radim Brnka 2025<br/>Developed for the <a
-                    target="_blank"
-                    title="Unmasking Chaos: Synaptory blog"
-                    href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
-                article.</p>
             <div id="controlArea">
+                <p>Mandelbrot and Julia fractal explorer. Developed for the <a
+                        target="_blank"
+                        title="Synaptory blog: Unmasking Chaos"
+                        href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
+                    article.</p>
+
                 <div class="switch-field">
                     <span>Fractal:</span>
                     <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot</button><button id="juliaSwitch" class="" title="Julia mode (CTRL: Persist parameters)">Julia</button>
                 </div>
                 <div id="presets-dives">
-                    <p id="presets"><span title="Interesting Fractal Locations">Presets:</span></p>
+                    <p id="presets"><span title="Interesting Fractal Locations">Views:</span></p>
                     <p id="dives"><span title="Real-time Fractal Calculations">Dives:</span></p>
                 </div>
                 <div id="sliders">
@@ -63,7 +64,8 @@
                     </div>
                 </div>
                 <p id="controlButtons">
-                    <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button><button id="randomize" class="" title="Randomize Color Palette (T)">Recolor</button><button id="screenshot" class="" title="Save Image (Shift+S)">Screenshot</button><button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
+                    <span>Actions:</span>
+                    <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button><button id="randomize" class="" title="Randomize Color Palette (T)">Recolor</button><button id="screenshot" class="" title="Save Image (Shift+S)">Capture</button><button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
                 </p>
             </div>
             <p class="small">
@@ -85,6 +87,7 @@
             - `Shift + S`: Take screenshot
             - `Space`: Zoom-in (Ctrl/Alt: Zoom-out)
             - `A`: Force resize
+            - `L`: Toggle debug panel
             - `Left / Right`: Horizontal pan (Shift: smoother step)
             - `Up / Down`: Vertical pan(Shift: Smooth step)
             - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
@@ -95,9 +98,8 @@
                 <a target="_blank" title="Readme &amp; JSDocs"
                    href="https://fractal.brnka.com/docs/">Documentation</a>
                 <span class="middot">&middot;</span>
-                <a target="_blank" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
-                <span class="middot">&middot;</span>
-                <span id="version" title="Current version">v1.9</span>
+                <span id="version" title="Current version"><a target="_blank" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">v1.9</a></span>
+                <span class="middot">&middot;</span> <span id="copy">by R. Brnka &copy; 2025-2026</span>
             </p>
         </div>
         <div id="infoLabel" title="Click to copy full coordinates.">

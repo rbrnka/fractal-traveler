@@ -15,12 +15,16 @@
     --accent-color: rgba(180, 255, 106, 1);
 }
 
+html {
+    interpolate-size: allow-keywords;
+}
+
 html, body {
     margin: 0;
     padding: 0;
     overflow: hidden;
     background-color: #000;
-    font-family: sans-serif;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     color: #fff;
     cursor: crosshair;
     text-align: center;
@@ -43,14 +47,13 @@ html, body {
     z-index: 9999;
     background-color: var(--bg-color);
     backdrop-filter: blur(6px);
-    width: 380px;
+    width: fit-content;
     margin: 0 auto;
     border-bottom-left-radius: 15px;
     border-bottom-right-radius: 15px;
     cursor: auto;
     height: auto;
     overflow: hidden;
-    border: 5px solid var(--bg-color);
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -58,6 +61,7 @@ html, body {
     user-select: none; /* Standard syntax */
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     top: -320px;
+    transition: 0.1s ease-in;
 }
 
 #headerContainer.ready {
@@ -65,7 +69,8 @@ html, body {
 }
 
 #headerContainer.minimized {
-    height: 28px;
+    height: 30px;
+    width: 380px;
 }
 
 #fractalCanvas {
@@ -87,8 +92,18 @@ h1 {
     font-size: 12pt;
     letter-spacing: 1px;
     font-style: italic;
-    text-shadow: 0 0 4px #000, 0 0 12px var(--accent-color);
+    text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--accent-color);
     width: 320px;
+    animation: glow-pulse 2s ease-in-out infinite alternate;
+}
+
+@keyframes glow-pulse {
+    from {
+        text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--bg-color);
+    }
+    to {
+        text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--accent-color);
+    }
 }
 
 @media screen and (min-width: 471px) {

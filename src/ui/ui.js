@@ -785,12 +785,12 @@ function initPresetButtonEvents() {
         });
 
         // Support for 10+ Presets
-        if (index % 10 === 0) {
-            btn.classList.add("first-of-ten");
-        }
-        if ((index + 1) % 22 === 0) {
-            btn.classList.add("last-of-ten");
-        }
+        // if (index % 10 === 0) {
+        //     btn.classList.add("first-of-ten");
+        // }
+        // if ((index + 1) % 22 === 0) {
+        //     btn.classList.add("last-of-ten");
+        // }
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
