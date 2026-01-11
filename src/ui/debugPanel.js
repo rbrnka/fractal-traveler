@@ -26,9 +26,16 @@ export class DebugPanel {
             return;
         }
 
-        // Toggle visibility on creation (your original behavior)
-        this.debugInfo.style.display =
-            this.debugInfo.style.display === "block" ? "none" : "block";
+        // this.debugInfo.addEventListener("dblclick", this.toggle.bind(this));
+        let lastTap = 0;
+        this.debugInfo.addEventListener("pointerdown", (e) => {
+            const now = Date.now();
+            if (now - lastTap < 300) { // Double tap detected
+                this.toggle();
+            }
+            lastTap = now;
+            e.preventDefault();
+        });
 
         this.debugInfo.addEventListener("auxclick", (event) => {
             if (event.button === 1) {
@@ -94,6 +101,9 @@ export class DebugPanel {
             queryInFlight: null,
             pendingQueries: [],
         };
+
+        // Toggle visibility on creation
+        this.toggle();
 
         // Bind-safe update loop
         requestAnimationFrame(this.update);
@@ -355,7 +365,7 @@ export class DebugPanel {
             <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, draggable, middle-click to log)</span>|<br/>
             <span class="dbg-dim">───────────────────────────────────────────────────────────────────</span><br/>
             <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
-            <span class="dbg-title">mode:</span> ${getFractalMode()} <span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} <span class="dbg-dim">dpr=${esc(dpr)}<span class="dbg-title"> 
+            <span class="dbg-title">mode:</span> <span class="dbg-dim">${getFractalMode()}</span> <span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} <span class="dbg-dim">dpr=${esc(dpr)}<span class="dbg-title"> 
             buf</span>=${esc(this.canvas.width)}x${esc(this.canvas.height)}<br/>
             <br/>
             <span class="dbg-title">viewPan</span>=[${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}]<br/>
@@ -397,7 +407,9 @@ export class DebugPanel {
         requestAnimationFrame(this.update);
     };
 
-    toggle() {
+    /** Toggle the visibility of the debug panel. */
+    toggle = () => {
+        if (!this.debugInfo) return; // Safety check
         this.debugInfo.style.display = this.debugInfo.style.display === 'block' ? 'none' : 'block';
     }
 }

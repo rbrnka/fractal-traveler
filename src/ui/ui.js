@@ -3,6 +3,7 @@ import {
     ddValue,
     destroyArrayOfButtons,
     getAnimationDuration,
+    getFractalName,
     hsbToRgb,
     isMobileDevice,
     isTouchDevice,
@@ -74,6 +75,7 @@ let resizeTimeout;
 
 // HTML elements
 let header;
+let logo; // H1
 let mandelbrotSwitch;
 let juliaSwitch;
 let resetButton;
@@ -95,7 +97,7 @@ let pendingInfoForce = false;
 
 
 export function getFractalMode() {
-    return fractalMode;
+    return getFractalName(fractalMode);
 }
 
 /**
@@ -635,9 +637,8 @@ export function toggleDebugMode() {
         debugPanel.toggle();
     } else {
         debugPanel = new DebugPanel(canvas, fractalApp, accentColor);
+        toggleDebugLines();
     }
-
-    toggleDebugLines();
 }
 
 /** Toggles x/y axes */
@@ -726,13 +727,19 @@ export async function reset() {
 
 function initHeaderEvents() {
 
-    document.getElementById('logo').addEventListener('pointerenter', () => {
+    logo.addEventListener('pointerenter', () => {
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
         }
         toggleHeader(true);
     });
+
+    if (DEBUG_MODE > DEBUG_LEVEL.NONE) {
+        logo.addEventListener('click', () => {
+            toggleHeader();
+        });
+    }
 
     header.addEventListener('pointerleave', async () => {
         // Only minimize if it hasn't been toggled manually
@@ -1052,6 +1059,7 @@ export async function initUI(fractalRenderer) {
     mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
     juliaSwitch = document.getElementById('juliaSwitch');
     header = document.getElementById('headerContainer');
+    logo = document.getElementById('logo');
     infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');

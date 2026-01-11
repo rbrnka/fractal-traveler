@@ -610,3 +610,11 @@ export function destroyArrayOfButtons(buttons) {
         buttons.length = 0;
     }
 }
+
+/**
+ * Returns the name of the fractal mode.
+ * @param {number} type
+ */
+export function getFractalName(type) {
+    return Object.keys(FRACTAL_TYPE).find(key => FRACTAL_TYPE[key] === type) || "UNKNOWN";
+}
