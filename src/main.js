@@ -2,6 +2,8 @@
  * @module Main
  * @author Radim Brnka
  * @description The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), initializes the UI and the fractal.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import './css/style.css';

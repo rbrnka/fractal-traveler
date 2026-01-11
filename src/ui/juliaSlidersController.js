@@ -2,6 +2,8 @@
  * @module JuliaSlidersController
  * @author Radim Brnka
  * @description Controller of Julia slider elements directly interacting with the c-value of Julia fractal.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE} from "../global/constants";

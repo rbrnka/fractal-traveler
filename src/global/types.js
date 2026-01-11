@@ -1,7 +1,9 @@
 /**
  * @module Types
- * @author Radim Brnka (c) 2025-2026
+ * @author Radim Brnka
  * @description Data types & DDOs used in the application
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // DEBUG TYPES

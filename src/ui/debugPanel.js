@@ -3,9 +3,13 @@ import {log, LOG_LEVEL} from "../global/constants";
 import {getFractalMode, isJuliaMode} from "./ui";
 
 /**
+ * Debug Panel
+ *
  * @author Radim Brnka
  * @description Provides an on-screen debugging panel for monitoring real-time application performance,
  * GPU capabilities, and rendering diagnostics related to WebGL fractal rendering.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 export class DebugPanel {
 

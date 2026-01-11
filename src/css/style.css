@@ -1,3 +1,14 @@
+/**
+ * Synaptory Fractal Traveler - Main Stylesheet (Web & Mobile)
+ * 
+ * Responsive layout, animations, controls, and visual effects.
+ * 
+ * @author Radim Brnka
+ * @copyright 2025-2026 Radim Brnka
+ * @license MIT
+ * @version 1.9
+ */
+
 :root {
     --bg-color: rgba(24, 48, 13, 0.2);
     --mid-color: rgba(72, 144, 52, 0.6);

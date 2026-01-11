@@ -2,6 +2,8 @@
  * @module Utils
  * @author Radim Brnka
  * @description Contains helper functions for working with URL parameters, colors, etc.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, FRACTAL_TYPE, PI} from "./constants";

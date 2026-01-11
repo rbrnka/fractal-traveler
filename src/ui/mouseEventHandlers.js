@@ -2,6 +2,8 @@
  * @module MouseEventHandlers
  * @author Radim Brnka
  * @description This module exports a function registerMouseEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';

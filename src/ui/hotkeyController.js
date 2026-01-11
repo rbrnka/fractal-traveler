@@ -3,6 +3,8 @@
  * @author Radim Brnka
  * @description Keyboard shortcuts controller attached to the UI
  * @link https://www.freecodecamp.org/news/javascript-keycode-list-keypress-event-key-codes/
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {

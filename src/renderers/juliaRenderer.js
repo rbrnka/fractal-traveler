@@ -6,7 +6,7 @@ import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEG, EASE_TYPE, JULIA_PALETT
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 
 /**
- * JuliaRenderer (Deep Zoom via Perturbation)
+ * JuliaRenderer (Rebased Perturbation)
  *
  * @author Radim Brnka
  * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal, and sets preset zoom-ins.
@@ -16,6 +16,9 @@ import {updateJuliaSliders} from "../ui/juliaSlidersController";
  *   dz0 = z0 - z0_ref
  *   dz_{n+1} = 2*zref*dz + dz^2 (NO +dc each step for Julia!)
  * @extends FractalRenderer
+ * @see MandelbrotRenderer
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 export class JuliaRenderer extends FractalRenderer {
 

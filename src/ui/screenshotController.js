@@ -2,6 +2,8 @@
  * @module ScreenshotController
  * @author Radim Brnka
  * @description Screenshot capturing logic.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {JuliaRenderer} from "../renderers/juliaRenderer";

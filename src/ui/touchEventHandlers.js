@@ -2,6 +2,8 @@
  * @module TouchEventHandlers
  * @author Radim Brnka
  * @description This module exports a function registerTouchEventHandlers that sets up all touch events. It interacts directly with the fractalRenderer instance.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';

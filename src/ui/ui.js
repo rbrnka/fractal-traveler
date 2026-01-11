@@ -46,6 +46,8 @@ import {DebugPanel} from "./debugPanel";
  * @module UI
  * @author Radim Brnka
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 let canvas;

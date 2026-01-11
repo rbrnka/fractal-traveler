@@ -16,8 +16,10 @@ import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, 
 /**
  * FractalRenderer
  *
- * @author Radim Brnka
+ * @author Radim Brnka (c) 2025-2026
  * @description This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  * @abstract
  */
 export class FractalRenderer {

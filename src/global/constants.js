@@ -2,6 +2,8 @@
  * @module Constants
  * @author Radim Brnka
  * @description Global constants used across the app.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils";

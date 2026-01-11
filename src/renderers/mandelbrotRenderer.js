@@ -8,10 +8,9 @@ import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
  * @author Radim Brnka
  * @description This module defines a MandelbrotRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Mandelbrot set fractal and sets preset zoom-ins.
  * @extends FractalRenderer
- *
- * Orbit stored in float texture (OES_texture_float)
- * Fragment uses perturbation: dz_{n+1} = 2*zref*dz + dz^2 + dc with dc = (viewPan-refPan) + zoom * r
- */
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
+  */
 class MandelbrotRenderer extends FractalRenderer {
 
     constructor(canvas) {
@@ -110,7 +109,8 @@ class MandelbrotRenderer extends FractalRenderer {
     }
 
     /**
-     * @inheritDoc
+     * Orbit stored in float texture (OES_texture_float)
+     * Fragment uses perturbation: dz_{n+1} = 2*zref*dz + dz^2 + dc with dc = (viewPan-refPan) + zoom * r
      * @override
      */
     createFragmentShaderSource() {
