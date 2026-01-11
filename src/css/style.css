@@ -137,6 +137,7 @@ a {
     transition: text-decoration-color 300ms;
     text-shadow: 0 0 8px var(--accent-color);
 }
+
 a:hover {
     text-decoration-color: var(--accent-color);
 }
@@ -160,14 +161,12 @@ hr {
 button {
     position: relative;
     z-index: 10;
-    margin: 4px 1px;
+    margin: 2px 1px;
     cursor: pointer;
     align-items: center;
-    background-color: initial;
-    background-image: linear-gradient(#777, #333);
-    /*border-radius: 4px;*/
-    border-width: 0;
-    box-shadow: 0 5px 10px rgba(0, 0, 0, .1), 0 2px 4px rgba(0, 0, 0, .05);
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    background-image: linear-gradient(#000, #222);
+    border-radius: 4px;
     box-sizing: border-box;
     color: #eee;
     display: inline-flex;
@@ -181,7 +180,6 @@ button {
     padding: 10px 10px;
     text-align: center;
     text-decoration: none;
-    transform: translate3d(0, 0, 0);
     transition: all 150ms;
     vertical-align: baseline;
     white-space: nowrap;
@@ -189,28 +187,29 @@ button {
     -webkit-user-select: none;
     touch-action: manipulation;
     opacity: .85;
-    /*border-right: 1px solid var(--accent-color);*/
+    border: 1px solid rgb(from var(--accent-color) r g b / 0.3);
 }
 
 button:first-of-type {
-    border-radius: 4px 0 0 4px;
-    border-left: none;
+    /*border-radius: 4px 0 0 4px;*/
+    /*border-left: none;*/
 }
 
 button:last-of-type,
 button.last-of-ten {
-    border-radius: 0 4px 4px 0;
-    border-right: none;
+    /*border-radius: 0 4px 4px 0;*/
+    /*border-right: none;*/
 }
 
 button:hover {
     box-shadow: 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
+    text-shadow: 0 0 1px var(--accent-color);
 }
 
 button.active {
     color: var(--accent-color);
     background-image: linear-gradient(#222, #666);
-    box-shadow: 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
+    /*box-shadow: 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);*/
     text-shadow: 0 0 4px var(--accent-color);
 }
 
@@ -312,7 +311,7 @@ button.dive {
     overflow: hidden;
     margin: 0 auto;
     width: 240px;
-    padding: 10px 20px;
+    padding: 10px 20px 5px 20px;
 }
 
 .switch-field span {
@@ -334,19 +333,32 @@ button.dive {
 #controlArea {
     background: var(--bg-color);
     border-radius: 10px;
-    width: 340px;
+    width: fit-content;
     position: relative;
-    margin: 0 auto;
-    padding: 2px 2px 6px 2px;
+    margin: 0 10px 0 10px;
+    padding: 0 20px 5px 20px;
     cursor: auto;
 }
 
 #controlButtons {
-    margin: 5px 0 0 0;
+    margin: 2px 0 0 0;
+}
+
+#controlButtons span {
+    /*font-size: 12px;*/
+    /*font-weight: bolder;*/
 }
 
 #controlButtons button {
-    width: 80px;
+    width: 90px;
+    justify-content: center;
+    display: inline-flex;
+    flex-direction: column;
+    vertical-align: baseline;
+}
+
+#reset {
+    color: #FF3131;
 }
 
 p.small {
@@ -375,8 +387,13 @@ p#presets span, p#dives span {
     font-size: 11px;
 }
 
+#copy {
+    color: #ccc;
+    font-size: 11px;
+}
+
 #infoLabel {
-    width: 370px;
+    width: 380px;
     min-height: 14px;
     max-height: 30px;
     padding: 3px 5px 3px 5px;
@@ -387,17 +404,20 @@ p#presets span, p#dives span {
     border-top-left-radius: 15px;
     border-top-right-radius: 15px;
     overflow: hidden;
-    border: 5px solid var(--bg-color);
+    border: 1px solid var(--bg-color);
     border-bottom: none;
     position: absolute;
-    bottom: -30px;
-    right: 25%;
-    left: 50%;
-    margin-left: -195px;
+    left: 0;
+    right: 0;
+    margin-inline: auto;
+    opacity: 0; /* Keep it hidden by default */
+    pointer-events: none;
 }
 
 #infoLabel.ready {
-    animation: fadeInBottom 1s forwards;
+    animation: fadeInBottom 1s both;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .middot {
@@ -407,10 +427,9 @@ p#presets span, p#dives span {
 #infoText {
     color: #fff;
     /*color: var(--accent-color);*/
-    font-family: sans-serif;
-    /*font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;*/
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     width: 100%;
-    font-size: 10px;
+    font-size: 11px;
     background: transparent;
     border: none;
     text-align: center;
@@ -427,27 +446,6 @@ p#presets span, p#dives span {
 
 #infoText:focus {
     outline: none !important;
-}
-
-
-@keyframes pulse {
-    0% {
-        color: #fff;
-    }
-
-    100% {
-        color: var(--accent-color);
-    }
-}
-
-#infoText.animation {
-    /*animation: pulse;*/
-    /*animation-duration: 1s;*/
-    /*animation-timing-function: ease-in-out;*/
-    /*animation-delay: 0s;*/
-    /*animation-iteration-count: infinite;*/
-    /*animation-direction: alternate;*/
-    color: var(--accent-color);
 }
 
 #debugInfo {
