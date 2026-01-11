@@ -12,6 +12,7 @@ import {
     rgbToHsl
 } from "../global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
+import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.frag';
 
 /**
  * FractalRenderer
@@ -99,11 +100,7 @@ class FractalRenderer {
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
         /** Vertex shader */
-        this.vertexShaderSource = `
-            precision mediump float;
-            attribute vec4 a_position;
-            void main() { gl_Position = a_position; }
-        `;
+        this.vertexShaderSource = vertexFragmentShaderRaw;
 
         this.onWebGLContextLost = this.onWebGLContextLost.bind(this);
         this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
@@ -300,6 +297,7 @@ class FractalRenderer {
      * Defines the shader code for rendering the fractal shape
      *
      * @abstract
+     * @returns {string}
      */
     createFragmentShaderSource() {
         throw new Error('The draw method must be implemented in child classes');

@@ -1,6 +1,9 @@
 import FractalRenderer from "./fractalRenderer";
 import {asyncDelay, compareComplex, hsbToRgb, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
+import presetsData from '../data/mandelbrot.json' with {type: 'json'};
+/** @type {string} */
+import fragmentShaderRaw from '../shaders/mandelbrot.frag';
 
 /**
  * MandelbrotRenderer (Rebased Perturbation)
@@ -32,44 +35,7 @@ class MandelbrotRenderer extends FractalRenderer {
         this.floatTexExt = null;
 
         /** Mandelbrot-specific presets */
-        // @formatter:off
-        this.PRESETS = [
-            { id: 0,  title: 'Default View',
-                pan: this.DEFAULT_PAN, zoom: this.DEFAULT_ZOOM, rotation: this.DEFAULT_ROTATION},
-            { id: 1,  title: 'Misiurewicz Point 1', speed: 5,
-                pan: [0.351423759052521905,0.063866559813292889], rotation: 0, zoom: 3.0177077833226633e-16},
-            { id: 2,  title: 'Across the Seahorse Valley', speed: 5,
-                pan: [0.2549996194371581,0.0005684340597555177], rotation: 0, zoom: 1.395817829563278e-17},
-            { id: 3,  title: '', speed: 5,
-                pan: [-0.16454216570937188,1.0384395470826784], rotation: 1.0399999999999796, zoom: 1.0070206965970002e-15},
-            { id: 4,  title: '', speed: 5,
-                pan: [-0.743644784243975,0.13182914354891018], rotation: 0.8749616210243012, zoom: 3.304183377903384e-10},
-            { id: 5,  title: '', speed: 5,
-                pan: [-0.7668654471115035,-0.10747310068867935], rotation: 1.5065924365935786, zoom: 2.266530562848193e-14},
-            { id: 6,  title: '', speed: 5,
-                pan: [-0.8535650370330192,-0.2107813458112579], rotation: 4.217344329507167, zoom: 2.3639582790335785e-22},
-            { id: 7,  title: '', speed: 5,
-                pan: [0.3374458157180176,0.04726991269503814], rotation: 2.990096678146248, zoom: 2.7815348174817395e-16},
-            { id: 8,  title: 'Tip of the branch', speed: 5,
-                pan: [-0.2281554936539617,1.1151425080399369], rotation: 5.574310838854462, zoom: 3.7267390083662553e-16},
-            { id: 9,  title: 'The Rabbits', speed: 5,
-                pan: [-0.12479143490517397,0.8403941246800949], rotation: 0.0026613829226800334, zoom: 1.1472429545046962e-16},
-            { id: 10, title: '', speed: 10,
-                pan: [-1.9990959935546677,3.700008064443964e-12], rotation: 5.438218522169493, zoom: 1.3557433282929746e-15},
-            { id: 11, title: 'Misiurewicz Point 2', speed: 10,
-                pan: [0.11650145207876453,-0.6635454379133249], rotation: 2.610174541746648, zoom: 3.493264360283514e-16},
-            { id: 12, title: 'Microbrot', speed: 5,
-                pan: [0.11654740401415453,-0.6636148998875822], rotation: 2.610174541746648, zoom: 1.0267582908408742e-7},
-            { id: 13, title: 'Tip of the spear', speed: 5,
-                pan: [-1.9990961121566266,2.8541655645072767e-16], rotation: 5.4382185221694925, zoom: 1.2995863762636767e-13},
-            { id: 14, title: 'Tip of the tip', speed: 5,
-                pan: [-1.9999435234863918,-1.4213395057891007e-17], rotation: 0, zoom: 3.214326685343314e-14},
-            { id: 15, title: 'Tip of the tip of the tip', speed: 5,
-                pan: [-1.9999991175876526,9.00355902817349e-20], rotation: 0, zoom: 6.015823178730882e-16},
-            { id: 16, title: 'Where the math ends', speed: 5,
-                pan: [-1.9999991175876528,-3.194092143034014e-39], rotation: 0, zoom: 6.130263511531091e-36}
-            // @formatter:on
-        ];
+        this.PRESETS = presetsData.presets;
 
         this.init();
     }
@@ -114,190 +80,7 @@ class MandelbrotRenderer extends FractalRenderer {
      * @override
      */
     createFragmentShaderSource() {
-        const coloring = `
-            float color = i / 100.0;
-            vec3 fractalColor = vec3(
-                sin(color * 3.1415),
-                sin(color * 6.2830),
-                sin(color * 1.7200)
-            ) * u_colorPalette;
-            gl_FragColor = vec4(fractalColor, 1.0);
-        `;
-
-        return `
-            precision highp float;
-            
-            uniform vec2 u_resolution;
-            
-            // view (camera) pan (hi+lo)
-            uniform vec2 u_view_pan_h;
-            uniform vec2 u_view_pan_l;
-            
-            // reference orbit pan (hi+lo)
-            uniform vec2 u_ref_pan_h;
-            uniform vec2 u_ref_pan_l;
-            
-            // zoom (hi+lo)
-            uniform float u_zoom_h;
-            uniform float u_zoom_l;
-            
-            uniform float u_iterations;
-            uniform vec3  u_colorPalette;
-            uniform float u_rotation;
-            
-            uniform sampler2D u_orbitTex;
-            uniform float u_orbitW;
-            
-            const int MAX_ITER = ${this.MAX_ITER};
-            
-            // --- df helpers ---
-            struct df  { float hi; float lo; };
-            struct df2 { df x; df y; };
-            
-            df df_make(float hi, float lo){ df a; a.hi=hi; a.lo=lo; return a; }
-            df df_from(float a){ return df_make(a, 0.0); }
-            float df_to_float(df a){ return a.hi + a.lo; }
-
-            df twoSum(float a, float b) {
-                float s  = a + b;
-                float bb = s - a;
-                float err = (a - (s - bb)) + (b - bb);
-                return df_make(s, err);
-            }
-            
-            df quickTwoSum(float a, float b) {
-                float s = a + b;
-                float err = b - (s - a);
-                return df_make(s, err);
-            }
-            
-            df df_add(df a, df b) {
-                df s = twoSum(a.hi, b.hi);
-                float t = a.lo + b.lo;
-                df u = twoSum(s.lo, t);
-                df v = twoSum(s.hi, u.hi);
-                float lo = u.lo + v.lo;
-                return quickTwoSum(v.hi, lo);
-            }
-            
-            df df_sub(df a, df b) { return df_add(a, df_make(-b.hi, -b.lo)); }
-            
-            const float SPLIT = 4097.0;
-            
-            df twoProd(float a, float b) {
-                float p = a * b;
-                
-                float aSplit = a * SPLIT;
-                float aHi = aSplit - (aSplit - a);
-                float aLo = a - aHi;
-                
-                float bSplit = b * SPLIT;
-                float bHi = bSplit - (bSplit - b);
-                float bLo = b - bHi;
-                
-                float err = ((aHi * bHi - p) + aHi * bLo + aLo * bHi) + aLo * bLo;
-                return df_make(p, err);
-            }
-            
-            df df_mul(df a, df b) {
-                df p = twoProd(a.hi, b.hi);
-                float err = a.hi * b.lo + a.lo * b.hi + a.lo * b.lo;
-                df s = twoSum(p.lo, err);
-                df r = twoSum(p.hi, s.hi);
-                float lo = s.lo + r.lo;
-                return quickTwoSum(r.hi, lo);
-            }
-            
-            df df_mul_f(df a, float b) { return df_mul(a, df_from(b)); }
-            
-            df2 df2_make(df x, df y){ df2 r; r.x=x; r.y=y; return r; }
-            df2 df2_add(df2 a, df2 b){ return df2_make(df_add(a.x,b.x), df_add(a.y,b.y)); }
-            
-            df2 df2_mul(df2 a, df2 b){
-                // (ax + i ay)(bx + i by) = (axbx - ayby) + i(axby + aybx)
-                df axbx = df_mul(a.x, b.x);
-                df ayby = df_mul(a.y, b.y);
-                df axby = df_mul(a.x, b.y);
-                df aybx = df_mul(a.y, b.x);
-                return df2_make(df_sub(axbx, ayby), df_add(axby, aybx));
-            }
-            
-            df2 df2_sqr(df2 a){
-                df xx = df_mul(a.x, a.x);
-                df yy = df_mul(a.y, a.y);
-                df xy = df_mul(a.x, a.y);
-                return df2_make(df_sub(xx, yy), df_mul_f(xy, 2.0));
-            }
-            
-            df2 sampleZRef(int n){
-                float x = (float(n) + 0.5) / u_orbitW;
-                vec4 t = texture2D(u_orbitTex, vec2(x, 0.5));
-                return df2_make(df_make(t.r, t.g), df_make(t.b, t.a));
-            }
-            
-            void main() {
-                float aspect = u_resolution.x / u_resolution.y;
-                
-                vec2 st = gl_FragCoord.xy / u_resolution;
-                st -= 0.5;
-                st.x *= aspect;
-                
-                float cosR = cos(u_rotation);
-                float sinR = sin(u_rotation);
-                vec2 r = vec2(
-                    st.x * cosR - st.y * sinR,
-                    st.x * sinR + st.y * cosR
-                );
-            
-                df zoom = df_make(u_zoom_h, u_zoom_l);
-                
-                df2 viewPan = df2_make(
-                    df_make(u_view_pan_h.x, u_view_pan_l.x),
-                    df_make(u_view_pan_h.y, u_view_pan_l.y)
-                );
-                df2 refPan = df2_make(
-                    df_make(u_ref_pan_h.x, u_ref_pan_l.x),
-                    df_make(u_ref_pan_h.y, u_ref_pan_l.y)
-                );
-            
-                // dc = (viewPan - refPan) + zoom * r
-                df2 dc = df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y));
-                dc = df2_add(dc, df2_make(df_sub(viewPan.x, refPan.x), df_sub(viewPan.y, refPan.y)));
-                
-                df2 dz = df2_make(df_from(0.0), df_from(0.0));
-                
-                float i = 0.0;
-
-                for (int n = 0; n < MAX_ITER; n++) {
-                    float fn = float(n);
-                    if (fn >= u_iterations) { i = fn; break; }
-                    
-                    df2 zref = sampleZRef(n);
-                    
-                    // bailout approx using float
-                    float zx = df_to_float(zref.x) + df_to_float(dz.x);
-                    float zy = df_to_float(zref.y) + df_to_float(dz.y);
-                    if (zx*zx + zy*zy > 4.0) { i = fn; break; }
-                    
-                    // dz_{n+1} = 2*zref*dz + dz^2 + dc
-                    df2 zref_dz = df2_mul(zref, dz);
-                    zref_dz.x = df_mul_f(zref_dz.x, 2.0);
-                    zref_dz.y = df_mul_f(zref_dz.y, 2.0);
-                    
-                    df2 dz2 = df2_sqr(dz);
-                    
-                    dz = df2_add(df2_add(zref_dz, dz2), dc);
-                    
-                    if (n == MAX_ITER - 1) i = u_iterations;
-                }
-                
-                if (i >= u_iterations) {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                } else {
-                    ${coloring}
-                }
-            }
-        `;
+        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
     }
 
     updateUniforms() {

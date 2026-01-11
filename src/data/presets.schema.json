@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fractal Configuration Schema",
+  "description": "Schema for Mandelbrot and Julia presets, including multi-phase animated Dives.",
+  "type": "object",
+  "properties": {
+    "presets": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/FractalPreset" }
+    },
+    "dives": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Dive" }
+    }
+  },
+  "definitions": {
+    "Complex": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" },
+      "description": "A coordinate pair [real, imaginary]."
+    },
+    "FractalPreset": {
+      "type": "object",
+      "required": ["pan", "zoom"],
+      "properties": {
+        "id": { "type": "integer" },
+        "title": { "type": "string" },
+        "pan": { "$ref": "#/definitions/Complex" },
+        "zoom": { "type": "number" },
+        "rotation": { "type": "number", "default": 0 },
+        "c": { "$ref": "#/definitions/Complex" }
+      }
+    },
+    "Dive": {
+      "type": "object",
+      "required": ["pan", "zoom", "startC", "endC", "step", "cxDirection", "cyDirection"],
+      "properties": {
+        "title": { "type": "string" },
+        "pan": { "$ref": "#/definitions/Complex" },
+        "zoom": { "type": "number" },
+        "rotation": { "type": "number", "default": 0 },
+        "startC": {
+          "$ref": "#/definitions/Complex",
+          "description": "The base/starting Julia constant."
+        },
+        "endC": {
+          "$ref": "#/definitions/Complex",
+          "description": "The threshold constant for reversing or changing phases."
+        },
+        "step": {
+          "type": "number",
+          "description": "Increment value added to C per frame."
+        },
+        "cxDirection": {
+          "type": "number",
+          "enum": [1, -1],
+          "description": "1 for positive, -1 for negative direction on the real axis."
+        },
+        "cyDirection": {
+          "type": "number",
+          "enum": [1, -1],
+          "description": "1 for positive, -1 for negative direction on the imaginary axis."
+        },
+        "phases": {
+          "type": "array",
+          "items": { "type": "integer", "enum": [1, 2, 3, 4] },
+          "description": "Order: 1(cx to end), 2(cy to end), 3(cx to start), 4(cy to start)."
+        }
+      }
+    }
+  }
+}

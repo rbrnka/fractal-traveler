@@ -9,7 +9,7 @@
 import './css/style.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import MandelbrotRenderer from "./renderers/mandelbrotRenderer";
-import {RiemannRenderer} from "./renderers/riemannRenderer";
+import RiemannRenderer from "./renderers/riemannRenderer";
 import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";

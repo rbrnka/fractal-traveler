@@ -59,7 +59,11 @@ module.exports = (env, argv) => {
                         MiniCssExtractPlugin.loader,
                         'css-loader'
                     ]
-                }
+                },
+                {
+                    test: /\.(frag|vert|glsl)$/,
+                    type: 'asset/source',
+                },
             ]
         },
         plugins: [

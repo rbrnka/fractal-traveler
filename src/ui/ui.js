@@ -32,7 +32,7 @@ import {
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
-import {RiemannRenderer} from "../renderers/riemannRenderer";
+import RiemannRenderer from "../renderers/riemannRenderer";
 import {
     destroyJuliaSliders,
     disableJuliaSliders,

@@ -513,6 +513,15 @@ export function lerp(start, end, time) {
 }
 
 /**
+ * Converts degrees from JSON to Radians for GLSL uniforms
+ * @param {number} degrees
+ * @returns {number} radians
+ */
+export function degToRad(degrees) {
+    return degrees * (PI / 180);
+}
+
+/**
  * Normalizes rotation into into [0, 2*PI] interval
  * @param {number} rotation in rad
  * @return {number} rotation in rad
