@@ -91,6 +91,10 @@ let pendingInfoTimer = null;
 let pendingInfoForce = false;
 
 
+export function getFractalMode() {
+    return fractalMode;
+}
+
 /**
  * Switches among fractal modes
  * @param {FRACTAL_TYPE} mode
@@ -127,6 +131,12 @@ export async function switchFractalMode(mode, preset = null) {
             console.groupEnd();
             return;
     }
+
+    // Detach debug panel from old renderer BEFORE destroy
+    debugPanel?.setRenderer?.(null);
+
+    // Attach debug panel to new renderer AFTER init/constructor
+    debugPanel?.setRenderer?.(fractalApp);
 
     // Register control events
     if (isTouchDevice()) {

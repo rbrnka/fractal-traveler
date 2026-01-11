@@ -1,5 +1,6 @@
 import {ddValue} from "../global/utils";
 import {log, LOG_LEVEL} from "../global/constants";
+import {getFractalMode, isJuliaMode} from "./ui";
 
 /**
  * @author Radim Brnka
@@ -28,8 +29,16 @@ export class DebugPanel {
         this.debugInfo.addEventListener("auxclick", (event) => {
             if (event.button === 1) {
                 console.group('> DEBUG PANEL DUMP');
-                log(this.debugInfo.innerText, "", LOG_LEVEL.DEBUG);
+                log(this.debugInfo.innerText, this.constructor.name, LOG_LEVEL.DEBUG);
                 console.groupEnd();
+
+                let dump = this.debugInfo.innerText.substring(this.debugInfo.innerText.indexOf('FRAG'));
+
+                navigator.clipboard.writeText(dump).then(function () {
+                    console.log('Debug dump copied to clipboard!');
+                }, function (err) {
+                    console.error('Debug dump not copied to clipboard! ' + err.toString());
+                });
             }
         });
 
@@ -84,6 +93,21 @@ export class DebugPanel {
 
         // Bind-safe update loop
         requestAnimationFrame(this.update);
+    }
+
+    setRenderer(renderer) {
+        this.fractalApp = renderer || null;
+        this.gl = renderer?.gl || null;
+
+        // refresh cached precision safely
+        this.precisionInfo = null;
+        const gl = this.gl;
+        if (gl && typeof gl.getShaderPrecisionFormat === "function") {
+            const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+            this.precisionInfo = hp
+                ? {precision: hp.precision, rangeMin: hp.rangeMin, rangeMax: hp.rangeMax}
+                : null;
+        }
     }
 
     _initGpuInfo() {
@@ -194,12 +218,18 @@ export class DebugPanel {
         const dpr = window.devicePixelRatio || 1;
         const rect = this.canvas.getBoundingClientRect();
 
-        const gl = this.fractalApp.gl;
+        const gl = this.gl;
+        if (!gl || typeof gl.getShaderPrecisionFormat !== "function") return;
+
+
         const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
+
         const hpInfo = {precision: hp.precision, rangeMin: hp.rangeMin, rangeMax: hp.rangeMax};
 
         const viewPanX = ddValue(this.fractalApp.panDD.x);
         const viewPanY = ddValue(this.fractalApp.panDD.y);
+        const cx = isJuliaMode() ? this.fractalApp.c[0] : 0;
+        const cy = isJuliaMode() ? this.fractalApp.c[1] : 0;
 
         const refPanX = this.fractalApp.pan[0];
         const refPanY = this.fractalApp.pan[1];
@@ -318,14 +348,15 @@ export class DebugPanel {
             this.gpu.unmaskedRenderer || this.gpu.renderer || "unknown";
 
         this.debugInfo.innerHTML = `
-            <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, draggable, middle-click to log)</span><br/>
-            <span class="dbg-dim">———————————————————————————————————————————————————————————————————</span><br/>
+            <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, draggable, middle-click to log)</span>|<br/>
+            <span class="dbg-dim">───────────────────────────────────────────────────────────────────</span><br/>
             <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
-            <span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} <span class="dbg-dim">dpr=${esc(dpr)}</span><br/>
-            <span class="dbg-title">buf</span>=${esc(this.canvas.width)}x${esc(this.canvas.height)}<br/>
+            <span class="dbg-title">mode:</span> ${getFractalMode()} <span class="dbg-title">css</span>=${esc(rect.width.toFixed(1))}x${esc(rect.height.toFixed(1))} <span class="dbg-dim">dpr=${esc(dpr)}<span class="dbg-title"> 
+            buf</span>=${esc(this.canvas.width)}x${esc(this.canvas.height)}<br/>
             <br/>
             <span class="dbg-title">viewPan</span>=[${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}]<br/>
             <span class="dbg-title">refPan</span>     =[${esc(refPanX.toFixed(24))}, ${esc(refPanY.toFixed(24))}]<br/>
+            <span class="dbg-title">c</span>=[${esc(cx.toFixed(24))}, ${esc(cy.toFixed(24))}]<br/>
             <span class="dbg-title">zoom</span>=${esc(zoom.toFixed(20))}<br/>
             <br/>
             <span class="dbg-title">———— Scale ————</span><br/>
@@ -333,7 +364,7 @@ export class DebugPanel {
             px/unit=<span class="${levelClass(scaleLevel)}">${esc(pxPerUnit.toExponential(3))}</span><br/>
             unit/px=<span class="${levelClass(scaleLevel)}">${esc(unitPerPx.toExponential(3))}</span><br/>
             <br/>
-            <span class="dbg-title">———— Precision stress (heuristics) ————</span><br/>
+            <span class="dbg-title">———— Precision Stress (heuristics) ————</span><br/>
             <span class="dbg-title">iters</span>=${esc(this.fractalApp.iterations.toFixed(0))} (MAX_ITER=${esc(this.fractalApp.MAX_ITER)})<br/>
             Precision health:<span class="dbg-badge ${levelClass(healthLevel)}">${score}/100</span><span class="dbg-dim">${esc(worst)}</span><br/>
             |pan|=${esc(absPan.toExponential(3))}<br/>
@@ -353,9 +384,9 @@ export class DebugPanel {
             gpuMs=<span class="${levelClass(gpuLevel)}">${esc(Number.isFinite(gpuSmooth) ? gpuSmooth.toFixed(2) : "n/a")}</span> <span class="dbg-dim">${esc(this.perf.gpuDisjoint ? "(disjoint)" : "")}</span><br/>
             hint=<span class="dbg-dim">${esc(gpuHint)}</span><br/>
             <br/>
-            <span class="dbg-title">———— GPU ————</span><br/>
-            ${esc(gpuVendor)}<br/>
-            ${esc(gpuRenderer)}<br/>
+            <span class="dbg-title">———— Renderer ————</span><br/>
+            Vendor: ${esc(gpuVendor)}<br/>
+            GPU: ${esc(gpuRenderer)}<br/>
             <span class="dbg-dim">${esc(this.gpu.webglVersion)} on ${navigator?.userAgentData?.platform || navigator?.platform}</span><br/>
             `;
 
