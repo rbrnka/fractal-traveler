@@ -12,7 +12,7 @@ import {
     rgbToHsl
 } from "../global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
-import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.frag';
+import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
 
 /**
  * FractalRenderer
