@@ -782,19 +782,11 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : '');
+        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : ` (${index})`); // TODO keep the ID in the title
         btn.textContent = (preset.title || index).toString();
         btn.addEventListener('click', async () => {
             await travelToPreset(presets, index);
         });
-
-        // Support for 10+ Presets
-        // if (index % 10 === 0) {
-        //     btn.classList.add("first-of-ten");
-        // }
-        // if ((index + 1) % 22 === 0) {
-        //     btn.classList.add("last-of-ten");
-        // }
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
