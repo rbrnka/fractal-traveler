@@ -7,7 +7,7 @@
  */
 
 import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
-import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
+import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 
 /** How long should we wait before distinguish between double click and two single clicks. */

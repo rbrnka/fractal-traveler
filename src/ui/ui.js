@@ -637,12 +637,12 @@ export function toggleDebugMode() {
         debugPanel.toggle();
     } else {
         debugPanel = new DebugPanel(canvas, fractalApp, accentColor);
-        toggleDebugLines();
+        toggleCenterLines();
     }
 }
 
 /** Toggles x/y axes */
-export function toggleDebugLines() {
+export function toggleCenterLines() {
     const verticalLine = document.getElementById('verticalLine');
     const horizontalLine = document.getElementById('horizontalLine');
 

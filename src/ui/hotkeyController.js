@@ -17,7 +17,7 @@ import {
     startJuliaDive,
     switchFractalMode,
     switchFractalModeWithPersistence,
-    toggleDebugLines,
+    toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
     toggleHeader,
@@ -165,7 +165,7 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyE': // Debug lines
-            toggleDebugLines();
+            toggleCenterLines();
             handled = true;
             break;
 
