@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Synaptory Fractal Traveler</title>
+        <meta charset="UTF-8">
+        <meta name="author" content="Radim Brnka &copy; 2025-2026">
+        <meta name="description"
+              content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
+        <meta property="og:title" content="Synaptory: Fractal Traveler">
+        <meta property="og:description"
+              content="Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
+        <meta property="og:image" content="https://fractal.brnka.com/fractal.png">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+
+
+        <link rel="image_src" href="https://fractal.brnka.com/fractal.png">
+        <link rel="icon" href="https://fractal.brnka.com/fractal.png" type="image/png">
+
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
+
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZDM1T1PJ2"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+
+            function gtag() {
+                dataLayer.push(arguments);
+            }
+
+            gtag('js', new Date());
+            gtag('config', 'G-DZDM1T1PJ2');
+        </script>
+    <script defer src="js/bundle.js"></script><link href="css/style.css" rel="stylesheet"></head>
+    <body>
+        <div id="debugInfo" class="draggable"></div>
+        <div id="headerContainer">
+            <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
+            <div id="controlArea">
+                <p>Mandelbrot and Julia fractal explorer. Developed for the <a
+                        target="_blank"
+                        title="Synaptory blog: Unmasking Chaos"
+                        href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
+                    article.</p>
+
+                <div class="switch-field">
+                    <span>Fractal:</span>
+                    <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot</button><button id="juliaSwitch" class="" title="Julia mode (CTRL: Persist parameters)">Julia</button>
+                    <button id="flipSwitch">🔄</button>
+                </div>
+                <div id="presets-dives">
+                    <p id="presets"><span title="Interesting Fractal Locations">Views:</span></p>
+                    <p id="dives"><span title="Real-time Fractal Calculations">Dives:</span></p>
+                </div>
+                <div id="sliders">
+                    <div class="slider-container">
+                        <label for="realSlider" title="Real part">cx:</label>
+                        <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.0001" value="-0.8000">
+                        <span class="sliderValue" id="realSliderValue">0</span>
+                    </div>
+                    <div class="slider-container">
+                        <label for="imagSlider" title="Imaginary part">cy:</label>
+                        <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.0001" value="0.1560">
+                        <span class="sliderValue" id="imagSliderValue">0</span>
+                    </div>
+                </div>
+                <p id="controlButtons">
+                    <span>Actions:</span>
+                    <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button><button id="randomize" class="" title="Randomize Color Palette (T)">Recolor</button><button id="screenshot" class="" title="Save Image (Shift+S)">Capture</button><button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
+                </p>
+            </div>
+            <p class="small">
+                <a target="_blank" title="
+        ### Mouse
+            - `Left Button Drag`: Pan
+            - `Right Button Drag`: Rotate
+            - `Wheel`: Zoom
+            - `Left Button Single Click`: Center & Generate URL link
+            - `Double click`: Zoom-in/out & Center
+            - `Middle Click`: Toggle guiding lines
+        ### Keyboard
+            - `F11`: Toggle fullscreen
+            - `Enter`: Toggle controls
+            - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
+            - `E`: Toggle guiding lines
+            - `Shift + R`: Reset
+            - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
+            - `Shift + S`: Take screenshot
+            - `Space`: Zoom-in (Ctrl/Alt: Zoom-out)
+            - `A`: Force resize
+            - `L`: Toggle debug panel
+            - `Left / Right`: Horizontal pan (Shift: smoother step)
+            - `Up / Down`: Vertical pan(Shift: Smooth step)
+            - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
+            - `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
+            - `Num 1-9`: Load Preset (Shift: Start dive)"
+                   href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Controls</a>
+                <span class="middot">&middot;</span>
+                <a target="_blank" title="Readme &amp; JSDocs"
+                   href="https://fractal.brnka.com/docs/">Documentation</a>
+                <span class="middot">&middot;</span>
+                <span id="version" title="Current version"><a target="_blank" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">v1.9</a></span>
+                <span class="middot">&middot;</span> <span id="copy">by R. Brnka &copy; 2025-2026</span>
+            </p>
+        </div>
+        <div id="infoLabel" title="Click to copy full coordinates.">
+        <!--    <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>-->
+            <div id="infoText">Initialized successfully!</div>
+        </div>
+        <canvas id="fractalCanvas"></canvas>
+        <canvas id="floatingCanvas"></canvas>
+        <div id="verticalLine" class="centerLine verticalLine"></div>
+        <div id="horizontalLine" class="centerLine horizontalLine"></div>
+    </body>
+</html>
