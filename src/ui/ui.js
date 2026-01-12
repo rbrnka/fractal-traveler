@@ -96,9 +96,7 @@ let pendingInfoTimer = null;
 let pendingInfoForce = false;
 
 
-export function getFractalMode() {
-    return getFractalName(fractalMode);
-}
+export const getFractalMode = () => getFractalName(fractalMode);
 
 /**
  * Switches among fractal modes
@@ -209,9 +207,7 @@ export async function switchFractalModeWithPersistence(mode) {
     console.groupEnd();
 }
 
-export function isJuliaMode() {
-    return fractalMode === FRACTAL_TYPE.JULIA;
-}
+export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
 
 /**
  * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
@@ -385,9 +381,7 @@ export function updateInfo(force = false) {
 }
 
 /** @returns {boolean} */
-export function isAnimationActive() {
-    return animationActive;
-}
+export const isAnimationActive = () => animationActive;
 
 /** Enables controls, resets demo button */
 function exitAnimationMode() {
@@ -632,7 +626,6 @@ export async function travelToPreset(presets, index) {
 
 /** Inits debug bar with various information permanently shown on the screen */
 export function toggleDebugMode() {
-    console.log(debugPanel);
     if (debugPanel) {
         debugPanel.toggle();
     } else {
@@ -710,6 +703,8 @@ export function toggleHeader(show = null) {
 }
 
 export async function reset() {
+    console.groupCollapsed(`%c reset`, CONSOLE_GROUP_STYLE);
+
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
 
     exitAnimationMode();
@@ -721,6 +716,8 @@ export async function reset() {
     resetAppState();
     updateRecolorButtonTitle();
     presetButtons[0].classList.add('active');
+
+    console.groupEnd();
 }
 
 // region > INITIALIZERS -----------------------------------------------------------------------------------------------
