@@ -7,8 +7,9 @@
     "dev-nowatch": "webpack --mode development",
     "dev-watch": "webpack --mode development --watch",
     "start": "webpack serve --open",
-    "test": "jest",
-    "deploy": "gh-pages -d dist"
+    "test": "jest --config ./src/config/jest.config.js",
+    "deploy-gh": "gh-pages -d dist",
+    "docs": " jsdoc -r ./src/ ./README.md -d ./doc/ -c src/config/jsdoc.json\n"
   },
   "author": "Radim Brnka",
   "license": "MIT",
@@ -39,7 +40,7 @@
   "jest": {
     "testEnvironment": "jsdom",
     "setupFiles": [
-      "<rootDir>/jest.setup.js"
+      "<rootDir>/src/config/jest.setup.js"
     ],
     "moduleFileExtensions": [
       "js",
