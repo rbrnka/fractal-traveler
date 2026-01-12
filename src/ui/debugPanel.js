@@ -1,4 +1,4 @@
-import {ddValue} from "../global/utils";
+import {ddValue, isTouchDevice} from "../global/utils";
 import {log, LOG_LEVEL} from "../global/constants";
 import {getFractalMode, isJuliaMode} from "./ui";
 
@@ -26,16 +26,17 @@ export class DebugPanel {
             return;
         }
 
-        // this.debugInfo.addEventListener("dblclick", this.toggle.bind(this));
-        let lastTap = 0;
-        this.debugInfo.addEventListener("pointerdown", (e) => {
-            const now = Date.now();
-            if (now - lastTap < 300) { // Double tap detected
-                this.toggle();
-            }
-            lastTap = now;
-            e.preventDefault();
-        });
+        if (isTouchDevice()) {
+            let lastTap = 0;
+            this.debugInfo.addEventListener("pointerdown", (e) => {
+                const now = Date.now();
+                if (now - lastTap < 300) { // Double tap detected
+                    this.toggle();
+                }
+                lastTap = now;
+                e.preventDefault();
+            });
+        }
 
         this.debugInfo.addEventListener("auxclick", (event) => {
             if (event.button === 1) {
