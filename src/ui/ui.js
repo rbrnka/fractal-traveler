@@ -193,17 +193,16 @@ export async function switchFractalModeWithPersistence(mode) {
     }
 
     if (mode === FRACTAL_TYPE.MANDELBROT) {
-        console.log('MAND')
+        const targetZoom = Math.max(fractalApp.MAX_ZOOM, fractalApp.zoom * 0.1);
+
         await switchFractalMode(FRACTAL_TYPE.MANDELBROT, {
-            pan: fractalApp.c.slice(), zoom: 0.00005, rotation: 0
+            pan: fractalApp.c.slice(), zoom: targetZoom, rotation: 0
         });
     } else {
-        console.log('JUL')
         await switchFractalMode(FRACTAL_TYPE.JULIA, {
-            pan: [0, 0], c: fractalApp.pan.slice(), zoom: 0.5, rotation: 0
+            pan: [0, 0], c: fractalApp.pan.slice(), zoom: 1.5, rotation: 0
         });
     }
-
     console.groupEnd();
 }
 
