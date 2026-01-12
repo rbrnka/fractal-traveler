@@ -1,0 +1,42 @@
+
+#debugInfo {
+    position: fixed;
+    left: 12px;
+    bottom: 40px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 12px;
+    color: #d7d7d7;
+    background: rgba(0, 0, 0, 0.70);
+    padding: 10px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    user-select: none;
+    /*pointer-events: none;*/
+    cursor: grab;
+    min-width: 40px;
+    max-width: 440px;
+    z-index: 10000;
+    text-align: left;
+    display: none;
+    height: fit-content;
+    text-wrap: pretty;
+}
+
+.dbg-ok    { color: #b8ffb8; }
+.dbg-warn  { color: #ffe28a; }
+.dbg-bad   { color: #ff9aa2; }
+.dbg-dim   { color: rgba(255,255,255,0.55); }
+.dbg-title { color: rgba(255,255,255,0.95); font-weight: 600; }
+
+.dbg-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: rgba(0, 0, 0, 0.35);
+    margin-left: 6px;
+}
+
+.dbg-badge.dbg-ok   { border-color: rgba(184,255,184,0.35); }
+.dbg-badge.dbg-warn { border-color: rgba(255,226,138,0.35); }
+.dbg-badge.dbg-bad  { border-color: rgba(255,154,162,0.35); }
