@@ -858,6 +858,7 @@ function initFractalSwitchButtons() {
 
     juliaSwitch.addEventListener('click', async (e) => {
         if (e.ctrlKey) {
+            console.log('juliaSwitch clicked (with persistence).');
             await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
         } else {
             await switchFractalMode(FRACTAL_TYPE.JULIA);
@@ -992,8 +993,8 @@ function initInfoText() {
         });
 
         infoText.addEventListener('click', () => {
-            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`
-                + (isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`);
+            let text = `"pan": [${fractalApp.pan}], "rotation": ${fractalApp.rotation}, "zoom": ${fractalApp.zoom}`
+                + (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
                 infoText.innerHTML = 'Copied to clipboard!';
