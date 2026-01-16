@@ -310,6 +310,32 @@ export function ddValue(dd) {
     return dd.hi + dd.lo;
 }
 
+/**
+ * Adds two double-double precision numbers and returns a new DD result.
+ * Uses the Knuth two-sum algorithm for error-free addition.
+ *
+ * @param {{hi: number, lo: number}} a - First double-double number.
+ * @param {{hi: number, lo: number}} b - Second double-double number.
+ * @returns {{hi: number, lo: number}} The sum as a new double-double number.
+ */
+export function ddAddDD(a, b) {
+    const t = twoSum(a.hi, b.hi);
+    const lo = a.lo + b.lo + t.err;
+    const r = quickTwoSum(t.s, lo);
+    return {hi: r.s, lo: r.err};
+}
+
+/**
+ * Subtracts two double-double precision numbers (a - b) and returns a new DD result.
+ *
+ * @param {{hi: number, lo: number}} a - The minuend (number to subtract from).
+ * @param {{hi: number, lo: number}} b - The subtrahend (number to subtract).
+ * @returns {{hi: number, lo: number}} The difference (a - b) as a new double-double number.
+ */
+export function ddSubDD(a, b) {
+    return ddAddDD(a, {hi: -b.hi, lo: -b.lo});
+}
+
 // endregion---------------------------------------------------------------------------------------
 
 /**

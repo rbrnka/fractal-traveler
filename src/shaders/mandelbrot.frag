@@ -15,13 +15,9 @@ precision highp float;
 
 uniform vec2 u_resolution;
 
-// view (camera) pan (hi+lo)
-uniform vec2 u_view_pan_h;
-uniform vec2 u_view_pan_l;
-
-// reference orbit pan (hi+lo)
-uniform vec2 u_ref_pan_h;
-uniform vec2 u_ref_pan_l;
+// delta pan (viewPan - refPan) computed on JS side for float64 precision
+uniform vec2 u_delta_pan_h;
+uniform vec2 u_delta_pan_l;
 
 // zoom (hi+lo)
 uniform float u_zoom_h;
@@ -147,18 +143,15 @@ void main() {
 
     df zoom = df_make(u_zoom_h, u_zoom_l);
 
-    df2 viewPan = df2_make(
-    df_make(u_view_pan_h.x, u_view_pan_l.x),
-    df_make(u_view_pan_h.y, u_view_pan_l.y)
-    );
-    df2 refPan = df2_make(
-    df_make(u_ref_pan_h.x, u_ref_pan_l.x),
-    df_make(u_ref_pan_h.y, u_ref_pan_l.y)
+    // deltaPan = viewPan - refPan (computed on JS side with float64 precision)
+    df2 deltaPan = df2_make(
+        df_make(u_delta_pan_h.x, u_delta_pan_l.x),
+        df_make(u_delta_pan_h.y, u_delta_pan_l.y)
     );
 
-    // dc = (viewPan - refPan) + zoom * r
+    // dc = deltaPan + zoom * r
     df2 dc = df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y));
-    dc = df2_add(dc, df2_make(df_sub(viewPan.x, refPan.x), df_sub(viewPan.y, refPan.y)));
+    dc = df2_add(dc, deltaPan);
 
     df2 dz = df2_make(df_from(0.0), df_from(0.0));
 

@@ -1,9 +1,10 @@
 import {updateInfo} from "../ui/ui";
 import FractalRenderer from "./fractalRenderer";
-import {compareComplex, degToRad, hexToRGB, isTouchDevice, lerp, normalizeRotation, splitFloat,} from "../global/utils";
+import {compareComplex, ddSubDD, degToRad, hexToRGB, lerp, normalizeRotation, splitFloat,} from "../global/utils";
 import "../global/types";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
+/** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.frag';
 import data from '../data/julia.json' with {type: 'json'};
 
@@ -47,9 +48,17 @@ export class JuliaRenderer extends FractalRenderer {
 
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
-        // --- Perturbation state ---
+        // --- Perturbation state with DD precision ---
         this.refZ0 = [0, 0];
+        this.refZ0DD = {
+            x: { hi: 0, lo: 0 },
+            y: { hi: 0, lo: 0 }
+        };
         this.refPan = [...this.DEFAULT_PAN];
+        this.refPanDD = {
+            x: { hi: this.DEFAULT_PAN[0], lo: 0 },
+            y: { hi: this.DEFAULT_PAN[1], lo: 0 }
+        };
         this.orbitDirty = true;
 
         this._prevPan0 = NaN;
@@ -115,7 +124,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.orbitDirty = true;
     }
 
-    createFragmentShaderSource = () => fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
+    createFragmentShaderSource() {
+        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
+    }
 
     /**
      * @inheritDoc
@@ -127,12 +138,11 @@ export class JuliaRenderer extends FractalRenderer {
         this.cLoc = this.gl.getUniformLocation(this.program, "u_c");
         this.innerStopsLoc = this.gl.getUniformLocation(this.program, "u_innerStops");
 
-        this.panHLoc = this.gl.getUniformLocation(this.program, "u_pan_h");
-        this.panLLoc = this.gl.getUniformLocation(this.program, "u_pan_l");
+        // delta z0 (pan - refZ0) computed on JS side for float64 precision
+        this.deltaZ0HLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_h");
+        this.deltaZ0LLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_l");
         this.zoomHLoc = this.gl.getUniformLocation(this.program, "u_zoom_h");
         this.zoomLLoc = this.gl.getUniformLocation(this.program, "u_zoom_l");
-        this.refZ0HLoc = this.gl.getUniformLocation(this.program, "u_ref_z0_h");
-        this.refZ0LLoc = this.gl.getUniformLocation(this.program, "u_ref_z0_l");
 
         this.orbitTexLoc = this.gl.getUniformLocation(this.program, "u_orbitTex");
         this.orbitWLoc = this.gl.getUniformLocation(this.program, "u_orbitW");
@@ -161,12 +171,21 @@ export class JuliaRenderer extends FractalRenderer {
      */
     pickReferenceNearViewCenter(useViewCenter = false) {
         // During interaction, use view center directly to prevent jitter from grid search
+        // Copy DD components to preserve deep zoom precision
         if (useViewCenter) {
             this.refZ0[0] = this.pan[0];
             this.refZ0[1] = this.pan[1];
+            this.refZ0DD.x.hi = this.panDD.x.hi;
+            this.refZ0DD.x.lo = this.panDD.x.lo;
+            this.refZ0DD.y.hi = this.panDD.y.hi;
+            this.refZ0DD.y.lo = this.panDD.y.lo;
             // Keep refPan in sync for needsRebase() to work correctly
             this.refPan[0] = this.pan[0];
             this.refPan[1] = this.pan[1];
+            this.refPanDD.x.hi = this.panDD.x.hi;
+            this.refPanDD.x.lo = this.panDD.x.lo;
+            this.refPanDD.y.hi = this.panDD.y.hi;
+            this.refPanDD.y.lo = this.panDD.y.lo;
             return;
         }
 
@@ -217,9 +236,18 @@ export class JuliaRenderer extends FractalRenderer {
         if (shouldSwitch) {
             this.refZ0[0] = bestX;
             this.refZ0[1] = bestY;
+            // New reference point from grid search - no DD precision accumulated yet
+            this.refZ0DD.x.hi = bestX;
+            this.refZ0DD.x.lo = 0;
+            this.refZ0DD.y.hi = bestY;
+            this.refZ0DD.y.lo = 0;
             // Keep refPan in sync for needsRebase() to work correctly
             this.refPan[0] = bestX;
             this.refPan[1] = bestY;
+            this.refPanDD.x.hi = bestX;
+            this.refPanDD.x.lo = 0;
+            this.refPanDD.y.hi = bestY;
+            this.refPanDD.y.lo = 0;
         }
         // else: keep current refZ0 for stability
     }
@@ -358,22 +386,19 @@ export class JuliaRenderer extends FractalRenderer {
             this.orbitDirty = false;
         }
 
-        // Upload pan hi/lo
-        const px = splitFloat(this.pan[0]);
-        const py = splitFloat(this.pan[1]);
-        if (this.panHLoc) this.gl.uniform2f(this.panHLoc, px.high, py.high);
-        if (this.panLLoc) this.gl.uniform2f(this.panLLoc, px.low, py.low);
+        // Compute deltaZ0 = panDD - refZ0DD on JS side (float64) for precision
+        // This avoids float32 precision loss when the shader subtracts pan - refZ0
+        const deltaZ0X = ddSubDD(this.panDD.x, this.refZ0DD.x);
+        const deltaZ0Y = ddSubDD(this.panDD.y, this.refZ0DD.y);
+
+        // Upload deltaZ0 hi/lo
+        if (this.deltaZ0HLoc) this.gl.uniform2f(this.deltaZ0HLoc, deltaZ0X.hi, deltaZ0Y.hi);
+        if (this.deltaZ0LLoc) this.gl.uniform2f(this.deltaZ0LLoc, deltaZ0X.lo, deltaZ0Y.lo);
 
         // Upload zoom hi/lo
         const z = splitFloat(this.zoom);
         if (this.zoomHLoc) this.gl.uniform1f(this.zoomHLoc, z.high);
         if (this.zoomLLoc) this.gl.uniform1f(this.zoomLLoc, z.low);
-
-        // Upload ref z0 hi/lo
-        const rx = splitFloat(this.refZ0[0]);
-        const ry = splitFloat(this.refZ0[1]);
-        if (this.refZ0HLoc) this.gl.uniform2f(this.refZ0HLoc, rx.high, ry.high);
-        if (this.refZ0LLoc) this.gl.uniform2f(this.refZ0LLoc, rx.low, ry.low);
 
         if (this.cLoc) this.gl.uniform2fv(this.cLoc, this.c);
         if (this.innerStopsLoc) this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);

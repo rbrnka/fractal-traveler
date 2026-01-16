@@ -17,17 +17,13 @@ precision highp float;
 uniform vec2  u_resolution;
 uniform float u_rotation;
 
-// view pan hi/lo
-uniform vec2  u_pan_h;
-uniform vec2  u_pan_l;
+// delta z0 (pan - refZ0) computed on JS side for float64 precision
+uniform vec2  u_delta_z0_h;
+uniform vec2  u_delta_z0_l;
 
 // zoom hi/lo
 uniform float u_zoom_h;
 uniform float u_zoom_l;
-
-// reference z0 (initial point) hi/lo
-uniform vec2  u_ref_z0_h;
-uniform vec2  u_ref_z0_l;
 
 // Julia constant
 uniform vec2  u_c;
@@ -153,21 +149,16 @@ void main() {
 
     df zoom = df_make(u_zoom_h, u_zoom_l);
 
-    df2 pan = df2_make(
-    df_make(u_pan_h.x, u_pan_l.x),
-    df_make(u_pan_h.y, u_pan_l.y)
+    // deltaZ0 = pan - refZ0 (computed on JS side with float64 precision)
+    df2 deltaZ0 = df2_make(
+        df_make(u_delta_z0_h.x, u_delta_z0_l.x),
+        df_make(u_delta_z0_h.y, u_delta_z0_l.y)
     );
 
-    // z0ref
-    df2 z0ref = df2_make(
-    df_make(u_ref_z0_h.x, u_ref_z0_l.x),
-    df_make(u_ref_z0_h.y, u_ref_z0_l.y)
-    );
-
-    // dz0 = (pan - z0ref) + zoom * r
+    // dz0 = deltaZ0 + zoom * r
     df2 dz = df2_add(
-    df2_make(df_sub(pan.x, z0ref.x), df_sub(pan.y, z0ref.y)),
-    df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y))
+        deltaZ0,
+        df2_make(df_mul_f(zoom, r.x), df_mul_f(zoom, r.y))
     );
 
     float it = 0.0;

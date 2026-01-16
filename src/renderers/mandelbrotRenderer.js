@@ -1,5 +1,5 @@
 import FractalRenderer from "./fractalRenderer";
-import {asyncDelay, compareComplex, hsbToRgb, normalizeRotation, splitFloat} from "../global/utils";
+import {asyncDelay, compareComplex, ddSubDD, hsbToRgb, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json' with {type: 'json'};
 /** @type {string} */
@@ -22,8 +22,12 @@ class MandelbrotRenderer extends FractalRenderer {
         this.DEFAULT_PAN = [-0.5, 0];
         this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]); // sync DD + array
 
-        // Reference state
+        // Reference state with DD precision
         this.refPan = [...this.DEFAULT_PAN];
+        this.refPanDD = {
+            x: { hi: this.DEFAULT_PAN[0], lo: 0 },
+            y: { hi: this.DEFAULT_PAN[1], lo: 0 }
+        };
         this.orbitDirty = true;
 
         /** IMPORTANT: MAX_ITER must remain constant after shader compilation + orbit buffer allocation. */
@@ -78,18 +82,16 @@ class MandelbrotRenderer extends FractalRenderer {
         this.orbitDirty = true;
     }
 
-    createFragmentShaderSource = () => fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER);
+    createFragmentShaderSource() {
+        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
+    }
 
     updateUniforms() {
         super.updateUniforms();
 
-        // view pan hi/lo
-        this.viewPanHLoc = this.gl.getUniformLocation(this.program, 'u_view_pan_h');
-        this.viewPanLLoc = this.gl.getUniformLocation(this.program, 'u_view_pan_l');
-
-        // ref pan hi/lo
-        this.refPanHLoc = this.gl.getUniformLocation(this.program, 'u_ref_pan_h');
-        this.refPanLLoc = this.gl.getUniformLocation(this.program, 'u_ref_pan_l');
+        // delta pan hi/lo (viewPan - refPan, computed on JS side for precision)
+        this.deltaPanHLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_h');
+        this.deltaPanLLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_l');
 
         // zoom hi/lo
         this.zoomHLoc = this.gl.getUniformLocation(this.program, 'u_zoom_h');
@@ -122,9 +124,14 @@ class MandelbrotRenderer extends FractalRenderer {
      */
     pickReferenceNearViewCenter(useViewCenter = false) {
         // During interaction, use view center directly to prevent jitter from grid search
+        // Copy DD components to preserve deep zoom precision
         if (useViewCenter) {
             this.refPan[0] = this.pan[0];
             this.refPan[1] = this.pan[1];
+            this.refPanDD.x.hi = this.panDD.x.hi;
+            this.refPanDD.x.lo = this.panDD.x.lo;
+            this.refPanDD.y.hi = this.panDD.y.hi;
+            this.refPanDD.y.lo = this.panDD.y.lo;
             return;
         }
 
@@ -175,6 +182,11 @@ class MandelbrotRenderer extends FractalRenderer {
         if (shouldSwitch) {
             this.refPan[0] = bestCx;
             this.refPan[1] = bestCy;
+            // New reference point from grid search - no DD precision accumulated yet
+            this.refPanDD.x.hi = bestCx;
+            this.refPanDD.x.lo = 0;
+            this.refPanDD.y.hi = bestCy;
+            this.refPanDD.y.lo = 0;
         }
         // else: keep current refPan for stability
 
@@ -262,17 +274,14 @@ class MandelbrotRenderer extends FractalRenderer {
             this.orbitDirty = false;
         }
 
-        // Upload viewPan hi/lo
-        const vpx = splitFloat(this.pan[0]);
-        const vpy = splitFloat(this.pan[1]);
-        if (this.viewPanHLoc) this.gl.uniform2f(this.viewPanHLoc, vpx.high, vpy.high);
-        if (this.viewPanLLoc) this.gl.uniform2f(this.viewPanLLoc, vpx.low, vpy.low);
+        // Compute deltaPan = panDD - refPanDD on JS side (float64) for precision
+        // This avoids float32 precision loss when the shader subtracts viewPan - refPan
+        const deltaPanX = ddSubDD(this.panDD.x, this.refPanDD.x);
+        const deltaPanY = ddSubDD(this.panDD.y, this.refPanDD.y);
 
-        // Upload refPan hi/lo
-        const rpx = splitFloat(this.refPan[0]);
-        const rpy = splitFloat(this.refPan[1]);
-        if (this.refPanHLoc) this.gl.uniform2f(this.refPanHLoc, rpx.high, rpy.high);
-        if (this.refPanLLoc) this.gl.uniform2f(this.refPanLLoc, rpx.low, rpy.low);
+        // Upload deltaPan hi/lo
+        if (this.deltaPanHLoc) this.gl.uniform2f(this.deltaPanHLoc, deltaPanX.hi, deltaPanY.hi);
+        if (this.deltaPanLLoc) this.gl.uniform2f(this.deltaPanLLoc, deltaPanX.lo, deltaPanY.lo);
 
         // Upload zoom hi/lo
         const z = splitFloat(this.zoom);
