@@ -6,6 +6,10 @@ import {
     calculatePanDelta,
     compareComplex,
     comparePalettes,
+    ddAdd,
+    ddMake,
+    ddSet,
+    ddValue,
     easeInOut,
     easeInOutCubic,
     easeInOutQuint,
@@ -16,7 +20,9 @@ import {
     hslToRgb,
     lerp,
     normalizeRotation,
-    rgbToHsl
+    quickTwoSum,
+    rgbToHsl,
+    twoSum
 } from "../global/utils";
 
 
@@ -164,6 +170,155 @@ describe('Utils', () => {
             // Movement: 10,10; normalized: 10/800 and 10/600 respectively.
             expect(deltaX).toBeCloseTo(-10 / 800);
             expect(deltaY).toBeCloseTo(10 / 600);
+        });
+    });
+
+    // -----------------------------------------------------------------------------------------
+    // Double-Double Precision Arithmetic Tests (critical for deep zoom panning)
+    // -----------------------------------------------------------------------------------------
+    describe('Double-Double Arithmetic', () => {
+        describe('twoSum', () => {
+            test('computes error-free sum for normal values', () => {
+                const result = twoSum(1.0, 2.0);
+                expect(result.s).toBe(3.0);
+                expect(result.err).toBe(0);
+            });
+
+            test('captures rounding error when adding values with different magnitudes', () => {
+                // When adding a tiny value to a large value, precision is lost
+                // twoSum captures this lost precision in the error term
+                const large = 1.0;
+                const tiny = 1e-17;
+                const result = twoSum(large, tiny);
+
+                // The sum rounds to 1.0 (tiny is lost)
+                expect(result.s).toBe(1.0);
+                // But the error captures what was lost
+                expect(result.err).toBe(tiny);
+            });
+
+            test('captures error when adding nearly equal values of opposite sign', () => {
+                const a = 1.0000000000000002;
+                const b = -1.0;
+                const result = twoSum(a, b);
+
+                // The sum + error should equal the exact mathematical result
+                expect(result.s + result.err).toBeCloseTo(a + b, 15);
+            });
+        });
+
+        describe('quickTwoSum', () => {
+            test('computes error-free sum when |a| >= |b|', () => {
+                const result = quickTwoSum(10.0, 1.0);
+                expect(result.s).toBe(11.0);
+                expect(result.err).toBe(0);
+            });
+
+            test('captures error for values with different magnitudes', () => {
+                const result = quickTwoSum(1.0, 1e-17);
+                expect(result.s).toBe(1.0);
+                expect(result.err).toBe(1e-17);
+            });
+        });
+
+        describe('ddMake', () => {
+            test('creates DD number with default values', () => {
+                const dd = ddMake();
+                expect(dd.hi).toBe(0);
+                expect(dd.lo).toBe(0);
+            });
+
+            test('creates DD number with specified values', () => {
+                const dd = ddMake(-0.5, 1e-17);
+                expect(dd.hi).toBe(-0.5);
+                expect(dd.lo).toBe(1e-17);
+            });
+        });
+
+        describe('ddSet', () => {
+            test('sets DD value and clears lo component', () => {
+                const dd = ddMake(1.0, 0.5);
+                ddSet(dd, -0.5);
+                expect(dd.hi).toBe(-0.5);
+                expect(dd.lo).toBe(0);
+            });
+        });
+
+        describe('ddValue', () => {
+            test('returns combined hi + lo value', () => {
+                const dd = ddMake(1.0, 1e-17);
+                const value = ddValue(dd);
+                expect(value).toBe(1.0 + 1e-17);
+            });
+        });
+
+        describe('ddAdd', () => {
+            test('adds value to DD number preserving precision in lo component', () => {
+                const dd = ddMake(-0.5, 0);
+                const tinyDelta = 1e-17;
+
+                ddAdd(dd, tinyDelta);
+
+                // The lo component should capture the tiny delta
+                // (ddValue() may still return -0.5 due to float64 addition limits,
+                // but the hi/lo pair preserves the full precision for shader use)
+                expect(dd.lo).not.toBe(0);
+                expect(dd.lo).toBeCloseTo(tinyDelta, 30);
+            });
+
+            test('accumulates multiple tiny additions correctly', () => {
+                const dd = ddMake(0, 0);
+                const tinyDelta = 1e-17;
+                const numAdditions = 1000;
+
+                for (let i = 0; i < numAdditions; i++) {
+                    ddAdd(dd, tinyDelta);
+                }
+
+                // The accumulated value should be approximately 1000 * 1e-17 = 1e-14
+                const expected = numAdditions * tinyDelta;
+                expect(Math.abs(ddValue(dd) - expected)).toBeLessThan(1e-28);
+            });
+
+            test('preserves precision when adding to large negative value (Mandelbrot pan scenario)', () => {
+                // This is the exact scenario that was broken: panX starts at -0.5
+                // and tiny deltas from deep zoom panning were being lost
+                const dd = ddMake(-0.5, 0);
+                const movements = [1e-16, -5e-17, 2e-16, -1e-16];
+                const expectedSum = movements.reduce((a, b) => a + b, 0);
+
+                for (const delta of movements) {
+                    ddAdd(dd, delta);
+                }
+
+                // The DD value (hi + lo) should accurately represent -0.5 + sum(movements)
+                const actualValue = ddValue(dd);
+                const expectedValue = -0.5 + expectedSum;
+                // Allow for floating-point tolerance
+                expect(Math.abs(actualValue - expectedValue)).toBeLessThan(1e-20);
+            });
+
+            test('DD lo component captures precision that standard float64 loses', () => {
+                // Compare DD arithmetic vs standard float64
+                const startValue = -0.5;
+                const tinyDelta = 1e-17;
+
+                // Standard float64: loses precision
+                const standardResult = startValue + tinyDelta;
+                expect(standardResult).toBe(startValue); // Delta is lost!
+
+                // DD arithmetic: preserves precision in lo component
+                const dd = ddMake(startValue, 0);
+                ddAdd(dd, tinyDelta);
+
+                // The lo component captures what was lost
+                expect(dd.lo).not.toBe(0);
+                expect(dd.lo).toBeCloseTo(tinyDelta, 30);
+
+                // When shader uses hi and lo separately, full precision is available
+                // The test verifies that the split components are correct
+                expect(dd.hi).toBe(startValue);
+            });
         });
     });
 });

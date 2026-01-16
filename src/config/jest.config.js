@@ -2,7 +2,7 @@
 module.exports = {
     rootDir: '../../',
 
-    setupFilesAfterEnv: ['<rootDir>/src/config/jest.setup.js'], // uprav cestu, pokud jsi ho přesunul
+    setupFilesAfterEnv: ['<rootDir>/src/config/jest.setup.js'],
 
     moduleNameMapper: {
         '\\.(frag|vert)$': '<rootDir>/src/tests/__mocks__/fileMock.js'
@@ -18,6 +18,11 @@ module.exports = {
             {configFile: './src/config/babel.config.js'}
         ],
     },
+
+    // Transform ES modules in node_modules that need it
+    transformIgnorePatterns: [
+        '/node_modules/(?!(.*\\.mjs$))'
+    ],
 
     silent: true,
 };
