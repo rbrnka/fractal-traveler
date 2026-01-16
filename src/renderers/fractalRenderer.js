@@ -159,7 +159,7 @@ class FractalRenderer {
 
     /**
      * Sets zoom while keeping the fractal point under a given screen anchor fixed.
-     * This avoids catastrophic cancellation (deep-zoom “jumps”) from before/after subtraction.
+     * Uses DD-preserving arithmetic to avoid precision loss at deep zoom.
      *
      * @param {number} targetZoom
      * @param {number} anchorX CSS px relative to canvas
@@ -169,13 +169,15 @@ class FractalRenderer {
         // View vector (rotated + aspect corrected) is stable because it does not include pan/zoom.
         const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
 
-        // Anchor fractal point at the current zoom (stable; avoids subtracting nearly-equal large numbers).
-        const fxAnchor = vx * this.zoom + this.pan[0];
-        const fyAnchor = vy * this.zoom + this.pan[1];
+        // To keep fractal point under cursor fixed:
+        // Old: fractalPt = pan + v * oldZoom
+        // New: fractalPt = newPan + v * newZoom
+        // Therefore: newPan = pan + v * (oldZoom - newZoom)
+        // Using addPan preserves DD precision (unlike setPan which resets lo=0)
+        const deltaZoom = this.zoom - targetZoom;
+        this.addPan(vx * deltaZoom, vy * deltaZoom);
 
-        // Apply zoom, then recompute pan so the same fractal point stays under the anchor.
         this.zoom = targetZoom;
-        this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
     }
 
     /**

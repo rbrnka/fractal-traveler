@@ -29,6 +29,13 @@ class MandelbrotRenderer extends FractalRenderer {
         /** IMPORTANT: MAX_ITER must remain constant after shader compilation + orbit buffer allocation. */
         this.MAX_ITER = 2000;
 
+        // Reference search parameters (for perturbation rebasing)
+        this.REF_SEARCH_GRID = 7;
+        this.REF_SEARCH_RADIUS = 0.50;
+
+        // Hysteresis state for rebasing
+        this.rebaseArmed = true;
+
         // WebGL resources
         this.orbitTex = null;
         this.orbitData = null;
@@ -110,9 +117,17 @@ class MandelbrotRenderer extends FractalRenderer {
      * Choose a good refPan near view center:
      * - sample a grid around view center (radius scales with zoom)
      * - pick the point with the highest escape iteration (prefer inside / late escape)
-     * TODO this method (bestScore) causes the color glitches / filling most likely
+     * - prefer keeping the current reference to avoid jitter unless a significantly better one is found
+     * @param {boolean} useViewCenter - If true, skip grid search and use view center directly (for stability during interaction)
      */
-    pickReferenceNearViewCenter() {
+    pickReferenceNearViewCenter(useViewCenter = false) {
+        // During interaction, use view center directly to prevent jitter from grid search
+        if (useViewCenter) {
+            this.refPan[0] = this.pan[0];
+            this.refPan[1] = this.pan[1];
+            return;
+        }
+
         const grid = this.REF_SEARCH_GRID;
         const half = (grid - 1) / 2;
         const step = (2.0 * this.REF_SEARCH_RADIUS) / (grid - 1);
@@ -121,9 +136,19 @@ class MandelbrotRenderer extends FractalRenderer {
 
         const probeIters = Math.min(this.MAX_ITER, Math.max(200, Math.floor(this.iterations)));
 
+        // Evaluate current reference point's score (if we have one within reasonable distance)
+        let currentRefScore = -1;
+        const currentRefDist = Math.hypot(this.refPan[0] - this.pan[0], this.refPan[1] - this.pan[1]);
+        const maxRefDist = base * this.REF_SEARCH_RADIUS * 2.5; // Allow some margin beyond search radius
+
+        if (currentRefDist < maxRefDist) {
+            currentRefScore = this.escapeItersDouble(this.refPan[0], this.refPan[1], probeIters);
+        }
+
+        // Start with view center as fallback
         let bestCx = this.pan[0];
         let bestCy = this.pan[1];
-        let bestScore = -1;
+        let bestScore = this.escapeItersDouble(this.pan[0], this.pan[1], probeIters);
 
         for (let j = 0; j < grid; j++) {
             for (let i = 0; i < grid; i++) {
@@ -141,8 +166,17 @@ class MandelbrotRenderer extends FractalRenderer {
             }
         }
 
-        this.refPan[0] = bestCx;
-        this.refPan[1] = bestCy;
+        // Stability: only switch reference if the new one is significantly better.
+        // This prevents jitter from small score differences between frames.
+        // Require at least 10% improvement or 50 iterations better to switch.
+        const improvementThreshold = Math.max(currentRefScore * 0.10, 50);
+        const shouldSwitch = currentRefScore < 0 || (bestScore - currentRefScore) > improvementThreshold;
+
+        if (shouldSwitch) {
+            this.refPan[0] = bestCx;
+            this.refPan[1] = bestCy;
+        }
+        // else: keep current refPan for stability
 
         this.bestScore = bestScore;
         this.probeIters = probeIters;

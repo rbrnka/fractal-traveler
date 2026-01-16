@@ -54,6 +54,10 @@ let wheelAccum = 0;
 let wheelAnchorX = 0;
 let wheelAnchorY = 0;
 let wheelRAF = null;
+// Cached rect for wheel zoom (avoid sub-pixel jitter from repeated getBoundingClientRect calls)
+let wheelRectLeft = 0;
+let wheelRectTop = 0;
+let hasWheelRect = false;
 
 /**
  * Mark orbit dirty if the current renderer supports perturbation caching.
@@ -119,7 +123,7 @@ export function unregisterMouseEventHandlers() {
 
 /**
  * Apply accumulated wheel delta once per RAF.
- * This reduces “bursty wheel” micro-jitter and keeps anchor math consistent.
+ * This reduces "bursty wheel" micro-jitter and keeps anchor math consistent.
  */
 function flushWheelZoom() {
     wheelRAF = null;
@@ -127,9 +131,9 @@ function flushWheelZoom() {
     if (!fractalApp) return;
     if (!Number.isFinite(fractalApp.zoom)) return;
 
-    const rect = fractalApp.canvas.getBoundingClientRect();
-    const mouseX = wheelAnchorX - rect.left; // CSS px
-    const mouseY = wheelAnchorY - rect.top;  // CSS px
+    // Use cached rect to avoid sub-pixel jitter from repeated getBoundingClientRect calls
+    const mouseX = wheelAnchorX - wheelRectLeft; // CSS px
+    const mouseY = wheelAnchorY - wheelRectTop;  // CSS px
 
     // Apply accumulated delta
     const zoomFactor = Math.pow(WHEEL_ZOOM_BASE, wheelAccum / WHEEL_DELTA_UNIT);
@@ -154,6 +158,14 @@ function flushWheelZoom() {
 function handleWheel(event) {
     event.preventDefault();
 
+    // Cache rect on first wheel event of a gesture to avoid sub-pixel jitter
+    if (!hasWheelRect) {
+        const rect = fractalApp.canvas.getBoundingClientRect();
+        wheelRectLeft = rect.left;
+        wheelRectTop = rect.top;
+        hasWheelRect = true;
+    }
+
     // Aggregate wheel delta and apply once per frame.
     wheelAccum += event.deltaY;
     wheelAnchorX = event.clientX;
@@ -165,6 +177,7 @@ function handleWheel(event) {
 
     if (wheelResetTimeout) clearTimeout(wheelResetTimeout);
     wheelResetTimeout = setTimeout(() => {
+        hasWheelRect = false; // Reset rect cache when gesture ends
         resetAppState();
     }, 150);
 
