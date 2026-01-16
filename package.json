@@ -14,8 +14,8 @@
   "author": "Radim Brnka",
   "license": "MIT",
   "devDependencies": {
-    "@babel/core": "^7.28.5",
-    "@babel/preset-env": "^7.28.5",
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
     "babel-jest": "^30.2.0",
     "babel-loader": "^10.0.0",
     "copy-webpack-plugin": "^13.0.1",
@@ -23,35 +23,19 @@
     "css-minimizer-webpack-plugin": "^7.0.4",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-prettier": "^5.5.5",
     "ftp-deploy": "^2.4.7",
     "gh-pages": "^6.3.0",
-    "html-webpack-plugin": "^5.6.5",
+    "html-webpack-plugin": "^5.6.6",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
-    "mini-css-extract-plugin": "^2.9.4",
-    "prettier": "^3.7.4",
+    "mini-css-extract-plugin": "^2.10.0",
+    "prettier": "^3.8.0",
     "terser-webpack-plugin": "^5.3.16",
-    "webpack": "^5.103.0",
+    "webpack": "^5.104.1",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.2",
+    "webpack-dev-server": "^5.2.3",
     "webpack-ftp-upload-plugin": "^1.0.2"
-  },
-  "jest": {
-    "testEnvironment": "jsdom",
-    "setupFiles": [
-      "<rootDir>/src/config/jest.setup.js"
-    ],
-    "moduleFileExtensions": [
-      "js",
-      "json"
-    ],
-    "transform": {
-      "^.+\\.js$": "babel-jest"
-    },
-    "moduleNameMapper": {
-      "\\.(frag|vert)$": "<rootDir>/src/tests/__mocks__/fileMock.js"
-    }
   },
   "dependencies": {
     "dotenv": "^17.2.3",
