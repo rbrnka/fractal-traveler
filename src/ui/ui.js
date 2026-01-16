@@ -993,7 +993,7 @@ function initInfoText() {
         });
 
         infoText.addEventListener('click', () => {
-            let text = `"pan": [${fractalApp.pan}], "rotation": ${fractalApp.rotation}, "zoom": ${fractalApp.zoom}`
+            let text = `"pan": [${fractalApp.pan}], "rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}`
                 + (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
