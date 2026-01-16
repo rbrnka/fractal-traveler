@@ -23,6 +23,7 @@ import {
     DEFAULT_BG_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
+    FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
     FF_TRAVEL_TO_PRESET_WITH_ROTATION,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
@@ -78,6 +79,7 @@ let header;
 let logo; // H1
 let mandelbrotSwitch;
 let juliaSwitch;
+let persistSwitch;
 let resetButton;
 let randomizeColorsButton;
 let screenshotButton;
@@ -862,6 +864,19 @@ function initFractalSwitchButtons() {
         }
     });
 
+    if (FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
+        persistSwitch.addEventListener('click', async (e) => {
+            console.log('persistSwitch clicked.');
+            if (isJuliaMode()) {
+                await switchFractalModeWithPersistence(FRACTAL_TYPE.MANDELBROT)
+            } else {
+                await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
+            }
+        });
+
+        persistSwitch.style.display = 'inline-flex';
+    }
+
     log('Initialized.', 'initFractalSwitchButtons');
 }
 
@@ -1030,6 +1045,21 @@ function initInfoText() {
     }
 }
 
+function bindHTMLElements() {
+    // Element binding
+    mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
+    juliaSwitch = document.getElementById('juliaSwitch');
+    persistSwitch = document.getElementById('persistSwitch');
+    header = document.getElementById('headerContainer');
+    logo = document.getElementById('logo');
+    infoLabel = document.getElementById('infoLabel');
+    infoText = document.getElementById('infoText');
+    resetButton = document.getElementById('reset');
+    randomizeColorsButton = document.getElementById('randomize');
+    screenshotButton = document.getElementById('screenshot');
+    demoButton = document.getElementById('demo');
+}
+
 /**
  * Initializes the UI and registers UI event handlers
  * @param fractalRenderer
@@ -1043,17 +1073,7 @@ export async function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
 
-    // Element binding
-    mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
-    juliaSwitch = document.getElementById('juliaSwitch');
-    header = document.getElementById('headerContainer');
-    logo = document.getElementById('logo');
-    infoLabel = document.getElementById('infoLabel');
-    infoText = document.getElementById('infoText');
-    resetButton = document.getElementById('reset');
-    randomizeColorsButton = document.getElementById('randomize');
-    screenshotButton = document.getElementById('screenshot');
-    demoButton = document.getElementById('demo');
+    bindHTMLElements();
 
     if (fractalRenderer instanceof JuliaRenderer) {
         fractalMode = FRACTAL_TYPE.JULIA;

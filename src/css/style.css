@@ -312,7 +312,7 @@ button.dive.active {
     display: flex;
     overflow: hidden;
     margin: 0 auto;
-    width: 240px;
+    width: 300px;
     padding: 10px 20px 5px 20px;
 }
 
@@ -331,6 +331,15 @@ button.dive.active {
 
 #juliaSwitch {
 
+}
+
+#persistSwitch {
+    width: 20px;
+    display: none;
+}
+
+#persistSwitch:focus {
+    background-image: linear-gradient(#000, #222);
 }
 
 #controlArea {

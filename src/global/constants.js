@@ -51,16 +51,31 @@ export const log = (message, scope = '', severity = LOG_LEVEL.LOG) => {
     );
 }
 // endregion
-// FEATURE FLAGS
+// region > FEATURE FLAGS
 /** Allows switching between fractal while keeping the params to allow Mandelbrot and Julia to match each other */
 export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
 
-/** Enables bottom bar for user input for custom coords */
+/**
+ * Feature flag controlling the display of the persistent fractal switching button in the UI.
+ * When enabled, users can see a button to toggle between fractal types while maintaining
+ * the current parameters for seamless transitions between Mandelbrot and Julia sets.
+ * 
+ * @type {boolean}
+ * @since 1.9
+ */
+export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
+
+/**
+ * Enables bottom bar for user input for custom coords
+  */
 export const FF_USER_INPUT_ALLOWED = false;
 
-/** When enabled, preset travel animations include random rotation during the zoom-in. */
+/**
+ *  When enabled, preset travel animations include random rotation during the zoom-in.
+ * @since 1.9
+ */
 export const FF_TRAVEL_TO_PRESET_WITH_ROTATION = true;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
  * @type {string}
