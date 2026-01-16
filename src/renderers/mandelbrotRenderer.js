@@ -1,5 +1,5 @@
 import FractalRenderer from "./fractalRenderer";
-import {asyncDelay, compareComplex, hsbToRgb, splitFloat} from "../global/utils";
+import {asyncDelay, compareComplex, hsbToRgb, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json' with {type: 'json'};
 /** @type {string} */
@@ -403,16 +403,20 @@ class MandelbrotRenderer extends FractalRenderer {
     async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, CONSOLE_GROUP_STYLE);
 
-        // Random rotations for a more dynamic effect.
+        // Random rotation during zoom-out for dynamic effect
         const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
-        const zoomInRotation = zoomOutRotation + (Math.random() * PI * 2 - PI);
+        const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
+
+        // Add 1-2 full cinematic rotations during zoom-in, ending at preset.rotation
+        const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
+        const cinematicFinalRotation = presetRotation + extraSpins;
 
         if (this.rotation !== this.DEFAULT_ROTATION) {
             await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration);
         }
 
         await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
-        await this.animateZoomRotationTo(preset.zoom, zoomInRotation, zoomInDuration * (preset.speed ?? 1));
+        await this.animateZoomRotationTo(preset.zoom, cinematicFinalRotation, zoomInDuration * (preset.speed ?? 1));
 
         this.currentPresetIndex = preset.id || 0;
 
