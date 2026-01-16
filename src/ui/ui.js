@@ -182,19 +182,19 @@ export async function switchFractalMode(mode, preset = null) {
 
 /**
  * Switches among fractal modes but keeps the c/pan settings so the fractals match each other.
- * @param {FRACTAL_TYPE} mode
+ * @param {FRACTAL_TYPE} targetType
  * @return {Promise<void>}
  */
-export async function switchFractalModeWithPersistence(mode) {
-    console.groupCollapsed(`%c switchFractalModeWithPersistence`, CONSOLE_GROUP_STYLE);
+export async function switchFractalTypeWithPersistence(targetType) {
+    console.groupCollapsed(`%c switchFractalTypeWithPersistence`, CONSOLE_GROUP_STYLE);
 
-    if (mode === fractalMode) {
-        console.warn(`Switching to the same mode? Why?`);
+    if (targetType === fractalMode) {
+        console.warn(`Switching to the same fractal? Why?`);
         console.groupEnd();
         return;
     }
 
-    if (mode === FRACTAL_TYPE.MANDELBROT) {
+    if (targetType === FRACTAL_TYPE.MANDELBROT) {
         const targetZoom = Math.max(fractalApp.MAX_ZOOM, fractalApp.zoom * 0.1);
 
         await switchFractalMode(FRACTAL_TYPE.MANDELBROT, {
@@ -849,7 +849,7 @@ function initFractalSwitchButtons() {
     mandelbrotSwitch.addEventListener('click', async (e) => {
         if (e.ctrlKey) {
             console.log('mandelbrotSwitch clicked (with persistence).');
-            await switchFractalModeWithPersistence(FRACTAL_TYPE.MANDELBROT);
+            await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT);
         } else {
             console.log('mandelbrotSwitch clicked.');
             await switchFractalMode(FRACTAL_TYPE.MANDELBROT);
@@ -859,7 +859,7 @@ function initFractalSwitchButtons() {
     juliaSwitch.addEventListener('click', async (e) => {
         if (e.ctrlKey) {
             console.log('juliaSwitch clicked (with persistence).');
-            await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
+            await switchFractalTypeWithPersistence(FRACTAL_TYPE.JULIA);
         } else {
             await switchFractalMode(FRACTAL_TYPE.JULIA);
         }
@@ -869,9 +869,9 @@ function initFractalSwitchButtons() {
         persistSwitch.addEventListener('click', async (e) => {
             console.log('persistSwitch clicked.');
             if (isJuliaMode()) {
-                await switchFractalModeWithPersistence(FRACTAL_TYPE.MANDELBROT)
+                await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT)
             } else {
-                await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
+                await switchFractalTypeWithPersistence(FRACTAL_TYPE.JULIA);
             }
         });
 

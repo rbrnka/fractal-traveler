@@ -16,7 +16,7 @@ import {
     resetAppState,
     startJuliaDive,
     switchFractalMode,
-    switchFractalModeWithPersistence,
+    switchFractalTypeWithPersistence,
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
@@ -182,7 +182,7 @@ async function onKeyDown(event) {
         case 'KeyZ': // Switch between fractals with constant p/c
             if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
 
-            await switchFractalModeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
+            await switchFractalTypeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
             handled = true;
             break;
 
