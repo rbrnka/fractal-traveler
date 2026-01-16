@@ -27,25 +27,29 @@ export class JuliaRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.DEFAULT_ZOOM = 2.5;
-        // Use less detailed initial set for less performant devices
-        // TODO does not work with JSON config
-        /** @type COMPLEX */
-        this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64235];
+        this.LEGACY_JULIA_RENDER = true;
 
+        this.DEFAULT_ZOOM = data.presets[0].zoom;
+        this.MAX_ZOOM = 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
-        // IMPORTANT: use setPan (syncs DD + array) – keep this.pan canonical (TODO remove pan completely at some point)
-        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
 
+        this.DEFAULT_ROTATION = data.presets[0].rotation;
         this.rotation = this.DEFAULT_ROTATION;
-        this.colorPalette = [...this.DEFAULT_PALETTE];
-        // this.MAX_ZOOM = 0.00006;
 
+        // TODO Use less detailed initial set for less performant devices
+        /** @type COMPLEX */
+        this.DEFAULT_C = [data.presets[0].c[0], data.presets[0].c[1]];
         /** @type COMPLEX */
         this.c = [...this.DEFAULT_C];
 
+        // IMPORTANT: use setPan (syncs DD + array) – keep this.pan canonical (TODO remove pan completely at some point)
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
+
+        this.colorPalette = [...this.DEFAULT_PALETTE];
+
         // --- Perturbation state ---
         this.refZ0 = [0, 0];
+        this.refPan = [...this.DEFAULT_PAN];
         this.orbitDirty = true;
 
         this._prevPan0 = NaN;
@@ -55,14 +59,15 @@ export class JuliaRenderer extends FractalRenderer {
         this._prevC1 = NaN;
 
         this.MAX_ITER = 2000;
-        this.REF_SEARCH_GRID = 5;
+        this.REF_SEARCH_GRID = 7;
         this.REF_SEARCH_RADIUS = 0.50;
 
         this.orbitTex = null;
         this.orbitData = null;
         this.floatTexExt = null;
 
-        // @formatter:off
+        this.rebaseArmed = true;
+
         /** @type {Array.<JULIA_PRESET>} */
         this.PRESETS = data.presets.map(p => ({
             ...p,
@@ -147,7 +152,24 @@ export class JuliaRenderer extends FractalRenderer {
         return iters;
     }
 
-    pickReferenceNearViewCenter() {
+    /**
+     * Choose a good refZ0 near view center:
+     * - sample a grid around view center (radius scales with zoom)
+     * - pick the point with the highest escape iteration (prefer inside / late escape)
+     * - prefer keeping the current reference to avoid jitter unless a significantly better one is found
+     * @param {boolean} useViewCenter - If true, skip grid search and use view center directly (for stability during interaction)
+     */
+    pickReferenceNearViewCenter(useViewCenter = false) {
+        // During interaction, use view center directly to prevent jitter from grid search
+        if (useViewCenter) {
+            this.refZ0[0] = this.pan[0];
+            this.refZ0[1] = this.pan[1];
+            // Keep refPan in sync for needsRebase() to work correctly
+            this.refPan[0] = this.pan[0];
+            this.refPan[1] = this.pan[1];
+            return;
+        }
+
         const grid = this.REF_SEARCH_GRID;
         const half = (grid - 1) / 2;
         const step = (2.0 * this.REF_SEARCH_RADIUS) / (grid - 1);
@@ -155,9 +177,19 @@ export class JuliaRenderer extends FractalRenderer {
         const base = this.zoom;
         const probeIters = Math.min(this.MAX_ITER, Math.max(200, Math.floor(this.iterations)));
 
+        // Evaluate current reference point's score (if we have one within reasonable distance)
+        let currentRefScore = -1;
+        const currentRefDist = Math.hypot(this.refZ0[0] - this.pan[0], this.refZ0[1] - this.pan[1]);
+        const maxRefDist = base * this.REF_SEARCH_RADIUS * 2.5; // Allow some margin beyond search radius
+
+        if (currentRefDist < maxRefDist) {
+            currentRefScore = this.escapeItersJulia(this.refZ0[0], this.refZ0[1], probeIters);
+        }
+
+        // Start with view center as fallback
         let bestX = this.pan[0];
         let bestY = this.pan[1];
-        let bestScore = -1;
+        let bestScore = this.escapeItersJulia(this.pan[0], this.pan[1], probeIters);
 
         for (let j = 0; j < grid; j++) {
             for (let i = 0; i < grid; i++) {
@@ -176,8 +208,20 @@ export class JuliaRenderer extends FractalRenderer {
             }
         }
 
-        this.refZ0[0] = bestX;
-        this.refZ0[1] = bestY;
+        // Stability: only switch reference if the new one is significantly better.
+        // This prevents jitter from small score differences between frames.
+        // Require at least 10% improvement or 50 iterations better to switch.
+        const improvementThreshold = Math.max(currentRefScore * 0.10, 50);
+        const shouldSwitch = currentRefScore < 0 || (bestScore - currentRefScore) > improvementThreshold;
+
+        if (shouldSwitch) {
+            this.refZ0[0] = bestX;
+            this.refZ0[1] = bestY;
+            // Keep refPan in sync for needsRebase() to work correctly
+            this.refPan[0] = bestX;
+            this.refPan[1] = bestY;
+        }
+        // else: keep current refZ0 for stability
     }
 
     computeReferenceOrbit() {
@@ -241,9 +285,31 @@ export class JuliaRenderer extends FractalRenderer {
      * Same intent as Mandelbrot, but for z0 reference.
      */
     needsRebase() {
-        const dx = this.pan[0] - this.refZ0[0];
-        const dy = this.pan[1] - this.refZ0[1];
-        return Math.hypot(dx, dy) > this.zoom * 0.75;
+        const REBASE_ON = 1.75;
+        const REBASE_OFF = 0.90;
+
+        if (this.rebaseArmed === undefined) this.rebaseArmed = true;
+
+        if (!this.refPan) return true;
+        if (!Number.isFinite(this.zoom)) return false;
+
+        const z = Math.max(this.zoom, 1e-300);
+
+        const dx = this.pan[0] - this.refPan[0];
+        const dy = this.pan[1] - this.refPan[1];
+        const deltaView = Math.hypot(dx, dy) / z;
+
+        if (!this.rebaseArmed && deltaView < REBASE_OFF) {
+            this.rebaseArmed = true;
+            return false;
+        }
+
+        if (this.rebaseArmed && deltaView > REBASE_ON) {
+            this.rebaseArmed = false;
+            return true;
+        }
+
+        return false;
     }
 
     draw() {
@@ -286,7 +352,8 @@ export class JuliaRenderer extends FractalRenderer {
         const canRebaseNow = !this.interactionActive || mustRebaseNow;
 
         if (this.orbitDirty && canRebaseNow) {
-            this.pickReferenceNearViewCenter();
+            // During interaction, use view center directly to prevent jitter
+            this.pickReferenceNearViewCenter(this.interactionActive);
             this.computeReferenceOrbit();
             this.orbitDirty = false;
         }
