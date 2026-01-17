@@ -53,7 +53,7 @@ html, body {
     border-bottom-right-radius: 15px;
     cursor: auto;
     height: auto;
-    overflow: hidden;
+    overflow: visible;
     border-top: none;
     -webkit-user-select: none; /* Safari */
     -moz-user-select: none; /* Firefox */
@@ -391,15 +391,60 @@ p.small {
     font-size: 11px;
 }
 
-p#presets {
-    margin: 0;
+#presets-dives {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    margin: 5px 0;
 }
 
-p#presets, p#dives {
+/* Dropdown styles */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    min-width: 80px;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.95);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgb(from var(--accent-color) r g b / 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 10000;
+    min-width: 200px;
+    max-width: 320px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    margin-top: 4px;
+}
+
+.dropdown-menu.show {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+}
+
+.dropdown-menu button.preset {
+    flex: 0 0 auto;
+    min-width: 40px;
+}
+
+p#dives {
+    margin: 0;
     color: #fff;
 }
 
-p#presets span, p#dives span {
+p#dives span {
     padding: 0 5px 0 0;
     font-weight: bolder;
 }

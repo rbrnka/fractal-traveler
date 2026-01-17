@@ -84,6 +84,8 @@ let resetButton;
 let randomizeColorsButton;
 let screenshotButton;
 let demoButton;
+let presetsToggle;
+let presetsMenu;
 let presetButtons = [];
 let diveButtons = [];
 let allButtons = [];
@@ -774,8 +776,6 @@ function initControlButtonEvents() {
 
 function initPresetButtonEvents() {
     const presetBlock = document.getElementById('presets');
-    // presetBlock.innerHTML = 'Presets: ';
-    //
     presetButtons = [];
 
     const presets = [...fractalApp.PRESETS];
@@ -783,9 +783,10 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : ` (${index})`); // TODO keep the ID in the title
+        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : ` (${index})`);
         btn.textContent = (preset.title || index).toString();
         btn.addEventListener('click', async () => {
+            closePresetsDropdown();
             await travelToPreset(presets, index);
         });
 
@@ -795,6 +796,35 @@ function initPresetButtonEvents() {
     });
 
     log('Initialized.', 'initPresetButtonEvents');
+}
+
+/** Toggles the presets dropdown menu */
+function togglePresetsDropdown() {
+    presetsMenu.classList.toggle('show');
+    const isOpen = presetsMenu.classList.contains('show');
+    presetsToggle.textContent = isOpen ? 'Views ▴' : 'Views ▾';
+}
+
+/** Closes the presets dropdown menu */
+function closePresetsDropdown() {
+    presetsMenu.classList.remove('show');
+    presetsToggle.textContent = 'Views ▾';
+}
+
+function initPresetsDropdown() {
+    presetsToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePresetsDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!presetsMenu.contains(e.target) && e.target !== presetsToggle) {
+            closePresetsDropdown();
+        }
+    });
+
+    log('Initialized.', 'initPresetsDropdown');
 }
 
 /**
@@ -1059,6 +1089,8 @@ function bindHTMLElements() {
     randomizeColorsButton = document.getElementById('randomize');
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
+    presetsToggle = document.getElementById('presets-toggle');
+    presetsMenu = document.getElementById('presets');
 }
 
 /**
@@ -1093,6 +1125,7 @@ export async function initUI(fractalRenderer) {
         window.location.hash = '#julia'; // Update URL hash
     }
     initPresetButtonEvents();
+    initPresetsDropdown();
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
