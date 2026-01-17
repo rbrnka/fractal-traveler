@@ -86,6 +86,9 @@ let screenshotButton;
 let demoButton;
 let presetsToggle;
 let presetsMenu;
+let divesToggle;
+let divesMenu;
+let divesDropdown;
 let presetButtons = [];
 let diveButtons = [];
 let allButtons = [];
@@ -220,8 +223,7 @@ export function enableMandelbrotMode() {
     mandelbrotSwitch.classList.add('active');
 
     destroyArrayOfButtons(diveButtons);
-    const diveBlock = document.getElementById('dives');
-    diveBlock.style.display = 'none';
+    divesDropdown.style.display = 'none';
 
     destroyJuliaSliders();
 
@@ -397,6 +399,9 @@ function exitAnimationMode() {
     demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
     demoButton.classList.remove('active');
 
+    presetsToggle.disabled = false;
+    divesToggle.disabled = false;
+
     if (isTouchDevice()) {
         registerTouchEventHandlers();
     } else {
@@ -429,6 +434,11 @@ function initAnimationMode() {
     // resetPresetAndDiveButtons();
     demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
     demoButton.classList.add('active');
+
+    closePresetsDropdown();
+    presetsToggle.disabled = true;
+    closeDivesDropdown();
+    divesToggle.disabled = true;
 
     // Unregister control events
     if (isTouchDevice()) {
@@ -821,6 +831,7 @@ function closePresetsDropdown() {
 function initPresetsDropdown() {
     presetsToggle.addEventListener('click', (e) => {
         e.stopPropagation();
+        closeDivesDropdown();
         togglePresetsDropdown();
     });
 
@@ -832,6 +843,36 @@ function initPresetsDropdown() {
     });
 
     log('Initialized.', 'initPresetsDropdown');
+}
+
+/** Toggles the dives dropdown menu */
+function toggleDivesDropdown() {
+    divesMenu.classList.toggle('show');
+    const isOpen = divesMenu.classList.contains('show');
+    divesToggle.textContent = isOpen ? 'Dives ▴' : 'Dives ▾';
+}
+
+/** Closes the dives dropdown menu */
+function closeDivesDropdown() {
+    divesMenu.classList.remove('show');
+    divesToggle.textContent = 'Dives ▾';
+}
+
+function initDivesDropdown() {
+    divesToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePresetsDropdown();
+        toggleDivesDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!divesMenu.contains(e.target) && e.target !== divesToggle) {
+            closeDivesDropdown();
+        }
+    });
+
+    log('Initialized.', 'initDivesDropdown');
 }
 
 /**
@@ -857,8 +898,6 @@ function initCommonButtonEvents() {
 function initDiveButtons() {
     if (isJuliaMode()) {
         const diveBlock = document.getElementById('dives');
-        //diveBlock.innerHTML = 'Dives: ';
-
         diveButtons = [];
 
         const dives = [...fractalApp.DIVES];
@@ -869,6 +908,7 @@ function initDiveButtons() {
             btn.title = (dive.title || ('Preset ' + index)) + ` (Shift+${index})`;
             btn.textContent = dive.title || (index).toString();
             btn.addEventListener('click', async () => {
+                closeDivesDropdown();
                 await startJuliaDive(dives, index);
             });
 
@@ -876,7 +916,7 @@ function initDiveButtons() {
             diveButtons.push(btn);
         });
 
-        diveBlock.style.display = 'inline-flex';
+        divesDropdown.style.display = 'inline-block';
     }
 
     log('Initialized.', 'initDiveButtons');
@@ -1098,6 +1138,9 @@ function bindHTMLElements() {
     demoButton = document.getElementById('demo');
     presetsToggle = document.getElementById('presets-toggle');
     presetsMenu = document.getElementById('presets');
+    divesToggle = document.getElementById('dives-toggle');
+    divesMenu = document.getElementById('dives');
+    divesDropdown = document.getElementById('dives-dropdown');
 }
 
 /**
@@ -1133,6 +1176,7 @@ export async function initUI(fractalRenderer) {
     }
     initPresetButtonEvents();
     initPresetsDropdown();
+    initDivesDropdown();
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();

@@ -304,9 +304,8 @@ label, .sliderValue {
     background: #333;
 }
 
-#dives {
+#dives-dropdown {
     display: none;
-    align-items: center;
 }
 
 button.dive {
@@ -409,6 +408,12 @@ p.small {
     min-width: 80px;
 }
 
+.dropdown-toggle:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .dropdown-menu {
     display: none;
     position: absolute;
@@ -439,15 +444,6 @@ p.small {
     min-width: 40px;
 }
 
-p#dives {
-    margin: 0;
-    color: #fff;
-}
-
-p#dives span {
-    padding: 0 5px 0 0;
-    font-weight: bolder;
-}
 
 .highlight {
     color: #fff;
