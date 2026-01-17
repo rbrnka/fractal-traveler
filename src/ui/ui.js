@@ -721,7 +721,16 @@ export async function reset() {
 
 function initHeaderEvents() {
 
-    logo.addEventListener('pointerenter', () => {
+    let lastPointerType = 'mouse';
+
+    logo.addEventListener('pointerdown', (e) => {
+        lastPointerType = e.pointerType;
+    });
+
+    logo.addEventListener('pointerenter', (e) => {
+        // Skip hover behavior for touch - handled by click
+        if (e.pointerType === 'touch') return;
+
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
@@ -729,13 +738,17 @@ function initHeaderEvents() {
         toggleHeader(true);
     });
 
-    if (DEBUG_MODE > DEBUG_LEVEL.NONE) {
-        logo.addEventListener('click', () => {
+    // Toggle on tap/click for touch devices (and debug mode)
+    logo.addEventListener('click', () => {
+        if (lastPointerType === 'touch' || DEBUG_MODE > DEBUG_LEVEL.NONE) {
             toggleHeader();
-        });
-    }
+        }
+    });
 
-    header.addEventListener('pointerleave', async () => {
+    header.addEventListener('pointerleave', (e) => {
+        // Skip auto-hide for touch - handled by tapping outside
+        if (e.pointerType === 'touch') return;
+
         // Only minimize if it hasn't been toggled manually
         if (headerVisible && !DEBUG_MODE) {
             headerMinimizeTimeout = setTimeout(() => {
