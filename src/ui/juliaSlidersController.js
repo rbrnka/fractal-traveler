@@ -12,10 +12,11 @@ import {clearURLParams} from "../global/utils";
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 
 /**
- * Throttle limit in milliseconds
+ * Throttle limit in milliseconds.
+ * 50ms = 20 updates/sec - smooth enough for visual feedback, reduces DOM thrash during animations.
  * @type {number}
  */
-const SLIDER_UPDATE_THROTTLE_LIMIT = 10;
+const SLIDER_UPDATE_THROTTLE_LIMIT = 50;
 
 let sliderContainer;
 let realSlider;

@@ -97,7 +97,6 @@ let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
 
 let pendingInfoTimer = null;
-let pendingInfoForce = false;
 
 
 export const getFractalMode = () => getFractalName(fractalMode);
@@ -316,30 +315,25 @@ export function resetAppState() {
 }
 
 /**
- * Updates the bottom info bar
- * @param force
+ * Updates the bottom info bar.
+ * Throttled to avoid layout thrashing during animations (max ~10 updates/sec).
+ * @param {boolean} force - If true, ensures an update is scheduled even if throttled (won't be dropped)
  */
 export function updateInfo(force = false) {
     const now = performance.now();
     const timeSinceLastUpdate = now - lastInfoUpdate;
 
-    // Coalescing throttle: If called too soon, schedule exactly one deferred update instead of dropping updates entirely.
-    if (!force && timeSinceLastUpdate < infoUpdateThrottleLimit) {
-        pendingInfoForce = pendingInfoForce || force;
-
-        if (!pendingInfoTimer) {
+    // Always apply throttle - even force=true respects timing to prevent layout thrash
+    if (timeSinceLastUpdate < infoUpdateThrottleLimit) {
+        // If force=true, ensure we schedule a deferred update (don't drop it)
+        if (force && !pendingInfoTimer) {
             const delay = Math.max(infoUpdateThrottleLimit - timeSinceLastUpdate, 0);
 
             pendingInfoTimer = setTimeout(() => {
                 pendingInfoTimer = null;
-
-                const pendingForce = pendingInfoForce;
-                pendingInfoForce = false;
-
-                updateInfo(pendingForce || true);
+                updateInfo(true);
             }, delay);
         }
-
         return;
     }
 
