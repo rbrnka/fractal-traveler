@@ -101,6 +101,20 @@ class FractalRenderer {
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
+        // Uniform dirty tracking - only upload uniforms when values change
+        this._uniformCache = {
+            resW: -1,
+            resH: -1,
+            pan0: NaN,
+            pan1: NaN,
+            zoom: NaN,
+            rotation: NaN,
+            iterations: NaN,
+            color0: NaN,
+            color1: NaN,
+            color2: NaN,
+        };
+
         /** Vertex shader */
         this.vertexShaderSource = vertexFragmentShaderRaw;
 
@@ -113,6 +127,23 @@ class FractalRenderer {
      * No-op by default.
      */
     markOrbitDirty() {}
+
+    /**
+     * Invalidates the uniform cache, forcing all uniforms to be re-uploaded on next draw().
+     * Called after GL program creation/recreation.
+     */
+    invalidateUniformCache() {
+        this._uniformCache.resW = -1;
+        this._uniformCache.resH = -1;
+        this._uniformCache.pan0 = NaN;
+        this._uniformCache.pan1 = NaN;
+        this._uniformCache.zoom = NaN;
+        this._uniformCache.rotation = NaN;
+        this._uniformCache.iterations = NaN;
+        this._uniformCache.color0 = NaN;
+        this._uniformCache.color1 = NaN;
+        this._uniformCache.color2 = NaN;
+    }
 
     // --------- Pan API (use these; they keep DD + array in sync) ---------
 
@@ -368,6 +399,7 @@ class FractalRenderer {
         this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
 
         this.updateUniforms();
+        this.invalidateUniformCache();
 
         if (typeof this.onProgramCreated === "function") {
             this.onProgramCreated();
@@ -405,21 +437,53 @@ class FractalRenderer {
     /**
      * Draws the fractal and sets basic uniforms.
      * Subclasses can override draw() but must call super.draw() for viewport+common uniforms+draw call.
+     * Uses dirty checking to avoid redundant uniform uploads.
      */
     draw() {
         this.gl.useProgram(this.program);
 
         const w = this.canvas.width;
         const h = this.canvas.height;
+        const uc = this._uniformCache;
 
         this.gl.viewport(0, 0, w, h);
 
-        if (this.resolutionLoc) this.gl.uniform2f(this.resolutionLoc, w, h);
-        if (this.panLoc) this.gl.uniform2fv(this.panLoc, this.pan);
-        if (this.zoomLoc) this.gl.uniform1f(this.zoomLoc, this.zoom);
-        if (this.rotationLoc) this.gl.uniform1f(this.rotationLoc, this.rotation);
-        if (this.iterLoc) this.gl.uniform1f(this.iterLoc, this.iterations);
-        if (this.colorLoc) this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        // Only upload uniforms that have changed
+        if (this.resolutionLoc && (uc.resW !== w || uc.resH !== h)) {
+            this.gl.uniform2f(this.resolutionLoc, w, h);
+            uc.resW = w;
+            uc.resH = h;
+        }
+
+        if (this.panLoc && (uc.pan0 !== this.pan[0] || uc.pan1 !== this.pan[1])) {
+            this.gl.uniform2fv(this.panLoc, this.pan);
+            uc.pan0 = this.pan[0];
+            uc.pan1 = this.pan[1];
+        }
+
+        if (this.zoomLoc && uc.zoom !== this.zoom) {
+            this.gl.uniform1f(this.zoomLoc, this.zoom);
+            uc.zoom = this.zoom;
+        }
+
+        if (this.rotationLoc && uc.rotation !== this.rotation) {
+            this.gl.uniform1f(this.rotationLoc, this.rotation);
+            uc.rotation = this.rotation;
+        }
+
+        if (this.iterLoc && uc.iterations !== this.iterations) {
+            this.gl.uniform1f(this.iterLoc, this.iterations);
+            uc.iterations = this.iterations;
+        }
+
+        if (this.colorLoc && (uc.color0 !== this.colorPalette[0] ||
+                              uc.color1 !== this.colorPalette[1] ||
+                              uc.color2 !== this.colorPalette[2])) {
+            this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+            uc.color0 = this.colorPalette[0];
+            uc.color1 = this.colorPalette[1];
+            uc.color2 = this.colorPalette[2];
+        }
 
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
