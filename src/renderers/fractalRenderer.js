@@ -13,6 +13,7 @@ import {
 } from "../global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
 import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
+import Renderer from "./renderer";
 
 /**
  * FractalRenderer
@@ -23,26 +24,13 @@ import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
  * @license MIT
  * @abstract
  */
-class FractalRenderer {
+class FractalRenderer extends Renderer {
 
     /**
      * @param {HTMLCanvasElement} canvas
      */
     constructor(canvas) {
-        this.canvas = canvas;
-        this.gl = this.canvas.getContext("webgl", {
-            antialias: false,
-            alpha: false,
-            depth: false,
-            stencil: false,
-            preserveDrawingBuffer: false,
-            powerPreference: "high-performance",
-        });
-
-        if (!this.gl) {
-            alert('WebGL is not supported by your browser or crashed.');
-            return;
-        }
+        super(canvas);
 
         // Defaults:
         this.MAX_ITER = 2000;
@@ -117,9 +105,6 @@ class FractalRenderer {
 
         /** Vertex shader */
         this.vertexShaderSource = vertexFragmentShaderRaw;
-
-        this.onWebGLContextLost = this.onWebGLContextLost.bind(this);
-        this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
     }
 
     /**
@@ -239,16 +224,6 @@ class FractalRenderer {
         }, settleMs);
     }
 
-    onWebGLContextLost(event) {
-        event.preventDefault();
-        console.warn(
-            `%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`,
-            CONSOLE_GROUP_STYLE,
-            CONSOLE_MESSAGE_STYLE
-        );
-        this.init();
-    }
-
     /** Destructor */
     destroy() {
         console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -280,8 +255,7 @@ class FractalRenderer {
             this.interactionTimer = null;
         }
 
-        this.canvas = null;
-        this.gl = null;
+        super.destroy();
 
         console.groupEnd();
     }
