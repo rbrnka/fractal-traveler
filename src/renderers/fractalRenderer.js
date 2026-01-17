@@ -45,6 +45,8 @@ class FractalRenderer {
         }
 
         // Defaults:
+        this.MAX_ITER = 2000;
+
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
         /** @type {COMPLEX} */

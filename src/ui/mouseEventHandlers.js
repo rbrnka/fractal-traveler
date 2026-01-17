@@ -9,6 +9,7 @@
 import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
+import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
 /** How long should we wait before distinguish between double click and two single clicks. */
 const DOUBLE_CLICK_THRESHOLD = 300;
@@ -32,6 +33,7 @@ let handleWheelEvent;
 let handleMouseDownEvent;
 let handleMouseMoveEvent;
 let handleMouseUpEvent;
+let handleMouseLeaveEvent;
 
 let mouseDownX = 0, mouseDownY = 0;
 let lastX = 0, lastY = 0;
@@ -43,6 +45,9 @@ let wasRotated = false;
 // Rotation
 let isRightDragging = false;
 let startX = 0;
+
+// Middle-click Julia preview
+let isMiddleButtonHeld = false;
 
 // Cached rect (avoid layout thrash / inconsistencies during drag)
 let dragRectLeft = 0;
@@ -79,6 +84,7 @@ export function initMouseHandlers(app) {
     fractalApp = app;
     canvas = app.canvas;
     canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    initJuliaPreview();
     registerMouseEventHandlers();
 }
 
@@ -93,11 +99,13 @@ export function registerMouseEventHandlers() {
     handleMouseDownEvent = (event) => handleMouseDown(event);
     handleMouseMoveEvent = (event) => handleMouseMove(event);
     handleMouseUpEvent = (event) => handleMouseUp(event);
+    handleMouseLeaveEvent = () => handleMouseLeave();
 
     canvas.addEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.addEventListener('mousedown', handleMouseDownEvent);
     canvas.addEventListener('mousemove', handleMouseMoveEvent);
     canvas.addEventListener('mouseup', handleMouseUpEvent);
+    canvas.addEventListener('mouseleave', handleMouseLeaveEvent);
 
     mouseHandlersRegistered = true;
     console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -114,6 +122,7 @@ export function unregisterMouseEventHandlers() {
     canvas.removeEventListener('mousedown', handleMouseDownEvent);
     canvas.removeEventListener('mousemove', handleMouseMoveEvent);
     canvas.removeEventListener('mouseup', handleMouseUpEvent);
+    canvas.removeEventListener('mouseleave', handleMouseLeaveEvent);
 
     mouseHandlersRegistered = false;
     console.warn(`%c unregisterMouseEventHandlers: %c Event handlers unregistered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -200,6 +209,22 @@ function handleMouseDown(event) {
         hasDragRect = true;
     } else if (event.button === 2) { // Right-click
         startX = event.clientX;
+    } else if (event.button === 1) { // Middle click - Julia preview
+        event.preventDefault();
+
+        // Only show Julia preview when in Mandelbrot mode
+        if (!isJuliaMode()) {
+            isMiddleButtonHeld = true;
+
+            // Get fractal coordinates at cursor position
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+
+            // Show Julia preview with c = cursor fractal position
+            showJuliaPreview(event.clientX, event.clientY, fx, fy);
+        }
     }
 }
 
@@ -276,6 +301,16 @@ function handleMouseMove(event) {
             updateInfo();
         }
     }
+
+    // Middle button held - update Julia preview
+    if (event.buttons === 4 && isMiddleButtonHeld && !isJuliaMode()) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+
+        updateJuliaPreview(event.clientX, event.clientY, fx, fy);
+    }
 }
 
 function handleMouseUp(event) {
@@ -285,9 +320,11 @@ function handleMouseUp(event) {
     event.preventDefault();
     event.stopPropagation();
 
-    if (event.button === 1) { // Middle-click toggles the lines
-        console.log(`%c handleMouseUp: %c Middle Click - Toggling lines`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-        toggleDebugLines();
+    if (event.button === 1) { // Middle-click - hide Julia preview
+        if (isMiddleButtonHeld) {
+            isMiddleButtonHeld = false;
+            hideJuliaPreview();
+        }
         return;
     }
 
@@ -384,6 +421,14 @@ function handleMouseUp(event) {
     }
 
     canvas.style.cursor = 'crosshair';
+}
+
+function handleMouseLeave() {
+    // Hide Julia preview if mouse leaves canvas while middle button is held
+    if (isMiddleButtonHeld) {
+        isMiddleButtonHeld = false;
+        hideJuliaPreview();
+    }
 }
 
 // endregion -----------------------------------------------------------------------------------------------------------

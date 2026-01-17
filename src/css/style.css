@@ -83,6 +83,21 @@ html, body {
     display: block;
 }
 
+#floatingCanvas {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 250px;
+    display: none;
+    background-color: #000;
+    border: 1px solid var(--accent-color);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px var(--accent-color);
+    pointer-events: none;
+    z-index: 9998;
+}
+
 h1 {
     padding: 0 0 0 0;
     margin: 6px auto 6px auto;
