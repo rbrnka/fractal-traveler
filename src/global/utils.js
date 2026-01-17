@@ -195,19 +195,22 @@ export const splitFloat = (value, method = SPLIT_FLOAT_METHOD.VELTKAMP_DEKKER) =
     (method === SPLIT_FLOAT_METHOD.GPU_EMULATED_DOUBLE) ? splitFloatED(value) : splitFloatVD(value);
 
 /**
+ * Veltkamp-Dekker splitting constant: 2^27 + 1 = 134217729
+ * Pre-computed to avoid Math.pow() on every splitFloat call (called 4000+ times per orbit rebuild).
+ * This is a common splitting point for 53-bit mantissa (JS number).
+ */
+const VELTKAMP_DEKKER_K = 134217729;
+
+/**
  * The Veltkamp-Dekker Split: This implementation is the classic Veltkamp-Dekker algorithm. It is designed to split
  * a 64-bit double into two "half-precision" doubles so that their product can be calculated without losing precision.
  * @param {number} value A standard JavaScript 64-bit number.
  * @returns {{high: number, low: number}}
  */
 function splitFloatVD(value) {
-    // 2^27 + 1 is a common splitting point for 53-bit mantissa (JS number)
-    // The constant K must be large enough to shift the low bits outside the mantissa range.
-    const K = Math.pow(2, 27) + 1;
-
-    let temp = value * K;
-    let high = temp - (temp - value);
-    let low = value - high;
+    const temp = value * VELTKAMP_DEKKER_K;
+    const high = temp - (temp - value);
+    const low = value - high;
 
     return {high, low};
 }
