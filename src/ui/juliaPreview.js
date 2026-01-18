@@ -23,7 +23,7 @@ let pendingInnerStops = null;
 
 /** Preview canvas size in pixels */
 const PREVIEW_WIDTH = 250;
-const PREVIEW_HEIGHT = 250;
+const PREVIEW_HEIGHT = 200;
 
 /** Offset from cursor position */
 const CURSOR_OFFSET_X = 20;
