@@ -404,8 +404,11 @@ button.dive.active {
     flex: 1 1 auto;
     min-width: 80px;
     display: flex;
+    flex-direction: row;
     align-items: center;
+    justify-content: flex-start;
     gap: 6px;
+    white-space: nowrap;
 }
 
 #palette-dropdown .dropdown-menu button.palette .color-swatch {
