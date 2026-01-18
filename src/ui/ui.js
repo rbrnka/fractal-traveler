@@ -43,6 +43,7 @@ import {
     updateJuliaSliders
 } from "./juliaSlidersController";
 import {DebugPanel} from "./debugPanel";
+import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPreview} from "./juliaPreview";
 
 /**
  * @module UI
@@ -307,6 +308,8 @@ export function updateColorTheme(palette) {
     root.style.setProperty('--bg-color', bgColor);
     root.style.setProperty('--mid-color', midColor);
     root.style.setProperty('--accent-color', accentColor);
+
+    recolorJuliaPreview(palette);
 }
 
 /** Resets buttons, active presets and URL */
@@ -684,6 +687,8 @@ export async function randomizeColors() {
         await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
             updateColorTheme(newPalette);
         }); // Update app colors
+
+        recolorJuliaPreview(newPalette);
     }
 }
 
@@ -1173,7 +1178,10 @@ export async function initUI(fractalRenderer) {
         infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
         window.location.hash = '#julia'; // Update URL hash
+    } else {
+        initJuliaPreview();
     }
+
     initPresetButtonEvents();
     initPresetsDropdown();
     initDivesDropdown();

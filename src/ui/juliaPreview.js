@@ -12,11 +12,14 @@ import {JuliaPreviewRenderer} from "../renderers/juliaPreviewRenderer";
 /** @type {HTMLCanvasElement} */
 let floatingCanvas = null;
 
-/** @type {FractalRenderer} */
+/** @type {JuliaPreviewRenderer} */
 let previewRenderer = null;
 
 /** @type {boolean} */
 let previewActive = false;
+
+/** @type {Float32Array|null} Pending inner stops to apply when renderer is created */
+let pendingInnerStops = null;
 
 /** Preview canvas size in pixels */
 const PREVIEW_WIDTH = 250;
@@ -65,6 +68,12 @@ export function showJuliaPreview(screenX, screenY, cx, cy) {
         previewRenderer.MAX_ITER = 500;
         previewRenderer.extraIterations = 0;
         console.log(`%c JuliaPreview: %c Created preview renderer`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+        // Apply any pending palette that was set before renderer was created
+        if (pendingInnerStops) {
+            previewRenderer.innerStops = pendingInnerStops;
+            pendingInnerStops = null;
+        }
     }
 
     // Update c parameter
@@ -150,6 +159,44 @@ export function hideJuliaPreview() {
     }
 
     console.log(`%c JuliaPreview: %c Preview hidden`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+}
+
+/**
+ * Recolors the Julia preview with a new palette.
+ * @param {number[]} palette - RGB palette [r, g, b] in range [0,1]
+ */
+export function recolorJuliaPreview(palette) {
+    if (!palette || palette.length < 3) return;
+
+    // Convert 3-float RGB palette to 15-float inner stops for Julia shader
+    // Creates a gradient: black -> color -> white -> color -> dark
+    const innerStops = new Float32Array([
+        0, 0, 0,                                              // stop 0: black
+        palette[0], palette[1], palette[2],                   // stop 1: the color
+        1, 1, 1,                                              // stop 2: white
+        palette[0] * 0.8, palette[1] * 0.8, palette[2] * 0.8, // stop 3: slightly darker
+        palette[0] * 0.3, palette[1] * 0.3, palette[2] * 0.3  // stop 4: dark version
+    ]);
+
+    if (previewRenderer) {
+        // Renderer exists - update immediately
+        previewRenderer.animateColorPaletteTransition(innerStops).then();
+    } else {
+        // Store for later when renderer is created
+        pendingInnerStops = innerStops;
+    }
+}
+
+/**
+ * Resets the Julia preview renderer to default state.
+ */
+export function resetJuliaPreview() {
+    if (!previewRenderer) {
+        console.warn(`%c JuliaPreview: %c Cannot reset - renderer not initialized`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+        return;
+    }
+
+    previewRenderer.reset();
 }
 
 /**

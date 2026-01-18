@@ -1,5 +1,4 @@
-import {lerp} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, JULIA_PALETTES} from "../global/constants";
+import {JULIA_PALETTES} from "../global/constants";
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.preview.frag';
 import FractalRenderer from "./fractalRenderer";
@@ -53,7 +52,7 @@ export class JuliaPreviewRenderer extends FractalRenderer {
      * @override
      */
     createFragmentShaderSource() {
-        return fragmentShaderRaw.toString();
+        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
     }
 
     /**
@@ -89,99 +88,53 @@ export class JuliaPreviewRenderer extends FractalRenderer {
      * @override
      */
     reset() {
-        this.c = [...this.DEFAULT_C];
-        this.innerStops = new Float32Array(JULIA_PALETTES[0].theme);
-        this.currentPaletteIndex = 0;
+        this.stopAllNonColorAnimations();
+        this.stopCurrentColorAnimations();
 
-        super.reset();
+        this.c = [...this.DEFAULT_C];
+        this.currentPaletteIndex = 0;
+        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
+
+        this.colorPalette = [...this.DEFAULT_PALETTE];
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
+        this.zoom = this.DEFAULT_ZOOM;
+        this.rotation = this.DEFAULT_ROTATION;
+        this.extraIterations = 0;
+
+        // Skip resizeCanvas - preview has fixed dimensions and may be hidden
+        this.markOrbitDirty();
+        this.draw();
     }
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
     /**
-     * Returns id/title of the next color theme in the themes array.
-     * @return {string}
-     */
-    getNextColorThemeId() {
-        const nextTheme = JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length];
-
-        return nextTheme.id || 'Random';
-    }
-
-    /**
-     * Smoothly transitions the inner color stops (used by the shader for inner coloring)
-     * from the current value to the provided toPalette over the specified duration.
-     * Also updates the colorPalette to match the theme (using the first stop, for example).
-     *
-     * @param {JULIA_PALETTE} toPalette - The target theme as an array of numbers (e.g., 15 numbers for 5 stops).
-     * @param {number} [duration=250] - Duration of the transition in milliseconds.
-     * @param {Function} [callback] - A callback invoked when the transition completes.
+     * Updates the palette and redraws.
+     * @param {number[]|Float32Array} newPalette - The inner stops array (15 floats for 5 RGB colors)
+     * @param {number} [duration] - Ignored for preview (instant transition)
+     * @param {Function} [coloringCallback] - Callback after palette change
      * @return {Promise<void>}
      */
-    async animateInnerStopsTransition(toPalette, duration = 250, callback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, `color: ${CONSOLE_GROUP_STYLE}`);
-        this.stopCurrentColorAnimations();
+    async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
+        if (!newPalette) return Promise.resolve();
 
-        // Save the starting stops as a plain array.
-        const startStops = Array.from(this.innerStops);
+        // Update inner stops from the provided palette
+        this.innerStops = new Float32Array(newPalette);
 
-        await new Promise(resolve => {
-            let startTime = null;
+        // Derive colorPalette from stop index 3 (brightest color typically)
+        const stopIndex = 3;
+        this.colorPalette = [
+            newPalette[stopIndex * 3] * 1.5,
+            newPalette[stopIndex * 3 + 1] * 1.5,
+            newPalette[stopIndex * 3 + 2] * 1.5
+        ];
 
-            const step = (timestamp) => {
-                if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+        // Redraw with new palette
+        this.draw();
 
-                // Interpolate each component of the inner stops.
-                const interpolated = startStops.map((v, i) => lerp(v, toPalette.theme[i], progress));
-                this.innerStops = new Float32Array(interpolated);
+        if (coloringCallback) coloringCallback();
 
-                let keyColor;
-
-                if (toPalette.keyColor) {
-                    keyColor = hexToRGB(toPalette.keyColor);
-                    if (keyColor) {
-                        this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
-                    }
-                }
-
-                if (!keyColor) {
-                    const stopIndex = 3;
-                    this.colorPalette = [
-                        toPalette.theme[stopIndex * 3] * 1.5,
-                        toPalette.theme[stopIndex * 3 + 1] * 1.5,
-                        toPalette.theme[stopIndex * 3 + 2] * 1.5
-                    ];
-                }
-
-                // Update the uniform for inner stops.
-                this.gl.useProgram(this.program);
-                if (this.innerStopsLoc) {
-                    this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
-                }
-
-                this.draw();
-
-                if (callback) callback();
-
-                if (progress < 1) {
-                    this.currentColorAnimationFrame = requestAnimationFrame(step);
-                } else {
-                    this.stopCurrentColorAnimations();
-                    console.groupEnd();
-                    resolve();
-                }
-            };
-
-            this.currentColorAnimationFrame = requestAnimationFrame(step);
-        });
-    }
-
-    /** @inheritDoc */
-    async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
-        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
-
-        await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+        return Promise.resolve();
     }
 
     needsRebase() {

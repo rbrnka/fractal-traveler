@@ -26,7 +26,7 @@ uniform vec3 u_colorPalette;// Color palette
 uniform vec3 u_innerStops[5];// Color palette inner stops
 
 // Maximum iterations (compile-time constant required by GLSL ES 1.00).
-const int MAX_ITERATIONS = 1000;
+const int MAX_ITERATIONS = __MAX_ITER__;
 
 // Define color stops as individual constants (RGB values in [0,1]).
 // Default stops (black, orange, white, blue, dark blue).
