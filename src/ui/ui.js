@@ -24,7 +24,6 @@ import {
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
-    FF_TRAVEL_TO_PRESET_WITH_ROTATION,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
     log,
@@ -637,11 +636,8 @@ export async function travelToPreset(presets, index) {
         fractalApp.demoTime = 0;
         await fractalApp.animateTravelToPreset(presets[index], 1500);
     } else {
-        if (FF_TRAVEL_TO_PRESET_WITH_ROTATION) {
-            await fractalApp.animateTravelToPresetWithRandomRotation(presets[index], 2000, 500, 1500);
-        } else {
-            await fractalApp.animateTravelToPreset(presets[index]);
-        }
+        // Cinematic animation with zoom-out, pan, zoom-in with rotation
+        await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500);
     }
     activePresetIndex = index;
 

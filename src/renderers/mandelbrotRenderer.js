@@ -386,69 +386,51 @@ class MandelbrotRenderer extends FractalRenderer {
      * If any of the final params is the same as the target, it won't animate it.
      *
      * @param {MANDELBROT_PRESET} preset An instance-specific object to define exact spot in the fractal
-     * @param {number} [zoomOutDuration] in ms
-     * @param {number} [zoomInDuration] in ms
+     * @param {number} [zoomOutDuration=2000] Duration (ms) for zoom-out stage
+     * @param {number} [panDuration=1000] Duration (ms) for pan stage
+     * @param {number} [zoomInDuration=3500] Duration (ms) for zoom-in stage
      * @return {Promise<void>}
      */
-    async animateTravelToPreset(preset, zoomOutDuration = 1000, zoomInDuration = 3500) {
+    async animateTravelToPreset(preset, zoomOutDuration = 2000, panDuration = 1000, zoomInDuration = 3500) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
-        const targetRotation = preset.rotation || 0;
+        const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
 
-        if (preset.zoom.toFixed(24) === this.zoom.toFixed(24)) {
-            await this.animatePanTo(preset.pan, zoomOutDuration);
-        } else if (compareComplex(preset.pan, this.pan)) {
-            // If only zoom is changed, adjust zoom-in
-            // TODO zoom-out could be proportionally fast to the zoom depth. If zoomed in too much, the speed is too fast and the image does not render
-            await this.animateZoomTo(preset.zoom, zoomOutDuration);
+        // Check if we're already at the target
+        const atTargetZoom = Math.abs(this.zoom - preset.zoom) < 1e-35;
+        const atTargetPan = compareComplex(preset.pan, this.pan);
+
+        if (atTargetZoom && atTargetPan) {
+            // Only need to rotate
+            await this.animateRotationTo(presetRotation, zoomOutDuration, EASE_TYPE.QUINT);
+        } else if (atTargetPan) {
+            // Same position, just zoom and rotate with cinematic spin
+            const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
+            const cinematicRotation = presetRotation + extraSpins;
+            await this.animateZoomRotationTo(preset.zoom, cinematicRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.QUINT);
         } else {
-            // Otherwise zoom-out
-            await this.animateZoomTo(this.DEFAULT_ZOOM, zoomOutDuration);
-        }
+            // Full 3-stage cinematic animation:
 
-        await Promise.all([
-            this.animatePanThenZoomTo(preset.pan, preset.zoom, 1000, zoomInDuration * (preset.speed ?? 1)),
-            this.animateRotationTo(targetRotation, 1000, EASE_TYPE.QUINT),
-        ]);
+            // Stage 1: Zoom out to default zoom with random rotation (if significantly zoomed in)
+            const needsZoomOut = this.zoom < this.DEFAULT_ZOOM * 0.9;
+            if (needsZoomOut) {
+                const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
+                await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUINT);
+            }
+
+            // Stage 2: Pan to target coordinates
+            await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
+
+            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins ending at preset rotation)
+            const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
+            const cinematicFinalRotation = presetRotation + extraSpins;
+            await this.animateZoomRotationTo(preset.zoom, cinematicFinalRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
+        }
 
         this.currentPresetIndex = preset.id || 0;
 
         console.log(`Travel complete.`);
-        console.groupEnd();
-    }
-
-    /**
-     * Animate travel to a preset with random rotation. This method waits for three stages:
-     *   1. Zoom-out to default zoom with rotation.
-     *   2. Pan transition.
-     *   3. Zoom-in with rotation.
-     *
-     * @param {MANDELBROT_PRESET} preset The target preset object with properties: pan, c, zoom, rotation.
-     * @param {number} zoomOutDuration Duration (ms) for the zoom-out stage.
-     * @param {number} panDuration Duration (ms) for the pan stage.
-     * @param {number} zoomInDuration Duration (ms) for the zoom-in stage.
-     */
-    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPresetWithRandomRotation`, CONSOLE_GROUP_STYLE);
-
-        // Random rotation during zoom-out for dynamic effect
-        const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
-        const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
-
-        // Add 1-2 full cinematic rotations during zoom-in, ending at preset.rotation
-        const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
-        const cinematicFinalRotation = presetRotation + extraSpins;
-
-        if (this.rotation !== this.DEFAULT_ROTATION) {
-            await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration);
-        }
-
-        await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
-        await this.animateZoomRotationTo(preset.zoom, cinematicFinalRotation, zoomInDuration * (preset.speed ?? 1));
-
-        this.currentPresetIndex = preset.id || 0;
-
         console.groupEnd();
     }
 
@@ -488,7 +470,7 @@ class MandelbrotRenderer extends FractalRenderer {
             const currentPreset = this.PRESETS[this.currentPresetIndex];
             console.log(`Animating to preset ${this.currentPresetIndex}`);
 
-            await this.animateTravelToPresetWithRandomRotation(currentPreset, 2000, 1000, 5000);
+            await this.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
             await asyncDelay(3500);
         }
 
