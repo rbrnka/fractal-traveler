@@ -255,7 +255,7 @@ button:focus {
     flex-direction: row; /* Align label and slider horizontally */
     align-items: center; /* Vertically align label and slider */
     gap: 0; /* Add spacing between label and slider */
-    width: 80%; /* Ensure consistent width for sliders */
+    min-width: 380px;
 }
 
 label, .sliderValue {
@@ -365,7 +365,7 @@ button.dive.active {
     width: fit-content;
     position: relative;
     margin: 0 10px 0 10px;
-    padding: 5px 20px 5px 20px;
+    padding: 1px 20px 4px 20px;
     cursor: auto;
 }
 
@@ -378,7 +378,7 @@ button.dive.active {
 }
 
 #controlButtons button {
-    width: 90px;
+    min-width: 80px;
     justify-content: center;
     display: inline-flex;
     flex-direction: column;

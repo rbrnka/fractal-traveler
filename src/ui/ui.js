@@ -839,13 +839,13 @@ function initPresetButtonEvents() {
 function togglePresetsDropdown() {
     presetsMenu.classList.toggle('show');
     const isOpen = presetsMenu.classList.contains('show');
-    presetsToggle.textContent = isOpen ? 'Views ▴' : 'Views ▾';
+    presetsToggle.textContent = isOpen ? 'View ▴' : 'View ▾';
 }
 
 /** Closes the presets dropdown menu */
 function closePresetsDropdown() {
     presetsMenu.classList.remove('show');
-    presetsToggle.textContent = 'Views ▾';
+    presetsToggle.textContent = 'View ▾';
 }
 
 function initPresetsDropdown() {
@@ -870,13 +870,13 @@ function initPresetsDropdown() {
 function toggleDivesDropdown() {
     divesMenu.classList.toggle('show');
     const isOpen = divesMenu.classList.contains('show');
-    divesToggle.textContent = isOpen ? 'Dives ▴' : 'Dives ▾';
+    divesToggle.textContent = isOpen ? 'Dive ▴' : 'Dive ▾';
 }
 
 /** Closes the dives dropdown menu */
 function closeDivesDropdown() {
     divesMenu.classList.remove('show');
-    divesToggle.textContent = 'Dives ▾';
+    divesToggle.textContent = 'Dive ▾';
 }
 
 function initDivesDropdown() {
@@ -1039,7 +1039,7 @@ function initFractalSwitchButtons() {
     });
 
     if (FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
-        persistSwitch.addEventListener('click', async (e) => {
+        persistSwitch.addEventListener('click', async () => {
             console.log('persistSwitch clicked.');
             if (isJuliaMode()) {
                 await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT)
