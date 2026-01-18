@@ -924,7 +924,11 @@ class FractalRenderer extends Renderer {
 
         this.markOrbitDirty();
 
-        if (this.zoom.toFixed(12) === targetZoom.toFixed(12)) return;
+        if (this.zoom.toFixed(20) === targetZoom.toFixed(20)) {
+            console.log(`Already at the target zoom. Skipping.`);
+            console.groupEnd();
+            return;
+        }
 
         const startZoom = this.zoom;
 

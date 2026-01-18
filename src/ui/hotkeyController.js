@@ -268,10 +268,11 @@ async function onKeyDown(event) {
             const increment = event.shiftKey ? ZOOM_ANIMATION_SMOOTH_STEP : ZOOM_ANIMATION_STEP;
             const zoomFactor = (event.ctrlKey || altKey) ? (1 + increment) : (1 - increment);
 
-            let targetZoom = fractalApp.zoom * zoomFactor; // TODO
+            let targetZoom = fractalApp.zoom * zoomFactor;
 
             if (targetZoom >= fractalApp.MAX_ZOOM && targetZoom <= fractalApp.MIN_ZOOM) {
-                await fractalApp.animateZoomTo(targetZoom, 20);
+                // Use animateZoomToNoPan to preserve DD pan precision at deep zooms
+                await fractalApp.animateZoomToNoPan(targetZoom, 20);
                 resetAppState();
             }
             handled = true;
