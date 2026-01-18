@@ -70,11 +70,6 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
  */
 export const FF_USER_INPUT_ALLOWED = false;
 
-/**
- *  When enabled, preset travel animations include random rotation during the zoom-in.
- * @since 1.9
- */
-export const FF_TRAVEL_TO_PRESET_WITH_ROTATION = true;
 // endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
