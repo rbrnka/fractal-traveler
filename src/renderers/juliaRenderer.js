@@ -65,7 +65,7 @@ export class JuliaRenderer extends FractalRenderer {
         this._prevC0 = NaN;
         this._prevC1 = NaN;
 
-        this.MAX_ITER = 2000;
+        this.MAX_ITER = 5000;
         this.REF_SEARCH_GRID = 7;
         this.REF_SEARCH_RADIUS = 0.50;
 
@@ -349,7 +349,8 @@ export class JuliaRenderer extends FractalRenderer {
 
         // Iteration strategy avoids exploding to infinity at tiny zooms
         const safe = Math.max(this.zoom, 1e-300);
-        const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
+        const log2Depth = Math.log2(this.DEFAULT_ZOOM / safe);
+        const baseIters = Math.floor(200 + 50 * log2Depth);
         this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
         // Detect view changes -> mark orbit dirty (use tolerant checks to avoid noise)

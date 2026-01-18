@@ -31,7 +31,7 @@ class MandelbrotRenderer extends FractalRenderer {
         this.orbitDirty = true;
 
         /** IMPORTANT: MAX_ITER must remain constant after shader compilation + orbit buffer allocation. */
-        this.MAX_ITER = 2000;
+        this.MAX_ITER = 5000;
 
         // Reference search parameters (for perturbation rebasing)
         this.REF_SEARCH_GRID = 7;
@@ -269,7 +269,8 @@ class MandelbrotRenderer extends FractalRenderer {
         // Iteration strategy avoids exploding to infinity at tiny zooms
         // TODO Tune! main point is: clamp to MAX_ITER.
         const safe = Math.max(this.zoom, 1e-300);
-        const baseIters = Math.floor(200 + 50 * Math.log10(this.DEFAULT_ZOOM / safe));
+        const log2Depth = Math.log2(this.DEFAULT_ZOOM / safe);
+        const baseIters = Math.floor(200 + 50 * log2Depth);
         this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
 
         const mustRebaseNow = this.needsRebase();
