@@ -169,13 +169,13 @@ export function recolorJuliaPreview(palette) {
     if (!palette || palette.length < 3) return;
 
     // Convert 3-float RGB palette to 15-float inner stops for Julia shader
-    // Creates a gradient: black -> color -> white -> color -> dark
+    // Pattern matches Cosmos palette: black -> color -> black -> bright -> dark
     const innerStops = new Float32Array([
         0, 0, 0,                                              // stop 0: black
         palette[0], palette[1], palette[2],                   // stop 1: the color
-        1, 1, 1,                                              // stop 2: white
-        palette[0] * 0.8, palette[1] * 0.8, palette[2] * 0.8, // stop 3: slightly darker
-        palette[0] * 0.3, palette[1] * 0.3, palette[2] * 0.3  // stop 4: dark version
+        0, 0, 0,                                              // stop 2: black (keeps dark background)
+        palette[0] * 1.2, palette[1] * 1.2, palette[2] * 1.2, // stop 3: brighter highlight
+        0.1, 0.1, 0.1                                         // stop 4: dark version
     ]);
 
     if (previewRenderer) {
