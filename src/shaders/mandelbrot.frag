@@ -117,16 +117,6 @@ df2 sampleZRef(int n){
     return df2_make(df_make(t.r, t.g), df_make(t.b, t.a));
 }
 
-vec4 calculateColor(float i, vec3 u_colorPalette) {
-    float color = i / 100.0;
-    vec3 fractalColor = vec3(
-    sin(color * 3.1415),
-    sin(color * 6.2830),
-    sin(color * 1.7200)
-    ) * u_colorPalette;
-    return vec4(fractalColor, 1.0);
-}
-
 void main() {
     float aspect = u_resolution.x / u_resolution.y;
 
@@ -155,18 +145,20 @@ void main() {
 
     df2 dz = df2_make(df_from(0.0), df_from(0.0));
 
-    float i = 0.0;
+    float it = 0.0;
+    float zx = 0.0;
+    float zy = 0.0;
 
     for (int n = 0; n < MAX_ITER; n++) {
         float fn = float(n);
-        if (fn >= u_iterations) { i = fn; break; }
+        if (fn >= u_iterations) { it = fn; break; }
 
         df2 zref = sampleZRef(n);
 
         // bailout approx using float
-        float zx = df_to_float(zref.x) + df_to_float(dz.x);
-        float zy = df_to_float(zref.y) + df_to_float(dz.y);
-        if (zx*zx + zy*zy > 4.0) { i = fn; break; }
+        zx = df_to_float(zref.x) + df_to_float(dz.x);
+        zy = df_to_float(zref.y) + df_to_float(dz.y);
+        if (zx*zx + zy*zy > 4.0) { it = fn; break; }
 
         // dz_{n+1} = 2*zref*dz + dz^2 + dc
         df2 zref_dz = df2_mul(zref, dz);
@@ -177,12 +169,24 @@ void main() {
 
         dz = df2_add(df2_add(zref_dz, dz2), dc);
 
-        if (n == MAX_ITER - 1) i = u_iterations;
+        if (n == MAX_ITER - 1) it = u_iterations;
     }
 
-    if (i >= u_iterations) {
+    if (it >= u_iterations) {
         gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
-        gl_FragColor = calculateColor(i, u_colorPalette);
+        // Smooth coloring using |z|² for crisp edge detail
+        float r2 = max(zx*zx + zy*zy, 1e-30);
+        float smoothIt = it - log2(log2(r2));
+
+        // Sine-based coloring with smooth iteration
+        float color = smoothIt / 100.0;
+        vec3 fractalColor = vec3(
+            sin(color * 3.1415),
+            sin(color * 6.2830),
+            sin(color * 1.7200)
+        ) * u_colorPalette;
+
+        gl_FragColor = vec4(fractalColor, 1.0);
     }
 }
