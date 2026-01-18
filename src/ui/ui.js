@@ -227,7 +227,9 @@ export function enableMandelbrotMode() {
     divesDropdown.style.display = 'none';
 
     destroyJuliaSliders();
+    destroyJuliaPreview();
 
+    fractalApp.destroy();
     fractalApp = new MandelbrotRenderer(canvas);
     fractalMode = FRACTAL_TYPE.MANDELBROT;
 
@@ -244,6 +246,7 @@ export function enableMandelbrotMode() {
 }
 
 export function enableJuliaMode() {
+    fractalApp.destroy();
     fractalApp = new JuliaRenderer(canvas);
     fractalMode = FRACTAL_TYPE.JULIA;
 
@@ -724,6 +727,8 @@ export async function reset() {
     fractalApp.reset();
     if (isJuliaMode()) {
         resetJuliaSliders();
+    } else {
+        resetJuliaPreview();
     }
     resetAppState();
     updateRecolorButtonTitle();
