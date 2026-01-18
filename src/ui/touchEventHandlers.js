@@ -62,15 +62,25 @@ function markOrbitDirtySafe() {
  * @param {FractalRenderer} app
  */
 export function initTouchHandlers(app) {
+    if (!app || !app.canvas) {
+        console.warn(`%c initTouchHandlers: %c App or canvas not provided.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+        return;
+    }
+
     fractalApp = app;
     canvas = app.canvas;
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-    registerTouchEventHandlers(app);
+    registerTouchEventHandlers();
 }
 
 /** Registers touch handlers. */
 export function registerTouchEventHandlers() {
+    if (!canvas) {
+        console.warn(`%c registerTouchEventHandlers: %c Canvas not initialized. Call initTouchHandlers first.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+        return;
+    }
+
     if (touchHandlersRegistered) {
         console.warn(`%c registerTouchEventHandlers: %c Event handlers already registered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
@@ -90,8 +100,7 @@ export function registerTouchEventHandlers() {
 
 /** Unregisters touch handlers. */
 export function unregisterTouchEventHandlers() {
-    if (!touchHandlersRegistered) {
-        console.warn(`%c unregisterTouchEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+    if (!canvas || !touchHandlersRegistered) {
         return;
     }
 
