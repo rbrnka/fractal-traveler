@@ -925,6 +925,28 @@ function initPaletteButtonEvents() {
     paletteMenu.appendChild(randomBtn);
     paletteButtons.push(randomBtn);
 
+    // Add "Color Cycle" option (Shift+T functionality)
+    const cycleBtn = document.createElement('button');
+    cycleBtn.id = 'palette-cycle';
+    cycleBtn.className = 'palette';
+    cycleBtn.title = 'Smooth color cycling animation (Shift+T)';
+    cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Color Cycle';
+    cycleBtn.addEventListener('click', async () => {
+        if (fractalApp.currentColorAnimationFrame) {
+            // Stop if already running
+            fractalApp.stopCurrentColorAnimations();
+            cycleBtn.classList.remove('active');
+        } else {
+            // Start color cycle
+            cycleBtn.classList.add('active');
+            closePaletteDropdown();
+            await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
+            cycleBtn.classList.remove('active');
+        }
+    });
+    paletteMenu.appendChild(cycleBtn);
+    paletteButtons.push(cycleBtn);
+
     // Add palette options if available
     palettes.forEach((palette, index) => {
         const btn = document.createElement('button');

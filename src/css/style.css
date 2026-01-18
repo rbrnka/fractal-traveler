@@ -419,6 +419,21 @@ button.dive.active {
     flex-shrink: 0;
 }
 
+/* Animated color cycle swatch */
+.color-cycle-swatch {
+    background: conic-gradient(from 0deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b);
+    animation: color-cycle-spin 3s linear infinite;
+}
+
+@keyframes color-cycle-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+#palette-cycle.active {
+    color: var(--accent-color);
+}
+
 #reset {
     color: #FF3131;
 }
