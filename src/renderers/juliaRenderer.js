@@ -2,7 +2,7 @@ import {updateInfo} from "../ui/ui";
 import FractalRenderer from "./fractalRenderer";
 import {compareComplex, ddSubDD, degToRad, hexToRGB, lerp, normalizeRotation, splitFloat,} from "../global/utils";
 import "../global/types";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEFAULT_JULIA_PALETTE, EASE_TYPE,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.frag';
@@ -87,8 +87,13 @@ export class JuliaRenderer extends FractalRenderer {
             rotation: degToRad(d.rotation || 0)
         }));
 
+        /** @type {Array.<JULIA_PALETTE>} */
+        this.PALETTES = data.palettes || [];
+
         this.currentPaletteIndex = 0;
-        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
+        this.innerStops = this.PALETTES.length > 0
+            ? new Float32Array(this.PALETTES[this.currentPaletteIndex].theme)
+            : new Float32Array(DEFAULT_JULIA_PALETTE.theme);
 
         this.currentCAnimationFrame = null;
         this.cAnimationActive = false; // Defers orbit rebuild during C-animation for performance
@@ -413,8 +418,10 @@ export class JuliaRenderer extends FractalRenderer {
      */
     reset() {
         this.c = [...this.DEFAULT_C];
-        this.innerStops = new Float32Array(JULIA_PALETTES[0].theme);
         this.currentPaletteIndex = 0;
+        this.innerStops = this.PALETTES.length > 0
+            ? new Float32Array(this.PALETTES[0].theme)
+            : new Float32Array([0, 0, 0, 1, 0.647, 0, 0, 0, 0, 1.2, 1.2, 1.0, 0.1, 0.1, 0.1]);
 
         this.orbitDirty = true;
         this._prevPan0 = NaN;
@@ -452,16 +459,6 @@ export class JuliaRenderer extends FractalRenderer {
         this.stopCurrentCAnimation();
 
         super.stopAllNonColorAnimations();
-    }
-
-    /**
-     * Returns id/title of the next color theme in the themes array.
-     * @return {string}
-     */
-    getNextColorThemeId() {
-        const nextTheme = JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length];
-
-        return nextTheme.id || 'Random';
     }
 
     /**
@@ -527,9 +524,27 @@ export class JuliaRenderer extends FractalRenderer {
 
     /** @inheritDoc */
     async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
-        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
+        if (this.PALETTES.length === 0) {
+            // No palettes defined - just trigger random color (handled by base class)
+            return super.animateColorPaletteTransition(duration, coloringCallback);
+        }
+        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % this.PALETTES.length;
+        await this.animateInnerStopsTransition(this.PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    }
 
-        await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    /**
+     * Applies a specific palette by index
+     * @param {number} index - Palette index
+     * @param {number} [duration=250] - Transition duration in ms
+     * @param {Function} [coloringCallback] - Callback when done
+     * @return {Promise<void>}
+     */
+    async applyPaletteByIndex(index, duration = 250, coloringCallback = null) {
+        if (this.PALETTES.length === 0 || index < 0 || index >= this.PALETTES.length) {
+            return;
+        }
+        this.currentPaletteIndex = index;
+        await this.animateInnerStopsTransition(this.PALETTES[index], duration, coloringCallback);
     }
 
     /** @inheritDoc */

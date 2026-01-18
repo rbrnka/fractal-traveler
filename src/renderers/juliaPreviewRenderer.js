@@ -1,7 +1,8 @@
-import {JULIA_PALETTES} from "../global/constants";
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.preview.frag';
 import FractalRenderer from "./fractalRenderer";
+import data from '../data/julia.json' with {type: 'json'};
+import {DEFAULT_JULIA_PALETTE} from "../global/constants";
 
 /**
  * Julia Set Preview Renderer (legacy)
@@ -27,6 +28,7 @@ export class JuliaPreviewRenderer extends FractalRenderer {
         this.zoom = this.DEFAULT_ZOOM;
         this.pan = [...this.DEFAULT_PAN]; // Copy
         this.rotation = this.DEFAULT_ROTATION;
+        this.DEFAULT_PALETTE = data.palettes[0].theme || DEFAULT_JULIA_PALETTE.theme;
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
         /** @type COMPLEX */
@@ -38,8 +40,7 @@ export class JuliaPreviewRenderer extends FractalRenderer {
         /** @type {Array.<DIVE>} */
         this.DIVES = [];
 
-        this.currentPaletteIndex = 0;
-        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
+        this.innerStops = new Float32Array(this.DEFAULT_PALETTE);
 
         this.currentCAnimationFrame = null;
         this.demoTime = 0;
@@ -88,21 +89,11 @@ export class JuliaPreviewRenderer extends FractalRenderer {
      * @override
      */
     reset() {
-        this.stopAllNonColorAnimations();
-        this.stopCurrentColorAnimations();
-
         this.c = [...this.DEFAULT_C];
-        this.currentPaletteIndex = 0;
-        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
-
         this.colorPalette = [...this.DEFAULT_PALETTE];
-        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
-        this.zoom = this.DEFAULT_ZOOM;
-        this.rotation = this.DEFAULT_ROTATION;
+        this.innerStops = new Float32Array(this.colorPalette);
         this.extraIterations = 0;
 
-        // Skip resizeCanvas - preview has fixed dimensions and may be hidden
-        this.markOrbitDirty();
         this.draw();
     }
 

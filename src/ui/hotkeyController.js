@@ -23,6 +23,7 @@ import {
     toggleHeader,
     travelToPreset,
     updateColorTheme,
+    updatePaletteDropdownState,
 } from "./ui";
 import {
     CONSOLE_GROUP_STYLE,
@@ -32,7 +33,6 @@ import {
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
-    JULIA_PALETTES,
     log,
     ROTATION_DIRECTION
 } from "../global/constants";
@@ -186,13 +186,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyT': // Random colors
+        case 'KeyT': // Random colors / cycle palettes
             if (altKey) {
-                if (isJuliaMode()) {
-                    await fractalApp.animateInnerStopsTransition(
-                        JULIA_PALETTES[0],
-                        250,
-                        updateColorTheme);
+                // Alt+T: Reset to first palette
+                if (isJuliaMode() && fractalApp.PALETTES?.length > 0) {
+                    await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
+                    updatePaletteDropdownState();
                 } else {
                     await fractalApp.animateColorPaletteTransition(
                         DEFAULT_MANDELBROT_THEME_COLOR,
@@ -200,12 +199,14 @@ async function onKeyDown(event) {
                         updateColorTheme);
                 }
             } else if (event.shiftKey) {
+                // Shift+T: Cycle through color space
                 if (fractalApp.currentColorAnimationFrame) {
                     fractalApp.stopCurrentColorAnimations();
                     break;
                 }
                 await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
             } else {
+                // T: Randomize / cycle palettes
                 await randomizeColors();
             }
             handled = true;

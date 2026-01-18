@@ -28,8 +28,7 @@ import {
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
     log,
-    PI,
-    RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
+    PI
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
@@ -82,7 +81,6 @@ let mandelbrotSwitch;
 let juliaSwitch;
 let persistSwitch;
 let resetButton;
-let randomizeColorsButton;
 let screenshotButton;
 let demoButton;
 let presetsToggle;
@@ -90,8 +88,12 @@ let presetsMenu;
 let divesToggle;
 let divesMenu;
 let divesDropdown;
+let paletteToggle;
+let paletteMenu;
+let paletteDropdown;
 let presetButtons = [];
 let diveButtons = [];
+let paletteButtons = [];
 let allButtons = [];
 let infoLabel;
 let infoText;
@@ -238,9 +240,12 @@ export function enableMandelbrotMode() {
     if (activePresetIndex !== 0) resetActivePresetIndex();
     initPresetButtonEvents();
 
+    // Update palette dropdown for new renderer
+    initPaletteButtonEvents();
+
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
     window.location.hash = ''; // Update URL hash
 }
@@ -263,6 +268,9 @@ export function enableJuliaMode() {
     destroyArrayOfButtons(diveButtons);
     initDiveButtons();
 
+    // Update palette dropdown for new renderer
+    initPaletteButtonEvents();
+
     if (activePresetIndex !== 0) resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
@@ -270,7 +278,7 @@ export function enableJuliaMode() {
     header.style.background = 'rgba(20, 20, 20, 0.8)';
     infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
     window.location.hash = '#julia'; // Update URL hash
 }
@@ -285,12 +293,16 @@ export function enableRiemannMode() {
     window.location.hash = '#zeta'; // Update URL hash
 }
 
-export function updateRecolorButtonTitle() {
-    if (isJuliaMode()) {
-        let nextTheme = fractalApp.getNextColorThemeId();
-        if (nextTheme) randomizeColorsButton.title = 'Next theme: "' + nextTheme + '" (T)';
+export function updatePaletteDropdownState() {
+    if (!paletteToggle) return;
+
+    // Update button text to show current palette
+    const palettes = fractalApp.PALETTES || [];
+    if (palettes.length > 0 && fractalApp.currentPaletteIndex >= 0) {
+        const currentPalette = palettes[fractalApp.currentPaletteIndex];
+        paletteToggle.title = `Current: "${currentPalette.id}" (T to cycle)`;
     } else {
-        randomizeColorsButton.title = RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE;
+        paletteToggle.title = 'Change Color Palette (T)';
     }
 }
 
@@ -676,7 +688,7 @@ export function resetActivePresetIndex() {
 export async function randomizeColors() {
     if (isJuliaMode()) {
         await fractalApp.animateColorPaletteTransition(250, updateColorTheme);
-        updateRecolorButtonTitle();
+        updatePaletteDropdownState();
     } else {
         // Generate a bright random color palette
         // Generate colors with better separation and higher brightness
@@ -731,7 +743,7 @@ export async function reset() {
         resetJuliaPreview();
     }
     resetAppState();
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
     presetButtons[0].classList.add('active');
 
     console.groupEnd();
@@ -792,8 +804,6 @@ function initControlButtonEvents() {
         await reset();
     });
 
-    randomizeColorsButton.addEventListener('click', randomizeColors);
-
     demoButton.addEventListener('click', toggleDemo);
 
     screenshotButton.addEventListener('click', captureScreenshot);
@@ -842,6 +852,7 @@ function initPresetsDropdown() {
     presetsToggle.addEventListener('click', (e) => {
         e.stopPropagation();
         closeDivesDropdown();
+        closePaletteDropdown();
         togglePresetsDropdown();
     });
 
@@ -872,6 +883,7 @@ function initDivesDropdown() {
     divesToggle.addEventListener('click', (e) => {
         e.stopPropagation();
         closePresetsDropdown();
+        closePaletteDropdown();
         toggleDivesDropdown();
     });
 
@@ -885,12 +897,86 @@ function initDivesDropdown() {
     log('Initialized.', 'initDivesDropdown');
 }
 
+/** Toggles the palette dropdown menu */
+function togglePaletteDropdown() {
+    paletteMenu.classList.toggle('show');
+    const isOpen = paletteMenu.classList.contains('show');
+    paletteToggle.textContent = isOpen ? 'Palette ▴' : 'Palette ▾';
+}
+
+/** Closes the palette dropdown menu */
+function closePaletteDropdown() {
+    paletteMenu.classList.remove('show');
+    paletteToggle.textContent = 'Palette ▾';
+}
+
+function initPaletteButtonEvents() {
+    paletteButtons = [];
+    paletteMenu.innerHTML = ''; // Clear existing
+
+    const palettes = fractalApp.PALETTES || [];
+
+    // Always add "Random" option first
+    const randomBtn = document.createElement('button');
+    randomBtn.id = 'palette-random';
+    randomBtn.className = 'palette';
+    randomBtn.title = 'Random color palette';
+    randomBtn.innerHTML = '<span class="color-swatch" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);"></span>Random';
+    randomBtn.addEventListener('click', async () => {
+        closePaletteDropdown();
+        await randomizeColors();
+    });
+    paletteMenu.appendChild(randomBtn);
+    paletteButtons.push(randomBtn);
+
+    // Add palette options if available
+    palettes.forEach((palette, index) => {
+        const btn = document.createElement('button');
+        btn.id = 'palette-' + index;
+        btn.className = 'palette';
+        btn.title = palette.id;
+
+        // Create color swatch from keyColor
+        const swatchColor = palette.keyColor || '#888';
+        btn.innerHTML = `<span class="color-swatch" style="background: ${swatchColor};"></span>${palette.id}`;
+
+        btn.addEventListener('click', async () => {
+            closePaletteDropdown();
+            await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
+            updatePaletteDropdownState();
+        });
+
+        paletteMenu.appendChild(btn);
+        paletteButtons.push(btn);
+    });
+
+    log('Initialized.', 'initPaletteButtonEvents');
+}
+
+function initPaletteDropdown() {
+    paletteToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePresetsDropdown();
+        closeDivesDropdown();
+        togglePaletteDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!paletteMenu.contains(e.target) && e.target !== paletteToggle) {
+            closePaletteDropdown();
+        }
+    });
+
+    log('Initialized.', 'initPaletteDropdown');
+}
+
 /**
  * Inits behavior common for all buttons
  */
 function initCommonButtonEvents() {
-    allButtons = diveButtons.concat(presetButtons);
-    allButtons.push(resetButton, randomizeColorsButton, screenshotButton, demoButton);
+    allButtons = diveButtons.concat(presetButtons).concat(paletteButtons);
+    allButtons.push(resetButton, screenshotButton, demoButton);
 
     allButtons.forEach((btn) => {
         btn.addEventListener('mouseleave', () => {
@@ -1143,7 +1229,6 @@ function bindHTMLElements() {
     infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
-    randomizeColorsButton = document.getElementById('randomize');
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
     presetsToggle = document.getElementById('presets-toggle');
@@ -1151,6 +1236,9 @@ function bindHTMLElements() {
     divesToggle = document.getElementById('dives-toggle');
     divesMenu = document.getElementById('dives');
     divesDropdown = document.getElementById('dives-dropdown');
+    paletteToggle = document.getElementById('palette-toggle');
+    paletteMenu = document.getElementById('palettes');
+    paletteDropdown = document.getElementById('palette-dropdown');
 }
 
 /**
@@ -1190,6 +1278,8 @@ export async function initUI(fractalRenderer) {
     initPresetButtonEvents();
     initPresetsDropdown();
     initDivesDropdown();
+    initPaletteButtonEvents();
+    initPaletteDropdown();
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
@@ -1205,7 +1295,7 @@ export async function initUI(fractalRenderer) {
         initMouseHandlers(fractalApp);
     }
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
     if (DEBUG_MODE === DEBUG_LEVEL.FULL && !isMobileDevice()) {
         toggleDebugMode();

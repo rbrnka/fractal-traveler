@@ -48,6 +48,10 @@ class MandelbrotRenderer extends FractalRenderer {
         /** Mandelbrot-specific presets */
         this.PRESETS = presetsData.presets;
 
+        /** @type {Array.<PALETTE>} Palettes loaded from JSON (empty = random only) */
+        this.PALETTES = presetsData.palettes || [];
+        this.currentPaletteIndex = -1; // -1 means "random"
+
         this.init();
     }
 
@@ -301,6 +305,19 @@ class MandelbrotRenderer extends FractalRenderer {
     }
 
     // region > ANIMATION METHODS
+
+    /**
+     * Applies a specific palette by index
+     * @param {number} index - Palette index (-1 for random)
+     * @param {number} [duration=250] - Transition duration in ms
+     * @param {Function} [coloringCallback] - Callback when done
+     * @return {Promise<void>}
+     */
+    async applyPaletteByIndex(index, duration = 250, coloringCallback = null) {
+        this.currentPaletteIndex = index;
+        // Always use random for Mandelbrot (index -1 or if no palettes)
+        await this.animateColorPaletteTransition(null, duration, coloringCallback);
+    }
 
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
         const clamp = (x, a, b) => Math.max(a, Math.min(b, x));

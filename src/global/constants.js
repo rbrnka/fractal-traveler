@@ -59,7 +59,7 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
  * Feature flag controlling the display of the persistent fractal switching button in the UI.
  * When enabled, users can see a button to toggle between fractal types while maintaining
  * the current parameters for seamless transitions between Mandelbrot and Julia sets.
- * 
+ *
  * @type {boolean}
  * @since 1.9
  */
@@ -67,7 +67,7 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
 
 /**
  * Enables bottom bar for user input for custom coords
-  */
+ */
 export const FF_USER_INPUT_ALLOWED = false;
 
 /**
@@ -143,55 +143,20 @@ export const CONSOLE_GROUP_STYLE = `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`;
 export const CONSOLE_MESSAGE_STYLE = `color: ${DEFAULT_CONSOLE_MESSAGE_COLOR}`;
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Set of Julia-specific palettes. Keep the default first
- * @type {Array.<JULIA_PALETTE>}
+ * Default Julia-specific palette.
+ * @type {JULIA_PALETTE}
  */
-export const JULIA_PALETTES = [
-    {
-        id: 'Cosmos', keyColor: '#fefe66', theme: [
-            0.0, 0.0, 0.0,
-            1.0, 0.647, 0.0,
-            0.0, 0.0, 0.0,
-            1.2, 1.2, 1.0,
-            0.1, 0.1, 0.1
-        ]
-    },
-    {
-        id: 'Blue Mist', keyColor: '#4c4cb3', theme: [
-            0.0, 0.0, 0.0,
-            1.0, 0.647, 0.0,
-            1.0, 1.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 0.5
-        ]
-    }, {
-        id: 'Fire', keyColor: '#663300', theme: [
-            0.4, 0.2, 0.0,
-            255 / 255, 144 / 255, 10 / 255,
-            0.2, 0.0, 0.0,
-            0.8, 0.7, 0.0,
-            49 / 255, 45 / 255, 4 / 255,
-        ]
-    },
-    {
-        id: 'Ocean', keyColor: '#0F52BA', theme: [
-            230 / 255, 243 / 255, 255 / 255,
-            49 / 255, 141 / 255, 178 / 255,
-            0.0, 13 / 255, 26 / 255,
-            4 / 255, 105 / 255, 151 / 255,
-            0, 40 / 255, 77 / 255
-        ]
-    },
-    {
-        id: 'Forest', keyColor: '#25591f', theme: [
-            129 / 255, 140 / 255, 60 / 255,
-            137 / 255, 89 / 255, 31 / 255,
-            45 / 255, 22 / 255, 6 / 255,
-            25 / 255, 89 / 255, 13 / 255,
-            0, 21 / 255, 0,
-        ]
-    },
-]
+export const DEFAULT_JULIA_PALETTE = {
+    id: "Default",
+    keyColor: "#fefe66",
+    theme: [
+        0.0, 0.0, 0.0,
+        1.0, 0.647, 0.0,
+        0.0, 0.0, 0.0,
+        1.2, 1.2, 1.0,
+        0.1, 0.1, 0.1
+    ]
+};
 // ---------------------------------------------------------------------------------------------------------------------
 /** Default color used based on the initial Mandelbrot coloring. It's an accent color / 1.9 brightness factor that
  * is hardcoded in the updateColorTheme method.
@@ -203,7 +168,7 @@ export const DEFAULT_MANDELBROT_THEME_COLOR = [95 / 255, 134 / 255, 56 / 255];
  * is hardcoded in the updateColorTheme method.
  * @type {PALETTE}
  */
-export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(JULIA_PALETTES[0].keyColor);
+export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(DEFAULT_JULIA_PALETTE.keyColor);
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * This is to allow switching between two precisions as the embedded PI constant is too accurate, which is not needed
@@ -228,8 +193,6 @@ export const DEG = {
     _120: 120 * (PI / 180),
     _150: 150 * (PI / 180),
 }
-// ---------------------------------------------------------------------------------------------------------------------
-export const RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE = 'Randomize Color Palette (T)';
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * Defines the compression quality for JPEG screenshots (0-1) in %

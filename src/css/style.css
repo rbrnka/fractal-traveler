@@ -385,6 +385,37 @@ button.dive.active {
     vertical-align: baseline;
 }
 
+#controlButtons .dropdown.inline {
+    display: inline-block;
+    vertical-align: baseline;
+}
+
+#controlButtons .dropdown.inline .dropdown-toggle {
+    width: 90px;
+}
+
+/* Palette dropdown items */
+#palette-dropdown .dropdown-menu {
+    min-width: 120px;
+    max-width: 200px;
+}
+
+#palette-dropdown .dropdown-menu button.palette {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+#palette-dropdown .dropdown-menu button.palette .color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
 #reset {
     color: #FF3131;
 }
