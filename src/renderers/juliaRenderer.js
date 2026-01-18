@@ -28,8 +28,6 @@ export class JuliaRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.LEGACY_JULIA_RENDER = true;
-
         this.DEFAULT_ZOOM = data.presets[0].zoom;
         this.MAX_ZOOM = 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
@@ -93,6 +91,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
 
         this.currentCAnimationFrame = null;
+        this.cAnimationActive = false; // Defers orbit rebuild during C-animation for performance
         this.demoTime = 0;
 
         this.init();
@@ -373,15 +372,17 @@ export class JuliaRenderer extends FractalRenderer {
             this._prevC1 = this.c[1];
         }
 
-        // Rebase policy (same intent as Mandelbrot):
-        // - avoid rebuilding orbit every frame during interaction (prevents swim/jitter)
-        // - but if c changes, we must rebuild for correctness
+        // Rebase policy for Julia:
+        // - c changes REQUIRE orbit rebuild (orbit depends on c) - cannot be deferred
+        // - during C-animation, skip expensive grid search (use view center directly)
+        // - pan/zoom during interaction can defer until settled
         const mustRebaseNow = cChanged || this.needsRebase();
-        const canRebaseNow = !this.interactionActive || mustRebaseNow;
+        const isDeferringForAnimation = this.cAnimationActive || this.interactionActive;
+        const canRebaseNow = !isDeferringForAnimation || mustRebaseNow;
 
         if (this.orbitDirty && canRebaseNow) {
-            // During interaction, use view center directly to prevent jitter
-            this.pickReferenceNearViewCenter(this.interactionActive);
+            // During interaction/animation, skip grid search (use view center directly)
+            this.pickReferenceNearViewCenter(isDeferringForAnimation);
             this.computeReferenceOrbit();
             this.orbitDirty = false;
         }
@@ -427,13 +428,19 @@ export class JuliaRenderer extends FractalRenderer {
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
-    /** Stops currently running pan animation */
+    /** Stops currently running C animation and triggers final orbit rebuild */
     stopCurrentCAnimation() {
         console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentCAnimationFrame !== null) {
             cancelAnimationFrame(this.currentCAnimationFrame);
             this.currentCAnimationFrame = null;
+        }
+
+        // Clear animation flag and force accurate orbit rebuild
+        if (this.cAnimationActive) {
+            this.cAnimationActive = false;
+            this.markOrbitDirty();
         }
     }
 
@@ -553,6 +560,7 @@ export class JuliaRenderer extends FractalRenderer {
         console.log(`Animating c from ${this.c} to ${targetC}.`);
 
         const startC = [...this.c];
+        this.cAnimationActive = true; // Defer orbit rebuilds during animation
 
         await new Promise((resolve) => {
             let startTime = null;
@@ -566,9 +574,6 @@ export class JuliaRenderer extends FractalRenderer {
                 this.c[0] = lerp(startC[0], targetC[0], easedProgress);
                 this.c[1] = lerp(startC[1], targetC[1], easedProgress);
 
-                // c changes require orbit rebuild for correctness (but keep same gating in draw()).
-                this.markOrbitDirty();
-
                 this.draw();
 
                 updateInfo(true);
@@ -577,6 +582,11 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress < 1) {
                     this.currentCAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this.cAnimationActive = false;
+                    // Force final orbit rebuild with accurate reference
+                    this.markOrbitDirty();
+                    this.draw();
+
                     this.stopCurrentCAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -643,6 +653,9 @@ export class JuliaRenderer extends FractalRenderer {
         this.stopCurrentCAnimation();
 
         console.log(`Diving to ${dive}.`);
+        // Note: Do NOT set cAnimationActive for continuous animations.
+        // The grid search in pickReferenceNearViewCenter is needed for stability
+        // when c changes to values where view center might escape immediately.
 
         // Return a Promise that never resolves (continuous animation)
         await new Promise(() => {
@@ -685,8 +698,6 @@ export class JuliaRenderer extends FractalRenderer {
                     }
                 }
 
-                this.markOrbitDirty();
-
                 this.draw();
                 updateInfo(true);
                 updateJuliaSliders();
@@ -705,7 +716,8 @@ export class JuliaRenderer extends FractalRenderer {
         console.log(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
-        this.demoActive = true; // Not used in Julia but the demo is active
+        this.demoActive = true;
+        // Note: Do NOT set cAnimationActive for continuous animations - grid search needed for stability
 
         // Return a Promise that never resolves (continuous animation)
         await new Promise(() => {
@@ -716,8 +728,6 @@ export class JuliaRenderer extends FractalRenderer {
                 ];
                 this.rotation = normalizeRotation(this.rotation - 0.001);
                 this.demoTime += 0.0005; // Speed
-
-                this.markOrbitDirty();
 
                 this.draw();
                 updateInfo(true);
