@@ -192,7 +192,7 @@ void main() {
         gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     } else {
         float r2 = max(zx*zx + zy*zy, 1e-30);
-        float smoothColor = it - log2(log2(sqrt(r2)));
+        float smoothColor = it - log2(log2(r2));
 
         // Normalize
         float t = clamp(smoothColor / u_iterations, 0.0, 1.0);
