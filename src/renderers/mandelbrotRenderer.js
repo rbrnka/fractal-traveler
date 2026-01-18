@@ -48,7 +48,10 @@ class MandelbrotRenderer extends FractalRenderer {
         /** Mandelbrot-specific presets */
         this.PRESETS = presetsData.presets;
 
-        /** @type {Array.<PALETTE>} Palettes loaded from JSON (empty = random only) */
+        /**
+         * @type {Array.<PALETTE>}
+         * @description Palettes loaded from JSON (empty = random only)
+         */
         this.PALETTES = presetsData.palettes || [];
         this.currentPaletteIndex = -1; // -1 means "random"
 

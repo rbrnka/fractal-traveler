@@ -18,7 +18,7 @@ let previewRenderer = null;
 /** @type {boolean} */
 let previewActive = false;
 
-/** @type {Float32Array|null} Pending inner stops to apply when renderer is created */
+/** @type {Float32Array|null} */
 let pendingInnerStops = null;
 
 /** Preview canvas size in pixels */

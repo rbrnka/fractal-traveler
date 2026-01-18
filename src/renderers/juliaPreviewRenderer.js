@@ -8,7 +8,7 @@ import {DEFAULT_JULIA_PALETTE} from "../global/constants";
  * Julia Set Preview Renderer (legacy)
  *
  * @author Radim Brnka
- * @description
+ * @description Simplified renderer for Julia preview in Mandelbrot mode
  * @extends FractalRenderer
  * @since 1.9
  */
