@@ -1376,7 +1376,9 @@ export async function initUI(fractalRenderer) {
         toggleDebugMode();
     }
 
+    document.getElementById("controlsLink").title = CONTROLS_TOOLTIP;
     document.getElementById("versionLink").innerHTML = `v${VERSION}`;
+
     uiInitialized = true;
 }
 
