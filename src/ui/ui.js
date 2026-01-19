@@ -682,6 +682,10 @@ export function resetActivePresetIndex() {
 }
 
 export async function randomizeColors() {
+    // Stop color cycling and remove active state from cycle button
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (cycleBtn) cycleBtn.classList.remove('active');
+
     if (isJuliaMode()) {
         await fractalApp.animateColorPaletteTransition(250, updateColorTheme);
         updatePaletteDropdownState();
@@ -960,6 +964,9 @@ function initPaletteButtonEvents() {
 
         btn.addEventListener('click', async () => {
             closePaletteDropdown();
+            // Stop color cycling and remove active state from cycle button
+            const cycleBtn = document.getElementById('palette-cycle');
+            if (cycleBtn) cycleBtn.classList.remove('active');
             await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
             updatePaletteDropdownState();
         });

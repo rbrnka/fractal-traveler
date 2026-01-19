@@ -25,6 +25,8 @@ uniform float u_zoom_l;
 
 uniform float u_iterations;
 uniform vec3  u_colorPalette;
+uniform vec3  u_frequency;
+uniform vec3  u_phase;
 uniform float u_rotation;
 
 uniform sampler2D u_orbitTex;
@@ -179,12 +181,12 @@ void main() {
         float r2 = max(zx*zx + zy*zy, 1e-30);
         float smoothIt = it - log2(log2(r2));
 
-        // Sine-based coloring with smooth iteration
-        float color = smoothIt / 100.0;
+        // Sine-based coloring with configurable frequency and phase
+        float t = smoothIt / 100.0;
         vec3 fractalColor = vec3(
-            sin(color * 3.1415),
-            sin(color * 6.2830),
-            sin(color * 1.7200)
+            sin(t * u_frequency.r + u_phase.r),
+            sin(t * u_frequency.g + u_phase.g),
+            sin(t * u_frequency.b + u_phase.b)
         ) * u_colorPalette;
 
         gl_FragColor = vec4(fractalColor, 1.0);

@@ -1,5 +1,5 @@
 import FractalRenderer from "./fractalRenderer";
-import {asyncDelay, compareComplex, ddSubDD, hsbToRgb, normalizeRotation, splitFloat} from "../global/utils";
+import {asyncDelay, compareComplex, ddSubDD, lerp, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json' with {type: 'json'};
 /** @type {string} */
@@ -55,6 +55,12 @@ class MandelbrotRenderer extends FractalRenderer {
         this.PALETTES = presetsData.palettes || [];
         this.currentPaletteIndex = -1; // -1 means "random"
 
+        // Default color parameters matching original hardcoded values
+        this.DEFAULT_FREQUENCY = [3.1415, 6.2830, 1.7200];
+        this.DEFAULT_PHASE = [0, 0, 0];
+        this.frequency = [...this.DEFAULT_FREQUENCY];
+        this.phase = [...this.DEFAULT_PHASE];
+
         this.init();
     }
 
@@ -107,6 +113,10 @@ class MandelbrotRenderer extends FractalRenderer {
         // orbit texture uniforms
         this.orbitTexLoc = this.gl.getUniformLocation(this.program, 'u_orbitTex');
         this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
+
+        // color parameters
+        this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
+        this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
     }
 
     /** Reference picking + orbit build */
@@ -296,6 +306,10 @@ class MandelbrotRenderer extends FractalRenderer {
         if (this.zoomHLoc) this.gl.uniform1f(this.zoomHLoc, z.high);
         if (this.zoomLLoc) this.gl.uniform1f(this.zoomLLoc, z.low);
 
+        // Upload color parameters
+        if (this.frequencyLoc) this.gl.uniform3fv(this.frequencyLoc, this.frequency);
+        if (this.phaseLoc) this.gl.uniform3fv(this.phaseLoc, this.phase);
+
         super.draw();
     }
 
@@ -308,10 +322,22 @@ class MandelbrotRenderer extends FractalRenderer {
         return Math.hypot(dx, dy) > this.zoom * 0.75;
     }
 
+    /**
+     * Resets renderer to default state including frequency and phase.
+     * @override
+     */
+    reset() {
+        this.frequency = [...this.DEFAULT_FREQUENCY];
+        this.phase = [...this.DEFAULT_PHASE];
+        this.currentPaletteIndex = 0;
+        this.orbitDirty = true;
+        super.reset();
+    }
+
     // region > ANIMATION METHODS
 
     /**
-     * Applies a specific palette by index
+     * Applies a specific palette by index.
      * @param {number} index - Palette index (-1 for random)
      * @param {number} [duration=250] - Transition duration in ms
      * @param {Function} [coloringCallback] - Callback when done
@@ -319,67 +345,139 @@ class MandelbrotRenderer extends FractalRenderer {
      */
     async applyPaletteByIndex(index, duration = 250, coloringCallback = null) {
         this.currentPaletteIndex = index;
-        // Always use random for Mandelbrot (index -1 or if no palettes)
-        await this.animateColorPaletteTransition(null, duration, coloringCallback);
+
+        if (index >= 0 && index < this.PALETTES.length) {
+            const palette = this.PALETTES[index];
+            await this.animateColorPaletteTransition({
+                theme: palette.theme,
+                frequency: palette.frequency || this.DEFAULT_FREQUENCY,
+                phase: palette.phase || this.DEFAULT_PHASE
+            }, duration, coloringCallback);
+        } else {
+            // Random palette (index -1 or out of range)
+            await this.animateColorPaletteTransition(null, duration, coloringCallback);
+        }
     }
 
+    /**
+     * Generates a random palette with theme, frequency, and phase.
+     * Creates visually distinct palettes by varying all three parameters.
+     * @returns {{theme: number[], frequency: number[], phase: number[]}}
+     */
+    generateRandomPalette() {
+        // Random hue with high saturation for theme
+        const hue = Math.random();
+        const angle = hue * Math.PI * 2;
+
+        // Create base color from hue (simplified HSV to RGB at full saturation)
+        const r = Math.max(0, Math.cos(angle));
+        const g = Math.max(0, Math.cos(angle - Math.PI * 2 / 3));
+        const b = Math.max(0, Math.cos(angle + Math.PI * 2 / 3));
+
+        // Scale to multiplier range (0.8 - 2.2) with some base brightness
+        const base = 0.8 + Math.random() * 0.4; // 0.8-1.2
+        const scale = 1.0 + Math.random() * 0.8; // 1.0-1.8
+
+        const theme = [
+            base + r * scale,
+            base + g * scale,
+            base + b * scale,
+        ];
+
+        // Generate random frequency - controls how fast colors cycle
+        // Values 1-10 give nice variety without being too chaotic
+        const frequency = [
+            1.0 + Math.random() * 9.0,
+            1.0 + Math.random() * 9.0,
+            1.0 + Math.random() * 9.0,
+        ];
+
+        // Generate random phase - shifts the color bands
+        // Values 0 to 2*PI cover full phase range
+        const phase = [
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2,
+            Math.random() * Math.PI * 2,
+        ];
+
+        return { theme, frequency, phase };
+    }
+
+    /**
+     * Animates transition to a new palette (theme, frequency, phase).
+     * Accepts either:
+     * - Object: {theme: [...], frequency: [...], phase: [...]}
+     * - Array (legacy): [r, g, b] - uses current frequency/phase
+     * - null: generates random palette
+     * @param {{theme: number[], frequency: number[], phase: number[]}|number[]|null} newPalette
+     * @param {number} duration
+     * @param {Function|null} coloringCallback
+     */
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
-        const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+        // Normalize input to object format
+        if (!newPalette) {
+            newPalette = this.generateRandomPalette();
+        } else if (Array.isArray(newPalette)) {
+            // Legacy array format - just theme, keep current frequency/phase
+            newPalette = {
+                theme: newPalette,
+                frequency: [...this.frequency],
+                phase: [...this.phase]
+            };
+        }
 
-        // Robustly normalize whatever hsbToRgb returns:
-        // - [r,g,b] or {r,g,b}
-        // - either in 0..1 or 0..255
-        const normalizeRgb = (c) => {
-            let r, g, b;
-            if (Array.isArray(c)) [r, g, b] = c;
-            else ({r, g, b} = c);
+        this.stopCurrentColorAnimations();
 
-            // If it looks like 0..255, normalize.
-            if (r > 1 || g > 1 || b > 1) {
-                r /= 255;
-                g /= 255;
-                b /= 255;
-            }
-            return [r, g, b];
-        };
+        const startTheme = [...this.colorPalette];
+        const startFrequency = [...this.frequency];
+        const startPhase = [...this.phase];
 
-        // Generate a vivid hue in HSV, but output as a MULTIPLIER palette:
-        // values intentionally > 1 to keep results bright after multiplication.
-        const randomBrightMultiplierPalette = () => {
-            const hue = Math.random();
-            const sat = 0.85 + Math.random() * 0.15; // vivid
-            const val = 0.90 + Math.random() * 0.10; // bright
+        const targetTheme = newPalette.theme;
+        const targetFrequency = newPalette.frequency || this.DEFAULT_FREQUENCY;
+        const targetPhase = newPalette.phase || this.DEFAULT_PHASE;
 
-            let [r, g, b] = normalizeRgb(hsbToRgb(hue, sat, val));
+        await new Promise((resolve) => {
+            let startTime = null;
 
-            // Avoid palettes that are effectively gray multipliers (kills vividness)
-            const maxCh = Math.max(r, g, b);
-            const minCh = Math.min(r, g, b);
-            const chroma = maxCh - minCh;
-            if (chroma < 0.25) {
-                // force a more saturated hue by nudging channels
-                r = clamp(r * 1.15, 0, 1);
-                g = clamp(g * 1.15, 0, 1);
-                b = clamp(b * 1.15, 0, 1);
-            }
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const progress = Math.min((timestamp - startTime) / duration, 1);
 
-            // Convert 0..1 RGB into a "gain" (multiplier) palette.
-            // Base gain keeps everything bright; color gain adds hue tint.
-            const baseGain = 1.20 + Math.random() * 0.50; // 1.20..1.70
-            const colorGain = 0.90 + Math.random() * 1.10; // 0.90..2.00
+                // Lerp theme (colorPalette)
+                this.colorPalette = [
+                    lerp(startTheme[0], targetTheme[0], progress),
+                    lerp(startTheme[1], targetTheme[1], progress),
+                    lerp(startTheme[2], targetTheme[2], progress),
+                ];
 
-            // Lift darker channels so no channel is near-zero multiplier (avoids dim output).
-            const lift = 0.25;
+                // Lerp frequency
+                this.frequency = [
+                    lerp(startFrequency[0], targetFrequency[0], progress),
+                    lerp(startFrequency[1], targetFrequency[1], progress),
+                    lerp(startFrequency[2], targetFrequency[2], progress),
+                ];
 
-            return [
-                baseGain + (lift + r * (1 - lift)) * colorGain,
-                baseGain + (lift + g * (1 - lift)) * colorGain,
-                baseGain + (lift + b * (1 - lift)) * colorGain,
-            ];
-        };
+                // Lerp phase
+                this.phase = [
+                    lerp(startPhase[0], targetPhase[0], progress),
+                    lerp(startPhase[1], targetPhase[1], progress),
+                    lerp(startPhase[2], targetPhase[2], progress),
+                ];
 
-        newPalette ||= randomBrightMultiplierPalette();
-        await super.animateColorPaletteTransition(newPalette, duration, coloringCallback);
+                this.draw();
+
+                if (coloringCallback) coloringCallback();
+
+                if (progress < 1) {
+                    this.currentColorAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.stopCurrentColorAnimations();
+                    resolve();
+                }
+            };
+
+            this.currentColorAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
