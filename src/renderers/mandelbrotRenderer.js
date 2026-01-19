@@ -53,7 +53,7 @@ class MandelbrotRenderer extends FractalRenderer {
          * @description Palettes loaded from JSON (empty = random only)
          */
         this.PALETTES = presetsData.palettes || [];
-        this.currentPaletteIndex = -1; // -1 means "random"
+        this.currentPaletteIndex = 0; // Start with Default palette
 
         // Default color parameters matching original hardcoded values
         this.DEFAULT_FREQUENCY = [3.1415, 6.2830, 1.7200];
