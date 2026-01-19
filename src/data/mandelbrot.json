@@ -1,5 +1,5 @@
 {
-  "$schema": "./presets.schema.json",
+  "$schema": "./fractal.schema.json",
   "type": "MANDELBROT",
   "presets": [
     {"id": 0, "title": "Default", "pan": [-0.5, 0], "zoom": 3, "rotation": 0},

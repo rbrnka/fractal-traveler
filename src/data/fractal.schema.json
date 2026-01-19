@@ -1,0 +1,256 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fractal Configuration Schema",
+  "description": "Schema for Mandelbrot and Julia fractal configurations including presets, palettes, and animated dives.",
+  "type": "object",
+  "required": ["type", "presets", "palettes"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this schema file."
+    },
+    "type": {
+      "type": "string",
+      "enum": ["MANDELBROT", "JULIA"],
+      "description": "The type of fractal this configuration is for."
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "type": { "const": "MANDELBROT" } }
+      },
+      "then": {
+        "properties": {
+          "presets": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/MandelbrotPreset" }
+          },
+          "palettes": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/MandelbrotPalette" }
+          },
+          "removed": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/MandelbrotPreset" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "JULIA" } }
+      },
+      "then": {
+        "properties": {
+          "presets": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/JuliaPreset" }
+          },
+          "palettes": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/JuliaPalette" }
+          },
+          "dives": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/Dive" }
+          },
+          "experiments": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/Dive" }
+          },
+          "removed": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/JuliaPreset" }
+          }
+        }
+      }
+    }
+  ],
+  "definitions": {
+    "Complex": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" },
+      "description": "A complex number as [real, imaginary]."
+    },
+    "RGB3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" },
+      "description": "RGB values as [R, G, B]."
+    },
+    "InnerStops15": {
+      "type": "array",
+      "minItems": 15,
+      "maxItems": 15,
+      "items": { "type": "number" },
+      "description": "5 RGB color stops (15 values total) for Julia gradient coloring."
+    },
+    "MandelbrotPreset": {
+      "type": "object",
+      "required": ["pan", "zoom"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "integer",
+          "description": "Unique identifier for the preset."
+        },
+        "title": {
+          "type": "string",
+          "description": "Display name of the preset."
+        },
+        "pan": {
+          "$ref": "#/definitions/Complex",
+          "description": "Center coordinates [x, y] in the complex plane."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Zoom level (smaller = more zoomed in)."
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0,
+          "description": "Rotation angle in radians."
+        },
+        "speed": {
+          "type": "number",
+          "default": 1,
+          "description": "Animation speed multiplier for travel animations."
+        }
+      }
+    },
+    "JuliaPreset": {
+      "type": "object",
+      "required": ["c", "pan", "zoom"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Display name of the preset."
+        },
+        "c": {
+          "$ref": "#/definitions/Complex",
+          "description": "Julia constant [cx, cy]."
+        },
+        "pan": {
+          "$ref": "#/definitions/Complex",
+          "description": "Center coordinates [x, y] in the complex plane."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Zoom level (smaller = more zoomed in)."
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0,
+          "description": "Rotation angle in degrees."
+        }
+      }
+    },
+    "MandelbrotPalette": {
+      "type": "object",
+      "required": ["id", "keyColor", "theme"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier/name for the palette."
+        },
+        "keyColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Representative hex color for UI display."
+        },
+        "theme": {
+          "$ref": "#/definitions/RGB3",
+          "description": "RGB multipliers for sine-based coloring."
+        },
+        "frequency": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave frequencies for each RGB channel."
+        },
+        "phase": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave phase offsets for each RGB channel."
+        }
+      }
+    },
+    "JuliaPalette": {
+      "type": "object",
+      "required": ["id", "keyColor", "theme"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier/name for the palette."
+        },
+        "keyColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Representative hex color for UI display."
+        },
+        "theme": {
+          "$ref": "#/definitions/InnerStops15",
+          "description": "5 RGB color stops (15 floats) for gradient coloring."
+        }
+      }
+    },
+    "Dive": {
+      "type": "object",
+      "required": ["pan", "zoom", "startC", "endC", "step", "cxDirection", "cyDirection"],
+      "additionalProperties": false,
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Display name of the dive."
+        },
+        "pan": {
+          "$ref": "#/definitions/Complex",
+          "description": "View center coordinates."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Zoom level for the dive view."
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0,
+          "description": "Rotation angle in degrees."
+        },
+        "startC": {
+          "$ref": "#/definitions/Complex",
+          "description": "Starting Julia constant."
+        },
+        "endC": {
+          "$ref": "#/definitions/Complex",
+          "description": "Ending Julia constant (threshold for phase changes)."
+        },
+        "step": {
+          "type": "number",
+          "description": "Increment value added to C per frame."
+        },
+        "cxDirection": {
+          "type": "integer",
+          "enum": [1, -1],
+          "description": "Direction on real axis: 1 = positive, -1 = negative."
+        },
+        "cyDirection": {
+          "type": "integer",
+          "enum": [1, -1],
+          "description": "Direction on imaginary axis: 1 = positive, -1 = negative."
+        },
+        "phases": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "enum": [1, 2, 3, 4]
+          },
+          "description": "Phase order: 1=cx to end, 2=cy to end, 3=cx to start, 4=cy to start."
+        }
+      }
+    }
+  }
+}

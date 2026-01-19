@@ -1,5 +1,5 @@
 {
-  "$schema": "./presets.schema.json",
+  "$schema": "./fractal.schema.json",
   "type": "JULIA",
   "presets": [
     { "c": [-0.8, 0.156], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Default" },
@@ -24,7 +24,7 @@
     { "c": [-1.768927341692215, -0.009640117346988308] ,"pan": [0, 0], "rotation": 0, "zoom": 0.29302566239489597, "title": "Flowers" },
     { "c": [0.3633977303405407, 0.3166912692104581], "pan": [0.12908510596292824, -0.13588306846615342], "rotation": 97.4, "zoom": 0.12982442828873209, "title": "Black Holes" },
     { "c": [0.3586059096423313, 0.32287599414730545], "pan": [0.10410036735673252, -0.10610085351477151], "rotation": 278.6, "zoom": 1.8513247913869684, "title": "Darkness" },
-    { "c": [0.1294753560021048, 0.6256313013048348], "pan": [0, 0], "rotation": 110.58, "zoom": 1.322314018297482, "title": "Chromozome" }
+    { "c": [0.1294753560021048, 0.6256313013048348], "pan": [0, 0], "rotation": 110.58, "zoom": 1.322314018297482, "title": "Chromosome" }
   ],
   "dives": [
     { "pan": [0, 0], "rotation": 0, "zoom": 1.7, "startC": [-0.246, 0.64], "step": 0.000005, "cxDirection": 1, "cyDirection": 1, "endC": [-0.2298, 0.67], "title": "Orbiting Black holes" },
