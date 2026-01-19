@@ -342,6 +342,19 @@ export function ddSubDD(a, b) {
 // endregion---------------------------------------------------------------------------------------
 
 /**
+ * Escapes HTML special characters in a string to prevent XSS attacks and rendering issues.
+ * Converts &, <, and > to their HTML entity equivalents.
+ *
+ * @param {*} s - The input value to escape (will be converted to string)
+ * @returns {string} The escaped string with HTML entities
+ */
+export const esc = (s) =>
+    String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+
+/**
  * Compares two complex numbers / arrays of two numbers with given precision
  * @param {COMPLEX} c1
  * @param {COMPLEX}c2

@@ -1,4 +1,4 @@
-import {ddValue, isTouchDevice} from "../global/utils";
+import {ddValue, esc, isTouchDevice} from "../global/utils";
 import {log, LOG_LEVEL} from "../global/constants";
 import {getFractalMode, isJuliaMode} from "./ui";
 
@@ -269,12 +269,6 @@ export class DebugPanel {
         const zoomBucket = Math.floor(-Math.log10(safeZoom));
 
         // ---------- Coloring helpers ----------
-        const esc = (s) =>
-            String(s)
-                .replaceAll("&", "&amp;")
-                .replaceAll("<", "&lt;")
-                .replaceAll(">", "&gt;");
-
         const levelClass = (level) => {
             if (level === "bad") return "dbg-bad";
             if (level === "warn") return "dbg-warn";

@@ -2,6 +2,7 @@ import {
     clearURLParams,
     ddValue,
     destroyArrayOfButtons,
+    esc,
     getAnimationDuration,
     getFractalName,
     hsbToRgb,
@@ -1235,8 +1236,11 @@ function initInfoText() {
         });
 
         infoText.addEventListener('click', () => {
-            let text = `"pan": [${fractalApp.pan}], "rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}`
-                + (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
+            const viewPanX = ddValue(fractalApp.panDD.x);
+            const viewPanY = ddValue(fractalApp.panDD.y);
+
+            let text = `"pan": [${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}], ` +
+                `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}`+ (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
                 infoText.innerHTML = 'Copied to clipboard!';
