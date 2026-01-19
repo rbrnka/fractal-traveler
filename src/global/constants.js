@@ -186,17 +186,6 @@ const USE_PRECISE_PI = true;
 export const PI = USE_PRECISE_PI ? Math.PI : 3.1415926535;
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Rotation constants for easy deg/rad conversion
- * @enum {number} radians
- */
-export const DEG = {
-    _30: 30 * (PI / 180),
-    _90: 90 * (PI / 180),
-    _120: 120 * (PI / 180),
-    _150: 150 * (PI / 180),
-}
-// ---------------------------------------------------------------------------------------------------------------------
-/**
  * Defines the compression quality for JPEG screenshots (0-1) in %
  * @type {number}
  */

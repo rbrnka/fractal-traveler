@@ -112,7 +112,7 @@ export const getFractalMode = () => getFractalName(fractalMode);
 /**
  * Switches among fractal modes
  * @param {FRACTAL_TYPE} mode
- * @param {PRESET} [preset] If present, it's set as the default state through travelToPreset
+ * @param {PRESET|MANDELBROT_PRESET|JULIA_PRESET} [preset] If present, it's set as the default state through travelToPreset
  */
 export async function switchFractalMode(mode, preset = null) {
     console.groupCollapsed(`%c switchFractalMode`, CONSOLE_GROUP_STYLE);
