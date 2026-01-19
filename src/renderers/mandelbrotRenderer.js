@@ -506,8 +506,7 @@ class MandelbrotRenderer extends FractalRenderer {
         } else if (atTargetPan) {
             // Same position, just zoom and rotate with cinematic spin
             const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
-            const cinematicRotation = presetRotation + extraSpins;
-            await this.animateZoomRotationTo(preset.zoom, cinematicRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.QUINT);
+            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.QUINT);
         } else {
             // Full 3-stage cinematic animation:
 
@@ -521,11 +520,13 @@ class MandelbrotRenderer extends FractalRenderer {
             // Stage 2: Pan to target coordinates
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
 
-            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins ending at preset rotation)
+            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
             const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
-            const cinematicFinalRotation = presetRotation + extraSpins;
-            await this.animateZoomRotationTo(preset.zoom, cinematicFinalRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
+            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
         }
+
+        // Ensure rotation ends at exact preset value
+        this.rotation = presetRotation;
 
         this.currentPresetIndex = preset.id || 0;
 
@@ -569,7 +570,7 @@ class MandelbrotRenderer extends FractalRenderer {
             const currentPreset = this.PRESETS[this.currentPresetIndex];
             console.log(`Animating to preset ${this.currentPresetIndex}`);
 
-            await this.animateTravelToPreset(currentPreset, 2000, 1000, 5000);
+            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000);
             await asyncDelay(3500);
         }
 
