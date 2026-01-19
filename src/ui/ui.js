@@ -173,11 +173,11 @@ export async function switchFractalMode(mode, preset = null) {
         console.log(`Preset found, setting: ${JSON.stringify(preset)}`)
         if (isJuliaMode()) {
             await fractalApp.animateTravelToPreset({
-                pan: [0, 0], c: preset.c, zoom: 0.5, rotation: 0
+                pan: [0, 0], c: preset.c, zoom: preset.zoom, rotation: 0
             }, 1000);
         } else {
             await fractalApp.animateTravelToPreset({
-                pan: preset.pan, zoom: 0.0005, rotation: 0
+                pan: preset.pan, zoom: preset.zoom, rotation: 0
             }, 500, 1000);
         }
 
