@@ -297,12 +297,27 @@ export function updatePaletteDropdownState() {
 
     // Update button text to show current palette
     const palettes = fractalApp.PALETTES || [];
-    if (palettes.length > 0 && fractalApp.currentPaletteIndex >= 0) {
-        const currentPalette = palettes[fractalApp.currentPaletteIndex];
+    const currentIndex = fractalApp.currentPaletteIndex;
+
+    if (palettes.length > 0 && currentIndex >= 0) {
+        const currentPalette = palettes[currentIndex];
         paletteToggle.title = `Current: "${currentPalette.id}" (T to cycle)`;
     } else {
         paletteToggle.title = 'Change Color Palette (T)';
     }
+
+    // Update active state on palette buttons
+    // paletteButtons: [0] = Random, [1] = Color Cycle, [2+] = palette indices
+    paletteButtons.forEach((btn, btnIndex) => {
+        if (btnIndex <= 1) {
+            // Random and Color Cycle buttons - never show active state here
+            // (Color Cycle is handled separately during animation)
+        } else {
+            // Palette buttons - btnIndex-2 maps to palette index
+            const paletteIndex = btnIndex - 2;
+            btn.classList.toggle('active', currentIndex === paletteIndex);
+        }
+    });
 }
 
 /**
@@ -699,11 +714,13 @@ export async function randomizeColors() {
         // Convert HSB/HSV to RGB
         const newPalette = hsbToRgb(hue, saturation, brightness);
 
+        fractalApp.currentPaletteIndex = -1; // Mark as random
         await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
             updateColorTheme(newPalette);
         }); // Update app colors
 
         recolorJuliaPreview(newPalette);
+        updatePaletteDropdownState();
     }
 }
 
@@ -942,6 +959,8 @@ function initPaletteButtonEvents() {
             cycleBtn.classList.remove('active');
         } else {
             // Start color cycle
+            fractalApp.currentPaletteIndex = -1;
+            updatePaletteDropdownState(); // Deactivate palette buttons
             cycleBtn.classList.add('active');
             closePaletteDropdown();
             await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
@@ -974,6 +993,9 @@ function initPaletteButtonEvents() {
         paletteMenu.appendChild(btn);
         paletteButtons.push(btn);
     });
+
+    // Set initial active state
+    updatePaletteDropdownState();
 
     log('Initialized.', 'initPaletteButtonEvents');
 }
