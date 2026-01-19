@@ -204,14 +204,33 @@ export async function switchFractalTypeWithPersistence(targetType) {
     }
 
     if (targetType === FRACTAL_TYPE.MANDELBROT) {
-        const targetZoom = Math.max(fractalApp.MAX_ZOOM, fractalApp.zoom * 0.1);
+        // Calculate appropriate Mandelbrot zoom to show local structure at c
+        // When Julia is at default zoom (~3.5), Mandelbrot zoom ~0.02 shows nice detail
+        // Scale proportionally as Julia zooms in/out
+        const juliaDefaultZoom = 3.5;
+        const mandelbrotBaseZoom = 0.02;
+        const scaleFactor = mandelbrotBaseZoom / juliaDefaultZoom; // ~0.006
+
+        // Calculate target zoom with reasonable bounds
+        const calculatedZoom = fractalApp.zoom * scaleFactor;
+        const targetZoom = Math.max(fractalApp.MAX_ZOOM, Math.min(0.5, calculatedZoom));
 
         await switchFractalMode(FRACTAL_TYPE.MANDELBROT, {
             pan: fractalApp.c.slice(), zoom: targetZoom, rotation: 0
         });
     } else {
+        // Mandelbrot → Julia: use Mandelbrot pan as Julia c
+        // Scale zoom so that local Mandelbrot detail maps to Julia view
+        const mandelbrotDefaultZoom = 3.0;
+        const juliaBaseZoom = 1.5;
+        const scaleFactor = juliaBaseZoom / 0.02; // Inverse of above relationship
+
+        // Calculate target zoom - when deeply zoomed on Mandelbrot, show more detail on Julia
+        const calculatedZoom = Math.min(juliaBaseZoom, fractalApp.zoom * scaleFactor);
+        const targetZoom = Math.max(0.01, Math.min(3.5, calculatedZoom));
+
         await switchFractalMode(FRACTAL_TYPE.JULIA, {
-            pan: [0, 0], c: fractalApp.pan.slice(), zoom: 1.5, rotation: 0
+            pan: [0, 0], c: fractalApp.pan.slice(), zoom: targetZoom, rotation: 0
         });
     }
     console.groupEnd();
