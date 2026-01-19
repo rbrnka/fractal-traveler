@@ -206,6 +206,7 @@ class FractalRenderer extends Renderer {
      */
     noteInteraction(settleMs = 160) {
         this.interactionActive = true;
+        this._lastInteractionTime = performance.now();
 
         if (this.interactionTimer) {
             clearTimeout(this.interactionTimer);

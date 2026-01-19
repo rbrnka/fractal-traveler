@@ -14,7 +14,7 @@
     /*pointer-events: none;*/
     cursor: grab;
     min-width: 40px;
-    max-width: 440px;
+    max-width: 360px;
     z-index: 10000;
     text-align: left;
     display: none;
