@@ -1,5 +1,5 @@
 import FractalRenderer from "./fractalRenderer";
-import {asyncDelay, compareComplex, ddSubDD, lerp, normalizeRotation, splitFloat} from "../global/utils";
+import {asyncDelay, compareComplex, ddSubDD, hexToRGBArray, lerp, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json' with {type: 'json'};
 /** @type {string} */
@@ -348,11 +348,15 @@ class MandelbrotRenderer extends FractalRenderer {
 
         if (index >= 0 && index < this.PALETTES.length) {
             const palette = this.PALETTES[index];
+            // Wrap callback to use keyColor for UI instead of theme
+            const wrappedCallback = coloringCallback && palette.keyColor
+                ? () => coloringCallback(hexToRGBArray(palette.keyColor, 255))
+                : coloringCallback;
             await this.animateColorPaletteTransition({
                 theme: palette.theme,
                 frequency: palette.frequency || this.DEFAULT_FREQUENCY,
                 phase: palette.phase || this.DEFAULT_PHASE
-            }, duration, coloringCallback);
+            }, duration, wrappedCallback);
         } else {
             // Random palette (index -1 or out of range)
             await this.animateColorPaletteTransition(null, duration, coloringCallback);

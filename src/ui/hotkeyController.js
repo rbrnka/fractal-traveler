@@ -30,7 +30,6 @@ import {
     CONSOLE_MESSAGE_STYLE,
     DEBUG_LEVEL,
     DEBUG_MODE,
-    DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
     log,
@@ -188,23 +187,24 @@ async function onKeyDown(event) {
 
         case 'KeyT': // Random colors / cycle palettes
             if (altKey) {
-                // Alt+T: Reset to first palette
-                if (isJuliaMode() && fractalApp.PALETTES?.length > 0) {
-                    await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
-                    updatePaletteDropdownState();
-                } else {
-                    await fractalApp.animateColorPaletteTransition(
-                        DEFAULT_MANDELBROT_THEME_COLOR,
-                        250,
-                        updateColorTheme);
-                }
+                // Alt+T: Reset to first palette (matches UI button behavior)
+                const cycleBtn = document.getElementById('palette-cycle');
+                if (cycleBtn) cycleBtn.classList.remove('active');
+                await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
+                updatePaletteDropdownState();
             } else if (event.shiftKey) {
                 // Shift+T: Cycle through color space
+                const cycleBtn = document.getElementById('palette-cycle');
                 if (fractalApp.currentColorAnimationFrame) {
                     fractalApp.stopCurrentColorAnimations();
+                    if (cycleBtn) cycleBtn.classList.remove('active');
                     break;
                 }
+                fractalApp.currentPaletteIndex = -1;
+                updatePaletteDropdownState();
+                if (cycleBtn) cycleBtn.classList.add('active');
                 await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
+                if (cycleBtn) cycleBtn.classList.remove('active');
             } else {
                 // T: Randomize / cycle palettes
                 await randomizeColors();
