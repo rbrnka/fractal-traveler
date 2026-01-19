@@ -977,9 +977,31 @@ function initPaletteButtonEvents() {
         btn.className = 'palette';
         btn.title = palette.id;
 
-        // Create color swatch from keyColor
-        const swatchColor = palette.keyColor || '#888';
-        btn.innerHTML = `<span class="color-swatch" style="background: ${swatchColor};"></span>${palette.id}`;
+        // Create two-color swatch to better represent palette
+        const primaryColor = palette.keyColor || '#888';
+        let secondaryColor = primaryColor;
+
+        if (palette.theme) {
+            if (palette.theme.length === 15) {
+                // Julia: extract color from stop 3 (index 9-11)
+                const r = Math.min(255, Math.round(palette.theme[9] * 255));
+                const g = Math.min(255, Math.round(palette.theme[10] * 255));
+                const b = Math.min(255, Math.round(palette.theme[11] * 255));
+                secondaryColor = `rgb(${r}, ${g}, ${b})`;
+            } else if (palette.theme.length === 3) {
+                // Mandelbrot: derive color from theme multipliers applied to keyColor
+                const hex = primaryColor.replace('#', '');
+                const kr = parseInt(hex.substring(0, 2), 16);
+                const kg = parseInt(hex.substring(2, 4), 16);
+                const kb = parseInt(hex.substring(4, 6), 16);
+                const r = Math.min(255, Math.round(kr * palette.theme[0] * 0.7));
+                const g = Math.min(255, Math.round(kg * palette.theme[1] * 0.7));
+                const b = Math.min(255, Math.round(kb * palette.theme[2] * 0.7));
+                secondaryColor = `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        btn.innerHTML = `<span class="color-swatch" style="background: linear-gradient(135deg, ${primaryColor} 50%, ${secondaryColor} 50%);"></span>${palette.id}`;
 
         btn.addEventListener('click', async () => {
             closePaletteDropdown();
