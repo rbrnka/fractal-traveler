@@ -20,7 +20,7 @@
     {"id": 15, "title": "Plasma Storm", "speed": 10, "pan": [0.2625017727522711,0.6113502800557138], "rotation": 0.9088831624158438, "zoom": 6.228752917993604e-14},
     {"id": 16, "title": "Where the Math Ends", "speed": 10, "pan": [-1.9999991175876528, -3.194092143034014e-39], "rotation": 0, "zoom": 6.130263511531091e-36},
     {"id": 17, "title": "Nucleus", "speed": 10, "pan": [0.11654740531325179, -0.6636149160665515], "rotation": 0.42681868968169034, "zoom": 2.318964706881093e-15},
-    {"id": 18, "title": "The Julia", "speed": 10, "pan": [-1.769582878493225, -0.00947401887333753], "rotation": 5.155475788649225, "zoom": 3.556856738712547e-18},
+    {"id": 18, "title": "The Julia", "speed": 10, "pan": [-1.7695828784932535,-0.009474018873338664], "rotation": 4.725475788649234, "zoom": 2.213464807621775e-15},
     {"id": 19, "title": "Seahorse Valley", "speed": 10, "pan": [-0.7436399999999269,0.13182000000014288], "rotation": 2.063121784131649, "zoom": 4.2563398808307913e-13},
     {"id": 20, "title": "Julia World", "speed": 10, "pan": [-0.5925376025591513, 0.6218580534997632], "rotation": 0, "zoom": 2.1116123693585905e-15}
   ],
@@ -35,51 +35,51 @@
     {
       "id": "Electric Cyan",
       "keyColor": "#00E5FF",
-      "theme": [0.5, 1.2, 1.5],
-      "frequency": [0.3, 0.4, 0.5],
-      "phase": [0.5, 1.2, 1.8]
+      "theme": [0.3, 1.3, 1.5],
+      "frequency": [2.0, 3.5, 4.0],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
-      "id": "Deep Magenta Dream",
+      "id": "Deep Magenta",
       "keyColor": "#FF1A99",
-      "theme": [1.5, 0.6, 1.2],
-      "frequency": [0.4, 0.2, 0.3],
-      "phase": [0.8, 0.2, 0.5]
+      "theme": [1.5, 0.3, 1.2],
+      "frequency": [3.5, 2.0, 3.0],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
       "id": "Solar Flare",
       "keyColor": "#FF8000",
-      "theme": [1.8, 0.9, 0.2],
-      "frequency": [0.2, 0.3, 0.5],
-      "phase": [0.0, 0.4, 0.8]
+      "theme": [1.6, 1.0, 0.2],
+      "frequency": [3.0, 4.0, 2.0],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
       "id": "Borealis Aurora",
       "keyColor": "#33FF99",
-      "theme": [0.4, 1.5, 0.8],
-      "frequency": [0.5, 0.3, 0.4],
-      "phase": [1.5, 0.2, 1.1]
+      "theme": [0.4, 1.5, 0.9],
+      "frequency": [2.5, 3.0, 2.0],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
       "id": "Obsidian Gold",
       "keyColor": "#FFD700",
-      "theme": [1.4, 1.0, 0.4],
-      "frequency": [0.2, 0.2, 0.2],
-      "phase": [0.0, 0.3, 0.6]
+      "theme": [1.4, 1.2, 0.2],
+      "frequency": [3.0, 3.5, 1.5],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
       "id": "Event Horizon",
       "keyColor": "#6A0DAD",
-      "theme": [0.8, 0.4, 1.6],
-      "frequency": [0.1, 0.2, 0.4],
-      "phase": [2.0, 1.5, 0.0]
+      "theme": [0.9, 0.2, 1.6],
+      "frequency": [2.5, 1.5, 3.5],
+      "phase": [0.0, 0.0, 0.0]
     },
     {
       "id": "Toxic Waste",
       "keyColor": "#ADFF2F",
       "theme": [0.9, 1.8, 0.3],
       "frequency": [0.6, 0.5, 0.1],
-      "phase": [1.0, 0.0, 2.5]
+      "phase": [0.0, 0.0, 2.5]
     }
   ],
   "removed": [
