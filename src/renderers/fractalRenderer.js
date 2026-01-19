@@ -969,8 +969,7 @@ class FractalRenderer extends Renderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
-        targetRotation = normalizeRotation(targetRotation);
-
+        // Compare actual values (not normalized) to allow multi-spin animations
         if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
             console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
             console.groupEnd();
@@ -996,6 +995,9 @@ class FractalRenderer extends Renderer {
                 if (t < 1) {
                     this.currentRotationAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    // Normalize final rotation to keep it in valid range
+                    this.rotation = normalizeRotation(this.rotation);
+                    this.draw();
                     this.stopCurrentRotationAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();

@@ -525,8 +525,7 @@ class MandelbrotRenderer extends FractalRenderer {
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
 
             // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
-            const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
-            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
+            await this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
         }
 
         // Ensure rotation ends at exact preset value
