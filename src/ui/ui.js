@@ -120,7 +120,7 @@ export async function switchFractalMode(mode, preset = null) {
     if (mode === fractalMode) {
         console.warn(`Switching to the same mode? Why?`);
         console.groupEnd();
-        return;
+        if (DEBUG_MODE === DEBUG_LEVEL.NONE) return;
     }
 
     exitAnimationMode();
