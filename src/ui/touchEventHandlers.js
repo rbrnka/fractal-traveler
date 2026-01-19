@@ -19,6 +19,10 @@ const ZOOM_STEP = 0.05;
 const ROTATION_THRESHOLD = 0.05;
 const ROTATION_SENSITIVITY = 1;
 
+/** Long press zoom configuration */
+const LONG_PRESS_THRESHOLD = 400; // ms before zoom starts
+const LONG_PRESS_ZOOM_FACTOR = 0.985; // zoom multiplier per frame (smaller = faster zoom in)
+
 let canvas;
 let fractalApp;
 
@@ -44,6 +48,13 @@ let hasDragRect = false;
 let isPinching = false;
 let pinchStartDistance = null;
 let pinchStartAngle = null;
+
+// Long press zoom state
+let longPressTimeout = null;
+let longPressZoomActive = false;
+let longPressZoomRAF = null;
+let longPressAnchorX = 0;
+let longPressAnchorY = 0;
 
 /**
  * Mark orbit dirty if the current renderer supports perturbation caching.
@@ -114,6 +125,55 @@ export function unregisterTouchEventHandlers() {
 
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
+/**
+ * Start the continuous long press zoom loop for touch.
+ * Zooms in toward the anchor point while allowing panning.
+ */
+function startLongPressZoom() {
+    if (longPressZoomActive) return;
+    longPressZoomActive = true;
+
+    function zoomLoop() {
+        if (!longPressZoomActive || !fractalApp) return;
+
+        const targetZoom = fractalApp.zoom * LONG_PRESS_ZOOM_FACTOR;
+
+        if (targetZoom > fractalApp.MAX_ZOOM) {
+            // Use anchor-preserving zoom
+            fractalApp.setZoomKeepingAnchor(targetZoom, longPressAnchorX, longPressAnchorY);
+            markOrbitDirtySafe();
+            fractalApp.draw();
+            updateInfo(true);
+
+            longPressZoomRAF = requestAnimationFrame(zoomLoop);
+        } else {
+            // Reached max zoom, stop
+            stopLongPressZoom();
+        }
+    }
+
+    longPressZoomRAF = requestAnimationFrame(zoomLoop);
+    fractalApp.noteInteraction(160);
+}
+
+/**
+ * Stop the long press zoom loop.
+ */
+function stopLongPressZoom() {
+    if (longPressTimeout) {
+        clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+    }
+    if (longPressZoomRAF) {
+        cancelAnimationFrame(longPressZoomRAF);
+        longPressZoomRAF = null;
+    }
+    if (longPressZoomActive) {
+        longPressZoomActive = false;
+        resetAppState();
+    }
+}
+
 function handleTouchStart(event) {
     if (!fractalApp) return;
 
@@ -138,11 +198,27 @@ function handleTouchStart(event) {
         dragRectTop = rect.top;
         hasDragRect = true;
 
+        // Set up long press zoom anchor (relative to canvas)
+        longPressAnchorX = touch.clientX - rect.left;
+        longPressAnchorY = touch.clientY - rect.top;
+
+        // Start long press timer
+        if (longPressTimeout) clearTimeout(longPressTimeout);
+        longPressTimeout = setTimeout(() => {
+            // Only start zoom if we haven't started dragging or pinching
+            if (!isTouchDragging && !isPinching) {
+                startLongPressZoom();
+            }
+        }, LONG_PRESS_THRESHOLD);
+
         return;
     }
 
     if (event.touches.length === 2) {
         event.preventDefault();
+
+        // Stop any long press zoom when switching to pinch
+        stopLongPressZoom();
 
         // Two-finger gesture: pinch zoom + rotation
         isPinching = true;
@@ -182,11 +258,25 @@ function handleTouchMove(event) {
         event.preventDefault();
 
         const touch = event.touches[0];
+
+        // If long press zoom is active, update anchor for panning while zooming
+        if (longPressZoomActive) {
+            const rect = canvas.getBoundingClientRect();
+            longPressAnchorX = touch.clientX - rect.left;
+            longPressAnchorY = touch.clientY - rect.top;
+            return; // Don't process as regular drag
+        }
+
         const dx = touch.clientX - touchDownX;
         const dy = touch.clientY - touchDownY;
 
         if (!isTouchDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isTouchDragging = true;
+            // Cancel long press timer when drag starts
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
+            }
             if (touchClickTimeout) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
@@ -309,6 +399,17 @@ function handleTouchEnd(event) {
 
     // When all touches end, decide if it was tap/double-tap or drag/pinch end.
     if (event.touches.length === 0) {
+        // Stop long press zoom on touch end
+        if (longPressZoomActive) {
+            stopLongPressZoom();
+            return; // Don't process as tap
+        }
+        // Cancel pending long press timer
+        if (longPressTimeout) {
+            clearTimeout(longPressTimeout);
+            longPressTimeout = null;
+        }
+
         // End of a pinch gesture: just settle.
         if (isPinching) {
             isPinching = false;

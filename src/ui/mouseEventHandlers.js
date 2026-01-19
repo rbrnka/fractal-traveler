@@ -18,6 +18,10 @@ const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // double-click zoom in/out
 const ROTATION_SENSITIVITY = 0.01;
 
+/** Long press zoom configuration */
+const LONG_PRESS_THRESHOLD = 400; // ms before zoom starts
+const LONG_PRESS_ZOOM_FACTOR = 0.985; // zoom multiplier per frame (smaller = faster zoom in)
+
 // Wheel smoothing (reduces micro-jitter due to bursty wheel events)
 const WHEEL_ZOOM_BASE = 1.1;
 const WHEEL_DELTA_UNIT = 120;
@@ -41,6 +45,13 @@ let clickTimeout = null;
 let wheelResetTimeout = null;
 let isDragging = false;
 let wasRotated = false;
+
+// Long press zoom state
+let longPressTimeout = null;
+let longPressZoomActive = false;
+let longPressZoomRAF = null;
+let longPressAnchorX = 0;
+let longPressAnchorY = 0;
 
 // Rotation
 let isRightDragging = false;
@@ -131,6 +142,57 @@ export function unregisterMouseEventHandlers() {
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
 /**
+ * Start the continuous long press zoom loop.
+ * Zooms in toward the anchor point while allowing panning.
+ */
+function startLongPressZoom() {
+    if (longPressZoomActive) return;
+    longPressZoomActive = true;
+    canvas.style.cursor = 'zoom-in';
+
+    function zoomLoop() {
+        if (!longPressZoomActive || !fractalApp) return;
+
+        const targetZoom = fractalApp.zoom * LONG_PRESS_ZOOM_FACTOR;
+
+        if (targetZoom > fractalApp.MAX_ZOOM) {
+            // Use anchor-preserving zoom
+            fractalApp.setZoomKeepingAnchor(targetZoom, longPressAnchorX, longPressAnchorY);
+            markOrbitDirtySafe();
+            fractalApp.draw();
+            updateInfo(true);
+
+            longPressZoomRAF = requestAnimationFrame(zoomLoop);
+        } else {
+            // Reached max zoom, stop
+            stopLongPressZoom();
+        }
+    }
+
+    longPressZoomRAF = requestAnimationFrame(zoomLoop);
+    fractalApp.noteInteraction(160);
+}
+
+/**
+ * Stop the long press zoom loop.
+ */
+function stopLongPressZoom() {
+    if (longPressTimeout) {
+        clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+    }
+    if (longPressZoomRAF) {
+        cancelAnimationFrame(longPressZoomRAF);
+        longPressZoomRAF = null;
+    }
+    if (longPressZoomActive) {
+        longPressZoomActive = false;
+        canvas.style.cursor = 'crosshair';
+        resetAppState();
+    }
+}
+
+/**
  * Apply accumulated wheel delta once per RAF.
  * This reduces "bursty wheel" micro-jitter and keeps anchor math consistent.
  */
@@ -207,6 +269,19 @@ function handleMouseDown(event) {
         dragRectLeft = rect.left;
         dragRectTop = rect.top;
         hasDragRect = true;
+
+        // Set up long press zoom anchor (relative to canvas)
+        longPressAnchorX = event.clientX - rect.left;
+        longPressAnchorY = event.clientY - rect.top;
+
+        // Start long press timer
+        if (longPressTimeout) clearTimeout(longPressTimeout);
+        longPressTimeout = setTimeout(() => {
+            // Only start zoom if we haven't started dragging
+            if (!isDragging) {
+                startLongPressZoom();
+            }
+        }, LONG_PRESS_THRESHOLD);
     } else if (event.button === 2) { // Right-click
         startX = event.clientX;
     } else if (event.button === 1) { // Middle click - Julia preview
@@ -233,8 +308,21 @@ function handleMouseMove(event) {
     const dy = event.clientY - mouseDownY;
 
     if (event.buttons === 1) {
+        // If long press zoom is active, update anchor for panning while zooming
+        if (longPressZoomActive) {
+            const rect = canvas.getBoundingClientRect();
+            longPressAnchorX = event.clientX - rect.left;
+            longPressAnchorY = event.clientY - rect.top;
+            return; // Don't process as regular drag
+        }
+
         if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isDragging = true;
+            // Cancel long press timer when drag starts
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
+            }
         }
 
         if (isDragging) {
@@ -319,6 +407,19 @@ function handleMouseUp(event) {
 
     event.preventDefault();
     event.stopPropagation();
+
+    // Stop long press zoom on any mouse up
+    if (event.button === 0) {
+        if (longPressZoomActive) {
+            stopLongPressZoom();
+            return; // Don't process as click
+        }
+        // Cancel pending long press timer
+        if (longPressTimeout) {
+            clearTimeout(longPressTimeout);
+            longPressTimeout = null;
+        }
+    }
 
     if (event.button === 1) { // Middle-click - hide Julia preview
         if (isMiddleButtonHeld) {
@@ -424,6 +525,9 @@ function handleMouseUp(event) {
 }
 
 function handleMouseLeave() {
+    // Stop long press zoom if mouse leaves canvas
+    stopLongPressZoom();
+
     // Hide Julia preview if mouse leaves canvas while middle button is held
     if (isMiddleButtonHeld) {
         isMiddleButtonHeld = false;
