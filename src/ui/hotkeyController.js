@@ -35,6 +35,7 @@ import {
     log,
     ROTATION_DIRECTION
 } from "../global/constants";
+import {JuliaRenderer} from "../renderers/juliaRenderer";
 
 //region CONSTANTS > ---------------------------------------------------------------------------------------------------
 /**
@@ -219,6 +220,14 @@ async function onKeyDown(event) {
 
         case 'KeyS': // Screenshot
             if (event.shiftKey) captureScreenshot();
+            handled = true;
+            break;
+
+        case 'KeyB': // Julia legacy renderer toggle
+            if (isJuliaMode() && DEBUG_MODE === DEBUG_LEVEL.FULL) {
+                JuliaRenderer.FF_LEGACY_JULIA_RENDERER = !JuliaRenderer.FF_LEGACY_JULIA_RENDERER
+                await switchFractalMode(FRACTAL_TYPE.JULIA);
+            }
             handled = true;
             break;
 

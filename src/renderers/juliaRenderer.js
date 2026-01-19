@@ -6,6 +6,7 @@ import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEFAULT_JULIA_PALETTE, EASE_
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.frag';
+import fragmentShaderRawLegacy from '../shaders/julia.legacy.frag';
 import data from '../data/julia.json' with {type: 'json'};
 
 /**
@@ -25,11 +26,17 @@ import data from '../data/julia.json' with {type: 'json'};
  */
 export class JuliaRenderer extends FractalRenderer {
 
+    /**
+     * Enables legacy Julia renderer for intermittent troubleshooting of the perturbation renderer
+     * @type {boolean}
+     */
+    static FF_LEGACY_JULIA_RENDERER = true;
+
     constructor(canvas) {
         super(canvas);
 
         this.DEFAULT_ZOOM = data.presets[0].zoom;
-        this.MAX_ZOOM = 1e-17;
+        this.MAX_ZOOM = JuliaRenderer.FF_LEGACY_JULIA_RENDERER ? 3e-3 : 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
 
         this.DEFAULT_ROTATION = data.presets[0].rotation;
@@ -129,7 +136,9 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
+        return (JuliaRenderer.FF_LEGACY_JULIA_RENDERER
+            ? fragmentShaderRawLegacy
+            : fragmentShaderRaw).replace('__MAX_ITER__', this.MAX_ITER).toString();
     }
 
     /**
