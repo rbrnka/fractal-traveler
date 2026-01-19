@@ -7,6 +7,13 @@
  */
 
 import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils";
+
+/**
+ * App version shown in the UI. Should match the package.json version.
+ * @type {string}
+ */
+export const VERSION = "2.0";
+
 // region > DEBUG CONSTANTS ////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * DEBUG_LEVEL

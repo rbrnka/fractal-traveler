@@ -18,6 +18,7 @@ import {takeScreenshot} from "./screenshotController";
 import {
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
+    CONTROLS_TOOLTIP,
     DEBUG_LEVEL,
     DEBUG_MODE,
     DEFAULT_ACCENT_COLOR,
@@ -28,7 +29,8 @@ import {
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
     log,
-    PI
+    PI,
+    VERSION
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
@@ -1374,6 +1376,7 @@ export async function initUI(fractalRenderer) {
         toggleDebugMode();
     }
 
+    document.getElementById("versionLink").innerHTML = `v${VERSION}`;
     uiInitialized = true;
 }
 
