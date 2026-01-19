@@ -103,23 +103,23 @@ html, body {
 h1 {
     padding: 0 0 0 0;
     margin: 6px auto 6px auto;
-    color: var(--accent-color, #fff);
+    color: #fff;
     z-index: 1000;
     font-family: "Bruno Ace SC", sans-serif;
     font-size: 12pt;
     letter-spacing: 1px;
     font-style: italic;
-    text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--accent-color);
+    text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--accent-color);
     width: 320px;
     animation: glow-pulse 2s ease-in-out infinite alternate;
 }
 
 @keyframes glow-pulse {
     from {
-        text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--bg-color);
+        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--bg-color);
     }
     to {
-        text-shadow: 0 0 4px var(--bg-color), 0 0 12px var(--accent-color);
+        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--accent-color);
     }
 }
 
