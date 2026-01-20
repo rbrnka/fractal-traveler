@@ -2,7 +2,8 @@
   "$schema": "./fractal.schema.json",
   "type": "JULIA",
   "presets": [
-    { "c": [-0.8, 0.156], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Default" },
+    { "c": [-0.246, 0.64235], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Default" },
+    { "c": [-0.8, 0.156], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Tentacles" },
     { "c": [-0.7269, 0.1889], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Seahorses" },
     { "c": [0.34, -0.05], "zoom": 3.5, "rotation": 90, "pan": [0, 0], "title": "Spiral Galaxies" },
     { "c": [0.285, 0.01], "zoom": 3.5, "rotation": 90, "pan": [-0.01, 0.01], "title": "Near Julia Border" },
@@ -35,17 +36,6 @@
   ],
   "palettes": [
     {
-      "id": "Cosmos",
-      "keyColor": "#fefe66",
-      "theme": [
-        0.0, 0.0, 0.0,
-        1.0, 0.647, 0.0,
-        0.0, 0.0, 0.0,
-        1.2, 1.2, 1.0,
-        0.1, 0.1, 0.1
-      ]
-    },
-    {
       "id": "Blue Gold",
       "keyColor": "#4c4cb3",
       "theme": [
@@ -54,6 +44,17 @@
         0.0, 0.0, 0.0,
         1.0, 1.0, 1.0,
         0.0, 0.0, 0.5
+      ]
+    },
+    {
+      "id": "Cosmos",
+      "keyColor": "#fefe66",
+      "theme": [
+        0.0, 0.0, 0.0,
+        1.0, 0.647, 0.0,
+        0.0, 0.0, 0.0,
+        1.2, 1.2, 1.0,
+        0.1, 0.1, 0.1
       ]
     },
     {

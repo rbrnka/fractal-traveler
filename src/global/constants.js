@@ -150,13 +150,13 @@ export const CONSOLE_MESSAGE_STYLE = `color: ${DEFAULT_CONSOLE_MESSAGE_COLOR}`;
  */
 export const DEFAULT_JULIA_PALETTE = {
     id: "Default",
-    keyColor: "#fefe66",
+    keyColor: "#4c4cb3",
     theme: [
         0.0, 0.0, 0.0,
         1.0, 0.647, 0.0,
         0.0, 0.0, 0.0,
-        1.2, 1.2, 1.0,
-        0.1, 0.1, 0.1
+        1.0, 1.0, 1.0,
+        0.0, 0.0, 0.5
     ]
 };
 // ---------------------------------------------------------------------------------------------------------------------
