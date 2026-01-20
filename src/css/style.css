@@ -264,6 +264,13 @@ label, .sliderValue {
     text-align: right; /* Align text to the right */
 }
 
+.sliderValue {
+    min-width: 4.5em; /* Fixed width to prevent wiggle on sign change */
+    font-variant-numeric: tabular-nums; /* Equal-width digits */
+    font-family: monospace, monospace;
+    display: inline-block;
+}
+
 .slider-container label {
     text-shadow: 0 0 10px var(--accent-color);
     color: #fff;
@@ -295,7 +302,19 @@ label, .sliderValue {
     background: var(--accent-color);
     cursor: pointer;
     border: 1px solid #fff;
-    /*box-shadow: -287px 0 0 280px var(--bg-color);*/
+    box-shadow: 0 0 0 0 transparent;
+    transition: width 0.15s ease-out, height 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.slider::-moz-range-thumb {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    border: 1px solid #fff;
+    box-shadow: 0 0 0 0 transparent;
+    transition: width 0.15s ease-out, height 0.15s ease-out, box-shadow 0.15s ease-out;
 }
 
 .slider::-webkit-slider-thumb:hover {
@@ -304,6 +323,15 @@ label, .sliderValue {
 
 .thumbDisabled {
     background: #333;
+}
+
+/* Visual feedback when slider is near zero - helps user hit the zero point */
+.slider.near-zero::-webkit-slider-thumb {
+    background-color: rgba(1, 1, 1, 0.8);
+}
+
+.slider.near-zero::-moz-range-thumb {
+    background-color: rgba(1, 1, 1, 0.8);
 }
 
 #dives-dropdown {

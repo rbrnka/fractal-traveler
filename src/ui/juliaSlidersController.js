@@ -18,6 +18,12 @@ import {JuliaRenderer} from "../renderers/juliaRenderer";
  */
 const SLIDER_UPDATE_THROTTLE_LIMIT = 50;
 
+/** Threshold for "near zero" visual feedback */
+const ZERO_ZONE_THRESHOLD = 0.01;
+
+/** Threshold for snapping to exactly zero */
+const ZERO_SNAP_THRESHOLD = 0.005;
+
 let sliderContainer;
 let realSlider;
 let imagSlider;
@@ -61,17 +67,38 @@ function onSliderChangeFinished() {
     fractalApp.demoTime = 0;
 }
 
+/**
+ * Updates slider visual state based on proximity to zero
+ * @param {HTMLInputElement} slider
+ * @param {number} value
+ */
+function updateZeroZoneState(slider, value) {
+    const isNearZero = Math.abs(value) < ZERO_ZONE_THRESHOLD;
+    slider.classList.toggle('near-zero', isNearZero);
+}
+
+/**
+ * Snaps value to zero if within snap threshold
+ * @param {number} value
+ * @returns {number}
+ */
+function snapToZero(value) {
+    return Math.abs(value) < ZERO_SNAP_THRESHOLD ? 0 : value;
+}
+
 const onRealSliderChange = () => {
-    fractalApp.c[0] = parseFloat(realSlider.value);
-    // Increased to 4 decimals to match the new step
-    realSliderValue.textContent = fractalApp.c[0].toFixed(4);
+    let cx = snapToZero(parseFloat(realSlider.value));
+    fractalApp.c[0] = cx;
+    realSliderValue.textContent = cx.toFixed(4);
+    updateZeroZoneState(realSlider, cx);
     onSliderChangeFinished();
 };
 
 const onImagSliderChange = () => {
-    fractalApp.c[1] = parseFloat(imagSlider.value);
-    // Using 4 decimals and template literals for cleaner code
-    imagSliderValue.textContent = `${fractalApp.c[1].toFixed(4)}i`;
+    let cy = snapToZero(parseFloat(imagSlider.value));
+    fractalApp.c[1] = cy;
+    imagSliderValue.textContent = `${cy.toFixed(4)}i`;
+    updateZeroZoneState(imagSlider, cy);
     onSliderChangeFinished();
 };
 
@@ -119,6 +146,10 @@ export function updateJuliaSliders() {
     imagSliderValue.innerText = fractalApp.c[1].toFixed(4) + 'i';
     realSlider.value = parseFloat(fractalApp.c[0].toFixed(4));
     imagSlider.value = parseFloat(fractalApp.c[1].toFixed(4));
+
+    // Update zero zone visual feedback
+    updateZeroZoneState(realSlider, fractalApp.c[0]);
+    updateZeroZoneState(imagSlider, fractalApp.c[1]);
 }
 
 /** Disable slider controls */
