@@ -658,14 +658,14 @@ export class JuliaRenderer extends FractalRenderer {
 
         // Phase 1: Setting default params.
         await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
-
         // Phase 2: Animating to preset.
         await Promise.all([
-            this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT),
             this.animateToC(preset.c, duration),
             this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
             this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
         ]);
+        // Phase 3: Final zoom-in
+        await this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT);
 
         this.currentPresetIndex = preset.id || 0;
 
