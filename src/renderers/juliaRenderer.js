@@ -357,10 +357,14 @@ export class JuliaRenderer extends FractalRenderer {
         this.gl.useProgram(this.program);
 
         // Iteration strategy avoids exploding to infinity at tiny zooms
-        const safe = Math.max(this.zoom, 1e-300);
-        const log2Depth = Math.log2(this.DEFAULT_ZOOM / safe);
-        const baseIters = Math.floor(200 + 50 * log2Depth);
-        this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
+        // const safe = Math.max(this.zoom, 1e-300);
+        // const log2Depth = Math.log2(this.DEFAULT_ZOOM / safe);
+        // const baseIters = Math.floor(200 + 50 * log2Depth);
+        // this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
+
+
+        const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
+        this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
         // Detect view changes -> mark orbit dirty (use tolerant checks to avoid noise)
         const panMoved =
