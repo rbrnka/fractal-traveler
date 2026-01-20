@@ -189,6 +189,7 @@ global.createMockFractalApp = (canvas = null) => {
         // Animation methods
         animatePanTo: jest.fn(() => Promise.resolve()),
         animateZoomTo: jest.fn(() => Promise.resolve()),
+        animateZoomToNoPan: jest.fn(() => Promise.resolve()),
         animatePanBy: jest.fn(() => Promise.resolve()),
         animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
         animateToC: jest.fn(() => Promise.resolve()),

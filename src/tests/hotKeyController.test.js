@@ -2,7 +2,29 @@
  * @jest-environment jsdom
  */
 // __tests__/hotKeyController.test.js
+
+// Mock ui module before importing hotKeyController (which imports from ui)
+jest.mock('../ui/ui', () => ({
+    isJuliaMode: jest.fn(() => true),
+    travelToPreset: jest.fn(() => Promise.resolve()),
+    startJuliaDive: jest.fn(() => Promise.resolve()),
+    isAnimationActive: jest.fn(() => false),
+    toggleHeader: jest.fn(),
+    randomizeColors: jest.fn(),
+    toggleCenterLines: jest.fn(),
+    toggleDebugMode: jest.fn(),
+    toggleDemo: jest.fn(() => Promise.resolve()),
+    reset: jest.fn(() => Promise.resolve()),
+    resetAppState: jest.fn(),
+    switchFractalMode: jest.fn(() => Promise.resolve()),
+    switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
+    captureScreenshot: jest.fn(),
+    updateColorTheme: jest.fn(),
+    updatePaletteDropdownState: jest.fn(),
+}));
+
 import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
+import * as ui from '../ui/ui';
 import {
     charPressedEvent,
     downArrowPressedEvent,
@@ -14,14 +36,11 @@ import {
 import {ROTATION_DIRECTION} from "../global/constants";
 
 describe('HotKeyController', () => {
-    let mockUI, fractalApp, originalIsJuliaMode;
+    let fractalApp;
 
     beforeEach(() => {
-        // Mock UI functions using the factory pattern
-        mockUI = createMockUI();
-
-        // Save original isJuliaMode to restore later
-        originalIsJuliaMode = mockUI.isJuliaMode;
+        // Reset all mocks
+        jest.clearAllMocks();
 
         // Create mock fractalApp using factory
         fractalApp = createMockFractalApp();
@@ -32,7 +51,6 @@ describe('HotKeyController', () => {
     });
 
     afterEach(() => {
-        mockUI.isJuliaMode = originalIsJuliaMode;
         cleanupDOM();
         destroyHotKeys();
     });
@@ -64,22 +82,22 @@ describe('HotKeyController', () => {
     test('Numkeys travel to preset', async () => {
         document.dispatchEvent(numPressedEvent(1));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockUI.travelToPreset).toHaveBeenCalled();
+        expect(ui.travelToPreset).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('Shift+Numkeys trigger dive in Julia mode or travel to preset otherwise', async () => {
-        mockUI.isJuliaMode = jest.fn(() => false);
+        ui.isJuliaMode.mockReturnValue(false);
 
         // No Julia mode, Shift does not make a difference - travel to preset
         document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockUI.travelToPreset).toHaveBeenCalled();
+        expect(ui.travelToPreset).toHaveBeenCalled();
 
         // In Julia mode, dive is triggered
-        mockUI.isJuliaMode = jest.fn(() => true);
+        ui.isJuliaMode.mockReturnValue(true);
         document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockUI.startJuliaDive).toHaveBeenCalled();
+        expect(ui.startJuliaDive).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('W enter infinite rotation cw, stop, enter again with slower speed and opposite direction', async () => {
@@ -112,7 +130,7 @@ describe('HotKeyController', () => {
         // Use a slightly longer wait to ensure the async switch/case finishes
         await new Promise(resolve => setTimeout(resolve, 10));
 
-        expect(fractalApp.animateZoomTo).toHaveBeenCalled();
+        expect(fractalApp.animateZoomToNoPan).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('Ignore hotkeys when user is typing in an input field', async () => {
@@ -128,7 +146,7 @@ describe('HotKeyController', () => {
         await Promise.resolve();
 
         // randomization should NOT have been called
-        expect(mockUI.randomizeColors).not.toHaveBeenCalled();
+        expect(ui.randomizeColors).not.toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('Enter key toggles the UI header', async () => {
