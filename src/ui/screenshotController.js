@@ -89,8 +89,9 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
     const padding = 6;
     const borderWidth = 1;
 
-    ctx.font = `${fontSize}px sans-serif`;
+    ctx.font = `${fontSize}px`;
     ctx.textAlign = 'center';
+    ctx.letterSpacing = '1px';
     ctx.textBaseline = 'middle';
 
     // Measure the text width and calculate the rectangle size
