@@ -737,9 +737,8 @@ class FractalRenderer extends Renderer {
             } else {
                 console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
             }
-        } else if (this.currentPaletteIndex !== 0) {
-            log(`Preset palette definition not found, transitioning to the default.`);
-            await this.applyPaletteByIndex(0, duration, coloringCallback);
+        } else {
+            log(`Preset palette definition not found, keeping current palette.`);
         }
         console.groupEnd();
     }
