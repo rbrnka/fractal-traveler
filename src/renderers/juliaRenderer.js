@@ -648,7 +648,7 @@ export class JuliaRenderer extends FractalRenderer {
 
     /**
      * Animates travel to a preset.
-     * @param {JULIA_PRESET} preset
+     * @param {JULIA_PRESET|PRESET} preset
      * @param {number} [duration] in ms
      * @return {Promise<void>}
      */
@@ -656,13 +656,16 @@ export class JuliaRenderer extends FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
+        const durationWithSpeed = duration * (preset.speed ?? 1);
+
         // Phase 1: Setting default params.
         await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
         // Phase 2: Animating to preset.
         await Promise.all([
-            this.animateToC(preset.c, duration),
+            this.animateToC(preset.c, durationWithSpeed),
             this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
-            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
+            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT),
+            this.animatePaletteByIdTransition(preset, durationWithSpeed)
         ]);
         // Phase 3: Final zoom-in
         await this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT);

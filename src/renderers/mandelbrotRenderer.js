@@ -555,19 +555,7 @@ class MandelbrotRenderer extends FractalRenderer {
                 // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
                 this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDurationWithSpeed, EASE_TYPE.NONE),
                 // Apply palette transition in parallel
-                (async () => {
-                    if (preset.paletteId) {
-                        log(`Preset palette definition found: "${preset.paletteId}"`);
-                        const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
-                        if (paletteIndex >= 0) {
-                            await this.applyPaletteByIndex(paletteIndex, zoomInDurationWithSpeed);
-                        } else {
-                            console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
-                        }
-                    } else if (this.currentPaletteIndex !== 0) {
-                        await this.applyPaletteByIndex(0, zoomInDurationWithSpeed);
-                    }
-                })()
+               this.animatePaletteByIdTransition(preset, zoomInDurationWithSpeed)
             ]);
         }
 

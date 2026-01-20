@@ -151,6 +151,15 @@
           "type": "number",
           "default": 0,
           "description": "Rotation angle in degrees."
+        },
+        "speed": {
+          "type": "number",
+          "default": 1,
+          "description": "Animation speed multiplier for travel animations."
+        },
+        "paletteId": {
+          "type": "string",
+          "description": "Palette id to determine the preset color theme."
         }
       }
     },

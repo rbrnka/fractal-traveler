@@ -452,8 +452,8 @@ class FractalRenderer extends Renderer {
         }
 
         if (this.colorLoc && (uc.color0 !== this.colorPalette[0] ||
-                              uc.color1 !== this.colorPalette[1] ||
-                              uc.color2 !== this.colorPalette[2])) {
+            uc.color1 !== this.colorPalette[1] ||
+            uc.color2 !== this.colorPalette[2])) {
             this.gl.uniform3fv(this.colorLoc, this.colorPalette);
             uc.color0 = this.colorPalette[0];
             uc.color1 = this.colorPalette[1];
@@ -716,6 +716,31 @@ class FractalRenderer extends Renderer {
             };
             this.currentColorAnimationFrame = requestAnimationFrame(step);
         });
+    }
+
+    /**
+     * Transitions between palettes by their unique identifiers, animating the change over the specified duration.
+     *
+     * @param {PRESET} preset - The configuration object containing the palette definition.
+     * @param {string} preset.paletteId - The unique identifier for the target palette.
+     * @param {number} duration - The duration of the animation in milliseconds.
+     * @return {Promise<void>} Resolves once the palette transition animation is complete.
+     */
+    async animatePaletteByIdTransition(preset, duration) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
+        if (preset.paletteId) {
+            log(`Preset palette definition found: "${preset.paletteId}"`);
+            const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+            if (paletteIndex >= 0) {
+                await this.applyPaletteByIndex(paletteIndex, duration);
+            } else {
+                console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
+            }
+        } else if (this.currentPaletteIndex !== 0) {
+            log(`Preset palette definition not found, transitioning to the default.`);
+            await this.applyPaletteByIndex(0, duration);
+        }
+        console.groupEnd();
     }
 
     /**
