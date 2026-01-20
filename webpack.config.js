@@ -92,24 +92,19 @@ module.exports = (env, argv) => {
             new (class {
                 apply(compiler) {
                     compiler.hooks.done.tap('Deploy to FTP', () => {
+                        console.log('Deploying dist to production via FTP...');
                         if (isProduction) {
-                            ftpDeploy.deploy(configFtp, function (err) {
-                                console.log('Deploying dist...');
-                                if (err) {
-                                    console.log('FTP Deploy Error:', err);
-                                } else {
-                                    console.log('FTP Deploy Success!');
-                                }
-                            }).then(() => {
-                                console.log('Deploying docs...');
-                                ftpDeploy.deploy(configFtpDocs, function (err) {
-                                    if (err) {
-                                        console.log('FTP Deploy Docs Error:', err);
-                                    } else {
-                                        console.log('FTP Deploy Docs Success!');
-                                    }
+                            ftpDeploy.deploy(configFtp)
+                                .then(() => console.log('FTP Deploy Success!'))
+                                .catch((err) => console.error('FTP Deploy Error:', err))
+                                .finally(() => {
+                                    console.log('Deploying docs via FTP...');
+                                    ftpDeploy.deploy(configFtpDocs)
+                                        .then(() => console.log('FTP Deploy Docs Success!'))
+                                        .catch((err) => console.error('FTP Deploy Docs Error:', err));
                                 });
-                            });
+                        } else {
+                            console.log('Skipped (not prod)');
                         }
                     });
                 }
