@@ -47,9 +47,9 @@ export class DebugPanel {
                 let dump = this.debugInfo.innerText.substring(this.debugInfo.innerText.indexOf('FRAG'));
 
                 navigator.clipboard.writeText(dump).then(function () {
-                    console.log('Debug dump copied to clipboard!');
+                    log('Debug dump copied to clipboard!');
                 }, function (err) {
-                    console.error('Debug dump not copied to clipboard! ' + err.toString());
+                    log('Debug dump not copied to clipboard! ' + err.toString(), "", LOG_LEVEL.ERROR);
                 });
             }
         });
@@ -113,16 +113,6 @@ export class DebugPanel {
     setRenderer(renderer) {
         this.fractalApp = renderer || null;
         this.gl = renderer?.gl || null;
-
-        // refresh cached precision safely
-        this.precisionInfo = null;
-        const gl = this.gl;
-        if (gl && typeof gl.getShaderPrecisionFormat === "function") {
-            const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
-            this.precisionInfo = hp
-                ? {precision: hp.precision, rangeMin: hp.rangeMin, rangeMax: hp.rangeMax}
-                : null;
-        }
     }
 
     _initGpuInfo() {
@@ -231,11 +221,9 @@ export class DebugPanel {
         this.perf.fps = dt > 0 ? 1000 / dt : 0;
 
         const dpr = window.devicePixelRatio || 1;
-        const rect = this.canvas.getBoundingClientRect();
 
         const gl = this.gl;
         if (!gl || typeof gl.getShaderPrecisionFormat !== "function") return;
-
 
         const hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
 
@@ -254,7 +242,6 @@ export class DebugPanel {
 
         // Scale diagnostics
         const pxPerUnit = this.canvas.width / safeZoom;
-        const unitPerPx = safeZoom / this.canvas.width;
 
         // Precision stress heuristics
         const absPan = Math.hypot(viewPanX, viewPanY);
@@ -396,15 +383,12 @@ export class DebugPanel {
             ? ((performance.now() - lastInteraction) / 1000).toFixed(1) + 's ago'
             : 'n/a';
 
-        // Draw count (if tracked)
-        const drawCount = this.fractalApp._drawCount ?? 'n/a';
-
         const gpuVendor = this.gpu.unmaskedVendor || this.gpu.vendor || "unknown";
         const gpuRenderer = this.gpu.unmaskedRenderer || this.gpu.renderer || "unknown";
 
         this.debugInfo.innerHTML = `
             <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, middle-click to copy)</span><br/>
-            <span class="dbg-dim">───────────────────────────────────────────────────────────────────</span><br/>
+            <span class="dbg-dim">───────────────────────────────────────────────────────</span><br/>
             <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
             <span class="dbg-title">GPU</span>: ${esc(gpuRenderer)} <span class="dbg-dim">(${esc(gpuVendor)})</span><br/>
             <span class="dbg-title">Mode:</span> ${esc(getFractalMode())} <span class="dbg-dim">|</span> <span class="dbg-title">Canvas:</span> ${esc(this.canvas.width)}x${esc(this.canvas.height)} <span class="dbg-dim">(dpr=${esc(dpr)})</span><br/>
