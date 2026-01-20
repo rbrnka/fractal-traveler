@@ -675,10 +675,10 @@ export async function travelToPreset(presets, index) {
 
     if (isJuliaMode()) {
         fractalApp.demoTime = 0;
-        await fractalApp.animateTravelToPreset(presets[index], 1500);
+        await fractalApp.animateTravelToPreset(presets[index], 1500, updateColorTheme);
     } else {
         // Cinematic animation with zoom-out, pan, zoom-in with rotation
-        await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500);
+        await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500, updateColorTheme);
     }
     activePresetIndex = index;
 

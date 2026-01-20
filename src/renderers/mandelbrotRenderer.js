@@ -492,9 +492,10 @@ class MandelbrotRenderer extends FractalRenderer {
      * @param {number} [zoomOutDuration=2000] Duration (ms) for zoom-out stage
      * @param {number} [panDuration=1000] Duration (ms) for pan stage
      * @param {number} [zoomInDuration=3500] Duration (ms) for zoom-in stage
+     * @param {Function} [coloringCallback=null] Optional callback for UI color updates
      * @return {Promise<void>}
      */
-    async animateTravelToPreset(preset, zoomOutDuration = 2000, panDuration = 1000, zoomInDuration = 3500) {
+    async animateTravelToPreset(preset, zoomOutDuration = 2000, panDuration = 1000, zoomInDuration = 3500, coloringCallback = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
@@ -555,7 +556,7 @@ class MandelbrotRenderer extends FractalRenderer {
                 // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
                 this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDurationWithSpeed, EASE_TYPE.NONE),
                 // Apply palette transition in parallel
-               this.animatePaletteByIdTransition(preset, zoomInDurationWithSpeed)
+                this.animatePaletteByIdTransition(preset, zoomInDurationWithSpeed, coloringCallback)
             ]);
         }
 

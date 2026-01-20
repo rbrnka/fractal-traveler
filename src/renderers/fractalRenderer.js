@@ -724,21 +724,22 @@ class FractalRenderer extends Renderer {
      * @param {PRESET} preset - The configuration object containing the palette definition.
      * @param {string} preset.paletteId - The unique identifier for the target palette.
      * @param {number} duration - The duration of the animation in milliseconds.
+     * @param {function} coloringCallback
      * @return {Promise<void>} Resolves once the palette transition animation is complete.
      */
-    async animatePaletteByIdTransition(preset, duration) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
+    async animatePaletteByIdTransition(preset, duration, coloringCallback = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePaletteByIdTransition`, CONSOLE_GROUP_STYLE);
         if (preset.paletteId) {
             log(`Preset palette definition found: "${preset.paletteId}"`);
             const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
             if (paletteIndex >= 0) {
-                await this.applyPaletteByIndex(paletteIndex, duration);
+                await this.applyPaletteByIndex(paletteIndex, duration, coloringCallback);
             } else {
                 console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
             }
         } else if (this.currentPaletteIndex !== 0) {
             log(`Preset palette definition not found, transitioning to the default.`);
-            await this.applyPaletteByIndex(0, duration);
+            await this.applyPaletteByIndex(0, duration, coloringCallback);
         }
         console.groupEnd();
     }
