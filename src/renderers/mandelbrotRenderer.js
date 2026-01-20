@@ -524,6 +524,17 @@ class MandelbrotRenderer extends FractalRenderer {
             // Stage 2: Pan to target coordinates
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
 
+            if (preset.paletteId) {
+                log(`Preset palette definition found: "${preset.paletteId}"`);
+
+                const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+                if (paletteIndex >= 0) {
+                    await this.applyPaletteByIndex(paletteIndex);
+                } else {
+                    console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
+                }
+            }
+
             // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
             await this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
         }

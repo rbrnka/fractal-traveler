@@ -678,6 +678,9 @@ export async function travelToPreset(presets, index) {
     }
     activePresetIndex = index;
 
+    // Update palette button state if preset changed the palette
+    updatePaletteDropdownState();
+
     exitAnimationMode();
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
 }

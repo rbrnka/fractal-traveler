@@ -38,6 +38,7 @@
  *      @property {number} zoom
  *      @property {number} [rotation]
  *      @property {number} [speed] preset animation speed
+ *      @property {string} [paletteId] color palette ID to match a JSON palette entry
  * @description Preset is an object containing properties of specific point in the fractal on the scene.
  */
 // ---------------------------------------------------------------------------------------------------------------------
