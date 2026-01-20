@@ -90,7 +90,7 @@ const ZOOM_ANIMATION_SMOOTH_STEP = .01;
  * Smooth stepping: step size
  * @type {number}
  */
-const JULIA_HOTKEY_C_STEP = .0005;
+const JULIA_HOTKEY_C_STEP = .001;
 
 /**
  * Super smooth stepping multiplier (SHIFT)
