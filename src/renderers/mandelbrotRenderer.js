@@ -1,5 +1,5 @@
 import FractalRenderer from "./fractalRenderer";
-import {asyncDelay, compareComplex, ddSubDD, hexToRGBArray, lerp, normalizeRotation, splitFloat} from "../global/utils";
+import {asyncDelay, ddSubDD, hexToRGBArray, lerp, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json' with {type: 'json'};
 /** @type {string} */
@@ -500,13 +500,38 @@ class MandelbrotRenderer extends FractalRenderer {
 
         const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
 
-        // Check if we're already at the target
-        const atTargetZoom = Math.abs(this.zoom - preset.zoom) < 1e-35;
-        const atTargetPan = compareComplex(preset.pan, this.pan);
+        // Determine how far we are from the preset
+        // Zoom ratio: how many "zoom levels" away (log scale makes sense for exponential zoom)
+        const zoomRatio = Math.abs(Math.log(this.zoom / preset.zoom));
+        const atTargetZoom = zoomRatio < 0.01;        // Within ~1% zoom
+        const nearTargetZoom = zoomRatio < 2.5;       // Within ~12x zoom difference
+
+        // Pan distance relative to current view size
+        const panDist = Math.hypot(this.pan[0] - preset.pan[0], this.pan[1] - preset.pan[1]);
+        const viewSize = Math.max(this.zoom, preset.zoom);
+        const panRatio = panDist / viewSize;
+        const atTargetPan = panRatio < 0.001;         // Essentially same position
+        const nearTargetPan = panRatio < 3.0;         // Within 3 view-widths
+
+        // Readjust duration scales with how far off we are (min 500ms, max panDuration)
+        const readjustDuration = Math.max(500, Math.min(panDuration, 300 + panRatio * 200 + zoomRatio * 150));
 
         if (atTargetZoom && atTargetPan) {
             // Only need to rotate
             await this.animateRotationTo(presetRotation, zoomOutDuration, EASE_TYPE.QUINT);
+        } else if (nearTargetZoom && nearTargetPan) {
+            // Close to preset - smooth readjustment without cinematic animation
+            log(`Near preset, readjusting (zoomRatio=${zoomRatio.toFixed(2)}, panRatio=${panRatio.toFixed(2)})`);
+            await Promise.all([
+                this.animatePanAndZoomTo(preset.pan, preset.zoom, readjustDuration, EASE_TYPE.CUBIC),
+                this.animateRotationTo(presetRotation, readjustDuration, EASE_TYPE.CUBIC)
+            ]);
+        } else if (atTargetZoom) {
+            // Same zoom but panned far away - pan back with rotation
+            await Promise.all([
+                this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC),
+                this.animateRotationTo(presetRotation, panDuration, EASE_TYPE.CUBIC)
+            ]);
         } else if (atTargetPan) {
             // Same position, just zoom and rotate with cinematic spin
             const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
@@ -524,19 +549,26 @@ class MandelbrotRenderer extends FractalRenderer {
             // Stage 2: Pan to target coordinates
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
 
-            if (preset.paletteId) {
-                log(`Preset palette definition found: "${preset.paletteId}"`);
+            const zoomInDurationWithSpeed = zoomInDuration * (preset.speed ?? 1);
 
-                const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
-                if (paletteIndex >= 0) {
-                    await this.applyPaletteByIndex(paletteIndex);
-                } else {
-                    console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
-                }
-            }
-
-            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
-            await this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.NONE);
+            await Promise.all([
+                // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
+                this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDurationWithSpeed, EASE_TYPE.NONE),
+                // Apply palette transition in parallel
+                (async () => {
+                    if (preset.paletteId) {
+                        log(`Preset palette definition found: "${preset.paletteId}"`);
+                        const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+                        if (paletteIndex >= 0) {
+                            await this.applyPaletteByIndex(paletteIndex, zoomInDurationWithSpeed);
+                        } else {
+                            console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
+                        }
+                    } else if (this.currentPaletteIndex !== 0) {
+                        await this.applyPaletteByIndex(0, zoomInDurationWithSpeed);
+                    }
+                })()
+            ]);
         }
 
         // Ensure rotation ends at exact preset value
