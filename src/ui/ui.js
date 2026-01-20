@@ -399,29 +399,29 @@ export function updateInfo(force = false) {
         return;
     }
 
-    let text = (animationActive ? ` [AUTO] ` : ``);
+    let text = (animationActive ? ` <span class="middot">🎬</span> ` : ``);
 
     const panX = ddValue(fractalApp.panDD.x) ?? 0;
     const panY = ddValue(fractalApp.panDD.y) ?? 0;
 
-    text += `p: [${panX.toFixed(8)}, ${panY.toFixed(8)}i] · `;
+    text += `p:&nbsp;[${panX.toFixed(8)}, ${panY.toFixed(8)}i] <span class="middot">&middot;</span> `;
+
+    const currentZoom = fractalApp.zoom ?? 0;
+    const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
+    const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
+    text += `r:&nbsp;${normalizedRotation.toFixed(0)}° <span class="middot">&middot;</span> zoom:&nbsp;${currentZoom.toExponential(0)}`;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c: [${cx.toFixed(4)}, ${cy.toFixed(4)}i] · `;
+        text += `<br/>c:&nbsp;[${cx.toFixed(4)}, ${cy.toFixed(4)}i]`;
     }
 
-    const currentZoom = fractalApp.zoom ?? 0;
-    const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
-    const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r: ${normalizedRotation.toFixed(0)}° · zoom:&nbsp;${currentZoom.toExponential(0)}`;
-
     if (animationActive) {
-        if (!infoText.classList.contains('animationActive')) infoText.classList.add('animationActive');
+        if (infoText && !infoText.classList.contains('animationActive')) infoText.classList.add('animationActive');
     } else {
-        if (infoText.classList.contains('animationActive')) infoText.classList.remove('animationActive');
+        if (infoText?.classList.contains('animationActive')) infoText.classList.remove('animationActive');
     }
 
     if (FF_USER_INPUT_ALLOWED) {
@@ -446,15 +446,17 @@ function exitAnimationMode() {
     }
 
     animationActive = false;
-    infoText.classList.remove('animation');
+    infoText?.classList.remove('animation');
 
-    fractalApp.stopAllNonColorAnimations();
+    fractalApp?.stopAllNonColorAnimations();
 
-    demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
-    demoButton.classList.remove('active');
+    if (demoButton) {
+        demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
+        demoButton.classList.remove('active');
+    }
 
-    presetsToggle.disabled = false;
-    divesToggle.disabled = false;
+    if (presetsToggle) presetsToggle.disabled = false;
+    if (divesToggle) divesToggle.disabled = false;
 
     if (isTouchDevice()) {
         registerTouchEventHandlers();
@@ -483,16 +485,18 @@ function initAnimationMode() {
     }
 
     animationActive = true;
-    infoText.classList.add('animation');
+    infoText?.classList.add('animation');
 
     // resetPresetAndDiveButtons();
-    demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
-    demoButton.classList.add('active');
+    if (demoButton) {
+        demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
+        demoButton.classList.add('active');
+    }
 
     closePresetsDropdown();
-    presetsToggle.disabled = true;
+    if (presetsToggle) presetsToggle.disabled = true;
     closeDivesDropdown();
-    divesToggle.disabled = true;
+    if (divesToggle) divesToggle.disabled = true;
 
     // Unregister control events
     if (isTouchDevice()) {
@@ -573,7 +577,7 @@ export async function startJuliaDive(dives, index) {
 
     resetPresetAndDiveButtonStates();
     activeJuliaDiveIndex = index;
-    diveButtons[index].classList.add('active');
+    diveButtons[index]?.classList.add('active');
 
     const dive = dives[index];
 
@@ -667,7 +671,7 @@ export async function travelToPreset(presets, index) {
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
-    presetButtons[index].classList.add('active');
+    presetButtons[index]?.classList.add('active');
 
     if (isJuliaMode()) {
         fractalApp.demoTime = 0;
@@ -711,7 +715,7 @@ export function toggleCenterLines() {
 
 export function resetPresetAndDiveButtonStates() {
     if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-    presetButtons.concat(diveButtons).forEach(b => b.classList.remove('active'));
+    presetButtons.concat(diveButtons).forEach(b => b?.classList.remove('active'));
 }
 
 /**
@@ -886,8 +890,8 @@ function togglePresetsDropdown() {
 
 /** Closes the presets dropdown menu */
 function closePresetsDropdown() {
-    presetsMenu.classList.remove('show');
-    presetsToggle.textContent = 'View ▾';
+    presetsMenu?.classList.remove('show');
+    if (presetsToggle) presetsToggle.textContent = 'View ▾';
 }
 
 function initPresetsDropdown() {
@@ -917,8 +921,8 @@ function toggleDivesDropdown() {
 
 /** Closes the dives dropdown menu */
 function closeDivesDropdown() {
-    divesMenu.classList.remove('show');
-    divesToggle.textContent = 'Dive ▾';
+    divesMenu?.classList.remove('show');
+    if (divesToggle) divesToggle.textContent = 'Dive ▾';
 }
 
 function initDivesDropdown() {
@@ -1252,14 +1256,18 @@ function initInfoText() {
     if (!FF_USER_INPUT_ALLOWED) {
 
         infoText.addEventListener('mouseenter', () => {
+            if (animationActive) return; // Disable during animations
             infoText.innerHTML = 'Click to copy fractal state to clipboard.';
         });
 
         infoText.addEventListener('mouseleave', () => {
+            if (animationActive) return; // Disable during animations
             updateInfo();
         });
 
         infoText.addEventListener('click', () => {
+            if (animationActive) return; // Disable during animations
+
             const viewPanX = ddValue(fractalApp.panDD.x);
             const viewPanY = ddValue(fractalApp.panDD.y);
 
