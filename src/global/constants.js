@@ -121,7 +121,7 @@ export const ROTATION_DIRECTION = {
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Default main GUI color
+ * Default main GUI color (Mandelbrot mode)
  * @type {string}
  */
 export const DEFAULT_ACCENT_COLOR = '#B4FF6A';
