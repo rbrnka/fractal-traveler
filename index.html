@@ -61,6 +61,7 @@
                     <button id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette ▾</button>
                     <div id="palettes" class="dropdown-menu"></div>
                 </div>
+                <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button>
             </div>
             <div id="sliders">
                 <div class="slider-container">
@@ -76,8 +77,8 @@
             </div>
             <div id="controlButtons">
                 <span>Actions:</span>
-                <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button>
                 <button id="screenshot" class="" title="Save Image (Shift+S)">Capture</button>
+                <button id="saveView" class="" title="Save current view locally (Alt+S)">Save</button>
                 <button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
             </div>
         </div>
@@ -103,5 +104,16 @@
     <canvas id="floatingCanvas"></canvas>
     <div id="verticalLine" class="centerLine verticalLine"></div>
     <div id="horizontalLine" class="centerLine horizontalLine"></div>
+    <!-- Save View Dialog -->
+    <div id="saveViewDialog" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3>Save Current View</h3>
+            <input type="text" id="saveViewName" placeholder="My View Name" maxlength="30">
+            <div class="dialog-buttons">
+                <button id="saveViewCancel" class="dialog-btn">Cancel</button>
+                <button id="saveViewConfirm" class="dialog-btn primary">Save</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

@@ -215,6 +215,7 @@ export const CONTROLS_TOOLTIP = [
 "- Shift + R: Reset",
 "- T: Randomize color palette (Shift: cyclic, Alt: reset)",
 "- Shift + S: Take screenshot",
+"- Alt + S: Save current view",
 "- Space: Zoom-in (Ctrl/Alt: Zoom-out, Shift: Smooth)",
 "- A: Force resize",
 "- L: Toggle debug panel",

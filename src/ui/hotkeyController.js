@@ -14,6 +14,7 @@ import {
     randomizeColors,
     reset,
     resetAppState,
+    showSaveViewDialog,
     startJuliaDive,
     switchFractalMode,
     switchFractalTypeWithPersistence,
@@ -218,8 +219,14 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyS': // Screenshot
-            if (event.shiftKey) captureScreenshot();
+        case 'KeyS': // Screenshot or Save View
+            if (altKey) {
+                // Alt+S: Save current view
+                showSaveViewDialog();
+            } else if (event.shiftKey) {
+                // Shift+S: Screenshot
+                captureScreenshot();
+            }
             handled = true;
             break;
 

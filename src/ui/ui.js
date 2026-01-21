@@ -59,6 +59,10 @@ let fractalApp;
 
 let fractalMode = FRACTAL_TYPE.MANDELBROT;
 
+// LocalStorage keys for user presets
+const USER_PRESETS_KEY_MANDELBROT = 'u_mandelbrot_presets';
+const USER_PRESETS_KEY_JULIA = 'u_julia_presets';
+
 const DEMO_BUTTON_DEFAULT_TEXT = 'Demo';
 const DEMO_BUTTON_STOP_TEXT = 'Stop';
 
@@ -83,8 +87,14 @@ let mandelbrotSwitch;
 let juliaSwitch;
 let persistSwitch;
 let resetButton;
+let saveViewButton;
 let screenshotButton;
 let demoButton;
+// Dialog elements
+let saveViewDialog;
+let saveViewNameInput;
+let saveViewConfirmBtn;
+let saveViewCancelBtn;
 let presetsToggle;
 let presetsMenu;
 let divesToggle;
@@ -795,6 +805,152 @@ export async function reset() {
     console.groupEnd();
 }
 
+// region > USER PRESETS -----------------------------------------------------------------------------------------------
+
+/**
+ * Gets the localStorage key for user presets based on current fractal mode
+ * @returns {string}
+ */
+function getUserPresetsKey() {
+    return isJuliaMode() ? USER_PRESETS_KEY_JULIA : USER_PRESETS_KEY_MANDELBROT;
+}
+
+/**
+ * Gets user presets from localStorage for current fractal mode
+ * @returns {Array<PRESET>}
+ */
+export function getUserPresets() {
+    try {
+        const stored = localStorage.getItem(getUserPresetsKey());
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.warn('Failed to load user presets:', e);
+        return [];
+    }
+}
+
+/**
+ * Saves user presets to localStorage for current fractal mode
+ * @param {Array<PRESET>} presets
+ */
+function saveUserPresets(presets) {
+    try {
+        localStorage.setItem(getUserPresetsKey(), JSON.stringify(presets));
+    } catch (e) {
+        console.error('Failed to save user presets:', e);
+    }
+}
+
+/**
+ * Saves the current view as a user preset
+ * @param {string} name - The name for the preset
+ */
+function saveCurrentViewAsPreset(name) {
+    const userPresets = getUserPresets();
+
+    // Create the preset object with u_ prefix
+    const preset = {
+        id: `u_${Date.now()}`,
+        title: name,
+        pan: [ddValue(fractalApp.panDD.x), ddValue(fractalApp.panDD.y)],
+        zoom: fractalApp.zoom,
+        rotation: fractalApp.rotation
+    };
+
+    // Add Julia-specific c parameter
+    if (isJuliaMode() && fractalApp.c) {
+        preset.c = [...fractalApp.c];
+    }
+
+    userPresets.push(preset);
+    saveUserPresets(userPresets);
+
+    // Refresh the presets dropdown to include the new preset
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    log(`Saved user preset: ${name}`, 'saveCurrentViewAsPreset');
+}
+
+/**
+ * Deletes a user preset by its id
+ * @param {string} presetId
+ */
+function deleteUserPreset(presetId) {
+    let userPresets = getUserPresets();
+    userPresets = userPresets.filter(p => p.id !== presetId);
+    saveUserPresets(userPresets);
+
+    // Refresh the presets dropdown
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    log(`Deleted user preset: ${presetId}`, 'deleteUserPreset');
+}
+
+/**
+ * Shows the save view dialog
+ */
+export function showSaveViewDialog() {
+    if (!saveViewDialog) return;
+
+    saveViewNameInput.value = '';
+    saveViewDialog.classList.add('show');
+    saveViewNameInput.focus();
+}
+
+/**
+ * Hides the save view dialog
+ */
+function hideSaveViewDialog() {
+    if (!saveViewDialog) return;
+    saveViewDialog.classList.remove('show');
+}
+
+/**
+ * Initializes the save view dialog events
+ */
+function initSaveViewDialog() {
+    if (!saveViewDialog) return;
+
+    saveViewConfirmBtn.addEventListener('click', () => {
+        const name = saveViewNameInput.value.trim();
+        if (name) {
+            saveCurrentViewAsPreset(name);
+            hideSaveViewDialog();
+        }
+    });
+
+    saveViewCancelBtn.addEventListener('click', () => {
+        hideSaveViewDialog();
+    });
+
+    // Close on overlay click
+    saveViewDialog.addEventListener('click', (e) => {
+        if (e.target === saveViewDialog) {
+            hideSaveViewDialog();
+        }
+    });
+
+    // Handle Enter key in input
+    saveViewNameInput.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // Prevent hotkeys from firing
+        if (e.key === 'Enter') {
+            const name = saveViewNameInput.value.trim();
+            if (name) {
+                saveCurrentViewAsPreset(name);
+                hideSaveViewDialog();
+            }
+        } else if (e.key === 'Escape') {
+            hideSaveViewDialog();
+        }
+    });
+
+    log('Initialized.', 'initSaveViewDialog');
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
+
 // region > INITIALIZERS -----------------------------------------------------------------------------------------------
 
 function initHeaderEvents() {
@@ -850,6 +1006,8 @@ function initControlButtonEvents() {
         await reset();
     });
 
+    saveViewButton.addEventListener('click', showSaveViewDialog);
+
     demoButton.addEventListener('click', toggleDemo);
 
     screenshotButton.addEventListener('click', captureScreenshot);
@@ -861,6 +1019,7 @@ function initPresetButtonEvents() {
     const presetBlock = document.getElementById('presets');
     presetButtons = [];
 
+    // Add built-in presets
     const presets = [...fractalApp.PRESETS];
     presets.forEach((preset, index) => {
         const btn = document.createElement('button');
@@ -875,8 +1034,49 @@ function initPresetButtonEvents() {
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
-        presetButtons[0].classList.add('active');
     });
+
+    // Add user presets from localStorage
+    const userPresets = getUserPresets();
+    userPresets.forEach((preset) => {
+        const btn = document.createElement('button');
+        btn.id = 'preset-' + preset.id;
+        btn.className = 'preset user-preset';
+        btn.title = `${preset.title} (User) - Right-click to delete`;
+        btn.textContent = preset.title;
+
+        // Left click to travel to preset
+        btn.addEventListener('click', async (e) => {
+            closePresetsDropdown();
+            resetPresetAndDiveButtonStates();
+            initAnimationMode();
+            btn.classList.add('active');
+
+            if (isJuliaMode()) {
+                await fractalApp.animateTravelToPreset(preset, 1500, updateColorTheme);
+            } else {
+                await fractalApp.animateTravelToPreset(preset, 2000, 500, 1500, updateColorTheme);
+            }
+
+            exitAnimationMode();
+            updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
+        });
+
+        // Right click to delete
+        btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (confirm(`Delete view "${preset.title}"?`)) {
+                deleteUserPreset(preset.id);
+            }
+        });
+
+        presetBlock.appendChild(btn);
+        presetButtons.push(btn);
+    });
+
+    if (presetButtons.length > 0) {
+        presetButtons[0].classList.add('active');
+    }
 
     log('Initialized.', 'initPresetButtonEvents');
 }
@@ -1074,7 +1274,7 @@ function initPaletteDropdown() {
  */
 function initCommonButtonEvents() {
     allButtons = diveButtons.concat(presetButtons).concat(paletteButtons);
-    allButtons.push(resetButton, screenshotButton, demoButton);
+    allButtons.push(resetButton, saveViewButton, screenshotButton, demoButton);
 
     allButtons.forEach((btn) => {
         btn.addEventListener('mouseleave', () => {
@@ -1334,6 +1534,7 @@ function bindHTMLElements() {
     infoLabel = document.getElementById('infoLabel');
     infoText = document.getElementById('infoText');
     resetButton = document.getElementById('reset');
+    saveViewButton = document.getElementById('saveView');
     screenshotButton = document.getElementById('screenshot');
     demoButton = document.getElementById('demo');
     presetsToggle = document.getElementById('presets-toggle');
@@ -1344,6 +1545,11 @@ function bindHTMLElements() {
     paletteToggle = document.getElementById('palette-toggle');
     paletteMenu = document.getElementById('palettes');
     paletteDropdown = document.getElementById('palette-dropdown');
+    // Save View Dialog elements
+    saveViewDialog = document.getElementById('saveViewDialog');
+    saveViewNameInput = document.getElementById('saveViewName');
+    saveViewConfirmBtn = document.getElementById('saveViewConfirm');
+    saveViewCancelBtn = document.getElementById('saveViewCancel');
 }
 
 /**
@@ -1388,6 +1594,7 @@ export async function initUI(fractalRenderer) {
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
+    initSaveViewDialog();
     initInfoText();
     initFractalSwitchButtons();
     initCommonButtonEvents(); // After all dynamic buttons are set
