@@ -10,7 +10,7 @@
     "test": "jest --config ./src/config/jest.config.js",
     "deploy-gh": "gh-pages -d dist",
     "docs": " jsdoc -r ./src/ ./README.md -d ./doc/ -c src/config/jsdoc.json\n",
-    "palette-editor": "npx serve ./tools/palette-editor -p 3030",
+    "palette-editor": "npx serve ./tools/palette-editor -p 3030"
   },
   "author": "Radim Brnka",
   "license": "MIT",
