@@ -459,6 +459,7 @@ function exitAnimationMode() {
     infoText?.classList.remove('animation');
 
     fractalApp?.stopAllNonColorAnimations();
+    fractalApp?.stopCurrentColorAnimations();
 
     if (demoButton) {
         demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
