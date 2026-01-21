@@ -32,69 +32,18 @@
 
   ],
   "palettes": [
-    {
-      "id": "Default",
-      "keyColor": "#5F8638",
-      "theme": [1.0, 1.0, 1.0],
-      "frequency": [3.1415, 6.2830, 1.7200],
-      "phase": [0, 0, 0]
-    },
-    {
-      "id": "Electric",
-      "keyColor": "#00E5FF",
-      "theme": [0.3, 1.3, 1.5],
-      "frequency": [2.0, 3.5, 4.0],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Deep Magenta",
-      "keyColor": "#FF1A99",
-      "theme": [1.5, 0.3, 1.2],
-      "frequency": [3.5, 2.0, 3.0],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Solar Flare",
-      "keyColor": "#FF8000",
-      "theme": [1.6, 1.0, 0.2],
-      "frequency": [3.0, 4.0, 2.0],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Borealis Aurora",
-      "keyColor": "#33FF99",
-      "theme": [0.4, 1.5, 0.9],
-      "frequency": [2.5, 3.0, 2.0],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Hell",
-      "keyColor": "#d82222",
-      "theme": [2.50, 1.00, 0.00],
-      "frequency": [10.00, 4.40, 0.00],
-      "phase": [2.80, 3.50, 0.00]
-    },
-    {
-      "id": "Obsidian Gold",
-      "keyColor": "#FFD700",
-      "theme": [1.4, 1.2, 0.2],
-      "frequency": [3.0, 3.5, 1.5],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Event Horizon",
-      "keyColor": "#6A0DAD",
-      "theme": [0.9, 0.2, 1.6],
-      "frequency": [2.5, 1.5, 3.5],
-      "phase": [0.0, 0.0, 0.0]
-    },
-    {
-      "id": "Toxic Waste",
-      "keyColor": "#ADFF2F",
-      "theme": [1.00, 1.20, 0.00],
-      "frequency": [9.30, 1.00, 0.00],
-      "phase": [1.40, 0.00, 0.90]
-    }
+    {"id": "Default", "keyColor": "#5F8638", "theme": [1, 1, 1], "frequency": [3.1415, 6.283, 1.72], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Electric", "keyColor": "#00E5FF", "theme": [0.3, 1.3, 1.5], "frequency": [2, 3.5, 4], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Deep Magenta", "keyColor": "#FF1A99", "theme": [1.5, 0.3, 1.2], "frequency": [3.5, 2, 3], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Solar Flare", "keyColor": "#FF8000", "theme": [1.6, 1, 0.2], "frequency": [3, 4, 2], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Borealis Aurora", "keyColor": "#33FF99", "theme": [0.4, 1.5, 0.9], "frequency": [2.5, 3, 2], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Hell", "keyColor": "#d82222", "theme": [2.5, 1, 0e+0], "frequency": [10, 4.4, 0e+0], "phase": [2.8, 3.5, 0e+0]},
+    {"id": "Obsidian Gold", "keyColor": "#FFD700", "theme": [1.4, 1.2, 0.2], "frequency": [3, 3.5, 1.5], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Event Horizon", "keyColor": "#6A0DAD", "theme": [0.9, 0.2, 1.6], "frequency": [2.5, 1.5, 3.5], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Toxic Waste", "keyColor": "#ADFF2F", "theme": [1, 1.2, 0e+0], "frequency": [9.3, 1, 0e+0], "phase": [1.4, 0e+0, 0.9]},
+    {"id": "Grayscale", "keyColor": "#888888", "theme": [1, 1, 1], "frequency": [6.2, 6.2, 6.2], "phase": [0e+0, 0e+0, 0e+0]},
+    {"id": "Red Giant", "keyColor": "#ca3d06", "theme": [1.4, 1.2, 0.2], "frequency": [3, 3.5, 1.5], "phase": [0e+0, 4.7, 0e+0]},
+    {"id": "Neon", "keyColor": "#ca02ff", "theme": [0.8, 1, 2.9], "frequency": [6.2, 5.1, 1.5], "phase": [0e+0, 3, 0e+0]}
   ],
   "removed": [
     {"id": 3, "title": "Tip of the spear", "speed": 10, "pan": [-1.9990961121566266, 2.8541655645072767e-16], "rotation": 5.4382185221694925, "zoom": 1.2995863762636767e-13},
