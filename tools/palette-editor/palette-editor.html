@@ -206,9 +206,44 @@
         return result ? {r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16)} : null;
     };
 
-    // Custom JSON stringify that keeps arrays compact
+    // Custom JSON stringify that keeps arrays and simple objects compact
     function compactJsonStringify(obj, indent = 2) {
-        const isSimpleArray = (arr) => Array.isArray(arr) && arr.every(v => typeof v === 'number' || typeof v === 'string');
+        const isPrimitive = (v) => v === null || typeof v === 'boolean' || typeof v === 'number' || typeof v === 'string';
+        const isSimpleArray = (arr) => Array.isArray(arr) && arr.every(v => isPrimitive(v));
+        const isSimpleObject = (o) => {
+            if (typeof o !== 'object' || o === null || Array.isArray(o)) return false;
+            return Object.values(o).every(v => isPrimitive(v) || isSimpleArray(v));
+        };
+
+        // Stringify number with maximum precision (17 significant digits for IEEE 754 doubles)
+        function numToString(n) {
+            if (!Number.isFinite(n)) return String(n);
+            // Use toPrecision for maximum accuracy, then clean up
+            const s = n.toPrecision(17);
+            // Remove trailing zeros after decimal point, but keep at least one digit
+            // Convert back through parseFloat to get canonical form
+            const parsed = parseFloat(s);
+            // Use exponential notation for very small/large numbers
+            if (Math.abs(parsed) < 1e-6 || Math.abs(parsed) >= 1e15) {
+                return parsed.toExponential();
+            }
+            return String(parsed);
+        }
+
+        function stringifyCompact(value) {
+            if (value === null) return 'null';
+            if (typeof value === 'boolean') return value ? 'true' : 'false';
+            if (typeof value === 'number') return numToString(value);
+            if (typeof value === 'string') return JSON.stringify(value);
+            if (Array.isArray(value)) {
+                return '[' + value.map(v => stringifyCompact(v)).join(', ') + ']';
+            }
+            if (typeof value === 'object') {
+                const items = Object.keys(value).map(k => JSON.stringify(k) + ': ' + stringifyCompact(value[k]));
+                return '{' + items.join(', ') + '}';
+            }
+            return String(value);
+        }
 
         function stringify(value, level) {
             const pad = ' '.repeat(level * indent);
@@ -216,16 +251,21 @@
 
             if (value === null) return 'null';
             if (typeof value === 'boolean') return value ? 'true' : 'false';
-            if (typeof value === 'number') return String(value);
+            if (typeof value === 'number') return numToString(value);
             if (typeof value === 'string') return JSON.stringify(value);
 
             if (Array.isArray(value)) {
                 if (value.length === 0) return '[]';
-                // Keep simple arrays (numbers/strings only) on one line
+                // Keep simple arrays (primitives only) on one line
                 if (isSimpleArray(value)) {
-                    return '[' + value.map(v => typeof v === 'string' ? JSON.stringify(v) : String(v)).join(', ') + ']';
+                    return '[' + value.map(v => stringifyCompact(v)).join(', ') + ']';
                 }
-                // Complex arrays (objects) get formatted
+                // Arrays of simple objects (like presets) - each object on its own line
+                if (value.every(v => isSimpleObject(v))) {
+                    const items = value.map(v => padNext + stringifyCompact(v));
+                    return '[\n' + items.join(',\n') + '\n' + pad + ']';
+                }
+                // Complex arrays get formatted recursively
                 const items = value.map(v => padNext + stringify(v, level + 1));
                 return '[\n' + items.join(',\n') + '\n' + pad + ']';
             }
@@ -233,6 +273,10 @@
             if (typeof value === 'object') {
                 const keys = Object.keys(value);
                 if (keys.length === 0) return '{}';
+                // Keep simple objects on one line
+                if (isSimpleObject(value)) {
+                    return stringifyCompact(value);
+                }
                 const items = keys.map(k => padNext + JSON.stringify(k) + ': ' + stringify(value[k], level + 1));
                 return '{\n' + items.join(',\n') + '\n' + pad + '}';
             }
@@ -455,9 +499,17 @@
 
     // Add/Delete palette
     function addPalette() {
-        const palettes = getCurrentPalettes();
-        let newPalette;
+        // Modify the data object directly to ensure changes persist
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        if (!data) {
+            alert('No data loaded. Open a folder or import a JSON file first.');
+            return;
+        }
+        if (!data.palettes) {
+            data.palettes = [];
+        }
 
+        let newPalette;
         if (currentMode === 'julia') {
             newPalette = {
                 id: 'New Palette',
@@ -474,29 +526,36 @@
             };
         }
 
-        palettes.push(newPalette);
+        data.palettes.push(newPalette);
+        updatePaletteList();
+        selectPalette(data.palettes.length - 1);
+
+        // Mark as unsaved AFTER selectPalette (which resets the flag)
         hasUnsavedChanges = true;
         updateUnsavedIndicator();
-        updatePaletteList();
-        selectPalette(palettes.length - 1);
     }
 
     function deletePalette() {
         if (selectedPaletteIndex < 0) return;
         if (!confirm('Delete this palette?')) return;
 
-        const palettes = getCurrentPalettes();
-        palettes.splice(selectedPaletteIndex, 1);
-        hasUnsavedChanges = true;
-        updateUnsavedIndicator();
+        // Modify the data object directly to ensure changes persist
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        if (!data || !data.palettes) return;
+
+        data.palettes.splice(selectedPaletteIndex, 1);
         updatePaletteList();
 
-        if (palettes.length > 0) {
-            selectPalette(Math.min(selectedPaletteIndex, palettes.length - 1));
+        if (data.palettes.length > 0) {
+            selectPalette(Math.min(selectedPaletteIndex, data.palettes.length - 1));
         } else {
             selectedPaletteIndex = -1;
             clearEditor();
         }
+
+        // Mark as unsaved AFTER selectPalette (which resets the flag)
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
     }
 
     // Julia editor
