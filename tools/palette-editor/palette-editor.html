@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptory Fractal Palette Designer</title>
+    <link rel="stylesheet" media="all" href="palette-editor.css" type="text/css">
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <h2>Synaptory Fractal Palette Designer</h2>
+        <button class="btn btn-reset" onclick="resetAll()">Reset</button>
+    </header>
+
+    <div class="layout">
+        <div id="editor-rows"></div>
+        <div class="preview-pane">
+            <div id="palette-circle"></div>
+            <span style="font-weight: 800; font-size: 11px; color: #64748b; letter-spacing: 1px;">COMPOSITE HARMONY</span>
+        </div>
+    </div>
+
+    <div class="io-group">
+        <div class="io-box">
+            <h4>Normalized Array Output</h4>
+            <button class="btn btn-copy" onclick="copyToClipboard()">Copy Array</button>
+            <div id="output-text"></div>
+        </div>
+        <div class="io-box">
+            <h4>Import Data</h4>
+            <label for="import-input"></label><textarea id="import-input" rows="2"
+                                                        placeholder="Paste array..."></textarea>
+            <button class="btn btn-import" onclick="importArray()">Sync from Array</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const colorCount = 5;
+    // Initial Randomization
+    let colors = Array.from({length: colorCount}, () => ({
+        r: Math.floor(Math.random() * 256),
+        g: Math.floor(Math.random() * 256),
+        b: Math.floor(Math.random() * 256)
+    }));
+
+    const rgbToHex = (r, g, b) => "#" + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16)} : null;
+    };
+
+    function buildUI() {
+        const container = document.getElementById('editor-rows');
+        container.innerHTML = '';
+        colors.forEach((c, i) => {
+            const row = document.createElement('div');
+            row.className = 'color-row';
+            row.id = `row-${i}`;
+            row.innerHTML = `
+                <div style="font-size: 11px; font-weight: 900; color: #94a3b8">#${i + 1}</div>
+                <div class="swatch-container">
+                    <input type="color" class="swatch-input" data-idx="${i}" value="${rgbToHex(c.r, c.g, c.b)}">
+                </div>
+                <div class="channel">
+                    <label>Hex</label>
+                    <input type="text" class="hex-input" data-idx="${i}" value="${rgbToHex(c.r, c.g, c.b)}">
+                </div>
+                ${['r', 'g', 'b'].map(ch => `
+                    <div class="channel">
+                        <label>${ch}</label>
+                        <input type="range" min="0" max="255" value="${c[ch]}" data-idx="${i}" data-ch="${ch}" class="r-input">
+                        <input type="number" min="0" max="255" value="${c[ch]}" data-idx="${i}" data-ch="${ch}" class="n-input">
+                    </div>
+                `).join('')}
+            `;
+            container.appendChild(row);
+        });
+        updateDisplay();
+    }
+
+    function updateDisplay() {
+        const stops = colors.map((c, i) => `rgb(${c.r},${c.g},${c.b}) ${i * 20}% ${(i + 1) * 20}%`);
+        document.getElementById('palette-circle').style.background = `conic-gradient(${stops.join(',')})`;
+        const normalized = colors.flatMap(c => [(c.r / 255).toFixed(3), (c.g / 255).toFixed(3), (c.b / 255).toFixed(3)]);
+        document.getElementById('output-text').textContent = `[${normalized.join(', ')}]`;
+    }
+
+    document.addEventListener('input', (e) => {
+        if (e.target.dataset.idx === undefined) return;
+        const idx = parseInt(e.target.dataset.idx);
+        const row = document.getElementById(`row-${idx}`);
+
+        if (e.target.classList.contains('swatch-input')) {
+            colors[idx] = hexToRgb(e.target.value);
+        } else if (e.target.classList.contains('hex-input')) {
+            const rgb = hexToRgb(e.target.value);
+            if (rgb) colors[idx] = rgb;
+        } else {
+            const ch = e.target.dataset.ch;
+            colors[idx][ch] = parseInt(e.target.value) || 0;
+        }
+
+        const c = colors[idx];
+        const hex = rgbToHex(c.r, c.g, c.b);
+        row.querySelector('.swatch-input').value = hex;
+        row.querySelector('.hex-input').value = hex;
+        ['r', 'g', 'b'].forEach(ch => {
+            row.querySelector(`.r-input[data-ch="${ch}"]`).value = c[ch];
+            row.querySelector(`.n-input[data-ch="${ch}"]`).value = c[ch];
+        });
+
+        updateDisplay();
+    });
+
+    function resetAll() {
+        colors = Array.from({length: colorCount}, () => ({r: 127, g: 127, b: 127}));
+        buildUI();
+    }
+
+    function importArray() {
+        const nums = document.getElementById('import-input').value.match(/[+-]?([0-9]*[.])?[0-9]+/g);
+        if (nums && nums.length === 15) {
+            const f = nums.map(Number);
+            for (let i = 0; i < 5; i++) {
+                colors[i] = {
+                    r: Math.round(f[i * 3] * 255),
+                    g: Math.round(f[i * 3 + 1] * 255),
+                    b: Math.round(f[i * 3 + 2] * 255)
+                };
+            }
+            buildUI();
+        } else {
+            alert("Paste 15 numbers.");
+        }
+    }
+
+    function copyToClipboard() {
+        navigator.clipboard.writeText(document.getElementById('output-text').textContent);
+    }
+
+    buildUI();
+</script>
+</body>
+</html>
