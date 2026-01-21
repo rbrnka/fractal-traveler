@@ -863,6 +863,12 @@ function saveCurrentViewAsPreset(name) {
         preset.c = [...fractalApp.c];
     }
 
+    // Store the current palette ID
+    if (fractalApp.PALETTES && fractalApp.currentPaletteIndex >= 0 &&
+        fractalApp.currentPaletteIndex < fractalApp.PALETTES.length) {
+        preset.paletteId = fractalApp.PALETTES[fractalApp.currentPaletteIndex].id;
+    }
+
     userPresets.push(preset);
     saveUserPresets(userPresets);
 
