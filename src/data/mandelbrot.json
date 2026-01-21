@@ -68,6 +68,13 @@
       "phase": [0.0, 0.0, 0.0]
     },
     {
+      "id": "Hell",
+      "keyColor": "#d82222",
+      "theme": [2.50, 1.00, 0.00],
+      "frequency": [10.00, 4.40, 0.00],
+      "phase": [2.80, 3.50, 0.00]
+    },
+    {
       "id": "Obsidian Gold",
       "keyColor": "#FFD700",
       "theme": [1.4, 1.2, 0.2],
@@ -84,9 +91,9 @@
     {
       "id": "Toxic Waste",
       "keyColor": "#ADFF2F",
-      "theme": [0.9, 1.8, 0.3],
-      "frequency": [0.6, 0.5, 0.1],
-      "phase": [0.0, 0.0, 2.5]
+      "theme": [1.00, 1.20, 0.00],
+      "frequency": [9.30, 1.00, 0.00],
+      "phase": [1.40, 0.00, 0.90]
     }
   ],
   "removed": [
