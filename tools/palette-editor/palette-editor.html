@@ -186,6 +186,10 @@
     let hasUnsavedChanges = false;
     let originalPaletteData = null;
 
+    // Store original file text to preserve precision in non-palette sections
+    let juliaOriginalText = null;
+    let mandelbrotOriginalText = null;
+
     // Current palette being edited
     let currentPalette = null;
 
@@ -287,6 +291,55 @@
         return stringify(obj, 0);
     }
 
+    // Replace only the "palettes" array in the original JSON text
+    // This preserves exact precision for presets, dives, and other sections
+    function replacePalettesInOriginal(originalText, newPalettes) {
+        // Find the "palettes" key and its array
+        const palettesRegex = /"palettes"\s*:\s*\[/;
+        const match = originalText.match(palettesRegex);
+        if (!match) {
+            console.error('Could not find "palettes" in original text');
+            return null;
+        }
+
+        const startIndex = match.index;
+        const arrayStartIndex = startIndex + match[0].length - 1; // Position of '['
+
+        // Find the matching closing bracket by counting brackets
+        let depth = 0;
+        let endIndex = -1;
+        for (let i = arrayStartIndex; i < originalText.length; i++) {
+            const char = originalText[i];
+            if (char === '[') depth++;
+            else if (char === ']') {
+                depth--;
+                if (depth === 0) {
+                    endIndex = i + 1;
+                    break;
+                }
+            }
+        }
+
+        if (endIndex === -1) {
+            console.error('Could not find closing bracket for palettes array');
+            return null;
+        }
+
+        // Generate the new palettes section
+        const newPalettesText = compactJsonStringify({palettes: newPalettes});
+        // Extract just the array part (remove the wrapper object)
+        const arrayMatch = newPalettesText.match(/"palettes":\s*(\[[\s\S]*\])/);
+        if (!arrayMatch) {
+            console.error('Could not extract palettes array from stringified data');
+            return null;
+        }
+
+        // Replace the old palettes array with the new one
+        const before = originalText.substring(0, arrayStartIndex);
+        const after = originalText.substring(endIndex);
+        return before + arrayMatch[1] + after;
+    }
+
     // File System Access API
     async function openFolder() {
         try {
@@ -305,13 +358,15 @@
             // Load Julia
             juliaFileHandle = await dirHandle.getFileHandle('julia.json');
             const juliaFile = await juliaFileHandle.getFile();
-            juliaData = JSON.parse(await juliaFile.text());
+            juliaOriginalText = await juliaFile.text();
+            juliaData = JSON.parse(juliaOriginalText);
             console.log('Loaded julia.json, handle:', juliaFileHandle);
 
             // Load Mandelbrot
             mandelbrotFileHandle = await dirHandle.getFileHandle('mandelbrot.json');
             const mandelbrotFile = await mandelbrotFileHandle.getFile();
-            mandelbrotData = JSON.parse(await mandelbrotFile.text());
+            mandelbrotOriginalText = await mandelbrotFile.text();
+            mandelbrotData = JSON.parse(mandelbrotOriginalText);
             console.log('Loaded mandelbrot.json, handle:', mandelbrotFileHandle);
 
             // Update status
@@ -389,16 +444,32 @@
 
         const fileHandle = currentMode === 'julia' ? juliaFileHandle : mandelbrotFileHandle;
         const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        const originalText = currentMode === 'julia' ? juliaOriginalText : mandelbrotOriginalText;
 
         console.log('Saving... fileHandle:', fileHandle, 'mode:', currentMode);
         console.log('juliaFileHandle:', juliaFileHandle);
         console.log('mandelbrotFileHandle:', mandelbrotFileHandle);
 
-        if (fileHandle && data) {
+        if (fileHandle && data && originalText) {
             try {
+                // Replace only the palettes section, preserving original text for presets etc.
+                const newText = replacePalettesInOriginal(originalText, data.palettes);
+                if (!newText) {
+                    alert('Error: Could not update palettes in file. Try Export JSON instead.');
+                    return;
+                }
+
                 const writable = await fileHandle.createWritable();
-                await writable.write(compactJsonStringify(data));
+                await writable.write(newText);
                 await writable.close();
+
+                // Update the stored original text with the new version
+                if (currentMode === 'julia') {
+                    juliaOriginalText = newText;
+                } else {
+                    mandelbrotOriginalText = newText;
+                }
+
                 hasUnsavedChanges = false;
                 originalPaletteData = JSON.parse(JSON.stringify(currentPalette));
                 updateUnsavedIndicator();
