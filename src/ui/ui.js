@@ -896,6 +896,7 @@ export function showSaveViewDialog() {
     if (!saveViewDialog) return;
 
     saveViewNameInput.value = '';
+    saveViewConfirmBtn.disabled = true;
     saveViewDialog.classList.add('show');
     saveViewNameInput.focus();
 }
@@ -913,6 +914,11 @@ function hideSaveViewDialog() {
  */
 function initSaveViewDialog() {
     if (!saveViewDialog) return;
+
+    // Enable/disable save button based on input content
+    saveViewNameInput.addEventListener('input', () => {
+        saveViewConfirmBtn.disabled = !saveViewNameInput.value.trim();
+    });
 
     saveViewConfirmBtn.addEventListener('click', () => {
         const name = saveViewNameInput.value.trim();

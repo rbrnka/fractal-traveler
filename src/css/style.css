@@ -710,6 +710,14 @@ p.small {
     background-image: linear-gradient(rgb(from var(--accent-color) r g b / 0.4), rgb(from var(--accent-color) r g b / 0.6));
 }
 
+.dialog-btn.primary:disabled {
+    background-image: linear-gradient(rgba(100, 100, 100, 0.2), rgba(100, 100, 100, 0.3));
+    color: #ccc;
+    text-shadow: none;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
 /* User preset styling in dropdown */
 button.preset.user-preset {
     color: rgb(from var(--accent-color) r g b / 0.9);
