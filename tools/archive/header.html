@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptory Fractal Traveler Archive</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: rgba(24, 48, 13, 0.8); /* Increased opacity for readability */
+            --mid-color: rgba(72, 144, 52, 0.6);
+            --accent-color: rgba(180, 255, 106, 1);
+            --glow: 0 0 12px var(--accent-color);
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            color: #fff;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* The "Header Container" Look */
+        .archive-wrapper {
+            margin-top: 40px;
+            background-color: var(--bg-color);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--mid-color);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
+            width: 90%;
+            max-width: 800px;
+            z-index: 9999;
+        }
+
+        h1 {
+            font-family: "Bruno Ace SC", sans-serif;
+            font-size: 16pt;
+            letter-spacing: 2px;
+            font-style: italic;
+            color: #fff;
+            text-shadow: var(--glow);
+            margin-bottom: 5px;
+            text-align: center;
+            animation: glow-pulse 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow-pulse {
+            from { text-shadow: 0 0 4px var(--accent-color), 0 0 8px var(--bg-color); }
+            to { text-shadow: 0 0 6px var(--accent-color), 0 0 16px var(--accent-color); }
+        }
+
+        p.version-label {
+            color: var(--accent-color);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        /* Table Styling (Original App Theme) */
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0 8px; /* Gap between rows */
+        }
+
+        th {
+            text-align: left;
+            padding: 10px;
+            color: var(--mid-color);
+            font-size: 10px;
+            text-transform: uppercase;
+        }
+
+        td {
+            padding: 12px 10px;
+            background: rgba(0, 0, 0, 0.4);
+            border-top: 1px solid rgba(180, 255, 106, 0.1);
+            border-bottom: 1px solid rgba(180, 255, 106, 0.1);
+        }
+
+        /* Row curves to mimic button style */
+        td:first-child { border-left: 1px solid rgba(180, 255, 106, 0.2); border-radius: 6px 0 0 6px; }
+        td:last-child { border-right: 1px solid rgba(180, 255, 106, 0.2); border-radius: 0 6px 6px 0; }
+
+        hr {
+            border: 1px solid var(--mid-color);
+        }
+
+        /* Links as Buttons */
+        a {
+            color: #eee;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 150ms;
+            display: inline-block;
+        }
+
+        tr:hover td {
+            background: rgba(72, 144, 52, 0.2);
+            border-color: var(--accent-color);
+        }
+
+        tr:hover a {
+            color: var(--accent-color);
+            text-shadow: 0 0 8px var(--accent-color);
+        }
+
+        /* Remove Apache Icons */
+        img { display: none; }
+
+        /* Custom scrollbar for that pro feel */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--mid-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent-color); }
+
+        .middot { color: var(--accent-color); font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="archive-wrapper">
+    <h1>Synaptory Fractal Traveler Archive</h1>
