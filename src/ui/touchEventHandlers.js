@@ -6,7 +6,7 @@
  * @license MIT
  */
 
-import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 
@@ -431,30 +431,35 @@ function handleTouchEnd(event) {
             const rect = canvas.getBoundingClientRect();
             const touchX = touch.clientX - rect.left;
             const touchY = touch.clientY - rect.top;
-            const [fx, fy] = fractalApp.screenToFractal(touchX, touchY);
 
             if (touchClickTimeout !== null) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
 
-                console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} which is fractal coords [${expandComplexToString([fx, fy])}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                // Use delta-based pan to preserve DD precision at deep zoom
+                const deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+                console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom).then(resetAppState);
+                    fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom).then(resetAppState);
                 }
             } else {
                 touchClickTimeout = setTimeout(() => {
-                    console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} which is fractal coords ${expandComplexToString([fx, fy])}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                    // Use delta-based pan to preserve DD precision at deep zoom
+                    const deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+                    console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
-                    // Centering action:
-                    fractalApp.animatePanTo([fx, fy], 400).then(() => {
+                    // Centering action using delta-based pan:
+                    fractalApp.animatePanBy(deltaPan, 400).then(() => {
                         resetAppState();
+                        // Get the updated fractal coordinates after pan
+                        const [newFx, newFy] = fractalApp.screenToFractal(touchX, touchY);
                         if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
-                            }
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation);
+                        }
                     });
 
                     touchClickTimeout = null;

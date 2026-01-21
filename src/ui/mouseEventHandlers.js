@@ -6,7 +6,7 @@
  * @license MIT
  */
 
-import {expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
+import {normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
@@ -545,23 +545,29 @@ function handleMouseUp(event) {
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} -> [${expandComplexToString([fx, fy])}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
+                    // Use delta-based pan to preserve DD precision at deep zoom
+                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                    fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
                 } else {
                     console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                 }
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} -> ${expandComplexToString([fx, fy])}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                    // Use delta-based pan to preserve DD precision at deep zoom
+                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
-                    // Centering action:
-                    fractalApp.animatePanTo([fx, fy], 500).then(() => {
+                    // Centering action using delta-based pan:
+                    fractalApp.animatePanBy(deltaPan, 500).then(() => {
                         resetAppState();
+                        // Get the updated fractal coordinates after pan
+                        const [newFx, newFy] = fractalApp.screenToFractal(mouseX, mouseY);
                         if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation);
                         }
                     });
 
@@ -608,8 +614,10 @@ function handleMouseUp(event) {
 
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} -> [${expandComplexToString([fx, fy])}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
+                // Use delta-based pan to preserve DD precision at deep zoom
+                const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
             } else {
                 console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
             }

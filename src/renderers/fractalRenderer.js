@@ -525,6 +525,20 @@ class FractalRenderer extends Renderer {
     }
 
     /**
+     * Returns the pan delta needed to center on a screen point.
+     * This avoids precision loss at deep zoom by returning only the offset,
+     * which can be applied via addPan() to preserve DD precision.
+     *
+     * @param {number} screenX CSS px relative to canvas
+     * @param {number} screenY CSS px relative to canvas
+     * @returns {COMPLEX} [deltaX, deltaY] offset from current pan
+     */
+    screenToPanDelta(screenX, screenY) {
+        const [vx, vy] = this.screenToViewVector(screenX, screenY);
+        return [vx * this.zoom, vy * this.zoom];
+    }
+
+    /**
      * Convert a screen point to the rotated, aspect-corrected "view vector" (no pan/zoom applied).
      * This is exactly what your shader calls `rotated`.
      *
@@ -1066,6 +1080,27 @@ class FractalRenderer extends Renderer {
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
+            this.animateZoomToNoPan(targetZoom, duration, easeFunction),
+        ]);
+
+        console.groupEnd();
+    }
+
+    /**
+     * Animates pan by delta and zoom simultaneously.
+     * Uses addPan() internally to preserve DD precision at deep zoom levels.
+     *
+     * @param {COMPLEX} deltaPan - offset to add to current pan
+     * @param {number} targetZoom
+     * @param {number} [duration] in milliseconds
+     * @param {EASE_TYPE|Function} easeFunction
+     * @return {Promise<void>}
+     */
+    async animatePanByAndZoomTo(deltaPan, targetZoom, duration = 1000, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanByAndZoomTo`, CONSOLE_GROUP_STYLE);
+
+        await Promise.all([
+            this.animatePanBy(deltaPan, duration, easeFunction),
             this.animateZoomToNoPan(targetZoom, duration, easeFunction),
         ]);
 
