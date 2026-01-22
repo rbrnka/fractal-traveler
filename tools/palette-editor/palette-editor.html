@@ -567,8 +567,19 @@
         document.getElementById('palette-id').value = '';
         document.getElementById('palette-keycolor').value = '#888888';
         document.getElementById('palette-keycolor-hex').value = '#888888';
-        colors = Array.from({length: 5}, () => ({r: 127, g: 127, b: 127}));
-        buildJuliaUI();
+
+        if (currentMode === 'julia') {
+            colors = Array.from({length: 5}, () => ({r: 127, g: 127, b: 127}));
+            buildJuliaUI();
+        } else {
+            // Reset Mandelbrot params to defaults and update preview
+            mandelbrotParams = {
+                theme: [1.0, 1.0, 1.0],
+                frequency: [3.14, 6.28, 1.72],
+                phase: [0, 0, 0]
+            };
+            loadMandelbrotPalette(mandelbrotParams);
+        }
     }
 
     // Add/Delete palette
@@ -782,10 +793,13 @@
 
     // Meta updates
     function updatePaletteMeta() {
+        // Always sync hex field from color picker
+        const keyColor = document.getElementById('palette-keycolor').value;
+        document.getElementById('palette-keycolor-hex').value = keyColor;
+
         if (!currentPalette) return;
         currentPalette.id = document.getElementById('palette-id').value;
-        currentPalette.keyColor = document.getElementById('palette-keycolor').value;
-        document.getElementById('palette-keycolor-hex').value = currentPalette.keyColor;
+        currentPalette.keyColor = keyColor;
         updatePaletteList();
         markUnsaved();
     }
@@ -830,6 +844,8 @@
 
     // Init
     buildJuliaUI();
+    updateJuliaPreview();
+    updateOutput();
 </script>
 </body>
 </html>
