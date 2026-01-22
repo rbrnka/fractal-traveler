@@ -1353,6 +1353,7 @@ function initFractalSwitchButtons() {
     if (FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
         persistSwitch.addEventListener('click', async () => {
             console.log('persistSwitch clicked.');
+            persistSwitch.blur(); // Release focus to prevent space key from re-triggering
             if (isJuliaMode()) {
                 await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT)
             } else {
