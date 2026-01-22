@@ -4,18 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Synaptory Fractal Palette Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
     <link rel="stylesheet" media="all" href="palette-editor.css" type="text/css">
+    <link rel="icon" href="favicon.png">
 </head>
 <body>
 
 <div class="app-container">
     <header>
         <div class="header-left">
-            <select id="fractal-type" onchange="switchMode(this.value)">
-                <option value="julia">Julia</option>
-                <option value="mandelbrot">Mandelbrot</option>
-            </select>
-            <h2>Synaptory Fractal Palette Editor</h2>
+            <h1>Synaptory Fractal Palette Editor</h1>
         </div>
         <div class="header-right">
             <button class="btn btn-folder" onclick="openFolder()">Open Folder</button>
@@ -28,6 +26,11 @@
     <div class="main-layout">
         <!-- Palette List Panel -->
         <div class="palette-list-panel">
+            <select id="fractal-type" onchange="switchMode(this.value)">
+                <option value="julia">Julia</option>
+                <option value="mandelbrot">Mandelbrot</option>
+            </select>
+
             <div class="palette-list-header">
                 <span>Palettes</span>
                 <div class="palette-list-actions">
@@ -168,7 +171,7 @@
     </div>
 
     <footer>
-        <a target="_blank" href="https://github.com/rbrnka/fractal-traveler">Synaptory Fractal Traveler</a>
+        Developed for <a target="_blank" href="https://github.com/rbrnka/fractal-traveler">Synaptory Fractal Traveler</a>
         <span class="middot">&middot;</span>
         by <a target="_blank" href="https://brnka.com">Radim Brnka</a> &copy; 2025-2026
     </footer>

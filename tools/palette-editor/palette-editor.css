@@ -2,27 +2,39 @@
     --bg: #f8fafc;
     --card: #ffffff;
     --text: #1e293b;
-    --accent: #3b82f6;
+    --accent: #489034;
     --border: #e2e8f0;
     --muted: #64748b;
     --panel-bg: #f1f5f9;
     --dark-bg: #0f172a;
-    --success: #10b981;
+    --success: #489034;
     --danger: #ef4444;
-}
 
+    /* Effects */
+    --glow: 0 0 10px var(--muted), 0 0 5px var(--accent);
+    --glass: blur(10px);
+}
 * {
     box-sizing: border-box;
 }
 
 body {
     font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    background: var(--bg);
+    background: url("bg.jpg") 50% 50% ;
     color: var(--text);
     padding: 20px;
     margin: 0;
     display: flex;
     justify-content: center;
+}
+
+h1 {
+    font-family: "Bruno Ace SC", sans-serif;
+    font-size: 20pt;
+    letter-spacing: 1px;
+    font-style: italic;
+    font-weight: 900;
+    color: #fff;
 }
 
 .hidden {
@@ -44,8 +56,11 @@ header {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
-    padding-bottom: 15px;
+    padding: 15px;
     border-bottom: 1px solid var(--border);
+    border-radius: 15px;
+    background-color: #0f172a;
+
 }
 
 .header-left {
@@ -66,6 +81,7 @@ header {
 
 #fractal-type {
     padding: 8px 12px;
+    margin: 1px 0 25px 0;
     border-radius: 8px;
     border: 2px solid var(--accent);
     background: white;
@@ -381,7 +397,6 @@ input[type="number"], .hex-input {
     align-items: center;
     gap: 12px;
     padding: 24px;
-    background: #1e293b;
     border-radius: 12px;
 }
 
@@ -389,7 +404,7 @@ input[type="number"], .hex-input {
     width: 180px;
     height: 180px;
     border-radius: 50%;
-    border: 4px solid white;
+    border: 10px solid black;
     box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
