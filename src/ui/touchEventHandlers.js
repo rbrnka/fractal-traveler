@@ -21,7 +21,7 @@ const ROTATION_SENSITIVITY = 1;
 
 /** Long press zoom configuration */
 const LONG_PRESS_THRESHOLD = 400; // ms before zoom starts
-const LONG_PRESS_ZOOM_IN_FACTOR = 0.985; // zoom multiplier per frame (smaller = faster zoom in)
+const LONG_PRESS_ZOOM_IN_FACTOR = 0.965; // zoom multiplier per frame (smaller = faster zoom in)
 
 let canvas;
 let fractalApp;
