@@ -625,8 +625,19 @@ class FractalRenderer extends Renderer {
     stopCurrentColorAnimations() {
         console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
+        // Stop palette cycling if active (but not during internal palette transition)
+        if (this.paletteCyclingActive && !this._inPaletteCycleTransition) {
+            this.paletteCyclingActive = false;
+            if (this.paletteCyclingTimeoutId) {
+                clearTimeout(this.paletteCyclingTimeoutId);
+                this.paletteCyclingTimeoutId = null;
+            }
+        }
+
         if (this.currentColorAnimationFrame !== null) {
+            // Handle both requestAnimationFrame and setTimeout
             cancelAnimationFrame(this.currentColorAnimationFrame);
+            clearTimeout(this.currentColorAnimationFrame);
             this.currentColorAnimationFrame = null;
         }
     }
@@ -730,6 +741,62 @@ class FractalRenderer extends Renderer {
             };
             this.currentColorAnimationFrame = requestAnimationFrame(step);
         });
+    }
+
+    /**
+     * Starts continuous sequential palette cycling.
+     * Smoothly transitions through all palettes in order, looping indefinitely.
+     *
+     * @param {number} [transitionDuration=2000] - Duration for each palette transition in ms.
+     * @param {number} [holdDuration=3000] - Duration to hold each palette before transitioning.
+     * @param {Function} [coloringCallback] - Callback during transitions (called per frame).
+     * @param {Function} [onPaletteComplete] - Callback when each palette transition completes.
+     * @return {Promise<void>}
+     */
+    async startPaletteCycling(transitionDuration = 2000, holdDuration = 3000, coloringCallback = null, onPaletteComplete = null) {
+        console.log(`%c ${this.constructor.name}: startPaletteCycling`, CONSOLE_GROUP_STYLE);
+        this.stopCurrentColorAnimations();
+
+        if (!this.PALETTES || this.PALETTES.length === 0) {
+            console.warn('No palettes available for cycling');
+            return;
+        }
+
+        // Use a cycling flag since applyPaletteByIndex clears currentColorAnimationFrame
+        this.paletteCyclingActive = true;
+
+        // Start from current palette or 0
+        let nextIndex = (this.currentPaletteIndex >= 0 ? this.currentPaletteIndex + 1 : 1) % this.PALETTES.length;
+
+        const cycleNext = async () => {
+            if (!this.paletteCyclingActive) return; // Stopped
+
+            // Apply next palette with transition (protect cycling flag during transition)
+            this._inPaletteCycleTransition = true;
+            await this.applyPaletteByIndex(nextIndex, transitionDuration, coloringCallback);
+            this._inPaletteCycleTransition = false;
+
+            // Notify that palette transition completed
+            if (this.paletteCyclingActive && onPaletteComplete) {
+                onPaletteComplete();
+            }
+
+            if (!this.paletteCyclingActive) return; // Stopped during transition
+
+            // Move to next palette
+            nextIndex = (nextIndex + 1) % this.PALETTES.length;
+
+            // Schedule next cycle after hold duration
+            this.paletteCyclingTimeoutId = setTimeout(() => {
+                if (this.paletteCyclingActive) {
+                    cycleNext();
+                }
+            }, holdDuration);
+        };
+
+        // Mark as active (for stopCurrentColorAnimations check) and start
+        this.currentColorAnimationFrame = 1; // Non-null marker
+        await cycleNext();
     }
 
     /**

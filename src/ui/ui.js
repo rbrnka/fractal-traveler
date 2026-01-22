@@ -327,10 +327,11 @@ export function enableRiemannMode() {
 export function updatePaletteDropdownState() {
     if (!paletteToggle) return;
 
-    // Update button text to show current palette
     const palettes = fractalApp.PALETTES || [];
     const currentIndex = fractalApp.currentPaletteIndex;
+    const isCycling = fractalApp.paletteCyclingActive;
 
+    // Update tooltip
     if (palettes.length > 0 && currentIndex >= 0) {
         const currentPalette = palettes[currentIndex];
         paletteToggle.title = `Current: "${currentPalette.id}" (T to cycle)`;
@@ -338,14 +339,13 @@ export function updatePaletteDropdownState() {
         paletteToggle.title = 'Change Color Palette (T)';
     }
 
-    // Update active state on palette buttons
-    // paletteButtons: [0] = Random, [1] = Color Cycle, [2+] = palette indices
+    // paletteButtons: [0] = Random, [1] = Palette Cycle, [2+] = palette indices
     paletteButtons.forEach((btn, btnIndex) => {
-        if (btnIndex <= 1) {
-            // Random and Color Cycle buttons - never show active state here
-            // (Color Cycle is handled separately during animation)
-        } else {
-            // Palette buttons - btnIndex-2 maps to palette index
+        if (btnIndex === 1) {
+            // Sync cycle button active state with actual cycling state
+            btn.classList.toggle('active', isCycling);
+        } else if (btnIndex >= 2) {
+            // Palette buttons - highlight current palette
             const paletteIndex = btnIndex - 2;
             btn.classList.toggle('active', currentIndex === paletteIndex);
         }
@@ -459,7 +459,7 @@ function exitAnimationMode() {
     infoText?.classList.remove('animation');
 
     fractalApp?.stopAllNonColorAnimations();
-    fractalApp?.stopCurrentColorAnimations();
+    // Note: Don't stop color animations here - palette cycling should be independent
 
     if (demoButton) {
         demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
@@ -679,6 +679,12 @@ export async function travelToPreset(presets, index) {
 
     console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
+    // Stop palette cycling if preset has a defined palette
+    if (presets[index]?.paletteId) {
+        const cycleBtn = document.getElementById('palette-cycle');
+        if (cycleBtn) cycleBtn.classList.remove('active');
+    }
+
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
@@ -741,27 +747,21 @@ export async function randomizeColors() {
     const cycleBtn = document.getElementById('palette-cycle');
     if (cycleBtn) cycleBtn.classList.remove('active');
 
-    if (isJuliaMode()) {
-        await fractalApp.animateColorPaletteTransition(250, updateColorTheme);
-        updatePaletteDropdownState();
+    const palettes = fractalApp.PALETTES || [];
+    if (palettes.length === 0) return;
+
+    // Pick a random palette index different from current if possible
+    let randomIndex;
+    if (palettes.length === 1) {
+        randomIndex = 0;
     } else {
-        // Generate a bright random color palette
-        // Generate colors with better separation and higher brightness
-        const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
-        const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
-        const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
-
-        // Convert HSB/HSV to RGB
-        const newPalette = hsbToRgb(hue, saturation, brightness);
-
-        fractalApp.currentPaletteIndex = -1; // Mark as random
-        await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
-            updateColorTheme(newPalette);
-        }); // Update app colors
-
-        recolorJuliaPreview(newPalette);
-        updatePaletteDropdownState();
+        do {
+            randomIndex = Math.floor(Math.random() * palettes.length);
+        } while (randomIndex === fractalApp.currentPaletteIndex);
     }
+
+    await fractalApp.applyPaletteByIndex(randomIndex, 250, updateColorTheme);
+    updatePaletteDropdownState();
 }
 
 export function captureScreenshot() {
@@ -792,6 +792,10 @@ export async function reset() {
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
 
     exitAnimationMode();
+
+    // Stop palette cycling and remove active state
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (cycleBtn) cycleBtn.classList.remove('active');
 
     fractalApp.reset();
     if (isJuliaMode()) {
@@ -1179,7 +1183,7 @@ function initPaletteButtonEvents() {
     const randomBtn = document.createElement('button');
     randomBtn.id = 'palette-random';
     randomBtn.className = 'palette';
-    randomBtn.title = 'Random color palette';
+    randomBtn.title = 'Pick a random palette (T)';
     randomBtn.innerHTML = '<span class="color-swatch" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);"></span>Random';
     randomBtn.addEventListener('click', async () => {
         closePaletteDropdown();
@@ -1192,21 +1196,18 @@ function initPaletteButtonEvents() {
     const cycleBtn = document.createElement('button');
     cycleBtn.id = 'palette-cycle';
     cycleBtn.className = 'palette';
-    cycleBtn.title = 'Smooth color cycling animation (Shift+T)';
-    cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Color Cycle';
+    cycleBtn.title = 'Cycle through palettes sequentially (Shift+T)';
+    cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Palette Cycle';
     cycleBtn.addEventListener('click', async () => {
-        if (fractalApp.currentColorAnimationFrame) {
-            // Stop if already running
+        if (fractalApp.paletteCyclingActive) {
+            // Stop cycling
             fractalApp.stopCurrentColorAnimations();
             cycleBtn.classList.remove('active');
         } else {
-            // Start color cycle
-            fractalApp.currentPaletteIndex = -1;
-            updatePaletteDropdownState(); // Deactivate palette buttons
+            // Start cycling
             cycleBtn.classList.add('active');
             closePaletteDropdown();
-            await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
-            cycleBtn.classList.remove('active');
+            fractalApp.startPaletteCycling(500, 500, updateColorTheme, updatePaletteDropdownState);
         }
     });
     paletteMenu.appendChild(cycleBtn);

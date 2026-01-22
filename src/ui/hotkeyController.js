@@ -195,20 +195,19 @@ async function onKeyDown(event) {
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
             } else if (event.shiftKey) {
-                // Shift+T: Cycle through color space
+                // Shift+T: Toggle palette cycling
                 const cycleBtn = document.getElementById('palette-cycle');
-                if (fractalApp.currentColorAnimationFrame) {
+                if (fractalApp.paletteCyclingActive) {
+                    // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
                     if (cycleBtn) cycleBtn.classList.remove('active');
-                    break;
+                } else {
+                    // Start cycling
+                    if (cycleBtn) cycleBtn.classList.add('active');
+                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
                 }
-                fractalApp.currentPaletteIndex = -1;
-                updatePaletteDropdownState();
-                if (cycleBtn) cycleBtn.classList.add('active');
-                await fractalApp.animateFullColorSpaceCycle(isJuliaMode() ? 10000 : 15000, updateColorTheme);
-                if (cycleBtn) cycleBtn.classList.remove('active');
             } else {
-                // T: Randomize / cycle palettes
+                // T: Pick a random palette
                 await randomizeColors();
             }
             handled = true;
