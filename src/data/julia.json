@@ -9,6 +9,7 @@
     { "c": [0.34, -0.05], "zoom": 3.5, "rotation": 90, "pan": [0, 0], "title": "Spiral Galaxies", "paletteId": "Cosmos" },
     { "c": [0.285, 0.01], "zoom": 3.5, "rotation": 90, "pan": [-0.01, 0.01], "title": "Near Julia Border", "paletteId": "Deep Nebula" },
     { "c": [-1.76733, 0.00002], "zoom": 0.5, "rotation": 0, "pan": [0, 0], "title": "Mandelbrothers", "paletteId": "Electric" },
+    { "c": [-0.8606524668610169,-0.2077298359125564],"pan": [0, 0], "rotation": 3.8711791851711137, "zoom": 2.547372330225479, "title": "Eyes", "paletteId": "Solar Flare" },
     { "c": [-0.4, 0.6], "zoom": 3.5, "rotation": 120, "pan": [0, 0], "title": "Black Holes", "paletteId": "Event Horizon" },
     { "c": [-1.768967328653661, 0.0019446820495425676], "pan": [0, 0], "rotation": 0, "zoom": 0.2589096374896196, "title": "Serpent" },
     { "c": [-0.70176, -0.3842], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "title": "Dancing Snowflakes", "paletteId": "Glacial" },
