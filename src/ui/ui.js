@@ -1085,6 +1085,34 @@ function initPresetButtonEvents() {
             }
         });
 
+        // Long press to delete (touch devices)
+        let longPressTimer = null;
+        let touchMoved = false;
+        btn.addEventListener('touchstart', (e) => {
+            touchMoved = false;
+            longPressTimer = setTimeout(() => {
+                if (!touchMoved) {
+                    e.preventDefault();
+                    if (confirm(`Delete view "${preset.title}"?`)) {
+                        deleteUserPreset(preset.id);
+                    }
+                }
+            }, 600);
+        }, { passive: false });
+        btn.addEventListener('touchmove', () => {
+            touchMoved = true;
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+        btn.addEventListener('touchend', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
     });

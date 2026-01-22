@@ -522,6 +522,19 @@ p.small {
     gap: 4px;
 }
 
+/* Scrollable dropdown on mobile */
+@media (pointer: coarse) {
+    .dropdown-menu {
+        max-height: 50vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dropdown-menu.show {
+        align-content: flex-start;
+    }
+}
+
 .dropdown-menu button.preset {
     flex: 0 0 auto;
     min-width: 40px;
