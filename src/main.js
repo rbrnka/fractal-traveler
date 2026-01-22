@@ -85,7 +85,7 @@ async function initFractalApp() {
         await fractalApp.animateTravelToPreset(preset, 1000);
     } else if (validMandelbrotTravelPreset) {
         console.log(`Traveling to URL params.`);
-        await fractalApp.animateTravelToPreset(preset, 100, 1000);
+        await fractalApp.animateTravelToPreset(preset, 100, 400, 1000);
     } else {
         onDefault();
     }
