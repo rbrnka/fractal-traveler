@@ -183,11 +183,11 @@ export async function switchFractalMode(mode, preset = null) {
         if (isJuliaMode()) {
             await fractalApp.animateTravelToPreset({
                 pan: [0, 0], c: preset.c, zoom: preset.zoom, rotation: 0
-            }, 1000);
+            }, 500, 500, 500);
         } else {
             await fractalApp.animateTravelToPreset({
                 pan: preset.pan, zoom: preset.zoom, rotation: 0
-            }, 500, 1000);
+            }, 500, 500, 500);
         }
 
         exitAnimationMode();
