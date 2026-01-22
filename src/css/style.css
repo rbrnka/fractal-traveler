@@ -750,3 +750,147 @@ button.preset.user-preset::before {
 /*    color: #fff;*/
 /*    cursor: pointer;*/
 /*}*/
+
+/* Controls Hint Tooltip */
+.hint-trigger {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: transparent;
+    text-underline-offset: 2px;
+    transition: text-decoration-color 300ms;
+
+    color: #fff;
+    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
+    transition: text-decoration-color 300ms;
+    text-shadow: 0 0 8px var(--accent-color);
+}
+
+.hint-trigger:hover {
+    text-decoration-color: var(--accent-color);
+}
+
+.hint-tooltip {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.85));
+    backdrop-filter: blur(10px);
+    border: 1px solid rgb(from var(--accent-color) r g b / 0.4);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    min-width: 180px;
+    max-width: 200px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 15px rgb(from var(--accent-color) r g b / 0.15);
+    z-index: 100000;
+    text-align: left;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.hint-trigger:hover .hint-tooltip {
+    display: block !important;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.hint-tooltip::after {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 30px;
+    border: 6px solid transparent;
+    border-bottom-color: rgb(from var(--accent-color) r g b / 0.4);
+}
+
+/* Invisible bridge to prevent tooltip from closing when moving mouse to it */
+.hint-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    width: 100%;
+    height: 15px;
+}
+
+.hint-section {
+    display: block;
+    margin-bottom: 8px;
+}
+
+.hint-section:last-of-type {
+    margin-bottom: 10px;
+}
+
+.hint-section strong {
+    display: block;
+    color: var(--accent-color);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 6px var(--accent-color);
+}
+
+.hint-row {
+    display: block;
+    color: #ccc;
+    line-height: 1.6;
+    white-space: nowrap;
+}
+
+.hint-row kbd {
+    display: inline-block;
+    background: linear-gradient(to bottom, #333, #222);
+    border: 1px solid #444;
+    border-radius: 3px;
+    padding: 1px 4px;
+    /*font-size: 10px;*/
+    font-family: inherit;
+    color: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+    margin: 3px 2px 0 0;
+}
+
+.hint-content {
+    display: none;
+}
+
+/* Show mouse controls on non-touch devices */
+.mouse-controls {
+    display: block;
+}
+
+/* Touch devices: show touch controls, hide mouse controls */
+@media (pointer: coarse) {
+    .mouse-controls {
+        display: none;
+    }
+    .touch-controls {
+        display: block;
+    }
+
+    /* Tap to toggle on touch devices */
+    .hint-trigger:hover .hint-tooltip {
+        display: none;
+        opacity: 0;
+    }
+
+    .hint-trigger.active .hint-tooltip {
+        display: block !important;
+        opacity: 1;
+        pointer-events: auto;
+    }
+}
+
+.hint-link {
+    display: block;
+    text-align: center;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    transition: text-shadow 0.2s;
+}

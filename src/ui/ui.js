@@ -5,7 +5,6 @@ import {
     esc,
     getAnimationDuration,
     getFractalName,
-    hsbToRgb,
     isMobileDevice,
     isTouchDevice,
     normalizeRotation,
@@ -18,7 +17,6 @@ import {takeScreenshot} from "./screenshotController";
 import {
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
-    CONTROLS_TOOLTIP,
     DEBUG_LEVEL,
     DEBUG_MODE,
     DEFAULT_ACCENT_COLOR,
@@ -1628,8 +1626,25 @@ export async function initUI(fractalRenderer) {
         toggleDebugMode();
     }
 
-    document.getElementById("controlsLink").title = CONTROLS_TOOLTIP;
     document.getElementById("versionLink").innerHTML = `v${VERSION}`;
+
+    // Tap-to-toggle for controls hint on touch devices
+    const controlsHint = document.getElementById("controlsHint");
+    if (controlsHint) {
+        controlsHint.addEventListener("click", (e) => {
+            if (window.matchMedia("(pointer: coarse)").matches) {
+                e.preventDefault();
+                e.stopPropagation();
+                controlsHint.classList.toggle("active");
+            }
+        });
+        // Close tooltip when tapping outside
+        document.addEventListener("click", (e) => {
+            if (!controlsHint.contains(e.target)) {
+                controlsHint.classList.remove("active");
+            }
+        });
+    }
 
     uiInitialized = true;
 }
