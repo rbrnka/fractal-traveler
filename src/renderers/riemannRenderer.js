@@ -7,7 +7,9 @@ class RiemannRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.termCount = 100;
+        this.termCount = 1000;
+        this.MIN_ZOOM = 4000;
+        this.DEFAULT_ZOOM = 30;
 
         this.useAnalyticExtension = true;
 
@@ -35,6 +37,10 @@ class RiemannRenderer extends FractalRenderer {
 
     onProgramCreated() {
 
+    }
+
+    needsRebase() {
+        return undefined;
     }
 }
 
