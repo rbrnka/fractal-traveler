@@ -33,6 +33,6 @@ describe('Touch Event Handlers', () => {
 
         jest.advanceTimersByTime(500); // Simulate delay for single tap.
 
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
 });

@@ -192,6 +192,7 @@ global.createMockFractalApp = (canvas = null) => {
         animateZoomToNoPan: jest.fn(() => Promise.resolve()),
         animatePanBy: jest.fn(() => Promise.resolve()),
         animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
+        animatePanByAndZoomTo: jest.fn(() => Promise.resolve()),
         animateToC: jest.fn(() => Promise.resolve()),
         animateInfiniteRotation: jest.fn(() => Promise.resolve()),
         animateTravelToPreset: jest.fn(() => Promise.resolve()),
@@ -223,6 +224,11 @@ global.createMockFractalApp = (canvas = null) => {
             const normX = x / 800;
             const normY = y / 600;
             return [normX - 0.5, (1 - normY) - 0.5];
+        }),
+        screenToPanDelta: jest.fn(function(x, y) {
+            // Returns pan delta needed to center on screen point
+            const [vx, vy] = this.screenToViewVector(x, y);
+            return [vx * this.zoom, vy * this.zoom];
         }),
         setZoomKeepingAnchor: jest.fn((targetZoom, anchorX, anchorY) => {
             const [vx, vy] = fractalApp.screenToViewVector(anchorX, anchorY);

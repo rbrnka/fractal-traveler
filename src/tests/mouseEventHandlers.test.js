@@ -79,7 +79,7 @@ describe('MouseEventHandlers', () => {
         jest.runAllTimers();
         await Promise.resolve();
 
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('should respond to left double click (zoom-in) within bounds', async () => {
@@ -94,7 +94,7 @@ describe('MouseEventHandlers', () => {
         jest.runAllTimers();
         await Promise.resolve();
 
-        expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanByAndZoomTo).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('should respond to right double click (zoom-out) within bounds', async () => {
@@ -109,7 +109,7 @@ describe('MouseEventHandlers', () => {
         jest.runAllTimers();
         await Promise.resolve();
 
-        expect(fractalApp.animatePanAndZoomTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanByAndZoomTo).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('should unregister mouse event handlers and make them not working', async () => {
