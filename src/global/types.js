@@ -109,6 +109,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} DIVE
+ *      @property {string} [title] HTML element title (on hover)
  *      @property {number} cxDirection Use -1/+1 for negative/positive direction of the animation
  *      @property {number} cyDirection Use -1/+1 for negative/positive direction of the animation
  *      @property {PHASES} [phases]
@@ -120,7 +121,9 @@
  *      @property {COMPLEX} startC
  *      @property {COMPLEX} endC
  *      @property {number} zoom
+ *      @property {number} [rotation]
  *      @property {number} step
+ *      @property {string} [paletteId] color palette ID to match a JSON palette entry
  * @description Dive is a special animation loop that first animates cx in given direction and when it reaches a set threshold,
  * then it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
  * direction. If phases are defined, it follows their order.

@@ -255,6 +255,10 @@
           "enum": [1, -1],
           "description": "Direction on imaginary axis: 1 = positive, -1 = negative."
         },
+        "paletteId": {
+          "type": "string",
+          "description": "Palette id to determine the dive color theme."
+        },
         "phases": {
           "type": "array",
           "items": {

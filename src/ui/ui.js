@@ -590,6 +590,13 @@ export async function startJuliaDive(dives, index) {
 
     const dive = dives[index];
 
+    // Stop palette cycling if dive has a defined palette
+    if (dive.paletteId) {
+        fractalApp.stopCurrentColorAnimations();
+        const cycleBtn = document.getElementById('palette-cycle');
+        if (cycleBtn) cycleBtn.classList.remove('active');
+    }
+
     // Validate configuration:
     if (dive.cxDirection < 0 && dive.endC[0] >= dive.startC[0]) {
         console.error("For negative cxDirection, endC[0] must be lower than startC[0].");
@@ -615,15 +622,21 @@ export async function startJuliaDive(dives, index) {
         {pan: 0.5, zoom: 2, c: 1});
     console.log(duration);
 
-    // Phase 1: Set initial state
+    // Phase 1: Set initial state with optional palette transition
     // await fractalApp.animateTravelToPreset({
     //     pan: dive.pan, c: dive.startC.slice(), // copy initial c
     //     zoom: dive.zoom, rotation: dive.rotation
     // }, 1500, EASE_TYPE.QUINT);
     // Alternatively:
-    await fractalApp.animateToZoomAndC(fractalApp.DEFAULT_ZOOM, dive.startC, 1500);
+    await Promise.all([
+        fractalApp.animateToZoomAndC(fractalApp.DEFAULT_ZOOM, dive.startC, 1500),
+        fractalApp.animatePaletteByIdTransition(dive, 2500, updateColorTheme)
+    ]);
 
-    // Phase 2: Enter dive mode
+    // Update palette button state if dive changed the palette
+    updatePaletteDropdownState();
+
+    // Phase 2: Enter dive mode (infinite animation - never resolves)
     await Promise.all([
         fractalApp.animateDive(dive),
         fractalApp.animatePanZoomRotationTo(dive.pan, dive.zoom, dive.rotation, 1500)
@@ -1233,7 +1246,7 @@ function initPaletteButtonEvents() {
             // Start cycling
             cycleBtn.classList.add('active');
             closePaletteDropdown();
-            fractalApp.startPaletteCycling(500, 500, updateColorTheme, updatePaletteDropdownState);
+            await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
         }
     });
     paletteMenu.appendChild(cycleBtn);
