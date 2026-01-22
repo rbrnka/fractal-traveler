@@ -769,16 +769,12 @@ button.preset.user-preset::before {
     position: relative;
     display: inline-block;
     cursor: help;
-    color: #fff;
-    text-decoration: underline;
-    text-decoration-color: transparent;
     text-underline-offset: 2px;
-    transition: text-decoration-color 300ms;
-
     color: #fff;
     text-decoration: underline 0.1em rgba(255, 255, 255, 0);
     transition: text-decoration-color 300ms;
     text-shadow: 0 0 8px var(--accent-color);
+    font-size: 11px;
 }
 
 .hint-trigger:hover {
