@@ -1,257 +1,144 @@
 import {updateInfo} from "../ui/ui";
-import {FractalRenderer} from "./fractalRenderer";
-import {compareComplex, hexToRGB, isTouchDevice, lerp, normalizeRotation} from "../global/utils";
-import '../global/types';
-import {DEFAULT_CONSOLE_GROUP_COLOR, DEG, EASE_TYPE, JULIA_PALETTES,} from "../global/constants";
+import FractalRenderer from "./fractalRenderer";
+import {compareComplex, ddSubDD, degToRad, hexToRGB, lerp, normalizeRotation, splitFloat,} from "../global/utils";
+import "../global/types";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEFAULT_JULIA_PALETTE, EASE_TYPE,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
+/** @type {string} */
+import fragmentShaderRaw from '../shaders/julia.frag';
+import fragmentShaderRawLegacy from '../shaders/julia.legacy.frag';
+import data from '../data/julia.json' with {type: 'json'};
 
 /**
- * Julia set renderer
+ * JuliaRenderer (Rebased Perturbation)
  *
  * @author Radim Brnka
- * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal and sets preset zoom-ins.
+ * @description This module defines a JuliaRenderer class that inherits from fractalRenderer, implements the shader fragment code for the Julia set fractal, and sets preset zoom-ins.
+ * Reference orbit is for current c and a chosen z0_ref (near the view center).
+ * For each pixel:
+ *   z0 = pan + zoom * rotated(st)
+ *   dz0 = z0 - z0_ref
+ *   dz_{n+1} = 2*zref*dz + dz^2 (NO +dc each step for Julia!)
  * @extends FractalRenderer
+ * @see MandelbrotRenderer
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 export class JuliaRenderer extends FractalRenderer {
+
+    /**
+     * Enables legacy Julia renderer for intermittent troubleshooting of the perturbation renderer
+     * @type {boolean}
+     */
+    static FF_LEGACY_JULIA_RENDERER = true;
 
     constructor(canvas) {
         super(canvas);
 
-        this.DEFAULT_ZOOM = 2.5;
-        // Use less detailed initial set for less performant devices
-        /** @type COMPLEX */
-        this.DEFAULT_C = isTouchDevice() ? [0.355, 0.355] : [-0.246, 0.64235];
-
+        this.DEFAULT_ZOOM = data.presets[0].zoom;
+        this.MAX_ZOOM = JuliaRenderer.FF_LEGACY_JULIA_RENDERER ? 3e-3 : 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
-        this.pan = [...this.DEFAULT_PAN]; // Copy
-        this.rotation = this.DEFAULT_ROTATION;
-        this.colorPalette = [...this.DEFAULT_PALETTE];
 
+        this.DEFAULT_ROTATION = data.presets[0].rotation;
+        this.rotation = this.DEFAULT_ROTATION;
+
+        // TODO Use less detailed initial set for less performant devices
+        /** @type COMPLEX */
+        this.DEFAULT_C = [data.presets[0].c[0], data.presets[0].c[1]];
         /** @type COMPLEX */
         this.c = [...this.DEFAULT_C];
 
-        // @formatter:off
+        // IMPORTANT: use setPan (syncs DD + array) – keep this.pan canonical (TODO remove pan completely at some point)
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
+
+        this.colorPalette = [...this.DEFAULT_PALETTE];
+
+        // --- Perturbation state with DD precision ---
+        this.refZ0 = [0, 0];
+        this.refZ0DD = {
+            x: { hi: 0, lo: 0 },
+            y: { hi: 0, lo: 0 }
+        };
+        this.refPan = [...this.DEFAULT_PAN];
+        this.refPanDD = {
+            x: { hi: this.DEFAULT_PAN[0], lo: 0 },
+            y: { hi: this.DEFAULT_PAN[1], lo: 0 }
+        };
+        this.orbitDirty = true;
+
+        this._prevPan0 = NaN;
+        this._prevPan1 = NaN;
+        this._prevZoom = NaN;
+        this._prevC0 = NaN;
+        this._prevC1 = NaN;
+
+        this.MAX_ITER = 5000;
+        this.REF_SEARCH_GRID = 7;
+        this.REF_SEARCH_RADIUS = 0.50;
+
+        this.orbitTex = null;
+        this.orbitData = null;
+        this.floatTexExt = null;
+
+        this.rebaseArmed = true;
+
         /** @type {Array.<JULIA_PRESET>} */
-        this.PRESETS = [
-            {
-                c: this.DEFAULT_C,
-                zoom: this.DEFAULT_ZOOM,
-                rotation: this.DEFAULT_ROTATION,
-                pan: this.DEFAULT_PAN,
-                title: 'Default view'
-            },
-            {c: [0.34, -0.05], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: 'Spiral Galaxies'},
-            {c: [0.285, 0.01], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: 'Near Julia set border'},
-            {c: [-1.76733, 0.00002], zoom: 0.5, rotation: 0, pan: [0, 0], title: 'Mandelbrothers'},
-            {c: [-0.4, 0.6], zoom: 3.5, rotation: DEG._120, pan: [0, 0], title: 'Black Holes'},
-            {c: [-0.70176, -0.3842], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Dancing Snowflakes'},
-            {c: [-0.835, -0.232], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Kissing Dragons'},
-            {c: [-0.75, 0.1], zoom: 3.5, rotation: DEG._150, pan: [0, 0], title: 'Main cardioid'},
-            {c: [-0.744539860355905, 0.121723773894425], zoom: 1.8, rotation: DEG._30, pan: [0, 0], title: 'Seahorse Valley'},
-            {c: [-1.74876455, 0], zoom: 0.45, rotation: DEG._90, pan: [0, 0], title: 'The Cauliflower Medallion'},
-            // Extended presets
-            {c: [-0.1060055299522249,0.9257297130853293], rotation: 5.933185307179583, pan: [0, 0], zoom: 0.11, title: '?'},
-            {c: [-0.7500162952792153,0.0032826017747574765], zoom: 1.7, rotation: 0, pan: [0, 0], title: 'The Clown'},
-            {pan: [0.1045565992379065,0.0073015054986378], rotation: 5.473185307179595, zoom: 1.6581189769919353, c: [-0.12129038469447653,0.649576297434808]},
-            {c: [-0.1, 0.651], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
-            {c: [-1.25066, 0.02012], zoom: 3.5,rotation: 0, pan: [0, 0], title: 'Deep zoom'},
-            {rotation: 0, zoom: 0.2589096374896196, c: [-1.768967328653661,0.0019446820495425676], pan: [0, 0], title: 'Serpent'},
-            {pan: [0,0], rotation: 5.41318530717958, zoom: 2.1068875547385417, c: [0.3072075408559901,0.48395526205533185], title: ''},
-            {pan: [0, 0], rotation: 2.370000000000001, zoom: 0.12255613179332117, c: [-0.5925376099331446,0.6218581017272109], title: ''},
-            {pan: [0,0], rotation: 0, zoom: 0.29302566239489597, c: [-1.768927341692215,-0.009640117346988308]},
-
-            {pan: [0.12908510596292824,-0.13588306846615342], rotation: 1.699999999999994, zoom: 0.12982442828873209, c: [0.3633977303405407,0.3166912692104581]},
-            {pan: [0.10410036735673252,-0.10610085351477151], rotation: 4.863185307179592, zoom: 1.8513247913869684, c: [0.3586059096423313,0.32287599414730545]},
-            {pan: [0, 0], rotation: 1.9299999999999926, zoom: 1.322314018297482, c: [0.1294753560021048,0.6256313013048348]}
-
-            // TODO CLEANUP AND CENTER
-            // {pan: [0.08428823245534856,0.01811121963121005], rotation: 1.8199999999999967, zoom: 1.600537687038365, c: [0.30700179139276473,0.48388169438789685]}
-            // {c: [0.45, 0.1428], zoom: 3.5, rotation: DEG._90, pan: [0, 0], title: ''},
-        ];
-        // @formatter:on
+        this.PRESETS = data.presets.map(p => ({
+            ...p,
+            rotation: degToRad(p.rotation || 0)
+        }));
 
         /** @type {Array.<DIVE>} */
-        this.DIVES = [
-            {
-                pan: [0, 0],
-                rotation: 0,
-                zoom: 1.7,
-                startC: [-0.246, 0.64],
-                step: 0.000005,
+        this.DIVES = data.dives.map(d => ({
+            ...d,
+            rotation: degToRad(d.rotation || 0)
+        }));
 
-                cxDirection: 1,
-                cyDirection: 1,
-                endC: [-0.2298, 0.67],
-
-                title: 'Orbiting Black holes'
-            },
-            {
-                pan: [0, 0],
-                startC: [-0.25190652273600045, 0.637461568487061],
-                endC: [-0.2526, 0.6355],
-                cxDirection: -1,
-                cyDirection: -1,
-                rotation: 0,
-                zoom: 0.05,
-                step: 0.00000005,
-
-                title: 'Dimensional Collision'
-            },
-            {
-                pan: [-0.31106298032702495, 0.39370074960517293],
-                rotation: 1.4999999999999947,
-                zoom: 0.3829664619602934,
-                startC: [-0.2523365227360009, 0.6386621652418372],
-                step: 0.00001,
-
-                cxDirection: -1,
-                cyDirection: -1,
-                endC: [-0.335, 0.62],
-
-                title: 'Life of a Star'
-            },
-            {
-                pan: [-0.6838279169792393, 0.46991716118236204],
-                rotation: 0,
-                zoom: 0.04471011402132469,
-                startC: [-0.246, 0.6427128691849591],
-                step: 0.0000005,
-
-                cxDirection: -1,
-                cyDirection: -1,
-                endC: [-0.247, 0.638],
-
-                title: 'Tipping points'
-            },
-            {
-                pan: [0.5160225367869309, -0.05413028639548453],
-                rotation: 2.6179938779914944,
-                zoom: 0.110783,
-                startC: [-0.78, 0.11],
-                step: 0.00001,
-
-                cxDirection: 1,
-                cyDirection: 1,
-                endC: [-0.7425, 0.25],
-
-                title: 'Hypnosis'
-            }//, {
-            //     pan: [0.47682225091699837, 0.09390869977189013],
-            //     rotation: 5.827258771281306,
-            //     zoom: 0.16607266879497062,
-            //
-            //     startC: [-0.750542394776536, 0.008450344098947803],
-            //     endC: [-0.7325586,0.18251028375238866],
-            //
-            //     cxDirection: 1,
-            //     cyDirection: 1,
-            //
-            //     step: 0.00001,
-            //     phases: [2, 1, 4, 3],
-            // }
-        ];
+        /** @type {Array.<JULIA_PALETTE>} */
+        this.PALETTES = data.palettes || [];
 
         this.currentPaletteIndex = 0;
-        this.innerStops = new Float32Array(JULIA_PALETTES[this.currentPaletteIndex].theme);
+        this.innerStops = this.PALETTES.length > 0
+            ? new Float32Array(this.PALETTES[this.currentPaletteIndex].theme)
+            : new Float32Array(DEFAULT_JULIA_PALETTE.theme);
 
         this.currentCAnimationFrame = null;
+        this.cAnimationActive = false; // Defers orbit rebuild during C-animation for performance
         this.demoTime = 0;
 
         this.init();
     }
 
-    /**
-     * @inheritDoc
-     * @override
-     */
+    markOrbitDirty = () => this.orbitDirty = true;
+
+    onProgramCreated() {
+        this.floatTexExt = this.gl.getExtension("OES_texture_float");
+        if (!this.floatTexExt) {
+            console.error("Missing OES_texture_float. Julia deep zoom perturbation requires it.");
+            return;
+        }
+
+        this.orbitTex = this.gl.createTexture();
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.orbitTex);
+
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+        this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+        this.orbitData = new Float32Array(this.MAX_ITER * 4);
+
+        if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
+        if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
+
+        this.orbitDirty = true;
+    }
+
     createFragmentShaderSource() {
-        return `
-            #ifdef GL_ES
-            precision mediump float;
-            #endif
-            
-            // Uniforms
-            uniform vec2 u_resolution;    // Canvas resolution in pixels
-            uniform vec2 u_pan;           // Pan offset in fractal space
-            uniform float u_zoom;         // Zoom factor
-            uniform float u_iterations;   // For normalizing the smooth iteration count
-            uniform float u_rotation;     // Rotation (in radians)
-            uniform vec2 u_c;             // Julia set constant
-            uniform vec3 u_colorPalette;  // Color palette
-            uniform vec3 u_innerStops[5]; // Color palette inner stops
-            
-            // Maximum iterations (compile-time constant required by GLSL ES 1.00).
-            const int MAX_ITERATIONS = 1000;
-            
-            // Define color stops as individual constants (RGB values in [0,1]).
-            // Default stops (black, orange, white, blue, dark blue).
-            
-            // Interpolates between the five color stops.
-            // 5 stops = 4 segments.
-            vec3 getColorFromMap(float t) {
-                float segment = 1.0 / 4.0; // 4 segments for 5 stops.
-                if (t <= segment) {
-                    return mix(u_innerStops[0], u_innerStops[1], t / segment);
-                } else if (t <= 2.0 * segment) {
-                    return mix(u_innerStops[1], u_innerStops[2], (t - segment) / segment);
-                } else if (t <= 3.0 * segment) {
-                    return mix(u_innerStops[2], u_innerStops[3], (t - 2.0 * segment) / segment);
-                } else {
-                    return mix(u_innerStops[3], u_innerStops[4], (t - 3.0 * segment) / segment);
-                }
-            }
-            
-            void main() {
-                // Map fragment coordinates to normalized device coordinates
-                float aspect = u_resolution.x / u_resolution.y;
-                vec2 st = gl_FragCoord.xy / u_resolution;
-                st -= 0.5;       // center at (0,0)
-                st.x *= aspect;  // adjust x for aspect ratio
-            
-                // Apply rotation
-                float cosR = cos(u_rotation);
-                float sinR = sin(u_rotation);
-                vec2 rotated = vec2(
-                    st.x * cosR - st.y * sinR,
-                    st.x * sinR + st.y * cosR
-                );
-                
-                // Map screen coordinates to Julia space
-                vec2 z = rotated * u_zoom + u_pan;
-                
-                // Determine escape iterations
-                int iterCount = MAX_ITERATIONS;
-                for (int i = 0; i < MAX_ITERATIONS; i++) {
-                    if (dot(z, z) > 4.0) {
-                        iterCount = i;
-                        break;
-                    }
-                    // Julia set iteration.
-                    z = vec2(z.x*z.x - z.y*z.y, 2.0*z.x*z.y) + u_c;
-                }
-                
-                // If the point never escaped, render as simple color
-                if (iterCount == MAX_ITERATIONS) {
-                    gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
-                } else {
-                    // Compute a smooth iteration value
-                    float smoothColor = float(iterCount) - log2(log2(dot(z, z)));
-                    float t = clamp(smoothColor / u_iterations, 0.0, 1.0);
-                    
-                    // Apply a sine modulation to mimic the "sine" color mapping effect
-                    // Frequency: 4π
-                    t = 0.5 + 0.6 * sin(t * 4.0 * 3.14159265);
-                    
-                    // Lookup the color from the map
-                    vec3 col = getColorFromMap(t);
-                    
-                    // Use the user-defined color palette as a tint
-                    // col *= u_colorPalette;
-                    
-                    gl_FragColor = vec4(col, 1.0);
-                }
-            }
-         `;
+        return (JuliaRenderer.FF_LEGACY_JULIA_RENDERER
+            ? fragmentShaderRawLegacy
+            : fragmentShaderRaw).replace('__MAX_ITER__', this.MAX_ITER).toString();
     }
 
     /**
@@ -261,23 +148,280 @@ export class JuliaRenderer extends FractalRenderer {
     updateUniforms() {
         super.updateUniforms();
 
-        this.cLoc = this.gl.getUniformLocation(this.program, 'u_c');
-        this.innerStopsLoc = this.gl.getUniformLocation(this.program, 'u_innerStops');
+        this.cLoc = this.gl.getUniformLocation(this.program, "u_c");
+        this.innerStopsLoc = this.gl.getUniformLocation(this.program, "u_innerStops");
+
+        // delta z0 (pan - refZ0) computed on JS side for float64 precision
+        this.deltaZ0HLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_h");
+        this.deltaZ0LLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_l");
+        this.zoomHLoc = this.gl.getUniformLocation(this.program, "u_zoom_h");
+        this.zoomLLoc = this.gl.getUniformLocation(this.program, "u_zoom_l");
+
+        this.orbitTexLoc = this.gl.getUniformLocation(this.program, "u_orbitTex");
+        this.orbitWLoc = this.gl.getUniformLocation(this.program, "u_orbitW");
+    }
+
+    // --- Reference orbit building ---
+
+    escapeItersJulia(zx0, zy0, iters) {
+        let zx = zx0, zy = zy0;
+        const cx = this.c[0], cy = this.c[1];
+        for (let i = 0; i < iters; i++) {
+            const zx2 = zx * zx - zy * zy + cx;
+            const zy2 = 2.0 * zx * zy + cy;
+            zx = zx2; zy = zy2;
+            if (zx * zx + zy * zy > 4.0) return i;
+        }
+        return iters;
     }
 
     /**
-     * @inheritDoc
-     * @override
+     * Choose a good refZ0 near view center:
+     * - sample a grid around view center (radius scales with zoom)
+     * - pick the point with the highest escape iteration (prefer inside / late escape)
+     * - prefer keeping the current reference to avoid jitter unless a significantly better one is found
+     * @param {boolean} useViewCenter - If true, skip grid search and use view center directly (for stability during interaction)
      */
+    pickReferenceNearViewCenter(useViewCenter = false) {
+        // During interaction, use view center directly to prevent jitter from grid search
+        // Copy DD components to preserve deep zoom precision
+        if (useViewCenter) {
+            this.refZ0[0] = this.pan[0];
+            this.refZ0[1] = this.pan[1];
+            this.refZ0DD.x.hi = this.panDD.x.hi;
+            this.refZ0DD.x.lo = this.panDD.x.lo;
+            this.refZ0DD.y.hi = this.panDD.y.hi;
+            this.refZ0DD.y.lo = this.panDD.y.lo;
+            // Keep refPan in sync for needsRebase() to work correctly
+            this.refPan[0] = this.pan[0];
+            this.refPan[1] = this.pan[1];
+            this.refPanDD.x.hi = this.panDD.x.hi;
+            this.refPanDD.x.lo = this.panDD.x.lo;
+            this.refPanDD.y.hi = this.panDD.y.hi;
+            this.refPanDD.y.lo = this.panDD.y.lo;
+            return;
+        }
+
+        const grid = this.REF_SEARCH_GRID;
+        const half = (grid - 1) / 2;
+        const step = (2.0 * this.REF_SEARCH_RADIUS) / (grid - 1);
+
+        const base = this.zoom;
+        const probeIters = Math.min(this.MAX_ITER, Math.max(200, Math.floor(this.iterations)));
+
+        // Evaluate current reference point's score (if we have one within reasonable distance)
+        let currentRefScore = -1;
+        const currentRefDist = Math.hypot(this.refZ0[0] - this.pan[0], this.refZ0[1] - this.pan[1]);
+        const maxRefDist = base * this.REF_SEARCH_RADIUS * 2.5; // Allow some margin beyond search radius
+
+        if (currentRefDist < maxRefDist) {
+            currentRefScore = this.escapeItersJulia(this.refZ0[0], this.refZ0[1], probeIters);
+        }
+
+        // Start with view center as fallback
+        let bestX = this.pan[0];
+        let bestY = this.pan[1];
+        let bestScore = this.escapeItersJulia(this.pan[0], this.pan[1], probeIters);
+
+        for (let j = 0; j < grid; j++) {
+            for (let i = 0; i < grid; i++) {
+                const ox = (i - half) * step;
+                const oy = (j - half) * step;
+
+                const zx0 = this.pan[0] + ox * base;
+                const zy0 = this.pan[1] + oy * base;
+
+                const score = this.escapeItersJulia(zx0, zy0, probeIters);
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestX = zx0;
+                    bestY = zy0;
+                }
+            }
+        }
+
+        // Stability: only switch reference if the new one is significantly better.
+        // This prevents jitter from small score differences between frames.
+        // Require at least 10% improvement or 50 iterations better to switch.
+        const improvementThreshold = Math.max(currentRefScore * 0.10, 50);
+        const shouldSwitch = currentRefScore < 0 || (bestScore - currentRefScore) > improvementThreshold;
+
+        if (shouldSwitch) {
+            this.refZ0[0] = bestX;
+            this.refZ0[1] = bestY;
+            // New reference point from grid search - no DD precision accumulated yet
+            this.refZ0DD.x.hi = bestX;
+            this.refZ0DD.x.lo = 0;
+            this.refZ0DD.y.hi = bestY;
+            this.refZ0DD.y.lo = 0;
+            // Keep refPan in sync for needsRebase() to work correctly
+            this.refPan[0] = bestX;
+            this.refPan[1] = bestY;
+            this.refPanDD.x.hi = bestX;
+            this.refPanDD.x.lo = 0;
+            this.refPanDD.y.hi = bestY;
+            this.refPanDD.y.lo = 0;
+        }
+        // else: keep current refZ0 for stability
+    }
+
+    computeReferenceOrbit() {
+        if (!this.orbitData || !this.orbitTex) return;
+
+        const cx = this.c[0];
+        const cy = this.c[1];
+
+        let zx = this.refZ0[0];
+        let zy = this.refZ0[1];
+
+        for (let n = 0; n < this.MAX_ITER; n++) {
+            const sx = splitFloat(zx);
+            const sy = splitFloat(zy);
+
+            const idx = n * 4;
+            this.orbitData[idx] = sx.high;
+            this.orbitData[idx + 1] = sx.low;
+            this.orbitData[idx + 2] = sy.high;
+            this.orbitData[idx + 3] = sy.low;
+
+            const zx2 = zx * zx - zy * zy + cx;
+            const zy2 = 2.0 * zx * zy + cy;
+            zx = zx2; zy = zy2;
+
+            if (zx * zx + zy * zy > 4.0) {
+                const fx = splitFloat(zx);
+                const fy = splitFloat(zy);
+                for (let k = n + 1; k < this.MAX_ITER; k++) {
+                    const j = k * 4;
+                    this.orbitData[j] = fx.high;
+                    this.orbitData[j + 1] = fx.low;
+                    this.orbitData[j + 2] = fy.high;
+                    this.orbitData[j + 3] = fy.low;
+                }
+                break;
+            }
+        }
+
+        this.gl.activeTexture(this.gl.TEXTURE0);
+        this.gl.bindTexture(this.gl.TEXTURE_2D, this.orbitTex);
+
+        this.gl.texImage2D(
+            this.gl.TEXTURE_2D,
+            0,
+            this.gl.RGBA,
+            this.MAX_ITER,
+            1,
+            0,
+            this.gl.RGBA,
+            this.gl.FLOAT,
+            this.orbitData
+        );
+
+        if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
+        if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
+    }
+
+    /**
+     * Julia "needsRebase": keep reference initial condition close to view center.
+     * Same intent as Mandelbrot, but for z0 reference.
+     */
+    needsRebase() {
+        const REBASE_ON = 1.75;
+        const REBASE_OFF = 0.90;
+
+        if (this.rebaseArmed === undefined) this.rebaseArmed = true;
+
+        if (!this.refPan) return true;
+        if (!Number.isFinite(this.zoom)) return false;
+
+        const z = Math.max(this.zoom, 1e-300);
+
+        const dx = this.pan[0] - this.refPan[0];
+        const dy = this.pan[1] - this.refPan[1];
+        const deltaView = Math.hypot(dx, dy) / z;
+
+        if (!this.rebaseArmed && deltaView < REBASE_OFF) {
+            this.rebaseArmed = true;
+            return false;
+        }
+
+        if (this.rebaseArmed && deltaView > REBASE_ON) {
+            this.rebaseArmed = false;
+            return true;
+        }
+
+        return false;
+    }
+
     draw() {
         this.gl.useProgram(this.program);
+
+        // Iteration strategy avoids exploding to infinity at tiny zooms
+        // const safe = Math.max(this.zoom, 1e-300);
+        // const log2Depth = Math.log2(this.DEFAULT_ZOOM / safe);
+        // const baseIters = Math.floor(200 + 50 * log2Depth);
+        // this.iterations = Math.max(50, Math.min(this.MAX_ITER, baseIters + this.extraIterations));
+
 
         const baseIters = Math.floor(3000 * Math.pow(2, -Math.log2(this.zoom)));
         this.iterations = Math.min(2000, baseIters + this.extraIterations);
 
-        // Pass Julia constant `c`
-        this.gl.uniform2fv(this.cLoc, this.c);
-        this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
+        // Detect view changes -> mark orbit dirty (use tolerant checks to avoid noise)
+        const panMoved =
+            Number.isFinite(this._prevPan0) && Number.isFinite(this._prevPan1)
+                ? (Math.abs(this.pan[0] - this._prevPan0) + Math.abs(this.pan[1] - this._prevPan1)) > (this.zoom * 1e-6)
+                : true;
+
+        const zoomChanged =
+            Number.isFinite(this._prevZoom)
+                ? Math.abs(this.zoom - this._prevZoom) > (this.zoom * 1e-8)
+                : true;
+
+        const cChanged =
+            Number.isFinite(this._prevC0) && Number.isFinite(this._prevC1)
+                ? (Math.abs(this.c[0] - this._prevC0) + Math.abs(this.c[1] - this._prevC1)) > 0.0
+                : true;
+
+        if (panMoved || zoomChanged || cChanged) {
+            this.orbitDirty = true;
+            this._prevPan0 = this.pan[0];
+            this._prevPan1 = this.pan[1];
+            this._prevZoom = this.zoom;
+            this._prevC0 = this.c[0];
+            this._prevC1 = this.c[1];
+        }
+
+        // Rebase policy for Julia:
+        // - c changes REQUIRE orbit rebuild (orbit depends on c) - cannot be deferred
+        // - during C-animation, skip expensive grid search (use view center directly)
+        // - pan/zoom during interaction can defer until settled
+        const mustRebaseNow = cChanged || this.needsRebase();
+        const isDeferringForAnimation = this.cAnimationActive || this.interactionActive;
+        const canRebaseNow = !isDeferringForAnimation || mustRebaseNow;
+
+        if (this.orbitDirty && canRebaseNow) {
+            // During interaction/animation, skip grid search (use view center directly)
+            this.pickReferenceNearViewCenter(isDeferringForAnimation);
+            this.computeReferenceOrbit();
+            this.orbitDirty = false;
+        }
+
+        // Compute deltaZ0 = panDD - refZ0DD on JS side (float64) for precision
+        // This avoids float32 precision loss when the shader subtracts pan - refZ0
+        const deltaZ0X = ddSubDD(this.panDD.x, this.refZ0DD.x);
+        const deltaZ0Y = ddSubDD(this.panDD.y, this.refZ0DD.y);
+
+        // Upload deltaZ0 hi/lo
+        if (this.deltaZ0HLoc) this.gl.uniform2f(this.deltaZ0HLoc, deltaZ0X.hi, deltaZ0Y.hi);
+        if (this.deltaZ0LLoc) this.gl.uniform2f(this.deltaZ0LLoc, deltaZ0X.lo, deltaZ0Y.lo);
+
+        // Upload zoom hi/lo
+        const z = splitFloat(this.zoom);
+        if (this.zoomHLoc) this.gl.uniform1f(this.zoomHLoc, z.high);
+        if (this.zoomLLoc) this.gl.uniform1f(this.zoomLLoc, z.low);
+
+        if (this.cLoc) this.gl.uniform2fv(this.cLoc, this.c);
+        if (this.innerStopsLoc) this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
 
         super.draw();
     }
@@ -288,21 +432,36 @@ export class JuliaRenderer extends FractalRenderer {
      */
     reset() {
         this.c = [...this.DEFAULT_C];
-        this.innerStops = new Float32Array(JULIA_PALETTES[0].theme);
         this.currentPaletteIndex = 0;
+        this.innerStops = this.PALETTES.length > 0
+            ? new Float32Array(this.PALETTES[0].theme)
+            : new Float32Array([0, 0, 0, 1, 0.647, 0, 0, 0, 0, 1.2, 1.2, 1.0, 0.1, 0.1, 0.1]);
+
+        this.orbitDirty = true;
+        this._prevPan0 = NaN;
+        this._prevPan1 = NaN;
+        this._prevZoom = NaN;
+        this._prevC0 = NaN;
+        this._prevC1 = NaN;
 
         super.reset();
     }
 
     // region > ANIMATION METHODS --------------------------------------------------------------------------------------
 
-    /** Stops currently running pan animation */
+    /** Stops currently running C animation and triggers final orbit rebuild */
     stopCurrentCAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentCAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentCAnimationFrame !== null) {
             cancelAnimationFrame(this.currentCAnimationFrame);
             this.currentCAnimationFrame = null;
+        }
+
+        // Clear animation flag and force accurate orbit rebuild
+        if (this.cAnimationActive) {
+            this.cAnimationActive = false;
+            this.markOrbitDirty();
         }
     }
 
@@ -317,16 +476,6 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     /**
-     * Returns id/title of the next color theme in the themes array.
-     * @return {string}
-     */
-    getNextColorThemeId() {
-        const nextTheme = JULIA_PALETTES[(this.currentPaletteIndex + 1) % JULIA_PALETTES.length];
-
-        return nextTheme.id || 'Random';
-    }
-
-    /**
      * Smoothly transitions the inner color stops (used by the shader for inner coloring)
      * from the current value to the provided toPalette over the specified duration.
      * Also updates the colorPalette to match the theme (using the first stop, for example).
@@ -337,13 +486,13 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateInnerStopsTransition(toPalette, duration = 250, callback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInnerStopsTransition`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         // Save the starting stops as a plain array.
         const startStops = Array.from(this.innerStops);
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
@@ -358,9 +507,7 @@ export class JuliaRenderer extends FractalRenderer {
 
                 if (toPalette.keyColor) {
                     keyColor = hexToRGB(toPalette.keyColor);
-                    if (keyColor) {
-                        this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
-                    }
+                    if (keyColor) this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
                 }
 
                 if (!keyColor) {
@@ -370,12 +517,6 @@ export class JuliaRenderer extends FractalRenderer {
                         toPalette.theme[stopIndex * 3 + 1] * 1.5,
                         toPalette.theme[stopIndex * 3 + 2] * 1.5
                     ];
-                }
-
-                // Update the uniform for inner stops.
-                this.gl.useProgram(this.program);
-                if (this.innerStopsLoc) {
-                    this.gl.uniform3fv(this.innerStopsLoc, this.innerStops);
                 }
 
                 this.draw();
@@ -397,9 +538,27 @@ export class JuliaRenderer extends FractalRenderer {
 
     /** @inheritDoc */
     async animateColorPaletteTransition(duration = 250, coloringCallback = null) {
-        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % JULIA_PALETTES.length;
+        if (this.PALETTES.length === 0) {
+            // No palettes defined - just trigger random color (handled by base class)
+            return super.animateColorPaletteTransition(duration, coloringCallback);
+        }
+        this.currentPaletteIndex = (this.currentPaletteIndex + 1) % this.PALETTES.length;
+        await this.animateInnerStopsTransition(this.PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    }
 
-        await this.animateInnerStopsTransition(JULIA_PALETTES[this.currentPaletteIndex], duration, coloringCallback);
+    /**
+     * Applies a specific palette by index
+     * @param {number} index - Palette index
+     * @param {number} [duration=250] - Transition duration in ms
+     * @param {Function} [coloringCallback] - Callback when done
+     * @return {Promise<void>}
+     */
+    async applyPaletteByIndex(index, duration = 250, coloringCallback = null) {
+        if (this.PALETTES.length === 0 || index < 0 || index >= this.PALETTES.length) {
+            return;
+        }
+        this.currentPaletteIndex = index;
+        await this.animateInnerStopsTransition(this.PALETTES[index], duration, coloringCallback);
     }
 
     /** @inheritDoc */
@@ -418,7 +577,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateToC(targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToC`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         if (compareComplex(this.c, targetC)) {
@@ -430,8 +589,9 @@ export class JuliaRenderer extends FractalRenderer {
         console.log(`Animating c from ${this.c} to ${targetC}.`);
 
         const startC = [...this.c];
+        this.cAnimationActive = true; // Defer orbit rebuilds during animation
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
@@ -442,6 +602,7 @@ export class JuliaRenderer extends FractalRenderer {
                 const easedProgress = easeFunction(progress);
                 this.c[0] = lerp(startC[0], targetC[0], easedProgress);
                 this.c[1] = lerp(startC[1], targetC[1], easedProgress);
+
                 this.draw();
 
                 updateInfo(true);
@@ -450,6 +611,11 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress < 1) {
                     this.currentCAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this.cAnimationActive = false;
+                    // Force final orbit rebuild with accurate reference
+                    this.markOrbitDirty();
+                    this.draw();
+
                     this.stopCurrentCAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -470,7 +636,7 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateToZoomAndC(targetZoom, targetC = [...this.DEFAULT_C], duration = 500, easeFunction = EASE_TYPE.QUINT) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateToZoomAndC`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateToZoomAndC`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         await Promise.all([
@@ -482,35 +648,32 @@ export class JuliaRenderer extends FractalRenderer {
 
     /**
      * Animates travel to a preset.
-     * @param {JULIA_PRESET} preset
+     * @param {JULIA_PRESET|PRESET} preset
      * @param {number} [duration] in ms
+     * @param {Function} [coloringCallback=null] Optional callback for UI color updates
      * @return {Promise<void>}
      */
-    async animateTravelToPreset(preset, duration = 500) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    async animateTravelToPreset(preset, duration = 500, coloringCallback = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
+
+        const durationWithSpeed = duration * (preset.speed ?? 1);
 
         // Phase 1: Setting default params.
         await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
-
         // Phase 2: Animating to preset.
         await Promise.all([
-            this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT),
-            this.animateToC(preset.c, duration),
+            this.animateToC(preset.c, durationWithSpeed),
             this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
-            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT)
+            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT),
+            this.animatePaletteByIdTransition(preset, durationWithSpeed, coloringCallback)
         ]);
+        // Phase 3: Final zoom-in
+        await this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT);
 
         this.currentPresetIndex = preset.id || 0;
 
         console.groupEnd();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        return Promise.resolve(); // TODO implement someday if needed
     }
 
     /**
@@ -519,10 +682,13 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDive(dive) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDive`, CONSOLE_GROUP_STYLE);
         this.stopCurrentCAnimation();
 
         console.log(`Diving to ${dive}.`);
+        // Note: Do NOT set cAnimationActive for continuous animations.
+        // The grid search in pickReferenceNearViewCenter is needed for stability
+        // when c changes to values where view center might escape immediately.
 
         // Return a Promise that never resolves (continuous animation)
         await new Promise(() => {
@@ -580,10 +746,11 @@ export class JuliaRenderer extends FractalRenderer {
      * @return {Promise<void>}
      */
     async animateDemo() {
-        console.log(`%c ${this.constructor.name}: animateDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
-        this.demoActive = true; // Not used in Julia but the demo is active
+        this.demoActive = true;
+        // Note: Do NOT set cAnimationActive for continuous animations - grid search needed for stability
 
         // Return a Promise that never resolves (continuous animation)
         await new Promise(() => {

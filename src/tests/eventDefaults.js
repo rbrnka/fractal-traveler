@@ -74,15 +74,17 @@ export const defaultMouseWheelEvent = (x = 100, y = 100, deltaX = 100, deltaY = 
 }
 
 /** Simulated keyboard event */
-export const defaultKeyboardEvent = (keyCode, shift = false, ctrl = false, alt = false, type = KEYBOARD_EVENT_TYPE.DOWN) => {
+export const defaultKeyboardEvent = (keyCode, shift = false, ctrl = false, alt = false, type = 'keydown') => {
     return new KeyboardEvent(type, {
         code: keyCode,
+        key: keyCode === 'Space' ? ' ' : keyCode,
         shiftKey: shift,
         altKey: alt,
         ctrlKey: ctrl,
+        bubbles: true,
+        cancelable: true
     });
 }
-
 // MOUSE EVENTS
 export const mouseLeftDownEvent = (x, y) => defaultMouseButtonEvent(MOUSE_EVENT_TYPE.DOWN, MOUSE_BUTTONS.LEFT, x, y);
 export const mouseLeftUpEvent = (x, y) => defaultMouseButtonEvent(MOUSE_EVENT_TYPE.UP, MOUSE_BUTTONS.LEFT, x, y);
@@ -100,5 +102,10 @@ export const rightArrowPressedEvent = (s = false, c = false, a = false) => defau
 export const downArrowPressedEvent = (s = false, c = false, a = false) => defaultKeyboardEvent('ArrowDown', s, c, a);
 export const upArrowPressedEvent = (s = false, c = false, a = false) => defaultKeyboardEvent('ArrowUp', s, c, a);
 
-export const numPressedEvent = (num, s = false, c = false, a = false) => defaultKeyboardEvent(`Numpad${num.toString()}`, s, c, a);
-export const charPressedEvent = (char, s = false, c = false, a = false) => defaultKeyboardEvent(`Key${char.toUpperCase()}`, s, c, a);
+export const numPressedEvent = (num, s = false, c = false, a = false) => defaultKeyboardEvent(`Digit${num.toString()}`, s, c, a);
+export const charPressedEvent = (char, shift = false, ctrl = false, alt = false) => {
+    if (char === ' ') {
+        return defaultKeyboardEvent('Space', shift, ctrl, alt);
+    }
+    return defaultKeyboardEvent(`Key${char.toUpperCase()}`, shift, ctrl, alt);
+};

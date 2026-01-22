@@ -2,9 +2,11 @@
  * @module Utils
  * @author Radim Brnka
  * @description Contains helper functions for working with URL parameters, colors, etc.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE, PI} from "./constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, FRACTAL_TYPE, PI} from "./constants";
 
 let urlParamsSet = false;
 
@@ -19,25 +21,32 @@ let urlParamsSet = false;
  * @param {number} rotation
  */
 export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null) {
-    const params = {
-        mode: mode != null ? mode.toFixed(0) : FRACTAL_TYPE.MANDELBROT,
-        px: px != null ? px.toFixed(6) : null,
-        py: py != null ? py.toFixed(6) : null,
-        zoom: zoom != null ? zoom.toFixed(6) : null,
-        r: rotation != null ? rotation.toFixed(6) : 0, // Rotation is not necessary to be defined
-        cx: cx != null ? cx.toFixed(6) : null,
-        cy: cy != null ? cy.toFixed(6) : null,
+    const formatNumber = (value) => {
+        if (value == null) return null;
+        // 15–17 digits is where JS double precision is meaningfully preserved.
+        // toPrecision also uses scientific notation for very small values (deep zoom).
+        return Number(value).toPrecision(17);
     };
 
-    if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    const params = {
+        mode: mode != null ? mode.toFixed(0) : FRACTAL_TYPE.MANDELBROT,
+        px: formatNumber(px),
+        py: formatNumber(py),
+        zoom: formatNumber(zoom),
+        r: rotation != null ? Number(rotation).toPrecision(17) : 0,
+        cx: formatNumber(cx),
+        cy: formatNumber(cy),
+    };
+
+    if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     if ([px, py, zoom, rotation].some(el => el == null)) {
-        console.error(`%c updateURLParams: %c Fractal params incomplete, can't generate URL! ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c updateURLParams: %c Fractal params incomplete, can't generate URL! ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
     if (mode === FRACTAL_TYPE.JULIA && [cx, cy].some(el => el == null)) {
-        console.error(`%c updateURLParams: %c Julia params incomplete, can't generate URL! ${JSON.stringify(params)}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c updateURLParams: %c Julia params incomplete, can't generate URL! ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -56,7 +65,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
  * @return {URL_PRESET}
  */
 export function loadFractalParamsFromURL() {
-    if (DEBUG_MODE) console.groupCollapsed(`%c loadFractalParamsFromURL`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    if (DEBUG_MODE) console.groupCollapsed(`%c loadFractalParamsFromURL`, CONSOLE_GROUP_STYLE);
 
     const url = new URL(window.location.href);
     const hash = url.hash; // Get the hash part of the URL (e.g., #julia?view=...)
@@ -91,13 +100,13 @@ export function loadFractalParamsFromURL() {
             mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT,
             px: decodedParams.px != null ? parseFloat(decodedParams.px) : null,
             py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
-            zoom: parseFloat(decodedParams.zoom) || null,
-            r: parseFloat(decodedParams.r) || 0, // Rotation is not necessary to be defined
+            zoom: decodedParams.zoom != null ? parseFloat(decodedParams.zoom) : null,
+            r: decodedParams.r != null ? parseFloat(decodedParams.r) : 0, // Rotation is not necessary to be defined
             cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
         };
     } catch (e) {
-        console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         urlParamsSet = true;
         if (DEBUG_MODE) console.groupEnd();
         return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT}; // Return only the mode if no query string is found
@@ -108,7 +117,7 @@ export function loadFractalParamsFromURL() {
 export function clearURLParams() {
     if (!urlParamsSet) return;
 
-    if (DEBUG_MODE) console.log(`%c clearURLParams: %c Clearing URL params.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    if (DEBUG_MODE) console.log(`%c clearURLParams: %c Clearing URL params.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     const hash = window.location.hash.split('?')[0]; // Keep only the hash part, discard any query parameters
     const newUrl = `${window.location.origin}/${hash}`;
@@ -120,9 +129,7 @@ export function clearURLParams() {
  * Detects touch device
  * @returns {boolean}
  */
-export function isTouchDevice() {
-    return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
-}
+export const isTouchDevice = () => 'ontouchstart' in window || navigator.maxTouchPoints > 0 || navigator.msMaxTouchPoints > 0;
 
 /**
  * Detects mobile device
@@ -144,7 +151,7 @@ export function isMobileDevice() {
  * @return {string} [x, yi]|[x, 0]|[?, ?]
  */
 export function expandComplexToString(c, precision = 6, withI = true) {
-    if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    if (DEBUG_MODE) console.groupCollapsed(`%c expandComplexToString`, CONSOLE_GROUP_STYLE);
 
     const invalidValues = [NaN, undefined, null, ''];
     const isNumber = (value) => typeof value === 'number' && isFinite(value);
@@ -153,7 +160,7 @@ export function expandComplexToString(c, precision = 6, withI = true) {
 
     if (invalidValues.some(value => value === c[0]) || invalidValues.some(value => value === c[1]) || !isNumber(c[0]) || !isNumber(c[1])) {
         expanded += `?, ?]`;
-        console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.warn(`%c expandComplexToString: %c Invalid complex number: ${c}`, CONSOLE_GROUP_STYLE);
         console.groupEnd();
         return expanded;
     } else {
@@ -166,6 +173,186 @@ export function expandComplexToString(c, precision = 6, withI = true) {
     return expanded + ((withI && c[1] !== 0) ? 'i]' : ']');
 }
 
+// region > Double helpers ---------------------------------------------------------------------------------------------
+
+/**
+ * @enum
+ * @type {{VELTKAMP_DEKKER: string, GPU_EMULATED_DOUBLE: string}}
+ */
+export const SPLIT_FLOAT_METHOD = {
+    VELTKAMP_DEKKER: 'vd', // Default
+    GPU_EMULATED_DOUBLE: 'ed',
+}
+
+/**
+ * Splits a 64-bit floating point number into two 32-bit parts
+ * @param {number} value A standard JavaScript 64-bit number.
+ * @param value
+ * @param method
+ * @returns {{high: number, low: number}}
+ */
+export const splitFloat = (value, method = SPLIT_FLOAT_METHOD.VELTKAMP_DEKKER) =>
+    (method === SPLIT_FLOAT_METHOD.GPU_EMULATED_DOUBLE) ? splitFloatED(value) : splitFloatVD(value);
+
+/**
+ * Veltkamp-Dekker splitting constant: 2^27 + 1 = 134217729
+ * Pre-computed to avoid Math.pow() on every splitFloat call (called 4000+ times per orbit rebuild).
+ * This is a common splitting point for 53-bit mantissa (JS number).
+ */
+const VELTKAMP_DEKKER_K = 134217729;
+
+/**
+ * The Veltkamp-Dekker Split: This implementation is the classic Veltkamp-Dekker algorithm. It is designed to split
+ * a 64-bit double into two "half-precision" doubles so that their product can be calculated without losing precision.
+ * @param {number} value A standard JavaScript 64-bit number.
+ * @returns {{high: number, low: number}}
+ */
+function splitFloatVD(value) {
+    const temp = value * VELTKAMP_DEKKER_K;
+    const high = temp - (temp - value);
+    const low = value - high;
+
+    return {high, low};
+}
+
+/**
+ * GPU Emulated Double. This is the standard approach for rendering high-precision or astronomical visualizations).
+ * @param value
+ * @returns {{high: number, low: number}}
+ */
+function splitFloatED(value) {
+    // Force the high part to be *exactly* what will be stored in GPU float32.
+    const high = Math.fround(value);
+    // Residual in double, then quantize to float32 as well (matches GPU storage).
+    const low = Math.fround(value - high);
+
+    return {high, low};
+}
+
+/**
+ * Creates a double-double precision number object with high and low parts.
+ * Used for extended precision arithmetic beyond standard 64-bit floating point.
+ *
+ * @param {number} [hi=0] - The high-order (primary) part of the number.
+ * @param {number} [lo=0] - The low-order (error correction) part of the number.
+ * @returns {{hi: number, lo: number}} A double-double precision number object.
+ */
+export function ddMake(hi = 0, lo = 0) {
+    return {hi, lo};
+}
+
+/**
+ * Computes the error-free sum of two floating-point numbers using Knuth's two-sum algorithm.
+ * Returns both the sum and the rounding error, enabling extended precision arithmetic.
+ *
+ * @param {number} a - The first number to sum.
+ * @param {number} b - The second number to sum.
+ * @returns {{s: number, err: number}} An object containing the sum (s) and the rounding error (err).
+ */
+export function twoSum(a, b) {
+    const s = a + b;
+    const bb = s - a;
+    const err = (a - (s - bb)) + (b - bb);
+    return {s, err};
+}
+
+/**
+ * Computes the error-free sum of two floating-point numbers where |a| >= |b|.
+ * This is a faster variant of twoSum that assumes the first argument has greater magnitude.
+ *
+ * @param {number} a - The larger magnitude number (must satisfy |a| >= |b|).
+ * @param {number} b - The smaller magnitude number to add.
+ * @returns {{s: number, err: number}} An object containing the sum (s) and the rounding error (err).
+ */
+export function quickTwoSum(a, b) {
+    const s = a + b;
+    const err = b - (s - a);
+    return {s, err};
+}
+
+/**
+ * Adds a standard floating-point number to a double-double precision number.
+ * This function mutates the input double-double object and maintains extended precision.
+ *
+ * @param {{hi: number, lo: number}} dd - The double-double number to modify (mutated in place).
+ * @param {number} n - The standard floating-point number to add.
+ * @returns {{hi: number, lo: number}} The mutated double-double object with the sum.
+ */
+export function ddAdd(dd, n) {
+    const t = twoSum(dd.hi, n);
+    const lo = dd.lo + t.err;
+    const r = quickTwoSum(t.s, lo);
+    dd.hi = r.s;
+    dd.lo = r.err;
+    return dd;
+}
+
+/**
+ * Sets the value of a double-double precision object from a standard number.
+ * This effectively resets the high-precision value to a single 64-bit float,
+ * clearing any existing low-precision error bits.
+ *
+ * @param {{hi: number, lo: number}} dd - The double-double object to modify.
+ * @param {number} n - The number to assign to the high part.
+ * @returns {{hi: number, lo: number}} The mutated double-double object.
+ */
+export function ddSet(dd, n) {
+    dd.hi = n;
+    dd.lo = 0;
+    return dd;
+}
+
+/**
+ * Returns the standard 64-bit floating-point approximation of a double-double number.
+ * This combines the high and low parts to reconstruct the full precision value.
+ *
+ * @param {{hi: number, lo: number}} dd The double-double number object with high and low precision parts.
+ * @returns {number} The combined floating-point value.
+ */
+export function ddValue(dd) {
+    return dd.hi + dd.lo;
+}
+
+/**
+ * Adds two double-double precision numbers and returns a new DD result.
+ * Uses the Knuth two-sum algorithm for error-free addition.
+ *
+ * @param {{hi: number, lo: number}} a - First double-double number.
+ * @param {{hi: number, lo: number}} b - Second double-double number.
+ * @returns {{hi: number, lo: number}} The sum as a new double-double number.
+ */
+export function ddAddDD(a, b) {
+    const t = twoSum(a.hi, b.hi);
+    const lo = a.lo + b.lo + t.err;
+    const r = quickTwoSum(t.s, lo);
+    return {hi: r.s, lo: r.err};
+}
+
+/**
+ * Subtracts two double-double precision numbers (a - b) and returns a new DD result.
+ *
+ * @param {{hi: number, lo: number}} a - The minuend (number to subtract from).
+ * @param {{hi: number, lo: number}} b - The subtrahend (number to subtract).
+ * @returns {{hi: number, lo: number}} The difference (a - b) as a new double-double number.
+ */
+export function ddSubDD(a, b) {
+    return ddAddDD(a, {hi: -b.hi, lo: -b.lo});
+}
+
+// endregion---------------------------------------------------------------------------------------
+
+/**
+ * Escapes HTML special characters in a string to prevent XSS attacks and rendering issues.
+ * Converts &, <, and > to their HTML entity equivalents.
+ *
+ * @param {*} s - The input value to escape (will be converted to string)
+ * @returns {string} The escaped string with HTML entities
+ */
+export const esc = (s) =>
+    String(s)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
 
 /**
  * Compares two complex numbers / arrays of two numbers with given precision
@@ -365,6 +552,15 @@ export function lerp(start, end, time) {
 }
 
 /**
+ * Converts degrees from JSON to Radians for GLSL uniforms
+ * @param {number} degrees
+ * @returns {number} radians
+ */
+export function degToRad(degrees) {
+    return degrees * (PI / 180);
+}
+
+/**
  * Normalizes rotation into into [0, 2*PI] interval
  * @param {number} rotation in rad
  * @return {number} rotation in rad
@@ -461,4 +657,12 @@ export function destroyArrayOfButtons(buttons) {
         });
         buttons.length = 0;
     }
+}
+
+/**
+ * Returns the name of the fractal mode.
+ * @param {number} type
+ */
+export function getFractalName(type) {
+    return Object.keys(FRACTAL_TYPE).find(key => FRACTAL_TYPE[key] === type) || "UNKNOWN";
 }

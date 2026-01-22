@@ -2,10 +2,12 @@
  * @module ScreenshotController
  * @author Radim Brnka
  * @description Screenshot capturing logic.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {JuliaRenderer} from "../renderers/juliaRenderer";
-import {APP_NAME, DEFAULT_CONSOLE_GROUP_COLOR} from "../global/constants";
+import {APP_NAME, CONSOLE_GROUP_STYLE, SCREENSHOT_JPEG_COMPRESSION_QUALITY} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
 import {isJuliaMode} from "./ui";
 
@@ -28,7 +30,7 @@ function getWatermarkText(fractalApp) {
     const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
 
     return `Created by ${APP_NAME} (${fractalType}: ` +
-        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toFixed(6)}` +
+        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
         `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`}`;
 }
 
@@ -62,7 +64,7 @@ function drawRoundRect(ctx, x, y, width, height, radius) {
  * @param {string} accentColor
  */
 export function takeScreenshot(canvas, fractalApp, accentColor) {
-    console.groupCollapsed(`%c takeScreenshot`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c takeScreenshot`, CONSOLE_GROUP_STYLE);
 
     // Ensure the fractal is fully rendered before taking a screenshot
     fractalApp.draw();
@@ -87,8 +89,9 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
     const padding = 6;
     const borderWidth = 1;
 
-    ctx.font = `${fontSize}px sans-serif`;
+    ctx.font = `${fontSize}px`;
     ctx.textAlign = 'center';
+    ctx.letterSpacing = '1px';
     ctx.textBaseline = 'middle';
 
     // Measure the text width and calculate the rectangle size
@@ -122,7 +125,7 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
 
     // Set the download attributes
     link.setAttribute('download', getFilename());
-    link.setAttribute('href', offscreenCanvas.toDataURL("image/jpeg", 0.95));
+    link.setAttribute('href', offscreenCanvas.toDataURL("image/jpeg", SCREENSHOT_JPEG_COMPRESSION_QUALITY));
     link.click();
 
     console.log('Screenshot successfully taken.');

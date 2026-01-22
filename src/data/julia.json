@@ -1,0 +1,165 @@
+{
+  "$schema": "./fractal.schema.json",
+  "type": "JULIA",
+  "presets": [
+    { "c": [-0.4388924480101485,0.5734033317450103], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Default" },
+    { "c": [-0.8, 0.156], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Tentacles" , "paletteId": "Supernova Remnant"},
+    { "c": [-0.7436399999999269,0.13182000000014282], "pan": [0,0 ], "rotation": 0.0022885911618804045, "zoom": 0.14420993610649507, "title": "Seahorses", "paletteId": "Ocean" },
+    { "c": [0.3586059096423313, 0.32287599414730545], "pan": [0.10410036735673252, -0.10610085351477151], "rotation": 278.6, "zoom": 1.8513247913869684, "title": "Darkness" },
+    { "c": [0.34, -0.05], "zoom": 3.5, "rotation": 90, "pan": [0, 0], "title": "Spiral Galaxies", "paletteId": "Cosmos" },
+    { "c": [0.285, 0.01], "zoom": 3.5, "rotation": 90, "pan": [-0.01, 0.01], "title": "Near Julia Border", "paletteId": "Deep Nebula" },
+    { "c": [-1.76733, 0.00002], "zoom": 0.5, "rotation": 0, "pan": [0, 0], "title": "Mandelbrothers", "paletteId": "Electric" },
+    { "c": [-0.4, 0.6], "zoom": 3.5, "rotation": 120, "pan": [0, 0], "title": "Black Holes", "paletteId": "Event Horizon" },
+    { "c": [-1.768967328653661, 0.0019446820495425676], "pan": [0, 0], "rotation": 0, "zoom": 0.2589096374896196, "title": "Serpent" },
+    { "c": [-0.70176, -0.3842], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "title": "Dancing Snowflakes", "paletteId": "Glacial" },
+    { "c": [-0.835, -0.232], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "title": "Kissing Dragons", "paletteId": "Event Horizon" },
+    { "c": [-0.5925376099331446, 0.6218581017272109], "pan": [0, 0], "rotation": 135.8, "zoom": 0.12255613179332117, "title": "Brain" },
+    { "c": [-0.75, 0.1], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "title": "Main Cardioid", "paletteId": "Aurora" },
+    { "c": [-0.7500162952792153, 0.0032826017747574765], "zoom": 1.7, "rotation": 0, "pan": [0, 0], "title": "Clown", "paletteId": "Fire" },
+    { "c": [-1.74876455, 0], "zoom": 0.45, "rotation": 90, "pan": [0, 0], "title": "Cauliflower Medallion", "paletteId": "Emerald" },
+    { "c": [-0.1060055299522249, 0.9257297130853293], "rotation": 340, "pan": [0, 0], "zoom": 0.11, "title": "Mitochondria", "paletteId": "Event Horizon" },
+    { "c": [-0.12129038469447653, 0.649576297434808], "pan": [0.1045565992379065, 0.0073015054986378], "rotation": 313.6, "zoom": 1.6581189769919353, "title": "Mandebulbs", "paletteId": "Cyber Sunset"},
+    { "c": [-0.1, 0.651], "zoom": 3.5, "rotation": 90, "pan": [0, 0], "title": "Elephants", "paletteId": "Electric" },
+    { "c": [-0.246, 0.64235], "zoom": 2, "rotation": 0, "pan": [0, 0], "title": "Sunflowers", "paletteId": "Solar Flare" },
+    { "c": [-1.25066, 0.02012], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "title": "Tree Snakes", "paletteId": "Forest" },
+    { "c": [0.1294753560021048, 0.6256313013048348], "pan": [0, 0], "rotation": 110.58, "zoom": 1.322314018297482, "title": "Chromosome", "paletteId": "Electric" },
+    { "c": [0.3072075408559901, 0.48395526205533185], "pan": [0, 0], "rotation": 310.15, "zoom": 2.1068875547385417, "title": "Misiurewicz Point" },
+    { "c": [-1.768927341692215, -0.009640117346988308] ,"pan": [0, 0], "rotation": 0, "zoom": 0.29302566239489597, "title": "Flowers", "paletteId": "Deep Nebula" },
+    { "c": [0.3633977303405407, 0.3166912692104581], "pan": [0.12908510596292824, -0.13588306846615342], "rotation": 97.4, "zoom": 0.12982442828873209, "title": "Black Holes", "paletteId": "Event Horizon" }
+  ],
+  "dives": [
+    { "pan": [0, 0], "rotation": 0, "zoom": 1.7, "startC": [-0.246, 0.64], "step": 0.000005, "cxDirection": 1, "cyDirection": 1, "endC": [-0.2298, 0.67], "title": "Orbiting Black holes", "paletteId": "Event Horizon" },
+    { "pan": [0, 0], "startC": [-0.25190652273600045, 0.637461568487061], "endC": [-0.2526, 0.6355], "cxDirection": -1, "cyDirection": -1, "rotation": 0, "zoom": 0.05, "step": 0.00000005, "title": "Dimensional Collision", "paletteId": "Deep Nebula" },
+    { "pan": [-0.31106, 0.3937], "rotation": 85.9, "zoom": 0.3829, "startC": [-0.2523, 0.6386], "step": 0.00001, "cxDirection": -1, "cyDirection": -1, "endC": [-0.335, 0.62], "title": "Life of a Star", "paletteId": "Supernova Remnant" },
+    { "pan": [-0.6838, 0.4699], "rotation": 0, "zoom": 0.0447, "startC": [-0.246, 0.6427], "step": 0.0000005, "cxDirection": -1, "cyDirection": -1, "endC": [-0.247, 0.638], "title": "Tipping points", "paletteId": "Cosmos" },
+    { "pan": [0.5160, -0.0541], "rotation": 150, "zoom": 0.1107, "startC": [-0.78, 0.11], "step": 0.00001, "cxDirection": 1, "cyDirection": 1, "endC": [-0.7425, 0.25], "title": "Hypnosis", "paletteId": "Aurora" }
+  ],
+  "palettes": [
+    {
+      "id": "Blue Gold",
+      "keyColor": "#4c4cb3",
+      "theme": [
+        0.0, 0.0, 0.0,
+        1.0, 0.647, 0.0,
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0,
+        0.0, 0.0, 0.5
+      ]
+    },
+    {
+      "id": "Cosmos",
+      "keyColor": "#fefe66",
+      "theme": [
+        0.0, 0.0, 0.0,
+        1.0, 0.647, 0.0,
+        0.0, 0.0, 0.0,
+        1.2, 1.2, 1.0,
+        0.1, 0.1, 0.1
+      ]
+    },
+    {
+      "id": "Fire",
+      "keyColor": "#663300",
+      "theme": [
+        0.400, 0.200, 0.000,
+        1.000, 0.565, 0.039,
+        0.200, 0.000, 0.000,
+        0.800, 0.702, 0.000,
+        0.525, 0.122, 0.043
+      ]
+    },
+    {
+      "id": "Ocean",
+      "keyColor": "#0F52BA",
+      "theme": [
+        0.902, 0.953, 1.0,
+        0.192, 0.553, 0.698,
+        0.0, 0.051, 0.102,
+        0.016, 0.412, 0.592,
+        0.0, 0.157, 0.302
+      ]
+    },
+    {
+      "id": "Forest",
+      "keyColor": "#25591f",
+      "theme": [
+        0.506, 0.549, 0.235,
+        0.537, 0.349, 0.122,
+        0.176, 0.086, 0.024,
+        0.098, 0.349, 0.051,
+        0.0, 0.082, 0.0
+      ]
+    },
+    {
+      "id": "Electric",
+      "keyColor": "#00E5FF",
+      "theme": [0.737, 1.000, 1.000, 0.000, 0.600, 0.800, 0.000, 0.000, 0.200, 0.302, 1.200, 1.400, 0.000, 0.102, 0.302]
+
+    },
+    {
+      "id": "Solar Flare",
+      "keyColor": "#FF8000",
+      "theme": [
+        0.0, 0.0, 0.0,
+        0.6, 0.2, 0.0,
+        1.0, 0.5, 0.0,
+        1.4, 0.9, 0.2,
+        0.4, 0.1, 0.0
+      ]
+    },
+    {
+      "id": "Deep Nebula",
+      "keyColor": "#7B2CBF",
+      "theme": [0.000, 0.000, 0.000, 0.200, 0.000, 0.400, 0.000, 0.000, 0.000, 0.902, 0.302, 1.302, 0.322, 0.263, 0.694]
+
+    },
+    {
+      "id": "Emerald",
+      "keyColor": "#2D6A4F",
+      "theme": [
+        0.0, 0.0, 0.0,
+        0.0, 0.3, 0.1,
+        0.0, 0.1, 0.0,
+        0.3, 1.2, 0.5,
+        0.0, 0.2, 0.0
+      ]
+    },
+    {
+      "id": "Cyber Sunset",
+      "keyColor": "#F72585",
+      "theme": [0.647, 0.000, 0.000, 0.400, 0.000, 0.502, 0.000, 0.000, 0.000, 1.302, 0.600, 0.102, 0.400, 0.102, 0.000]
+    },
+    {
+      "id": "Glacial",
+      "keyColor": "#CAF0F8",
+      "theme": [
+        0.0, 0.1, 0.2,
+        0.3, 0.5, 0.7,
+        0.0, 0.0, 0.1,
+        0.9, 1.1, 1.3,
+        0.5, 0.7, 0.9
+      ]
+    },
+    {
+      "id": "Aurora",
+      "keyColor": "#66ff4d",
+      "theme": [
+        0.400, 1.000, 0.302, 0.102, 0.800, 0.502, 0.000, 0.000, 0.024, 0.502, 0.200, 0.902, 0.000, 0.035, 0.427
+      ]
+    },
+    {
+      "id": "Supernova Remnant",
+      "keyColor": "#0099e6",
+      "theme": [0.247, 0.165, 0.537, 0.902, 0.302, 0.000, 0.000, 0.000, 0.102, 0.000, 0.600, 0.902, 0.000, 0.000, 0.000]
+    },
+    {
+      "id": "Event Horizon",
+      "keyColor": "#c74a00",
+
+      "theme": [ 0.859, 0.565, 0.306, 0.180, 0.129, 0.216, 0.067, 0.067, 0.082, 0.467, 0.000, 0.000, 0.780, 0.290, 0.000]
+      }
+    ],
+    "experiments" : [
+      { "pan": [0.4768, 0.0939], "rotation": 333.8, "zoom": 0.166, "startC": [-0.7505, 0.0084], "endC": [-0.7325, 0.1825], "cxDirection": 1, "cyDirection": 1, "step": 0.00001, "phases": [2, 1, 4, 3] }
+    ]
+}

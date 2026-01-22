@@ -1,0 +1,15 @@
+# 1. Basic listing
+Options +Indexes
+
+# 2. Modern settings (VersionSort handles 1.10 correctly)
+IndexOptions FancyIndexing HTMLTable VersionSort NameWidth=* SuppressDescription SuppressHTMLPreamble
+
+# 3. Hide the system files
+IndexIgnore .htaccess header.html footer.html
+
+# 4. Inject the header and footer
+HeaderName header.html
+ReadMeName footer.html
+
+# 5. Tell the server that subfolders should open index.html
+DirectoryIndex index.html

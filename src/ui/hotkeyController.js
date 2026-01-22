@@ -3,6 +3,8 @@
  * @author Radim Brnka
  * @description Keyboard shortcuts controller attached to the UI
  * @link https://www.freecodecamp.org/news/javascript-keycode-list-keypress-event-key-codes/
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {
@@ -12,31 +14,36 @@ import {
     randomizeColors,
     reset,
     resetAppState,
+    showSaveViewDialog,
     startJuliaDive,
     switchFractalMode,
-    switchFractalModeWithPersistence,
-    toggleDebugLines,
+    switchFractalTypeWithPersistence,
+    toggleCenterLines,
+    toggleDebugMode,
     toggleDemo,
     toggleHeader,
     travelToPreset,
     updateColorTheme,
+    updatePaletteDropdownState,
 } from "./ui";
 import {
+    CONSOLE_GROUP_STYLE,
+    CONSOLE_MESSAGE_STYLE,
+    DEBUG_LEVEL,
     DEBUG_MODE,
-    DEFAULT_CONSOLE_GROUP_COLOR,
-    DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING,
     FRACTAL_TYPE,
-    JULIA_PALETTES,
+    log,
     ROTATION_DIRECTION
 } from "../global/constants";
+import {JuliaRenderer} from "../renderers/juliaRenderer";
 
 //region CONSTANTS > ---------------------------------------------------------------------------------------------------
 /**
  * Keys not allowed to work in animation mode
  * @type {string[]}
  */
-const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyQ", "KeyW"]; // TODO consider allowing rotation in Julia mode as it doesnt collide with the demo mode
+const ANIMATION_KEYS_BLACKLIST = ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyQ", "KeyW"];
 
 /**
  * Pan movement animation duration
@@ -84,7 +91,7 @@ const ZOOM_ANIMATION_SMOOTH_STEP = .01;
  * Smooth stepping: step size
  * @type {number}
  */
-const JULIA_HOTKEY_C_STEP = .0005;
+const JULIA_HOTKEY_C_STEP = .001;
 
 /**
  * Super smooth stepping multiplier (SHIFT)
@@ -109,13 +116,24 @@ let fractalApp;
  * @return {Promise<void>}
  */
 async function onKeyDown(event) {
-    //event.preventDefault();
 
-    if (!DEBUG_MODE) {
-        event.stopImmediatePropagation();
-    }
+    // Do not steal hotkeys from user input fields (search boxes, sliders, etc.)
+    const target = /** @type {HTMLElement|null} */ (event.target);
+    const tag = target?.tagName?.toLowerCase();
+    const isTypingTarget =
+        !!target &&
+        (
+            tag === 'input' ||
+            tag === 'textarea' ||
+            tag === 'select' ||
+            target.isContentEditable
+        );
 
-    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    if (isTypingTarget) return;
+
+    if (DEBUG_MODE) console.log(`%c onKeyDown: %c Pressed key/code ${event.shiftKey ? 'Shift + ' : ''}${event.ctrlKey ? 'CTRL + ' : ''}${event.altKey ? 'ALT + ' : ''}${event.code}/${event.key}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+    let handled = false;
 
     const rotationSpeed = event.shiftKey ? ROTATION_ANIMATION_SMOOTH_STEP : ROTATION_ANIMATION_STEP;
     let rotationDirection = ROTATION_DIRECTION.CW;
@@ -128,8 +146,10 @@ async function onKeyDown(event) {
     // Treat MAC Option button as Alt
     const altKey = event.altKey || event.code === 'Alt';
 
-    if (isAnimationActive() && ANIMATION_KEYS_BLACKLIST.includes(event.code)) return;
-
+    if (isAnimationActive() && ANIMATION_KEYS_BLACKLIST.includes(event.code)) {
+        event.preventDefault();
+        return;
+    }
     switch (event.code) {
         // TODO add shift/non-shift to slow down or speed up the rotation instead of stop.
         case 'KeyQ': // Rotation counter-clockwise
@@ -142,93 +162,122 @@ async function onKeyDown(event) {
                 rotationActive = true;
                 await fractalApp.animateInfiniteRotation(rotationDirection, rotationSpeed);
             }
+            handled = true;
             break;
 
         case 'KeyE': // Debug lines
-            toggleDebugLines();
+            toggleCenterLines();
+            handled = true;
             break;
 
         case 'KeyR': // Reset
             if (event.shiftKey) await reset();
+            handled = true;
             break;
 
-        case 'KeyU': // Riemann Mode
-            if (DEBUG_MODE) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+        case 'KeyL': // DEBUG BAR toggle
+            toggleDebugMode();
+            handled = true;
             break;
 
         case 'KeyZ': // Switch between fractals with constant p/c
             if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
 
-            await switchFractalModeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
+            await switchFractalTypeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
+            handled = true;
             break;
 
-        case 'KeyT': // Random colors
+        case 'KeyT': // Random colors / cycle palettes
             if (altKey) {
-                if (isJuliaMode()) {
-                    await fractalApp.animateInnerStopsTransition(
-                        JULIA_PALETTES[0],
-                        250,
-                        updateColorTheme);
-                } else {
-                    await fractalApp.animateColorPaletteTransition(
-                        DEFAULT_MANDELBROT_THEME_COLOR,
-                        250,
-                        updateColorTheme);
-                }
+                // Alt+T: Reset to first palette (matches UI button behavior)
+                const cycleBtn = document.getElementById('palette-cycle');
+                if (cycleBtn) cycleBtn.classList.remove('active');
+                await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
+                updatePaletteDropdownState();
             } else if (event.shiftKey) {
-                if (fractalApp.currentColorAnimationFrame) {
+                // Shift+T: Toggle palette cycling
+                const cycleBtn = document.getElementById('palette-cycle');
+                if (fractalApp.paletteCyclingActive) {
+                    // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
-                    break;
-                }
-
-                if (isJuliaMode()) {
-                    await fractalApp.animateFullColorSpaceCycle(10000, updateColorTheme);
+                    if (cycleBtn) cycleBtn.classList.remove('active');
                 } else {
-                    await fractalApp.animateFullColorSpaceCycle(15000);
+                    // Start cycling
+                    if (cycleBtn) cycleBtn.classList.add('active');
+                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
                 }
             } else {
+                // T: Pick a random palette
                 await randomizeColors();
             }
+            handled = true;
             break;
 
         case 'KeyA': // Forced resize
             fractalApp.resizeCanvas();
+            handled = true;
             break;
 
-        case 'KeyS': // Screenshot
-            if (event.shiftKey) captureScreenshot();
+        case 'KeyS': // Screenshot or Save View
+            if (altKey) {
+                // Alt+S: Save current view
+                showSaveViewDialog();
+            } else if (event.shiftKey) {
+                // Shift+S: Screenshot
+                captureScreenshot();
+            }
+            handled = true;
+            break;
+
+        case 'KeyB': // Julia legacy renderer toggle
+            if (isJuliaMode() && DEBUG_MODE === DEBUG_LEVEL.FULL) {
+                JuliaRenderer.FF_LEGACY_JULIA_RENDERER = !JuliaRenderer.FF_LEGACY_JULIA_RENDERER
+                await switchFractalMode(FRACTAL_TYPE.JULIA);
+            }
+            handled = true;
             break;
 
         case 'KeyD': // Start/stop demo
             await toggleDemo();
+            handled = true;
             break;
 
-        case 'KeyM':
+        case 'KeyM': // Riemann Mode
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
+            handled = true;
+            break;
+
+        case 'KeyN':
             if (DEBUG_MODE) {
-                console.log('Analytic Extension toggled.');
+                log('Analytic Extension toggled.');
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 fractalApp.draw();
             }
+            handled = true;
             break;
 
         case "ArrowLeft":
             deltaPanX = altKey ? 0 : -(event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCx = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : 1)) : 0;
+            handled = true;
             break;
 
         case "ArrowRight":
             deltaPanX = altKey ? 0 : (event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCx = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? -JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : -1)) : 0;
+            handled = true;
             break;
 
         case "ArrowDown":
             deltaPanY = altKey ? 0 : -(event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCy = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? -JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : -1)) : 0;
+            handled = true;
             break;
 
         case "ArrowUp":
             deltaPanY = altKey ? 0 : (event.shiftKey ? PAN_SMOOTH_STEP : PAN_STEP);
             deltaCy = altKey ? (JULIA_HOTKEY_C_STEP * (event.shiftKey ? JULIA_HOTKEY_C_SMOOTH_MULTIPLIER : 1)) : 0;
+            handled = true;
             break;
 
         case "Space":
@@ -237,14 +286,17 @@ async function onKeyDown(event) {
 
             let targetZoom = fractalApp.zoom * zoomFactor;
 
-            if (targetZoom > fractalApp.MAX_ZOOM && targetZoom < fractalApp.MIN_ZOOM) {
-                await fractalApp.animateZoomTo(targetZoom, 20);
+            if (targetZoom >= fractalApp.MAX_ZOOM && targetZoom <= fractalApp.MIN_ZOOM) {
+                // Use animateZoomToNoPan to preserve DD pan precision at deep zooms
+                await fractalApp.animateZoomToNoPan(targetZoom, 20);
                 resetAppState();
             }
+            handled = true;
             break;
 
         case "Enter":
             toggleHeader();
+            handled = true;
             break;
 
         default: // Case nums and others:
@@ -256,6 +308,7 @@ async function onKeyDown(event) {
                 } else {
                     await travelToPreset(fractalApp.PRESETS, index);
                 }
+                handled = true;
             }
             break;
     }
@@ -268,7 +321,9 @@ async function onKeyDown(event) {
         const effectiveDeltaX = (deltaPanX * fractalApp.zoom) * Math.cos(r) - (deltaPanY * fractalApp.zoom) * Math.sin(r);
         const effectiveDeltaY = (deltaPanX * fractalApp.zoom) * Math.sin(r) + (deltaPanY * fractalApp.zoom) * Math.cos(r);
 
-        await fractalApp.animatePanTo([fractalApp.pan[0] + effectiveDeltaX, fractalApp.pan[1] + effectiveDeltaY], PAN_SPEED);
+        await fractalApp.animatePanBy([effectiveDeltaX, effectiveDeltaY], PAN_SPEED);
+        fractalApp.noteInteraction(160);
+
         resetAppState();
     }
 
@@ -280,6 +335,10 @@ async function onKeyDown(event) {
         await fractalApp.animateToC([fractalApp.c[0] + effectiveDeltaCx, fractalApp.c[1] + effectiveDeltaCy], JULIA_HOTKEY_C_SPEED);
         resetAppState();
     }
+
+    if (handled) {
+        event.preventDefault();
+    }
 }
 
 /**
@@ -288,7 +347,7 @@ async function onKeyDown(event) {
  */
 export function initHotKeys(app) {
     if (initialized) {
-        console.warn(`%c initHotKeys: %c Redundant initialization skipped!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.warn(`%c initHotKeys: %c Redundant initialization skipped!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -296,13 +355,13 @@ export function initHotKeys(app) {
     document.addEventListener("keydown", onKeyDown);
     initialized = true;
 
-    console.log(`%c initHotKeys: %c Initialized.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    log('Initialized.', 'initHotKeys');
 }
 
 /** Destructor. Removes event listeners and cleans up */
 export function destroyHotKeys() {
     if (!initialized) {
-        console.warn(`%c destroyHotKeys: %c Nothing to destroy!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+        console.warn(`%c destroyHotKeys: %c Nothing to destroy!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -311,5 +370,5 @@ export function destroyHotKeys() {
 
     document.removeEventListener("keydown", onKeyDown);
 
-    console.log(`%c destroyHotKeys: %c Destroyed.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, `color: #fff`);
+    console.log(`%c destroyHotKeys: %c Destroyed.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }

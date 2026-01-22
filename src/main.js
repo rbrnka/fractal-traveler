@@ -2,22 +2,25 @@
  * @module Main
  * @author Radim Brnka
  * @description The entry point that imports modules, creates the fractal renderer instance (passing the canvas ID), initializes the UI and the fractal.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import './css/style.css';
+import './css/debugPanel.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
-import {MandelbrotRenderer} from "./renderers/mandelbrotRenderer";
-import {RiemannRenderer} from "./renderers/riemannRenderer";
+import MandelbrotRenderer from "./renderers/mandelbrotRenderer";
+import RiemannRenderer from "./renderers/riemannRenderer";
 import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, FRACTAL_TYPE} from "./global/constants";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";
 
 /**
  * Initializes the canvas, reads URL params and triggers respective fractal rendering
  */
 async function initFractalApp() {
-    if (DEBUG_MODE) console.warn(' --- DEBUG MODE ACTIVE! ---');
-    console.groupCollapsed(`%c initFractalApp`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    if (DEBUG_MODE > DEBUG_LEVEL.VERBOSE) console.warn(' --- FULL DEBUG MODE ACTIVE! ---');
+    console.groupCollapsed(`%c initFractalApp`, CONSOLE_GROUP_STYLE);
 
     const canvas = document.getElementById('fractalCanvas');
     canvas.width = window.innerWidth;
@@ -82,7 +85,7 @@ async function initFractalApp() {
         await fractalApp.animateTravelToPreset(preset, 1000);
     } else if (validMandelbrotTravelPreset) {
         console.log(`Traveling to URL params.`);
-        await fractalApp.animateTravelToPreset(preset, 100, 1000);
+        await fractalApp.animateTravelToPreset(preset, 100, 400, 1000);
     } else {
         onDefault();
     }
@@ -105,10 +108,10 @@ async function initFractalApp() {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
-        if (DEBUG_MODE) console.log('%c DOMContentLoaded: %c Initializing fractal.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #ff0');
+        if (DEBUG_MODE) console.log('%c DOMContentLoaded: %c Initializing fractal.', CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         await initFractalApp();
-        console.log('%c DOMContentLoaded: %c Fractal init complete.', `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #0f0');
+        console.log('%c DOMContentLoaded: %c Fractal init complete.', CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         await asyncDelay(2000); // Wait a moment for things to stabilize
         updateInfo();

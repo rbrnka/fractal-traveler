@@ -2,6 +2,15 @@
  * @module Types
  * @author Radim Brnka
  * @description Data types & DDOs used in the application
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
+ */
+// ---------------------------------------------------------------------------------------------------------------------
+// DEBUG TYPES
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * @typedef {number} DEBUG_LEVEL
+ * @description Debug level
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // URL_PRESET
@@ -16,25 +25,27 @@
  *      @property {number|null} [zoom]
  *      @property {number|null} [r] rotation
  * @description URL Preset is an object containing properties of specific point in the fractal on the scene compatible
- * with URL encoding.All array values (pan, c) are expanded
+ * with URL encoding. All array values (pan, c) are expanded
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // PRESET
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} PRESET
+ *      @property {number} [id] If present, helps unique demo rotation
+ *      @property {string} [title] HTML element title (on hover)
+ *      @property {COMPLEX} pan
+ *      @property {number} zoom
+ *      @property {number} [rotation]
+ *      @property {number} [speed] preset animation speed
+ *      @property {string} [paletteId] color palette ID to match a JSON palette entry
  * @description Preset is an object containing properties of specific point in the fractal on the scene.
  */
 // ---------------------------------------------------------------------------------------------------------------------
 //  MANDELBROT_PRESET
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * @typedef {Object} MANDELBROT_PRESET
- *      @property {number} [id] If present, helps unique demo rotation
- *      @property {number} zoom
- *      @property {number} [rotation]
- *      @property {COMPLEX} pan
- *      @property {string} [title] HTML element title (on hover)
+ * @typedef {Object | PRESET} MANDELBROT_PRESET
  * @extends PRESET
  * @see {@link JULIA_PRESET}
  * @description Mandelbrot-specific presets
@@ -43,13 +54,8 @@
 // JULIA_PRESET
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * @typedef {Object} JULIA_PRESET
- *      @property {number} [id] If present, helps unique demo rotation
+ * @typedef {Object | PRESET} JULIA_PRESET
  *      @property {COMPLEX} c
- *      @property {number} zoom
- *      @property {number} [rotation]
- *      @property {COMPLEX} pan
- *      @property {string} [title] HTML element title (on hover)
  * @extends PRESET
  * @see {@link MANDELBROT_PRESET}
  * @description Julia-specific presets
@@ -59,19 +65,14 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Array.<number>} COMPLEX
- *      @property {number} 0 The real part.
- *      @property {number} 1 The imaginary part.
- * @description The complex number c=x+yi as [x, yi], used as C in Julia or Pan in general.
+  * @description The complex number c=x+yi as [x, y], used as C in Julia or Pan in general. x: the real part, y: the imaginary part.
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // PALETTE
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Array.<number>} PALETTE
- *      @property {number} 0 Red
- *      @property {number} 1 Green
- *      @property {number} 2 Blue
- * @description Color palette [R, G ,B] (0-1)
+ * @description Color palette [R, G, B] (0-1)
  */
 // ---------------------------------------------------------------------------------------------------------------------
 // JULIA PALETTE
@@ -108,6 +109,7 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} DIVE
+ *      @property {string} [title] HTML element title (on hover)
  *      @property {number} cxDirection Use -1/+1 for negative/positive direction of the animation
  *      @property {number} cyDirection Use -1/+1 for negative/positive direction of the animation
  *      @property {PHASES} [phases]
@@ -119,8 +121,10 @@
  *      @property {COMPLEX} startC
  *      @property {COMPLEX} endC
  *      @property {number} zoom
+ *      @property {number} [rotation]
  *      @property {number} step
- * @description Dive is a special animation loop that first animates cx in given direction and when it reaches set threshold,
+ *      @property {string} [paletteId] color palette ID to match a JSON palette entry
+ * @description Dive is a special animation loop that first animates cx in given direction and when it reaches a set threshold,
  * then it will start animating cy in given direction until its threshold is also hit. Then it loops in the opposite
  * direction. If phases are defined, it follows their order.
  */

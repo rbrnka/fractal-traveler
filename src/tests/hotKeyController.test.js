@@ -1,8 +1,30 @@
+/**
+ * @jest-environment jsdom
+ */
 // __tests__/hotKeyController.test.js
-import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
 
-// Use actual constants if needed:
-import * as UI from "../ui/ui";
+// Mock ui module before importing hotKeyController (which imports from ui)
+jest.mock('../ui/ui', () => ({
+    isJuliaMode: jest.fn(() => true),
+    travelToPreset: jest.fn(() => Promise.resolve()),
+    startJuliaDive: jest.fn(() => Promise.resolve()),
+    isAnimationActive: jest.fn(() => false),
+    toggleHeader: jest.fn(),
+    randomizeColors: jest.fn(),
+    toggleCenterLines: jest.fn(),
+    toggleDebugMode: jest.fn(),
+    toggleDemo: jest.fn(() => Promise.resolve()),
+    reset: jest.fn(() => Promise.resolve()),
+    resetAppState: jest.fn(),
+    switchFractalMode: jest.fn(() => Promise.resolve()),
+    switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
+    captureScreenshot: jest.fn(),
+    updateColorTheme: jest.fn(),
+    updatePaletteDropdownState: jest.fn(),
+}));
+
+import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
+import * as ui from '../ui/ui';
 import {
     charPressedEvent,
     downArrowPressedEvent,
@@ -15,52 +37,28 @@ import {ROTATION_DIRECTION} from "../global/constants";
 
 describe('HotKeyController', () => {
     let fractalApp;
-    let originalIsJuliaMode;
 
     beforeEach(() => {
-        // Save original isJuliaMode to restore later
-        originalIsJuliaMode = UI.isJuliaMode;
+        // Reset all mocks
+        jest.clearAllMocks();
 
-        // Mock isJuliaMode to return true for tests that require it.
-        UI.isJuliaMode = jest.fn(() => true);
-        UI.travelToPreset = jest.fn(() => Promise.resolve());
-        UI.startJuliaDive = jest.fn(() => Promise.resolve());
-
-        // Create a mock fractalApp object with necessary properties/methods.
-        fractalApp = {
-            pan: [0, 0],
-            c: [0.5, 0.5],
-            rotation: 0,
-            zoom: 1,
-            DIVES: [{}, {}, {}],
-            animatePanTo: jest.fn(() => Promise.resolve()),
-            animateToC: jest.fn(() => Promise.resolve()),
-            animateInfiniteRotation: jest.fn(() => Promise.resolve()),
-            animateTravelToPreset: jest.fn(() => Promise.resolve()),
-            animateDive: jest.fn(() => Promise.resolve()),
-            stopCurrentRotationAnimation: jest.fn(),
-            stopAllNonColorAnimations: jest.fn(),
-            draw: jest.fn(),
-            updateInfo: jest.fn(),
-            updateInfoOnAnimationFinished: jest.fn(),
-        };
+        // Create mock fractalApp using factory
+        fractalApp = createMockFractalApp();
+        fractalApp.c = [0.5, 0.5];
 
         // Attach hotkey handler with our mock app.
         initHotKeys(fractalApp);
     });
 
     afterEach(() => {
-        UI.isJuliaMode = originalIsJuliaMode;
-        // Remove keydown listeners by replacing document's event listeners
-        // (Depending on your implementation, you might need to remove them explicitly.)
-        document.body.innerHTML = '';
+        cleanupDOM();
         destroyHotKeys();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('ArrowLeft without ctrl pans left', async () => {
         document.dispatchEvent(leftArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('ArrowRight with Alt adjusts Julia c', async () => {
@@ -72,7 +70,7 @@ describe('HotKeyController', () => {
     test('ArrowDown without ctrl pans down', async () => {
         document.dispatchEvent(downArrowPressedEvent());
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(fractalApp.animatePanTo).toHaveBeenCalled();
+        expect(fractalApp.animatePanBy).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('ArrowUp with Alt adjusts Julia c (imaginary part)', async () => {
@@ -84,22 +82,22 @@ describe('HotKeyController', () => {
     test('Numkeys travel to preset', async () => {
         document.dispatchEvent(numPressedEvent(1));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(UI.travelToPreset).toHaveBeenCalled();
+        expect(ui.travelToPreset).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('Shift+Numkeys trigger dive in Julia mode or travel to preset otherwise', async () => {
-        UI.isJuliaMode = jest.fn(() => false);
+        ui.isJuliaMode.mockReturnValue(false);
 
         // No Julia mode, Shift does not make a difference - travel to preset
         document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(UI.travelToPreset).toHaveBeenCalled();
+        expect(ui.travelToPreset).toHaveBeenCalled();
 
         // In Julia mode, dive is triggered
-        UI.isJuliaMode = jest.fn(() => true);
+        ui.isJuliaMode.mockReturnValue(true);
         document.dispatchEvent(numPressedEvent(1, true));
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(UI.startJuliaDive).toHaveBeenCalled();
+        expect(ui.startJuliaDive).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('W enter infinite rotation cw, stop, enter again with slower speed and opposite direction', async () => {
@@ -114,5 +112,46 @@ describe('HotKeyController', () => {
         document.dispatchEvent(charPressedEvent('q', true));
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(fractalApp.animateInfiniteRotation).toHaveBeenCalledWith(ROTATION_DIRECTION.CCW, 0.01);
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Space triggers zoom in', async () => {
+        // Set current zoom to 1.0
+        fractalApp.zoom = 1.0;
+
+        // Define bounds so that any number between 0 and 10 is 'valid'
+        // Deepest zoom (tiny number)
+        fractalApp.MAX_ZOOM = 0.0000000001;
+        // Furthest out (large number)
+        fractalApp.MIN_ZOOM = 100.0;
+
+        // Dispatch the event
+        document.dispatchEvent(charPressedEvent(' ', false, false, false));
+
+        // Use a slightly longer wait to ensure the async switch/case finishes
+        await new Promise(resolve => setTimeout(resolve, 10));
+
+        expect(fractalApp.animateZoomToNoPan).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Ignore hotkeys when user is typing in an input field', async () => {
+        // Setup a mock input target
+        const input = document.createElement('input');
+        document.body.appendChild(input);
+
+        // Create event with the input as the target
+        const event = charPressedEvent('t');
+        Object.defineProperty(event, 'target', {value: input, enumerable: true});
+
+        document.dispatchEvent(event);
+        await Promise.resolve();
+
+        // randomization should NOT have been called
+        expect(ui.randomizeColors).not.toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Enter key toggles the UI header', async () => {
+        // document.dispatchEvent(defaultKeyboardEvent('Enter'));
+        // await Promise.resolve();
+        // expect(mockUI.toggleHeader).toHaveBeenCalled();
     });
 });

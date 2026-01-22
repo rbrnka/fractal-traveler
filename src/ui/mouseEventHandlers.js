@@ -1,19 +1,31 @@
 /**
  * @module MouseEventHandlers
  * @author Radim Brnka
- * @description This module exports a function registerTouchEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
+ * @description This module exports a function registerMouseEventHandlers that sets up all mouse events. It interacts directly with the fractalRenderer instance.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
-import {calculatePanDelta, expandComplexToString, normalizeRotation, updateURLParams} from '../global/utils.js';
-import {isJuliaMode, resetAppState, toggleDebugLines, updateInfo} from './ui.js';
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
+import {normalizeRotation, updateURLParams} from '../global/utils.js';
+import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
+import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
 /** How long should we wait before distinguish between double click and two single clicks. */
 const DOUBLE_CLICK_THRESHOLD = 300;
 /** Tolerance of mouse movement before drag starts. */
 const DRAG_THRESHOLD = 5;
-const ZOOM_STEP = 0.05; // Common for both zoom-in and out
+const ZOOM_STEP = 0.05; // double-click zoom in/out
 const ROTATION_SENSITIVITY = 0.01;
+
+/** Long press zoom configuration */
+const LONG_PRESS_THRESHOLD = 400; // ms before zoom starts
+const LONG_PRESS_ZOOM_IN_FACTOR = 0.985; // zoom multiplier per frame (smaller = faster zoom in)
+const LONG_PRESS_ZOOM_OUT_FACTOR = 1.015; // zoom multiplier per frame (larger = faster zoom out)
+
+// Wheel smoothing (reduces micro-jitter due to bursty wheel events)
+const WHEEL_ZOOM_BASE = 1.1;
+const WHEEL_DELTA_UNIT = 120;
 
 let canvas;
 let fractalApp;
@@ -26,6 +38,7 @@ let handleWheelEvent;
 let handleMouseDownEvent;
 let handleMouseMoveEvent;
 let handleMouseUpEvent;
+let handleMouseLeaveEvent;
 
 let mouseDownX = 0, mouseDownY = 0;
 let lastX = 0, lastY = 0;
@@ -34,9 +47,53 @@ let wheelResetTimeout = null;
 let isDragging = false;
 let wasRotated = false;
 
+// Long press zoom state (left button - zoom in)
+let longPressTimeout = null;
+let longPressZoomActive = false;
+let longPressZoomRAF = null;
+let longPressAnchorX = 0;
+let longPressAnchorY = 0;
+
+// Long press zoom state (right button - zoom out)
+let rightLongPressTimeout = null;
+let rightLongPressZoomActive = false;
+let rightLongPressZoomRAF = null;
+let rightLongPressAnchorX = 0;
+let rightLongPressAnchorY = 0;
+
 // Rotation
 let isRightDragging = false;
 let startX = 0;
+
+// Middle-click Julia preview
+let isMiddleButtonHeld = false;
+
+// Cached rect (avoid layout thrash / inconsistencies during drag)
+let dragRectLeft = 0;
+let dragRectTop = 0;
+let hasDragRect = false;
+
+// Wheel RAF aggregation
+let wheelAccum = 0;
+let wheelAnchorX = 0;
+let wheelAnchorY = 0;
+let wheelRAF = null;
+// Cached rect for wheel zoom (avoid sub-pixel jitter from repeated getBoundingClientRect calls)
+let wheelRectLeft = 0;
+let wheelRectTop = 0;
+let hasWheelRect = false;
+
+/**
+ * Mark orbit dirty if the current renderer supports perturbation caching.
+ * IMPORTANT: must NOT trigger orbit rebuild immediately (renderers should defer).
+ */
+function markOrbitDirtySafe() {
+    if (fractalApp && typeof fractalApp.markOrbitDirty === "function") {
+        fractalApp.markOrbitDirty();
+    } else if (fractalApp) {
+        // Fallback: do nothing; non-perturbation renderers won't need it.
+    }
+}
 
 /**
  * Initialization and registering of the event handlers.
@@ -45,15 +102,15 @@ let startX = 0;
 export function initMouseHandlers(app) {
     fractalApp = app;
     canvas = app.canvas;
-    canvas.addEventListener('contextmenu', (e) => e.preventDefault());
-
-    registerMouseEventHandlers(app);
+    canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+    initJuliaPreview();
+    registerMouseEventHandlers();
 }
 
 /** Registers mouse handlers. */
 export function registerMouseEventHandlers() {
     if (mouseHandlersRegistered) {
-        console.warn(`%c registerMouseEventHandlers: %c Mouse event handlers already registered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c registerMouseEventHandlers: %c Mouse event handlers already registered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -61,20 +118,22 @@ export function registerMouseEventHandlers() {
     handleMouseDownEvent = (event) => handleMouseDown(event);
     handleMouseMoveEvent = (event) => handleMouseMove(event);
     handleMouseUpEvent = (event) => handleMouseUp(event);
+    handleMouseLeaveEvent = () => handleMouseLeave();
 
     canvas.addEventListener('wheel', handleWheelEvent, {passive: false});
     canvas.addEventListener('mousedown', handleMouseDownEvent);
     canvas.addEventListener('mousemove', handleMouseMoveEvent);
     canvas.addEventListener('mouseup', handleMouseUpEvent);
+    canvas.addEventListener('mouseleave', handleMouseLeaveEvent);
 
     mouseHandlersRegistered = true;
-    console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.log(`%c registerMouseEventHandlers: %c Event handlers registered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 /** Unregisters mouse handlers. */
 export function unregisterMouseEventHandlers() {
     if (!mouseHandlersRegistered) {
-        console.warn(`%c registerMouseEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.warn(`%c unregisterMouseEventHandlers: %c Event handlers are not registered so cannot be unregistered!`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -82,52 +141,177 @@ export function unregisterMouseEventHandlers() {
     canvas.removeEventListener('mousedown', handleMouseDownEvent);
     canvas.removeEventListener('mousemove', handleMouseMoveEvent);
     canvas.removeEventListener('mouseup', handleMouseUpEvent);
+    canvas.removeEventListener('mouseleave', handleMouseLeaveEvent);
 
     mouseHandlersRegistered = false;
-    console.warn(`%c registerMouseEventHandlers: %c Event handlers unregistered`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.warn(`%c unregisterMouseEventHandlers: %c Event handlers unregistered`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 }
 
 // region > EVENT HANDLERS ---------------------------------------------------------------------------------------------
 
+/**
+ * Start the continuous long press zoom-in loop (left button).
+ * Zooms in toward the anchor point while allowing panning.
+ */
+function startLongPressZoomIn() {
+    if (longPressZoomActive) return;
+    longPressZoomActive = true;
+    canvas.style.cursor = 'zoom-in';
+
+    function zoomLoop() {
+        if (!longPressZoomActive || !fractalApp) return;
+
+        const targetZoom = fractalApp.zoom * LONG_PRESS_ZOOM_IN_FACTOR;
+
+        if (targetZoom > fractalApp.MAX_ZOOM) {
+            // Use anchor-preserving zoom
+            fractalApp.setZoomKeepingAnchor(targetZoom, longPressAnchorX, longPressAnchorY);
+            markOrbitDirtySafe();
+            fractalApp.draw();
+            updateInfo(true);
+
+            longPressZoomRAF = requestAnimationFrame(zoomLoop);
+        } else {
+            // Reached max zoom, stop
+            stopLongPressZoomIn();
+        }
+    }
+
+    longPressZoomRAF = requestAnimationFrame(zoomLoop);
+    fractalApp.noteInteraction(160);
+}
+
+/**
+ * Stop the long press zoom-in loop (left button).
+ */
+function stopLongPressZoomIn() {
+    if (longPressTimeout) {
+        clearTimeout(longPressTimeout);
+        longPressTimeout = null;
+    }
+    if (longPressZoomRAF) {
+        cancelAnimationFrame(longPressZoomRAF);
+        longPressZoomRAF = null;
+    }
+    if (longPressZoomActive) {
+        longPressZoomActive = false;
+        canvas.style.cursor = 'crosshair';
+        resetAppState();
+    }
+}
+
+/**
+ * Start the continuous long press zoom-out loop (right button).
+ * Zooms out from the anchor point while allowing panning.
+ */
+function startLongPressZoomOut() {
+    if (rightLongPressZoomActive) return;
+    rightLongPressZoomActive = true;
+    canvas.style.cursor = 'zoom-out';
+
+    function zoomLoop() {
+        if (!rightLongPressZoomActive || !fractalApp) return;
+
+        const targetZoom = fractalApp.zoom * LONG_PRESS_ZOOM_OUT_FACTOR;
+
+        if (targetZoom < fractalApp.MIN_ZOOM) {
+            // Use anchor-preserving zoom
+            fractalApp.setZoomKeepingAnchor(targetZoom, rightLongPressAnchorX, rightLongPressAnchorY);
+            markOrbitDirtySafe();
+            fractalApp.draw();
+            updateInfo(true);
+
+            rightLongPressZoomRAF = requestAnimationFrame(zoomLoop);
+        } else {
+            // Reached min zoom, stop
+            stopLongPressZoomOut();
+        }
+    }
+
+    rightLongPressZoomRAF = requestAnimationFrame(zoomLoop);
+    fractalApp.noteInteraction(160);
+}
+
+/**
+ * Stop the long press zoom-out loop (right button).
+ */
+function stopLongPressZoomOut() {
+    if (rightLongPressTimeout) {
+        clearTimeout(rightLongPressTimeout);
+        rightLongPressTimeout = null;
+    }
+    if (rightLongPressZoomRAF) {
+        cancelAnimationFrame(rightLongPressZoomRAF);
+        rightLongPressZoomRAF = null;
+    }
+    if (rightLongPressZoomActive) {
+        rightLongPressZoomActive = false;
+        canvas.style.cursor = 'crosshair';
+        resetAppState();
+    }
+}
+
+/**
+ * Apply accumulated wheel delta once per RAF.
+ * This reduces "bursty wheel" micro-jitter and keeps anchor math consistent.
+ */
+function flushWheelZoom() {
+    wheelRAF = null;
+
+    if (!fractalApp) return;
+    if (!Number.isFinite(fractalApp.zoom)) return;
+
+    // Use cached rect to avoid sub-pixel jitter from repeated getBoundingClientRect calls
+    const mouseX = wheelAnchorX - wheelRectLeft; // CSS px
+    const mouseY = wheelAnchorY - wheelRectTop;  // CSS px
+
+    // Apply accumulated delta
+    const zoomFactor = Math.pow(WHEEL_ZOOM_BASE, wheelAccum / WHEEL_DELTA_UNIT);
+    const targetZoom = fractalApp.zoom * zoomFactor;
+
+    // reset accumulator early (avoid re-entrance issues)
+    wheelAccum = 0;
+
+    if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) return;
+
+    // Stable deep-zoom anchor math (no before/after subtraction)
+    // Keeps the fractal point under cursor fixed while changing zoom.
+    fractalApp.setZoomKeepingAnchor(targetZoom, mouseX, mouseY);
+
+    // orbit rebuild request for perturbation renderers (deferred by renderer logic)
+    markOrbitDirtySafe();
+
+    updateInfo(true);
+    fractalApp.draw();
+}
+
 function handleWheel(event) {
     event.preventDefault();
 
-    if (wheelResetTimeout) {
-        clearTimeout(wheelResetTimeout);
+    // Cache rect on first wheel event of a gesture to avoid sub-pixel jitter
+    if (!hasWheelRect) {
+        const rect = fractalApp.canvas.getBoundingClientRect();
+        wheelRectLeft = rect.left;
+        wheelRectTop = rect.top;
+        hasWheelRect = true;
     }
 
-    // Debounce
+    // Aggregate wheel delta and apply once per frame.
+    wheelAccum += event.deltaY;
+    wheelAnchorX = event.clientX;
+    wheelAnchorY = event.clientY;
+
+    if (!wheelRAF) {
+        wheelRAF = requestAnimationFrame(flushWheelZoom);
+    }
+
+    if (wheelResetTimeout) clearTimeout(wheelResetTimeout);
     wheelResetTimeout = setTimeout(() => {
+        hasWheelRect = false; // Reset rect cache when gesture ends
         resetAppState();
-    }, 200);
+    }, 150);
 
-    // Get the CSS coordinate of the mouse relative to the canvas
-    const rect = fractalApp.canvas.getBoundingClientRect();
-    const mouseX = event.clientX - rect.left;
-    const mouseY = event.clientY - rect.top;
-
-    // Get fractal coordinates before zooming
-    const [fxOld, fyOld] = fractalApp.screenToFractal(mouseX, mouseY);
-
-    // Determine zoom factor based on wheel direction
-    const zoomFactor = event.deltaY > 0 ? 1.1 : 0.9;
-
-    const targetZoom = fractalApp.zoom * zoomFactor;
-    if (targetZoom < fractalApp.MAX_ZOOM || targetZoom > fractalApp.MIN_ZOOM) {
-        return;
-    }
-
-    fractalApp.zoom *= zoomFactor; // No animation, direct change.
-
-    // Get fractal coordinates after zooming (using the same mouse position)
-    const [fxNew, fyNew] = fractalApp.screenToFractal(mouseX, mouseY);
-
-    // Adjust pan to keep the fractal point under the mouse cursor fixed
-    fractalApp.pan[0] -= fxNew - fxOld;
-    fractalApp.pan[1] -= fyNew - fyOld;
-
-    updateInfo();
-    fractalApp.draw();
+    fractalApp.noteInteraction(160);
 }
 
 function handleMouseDown(event) {
@@ -137,8 +321,58 @@ function handleMouseDown(event) {
         mouseDownY = event.clientY;
         lastX = event.clientX;
         lastY = event.clientY;
+
+        // Cache rect origin for stable relative coordinates during the drag.
+        // (Avoids layout thrash and tiny inconsistencies.)
+        const rect = canvas.getBoundingClientRect();
+        dragRectLeft = rect.left;
+        dragRectTop = rect.top;
+        hasDragRect = true;
+
+        // Set up long press zoom anchor (relative to canvas)
+        longPressAnchorX = event.clientX - rect.left;
+        longPressAnchorY = event.clientY - rect.top;
+
+        // Start long press timer for zoom-in
+        if (longPressTimeout) clearTimeout(longPressTimeout);
+        longPressTimeout = setTimeout(() => {
+            // Only start zoom if we haven't started dragging
+            if (!isDragging) {
+                startLongPressZoomIn();
+            }
+        }, LONG_PRESS_THRESHOLD);
     } else if (event.button === 2) { // Right-click
         startX = event.clientX;
+
+        // Cache rect for right button long press zoom
+        const rect = canvas.getBoundingClientRect();
+        rightLongPressAnchorX = event.clientX - rect.left;
+        rightLongPressAnchorY = event.clientY - rect.top;
+
+        // Start long press timer for zoom-out
+        if (rightLongPressTimeout) clearTimeout(rightLongPressTimeout);
+        rightLongPressTimeout = setTimeout(() => {
+            // Only start zoom if we haven't started rotating
+            if (!isRightDragging) {
+                startLongPressZoomOut();
+            }
+        }, LONG_PRESS_THRESHOLD);
+    } else if (event.button === 1) { // Middle click - Julia preview
+        event.preventDefault();
+
+        // Only show Julia preview when in Mandelbrot mode
+        if (!isJuliaMode()) {
+            isMiddleButtonHeld = true;
+
+            // Get fractal coordinates at cursor position
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
+            const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+
+            // Show Julia preview with c = cursor fractal position
+            showJuliaPreview(event.clientX, event.clientY, fx, fy);
+        }
     }
 }
 
@@ -147,8 +381,21 @@ function handleMouseMove(event) {
     const dy = event.clientY - mouseDownY;
 
     if (event.buttons === 1) {
+        // If long press zoom is active, update anchor for panning while zooming
+        if (longPressZoomActive) {
+            const rect = canvas.getBoundingClientRect();
+            longPressAnchorX = event.clientX - rect.left;
+            longPressAnchorY = event.clientY - rect.top;
+            return; // Don't process as regular drag
+        }
+
         if (!isDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isDragging = true;
+            // Cancel long press timer when drag starts
+            if (longPressTimeout) {
+                clearTimeout(longPressTimeout);
+                longPressTimeout = null;
+            }
         }
 
         if (isDragging) {
@@ -158,15 +405,35 @@ function handleMouseMove(event) {
                 clickTimeout = null;
             }
 
-            const rect = canvas.getBoundingClientRect();
-            // Calculate pan delta from the current and last mouse positions.
-            const [deltaX, deltaY] = calculatePanDelta(
-                event.clientX, event.clientY, lastX, lastY, rect,
-                fractalApp.rotation, fractalApp.zoom
-            );
+            // Use cached rect origin (fallback if not available).
+            let left = dragRectLeft;
+            let top = dragRectTop;
+            if (!hasDragRect) {
+                const rect = canvas.getBoundingClientRect();
+                left = rect.left;
+                top = rect.top;
+            }
 
-            fractalApp.pan[0] += deltaX;
-            fractalApp.pan[1] += deltaY;
+            // Stable deep-zoom pan delta:
+            // pan += zoom * (vLast - vNow)
+            const lastRelX = lastX - left;
+            const lastRelY = lastY - top;
+            const nowRelX = event.clientX - left;
+            const nowRelY = event.clientY - top;
+
+            const [vLastX, vLastY] = fractalApp.screenToViewVector(lastRelX, lastRelY);
+            const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
+
+            if (Number.isFinite(fractalApp.zoom)) {
+                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                fractalApp.addPan(deltaX, deltaY);
+                // Mark orbit dirty (deferred rebuild)
+                markOrbitDirtySafe();
+
+                fractalApp.noteInteraction(160);
+            }
 
             // Update last mouse coordinates.
             lastX = event.clientX;
@@ -178,17 +445,29 @@ function handleMouseMove(event) {
     }
 
     if (event.buttons === 2) {
+        // If right long press zoom is active, update anchor for panning while zooming
+        if (rightLongPressZoomActive) {
+            const rect = canvas.getBoundingClientRect();
+            rightLongPressAnchorX = event.clientX - rect.left;
+            rightLongPressAnchorY = event.clientY - rect.top;
+            return; // Don't process as rotation drag
+        }
 
         if (!isRightDragging && (Math.abs(dx) > DRAG_THRESHOLD || Math.abs(dy) > DRAG_THRESHOLD)) {
             isRightDragging = true;
+            // Cancel right long press timer when rotation drag starts
+            if (rightLongPressTimeout) {
+                clearTimeout(rightLongPressTimeout);
+                rightLongPressTimeout = null;
+            }
         }
 
         if (isRightDragging) {
-            event.preventDefault(); // Prevent default actions during dragging
+            event.preventDefault();
             const deltaX = event.clientX - startX;
 
             fractalApp.rotation = normalizeRotation(fractalApp.rotation + deltaX * ROTATION_SENSITIVITY);
-            fractalApp.draw(); // Redraw with the updated rotation
+            fractalApp.draw();
 
             startX = event.clientX; // Update starting point for smooth rotation
             wasRotated = true;
@@ -196,28 +475,67 @@ function handleMouseMove(event) {
             updateInfo();
         }
     }
+
+    // Middle button held - update Julia preview
+    if (event.buttons === 4 && isMiddleButtonHeld && !isJuliaMode()) {
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = event.clientX - rect.left;
+        const mouseY = event.clientY - rect.top;
+        const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
+
+        updateJuliaPreview(event.clientX, event.clientY, fx, fy);
+    }
 }
 
 function handleMouseUp(event) {
     // Process only for left (0), middle (1), or right (2) mouse buttons.
     if (![0, 1, 2].includes(event.button)) return;
 
-    event.preventDefault(); // Stop browser-specific behaviors
-    event.stopPropagation(); // Prevent bubbling to parent elements
+    event.preventDefault();
+    event.stopPropagation();
 
-    if (event.button === 1) { // Middle-click toggles the lines
-        console.log(`%c handleMouseUp: %c Middle Click - Toggling lines`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-
-        toggleDebugLines();
-        return; // Exit early since middle-click doesn't involve dragging or centering.
+    // Stop long press zoom-in on left button up
+    if (event.button === 0) {
+        if (longPressZoomActive) {
+            stopLongPressZoomIn();
+            return; // Don't process as click
+        }
+        // Cancel pending long press timer
+        if (longPressTimeout) {
+            clearTimeout(longPressTimeout);
+            longPressTimeout = null;
+        }
     }
 
-    // We check if the click was not a drag.
-    if (event.button === 0) { // Left-click
+    // Stop long press zoom-out on right button up
+    if (event.button === 2) {
+        if (rightLongPressZoomActive) {
+            stopLongPressZoomOut();
+            return; // Don't process as right-click
+        }
+        // Cancel pending right long press timer
+        if (rightLongPressTimeout) {
+            clearTimeout(rightLongPressTimeout);
+            rightLongPressTimeout = null;
+        }
+    }
+
+    if (event.button === 1) { // Middle-click - hide Julia preview
+        if (isMiddleButtonHeld) {
+            isMiddleButtonHeld = false;
+            hideJuliaPreview();
+        }
+        return;
+    }
+
+    if (event.button === 0) { // Left click
+        // Release drag cache
+        hasDragRect = false;
+
         if (!isDragging) {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;  // in CSS pixels
-            const mouseY = event.clientY - rect.top;     // in CSS pixels
+            const mouseX = event.clientX - rect.left;
+            const mouseY = event.clientY - rect.top;
             const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
             // If there is already a pending click, then we have a double-click.
@@ -227,39 +545,47 @@ function handleMouseUp(event) {
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
-                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-                    fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
+                    // Use delta-based pan to preserve DD precision at deep zoom
+                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                    fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
                 } else {
-                    console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    console.log(`%c handleMouseUp: %c Double Left Click: Over max zoom. Skipping`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                 }
             } else {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
-                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} which is fractal coords ${expandComplexToString([fx, fy])}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                    // Use delta-based pan to preserve DD precision at deep zoom
+                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
-                    // Centering action:
-                    fractalApp.animatePanTo([fx, fy], 500).then(() => {
+                    // Centering action using delta-based pan:
+                    fractalApp.animatePanBy(deltaPan, 500).then(() => {
                         resetAppState();
+                        // Get the updated fractal coordinates after pan
+                        const [newFx, newFy] = fractalApp.screenToFractal(mouseX, mouseY);
                         if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, fx, fy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
                         } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, fx, fy, fractalApp.zoom, fractalApp.rotation);
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation);
                         }
                     });
 
-                    // Copy URL to clipboard:
-                    navigator.clipboard.writeText(window.location.href).then(function () {
-                        console.log(`%c handleMouseUp: %c Copied URL to clipboard!`, 'color: #fff');
-                    }, function (err) {
-                        console.error(`%c handleMouseUp: %cNot copied to clipboard! ${err}`, 'color: #fff');
-                    });
+                    navigator.clipboard.writeText(window.location.href).then(
+                        () => console.log(`%c handleMouseUp: %c Copied URL to clipboard!`, CONSOLE_MESSAGE_STYLE),
+                        (err) => console.error(`%c handleMouseUp: %c Not copied to clipboard! ${err}`, CONSOLE_MESSAGE_STYLE)
+                    );
 
-                    clickTimeout = null; // Clear the timeout.
+                    clickTimeout = null;
                 }, DOUBLE_CLICK_THRESHOLD);
             }
         } else {
             resetAppState();
             isDragging = false;
+
+            // Final settle rebuild request (renderer decides when to rebuild)
+            markOrbitDirtySafe();
+            fractalApp.draw();
         }
     }
 
@@ -267,11 +593,10 @@ function handleMouseUp(event) {
         if (isRightDragging) {
             isRightDragging = false;
 
-            if (DEBUG_MODE) console.log(`%c handleMouseUp: %c Single Right Click: Doing nothing.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+            if (DEBUG_MODE) console.log(`%c handleMouseUp: %c Single Right Click: Doing nothing.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
             if (wasRotated) resetAppState();
             wasRotated = false;
-            // Reset cursor to default after rotation ends
             canvas.style.cursor = 'crosshair';
             return; // Prevent further processing if it was a drag
         }
@@ -289,20 +614,33 @@ function handleMouseUp(event) {
 
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
-                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} which is fractal coords [${expandComplexToString([fx, fy])}] and zooming from ${fractalApp.zoom.toFixed(6)} to ${targetZoom}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-                fractalApp.animatePanAndZoomTo([fx, fy], targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
+                // Use delta-based pan to preserve DD precision at deep zoom
+                const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+                fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
             } else {
-                console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping,`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+                console.log(`%c handleMouseUp: %c Double Right Click: Over min zoom. Skipping`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
             }
         } else {
-            // Set timeout for single click
-            clickTimeout = setTimeout(() => {
-                clickTimeout = null;
-            }, DOUBLE_CLICK_THRESHOLD);
+            clickTimeout = setTimeout(() => { clickTimeout = null; }, DOUBLE_CLICK_THRESHOLD);
         }
+
         isRightDragging = false;
     }
+
     canvas.style.cursor = 'crosshair';
+}
+
+function handleMouseLeave() {
+    // Stop long press zooms if mouse leaves canvas
+    stopLongPressZoomIn();
+    stopLongPressZoomOut();
+
+    // Hide Julia preview if mouse leaves canvas while middle button is held
+    if (isMiddleButtonHeld) {
+        isMiddleButtonHeld = false;
+        hideJuliaPreview();
+    }
 }
 
 // endregion -----------------------------------------------------------------------------------------------------------

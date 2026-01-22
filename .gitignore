@@ -1,9 +1,20 @@
-/.idea/
+# IDEs & OS
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Dependencies & Builds
 /dist
 /node_modules
-*.iml
+/out
+/doc/
+
+#Security
+.env
+.env.*
+!.env.example
+
+# Temp & Others
 /backup
 /coverage
-/out
-/.env
-/doc/

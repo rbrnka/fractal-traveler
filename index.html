@@ -3,7 +3,7 @@
 <head>
     <title>Synaptory Fractal Traveler</title>
     <meta charset="UTF-8">
-    <meta name="author" content="Radim Brnka &copy; 2025">
+    <meta name="author" content="Radim Brnka &copy; 2025-2026">
     <meta name="description"
           content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
     <meta property="og:title" content="Synaptory: Fractal Traveler">
@@ -12,9 +12,8 @@
     <meta property="og:image" content="https://fractal.brnka.com/fractal.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
 
-
     <link rel="image_src" href="https://fractal.brnka.com/fractal.png">
-    <link rel="icon" href="./img/fractal.png" type="image/png">
+    <link rel="icon" href="https://fractal.brnka.com/fractal.png" type="image/png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,79 +32,100 @@
     </script>
 </head>
 <body>
-<div id="headerContainer">
-    <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
-    <p>Mandelbrot and Julia fractal explorer &copy; Radim Brnka 2025<br/>Developed for the <a
-            target="_blank"
-            title="Unmasking Chaos: Synaptory blog"
-            href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Unmasking&nbsp;Chaos</a>
-        article.</p>
-    <div id="controlArea">
-        <div class="switch-field">
-            <span>Fractal set:</span>
-            <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot</button><button id="juliaSwitch" class="" title="Julia mode (CTRL: Persist parameters)">Julia</button>
-        </div>
-        <div id="presets-dives">
-            <p id="presets"><span title="Interesting Fractal Locations">Presets:</span></p>
-            <p id="dives"><span title="Real-time Fractal Calculations">Dives:</span></p>
-        </div>
-        <div id="sliders">
-            <div class="slider-container">
-                <label for="realSlider">cx:</label>
-                <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
-                <span class="sliderValue" id="realSliderValue">0</span>
+    <div id="debugInfo" class="draggable"></div>
+    <div id="headerContainer">
+        <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
+        <div id="controlArea">
+            <p>Developed for interactive exploration and learning.</p>
+            <div class="switch-field">
+                <span>Fractal:</span>
+                <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot
+                </button>
+                <button id="persistSwitch" title="Switches between the fractals with persistent settings.">&harr;</button>
+                <button id="juliaSwitch" class="" title="Julia mode (CTRL: Persist parameters)">Julia</button>
             </div>
-            <div class="slider-container">
-                <label for="imagSlider">cy:</label>
-                <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.01" value="0.355">
-                <span class="sliderValue" id="imagSliderValue">0</span>
+            <div id="presets-dives">
+                <span>Settings:</span>
+                <div id="presets-dropdown" class="dropdown">
+                    <button id="presets-toggle" class="dropdown-toggle" title="Interesting Fractal Locations">View ▾
+                    </button>
+                    <div id="presets" class="dropdown-menu"></div>
+                </div>
+                <div id="dives-dropdown" class="dropdown">
+                    <button id="dives-toggle" class="dropdown-toggle" title="Real-time Fractal Calculations">Dive ▾
+                    </button>
+                    <div id="dives" class="dropdown-menu"></div>
+                </div>
+                <div id="palette-dropdown" class="dropdown inline">
+                    <button id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette ▾</button>
+                    <div id="palettes" class="dropdown-menu"></div>
+                </div>
+                <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button>
+            </div>
+            <div id="sliders">
+                <div class="slider-container">
+                    <label for="realSlider" title="Real part">cx:</label>
+                    <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.0001" value="-0.8000">
+                    <span class="sliderValue" id="realSliderValue">0</span>
+                </div>
+                <div class="slider-container">
+                    <label for="imagSlider" title="Imaginary part">cy:</label>
+                    <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.0001" value="0.1560">
+                    <span class="sliderValue" id="imagSliderValue">0</span>
+                </div>
+            </div>
+            <div id="controlButtons">
+                <span>Actions:</span>
+                <button id="screenshot" class="" title="Save Image (Shift+S)">Capture</button>
+                <button id="saveView" class="" title="Save current view locally (Alt+S)">Save</button>
+                <button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
             </div>
         </div>
-        <p id="controlButtons">
-            <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button><button id="randomize" class="" title="Randomize Color Palette (T)">Recolor</button><button id="screenshot" class="" title="Save Image (Shift+S)">Screenshot</button><button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
+        <p class="small">
+            <span id="controlsHint" class="hint-trigger">Controls<span class="hint-tooltip"><span
+                    class="hint-content mouse-controls"><span class="hint-section"><strong>Mouse</strong><span
+                    class="hint-row"><kbd>Scroll</kbd> Zoom</span><span class="hint-row"><kbd>Drag</kbd> Pan</span><span
+                    class="hint-row"><kbd>Click</kbd> Center</span><span
+                    class="hint-row"><kbd>Dbl-click</kbd> Zoom &amp; Pan</span><span
+                    class="hint-row"><kbd>Right drag</kbd> Rotate</span><span
+                    class="hint-row"><kbd>Hold</kbd> Cont. zoom</span><span
+                    class="hint-row"><kbd>Middle</kbd> Julia preview</span></span></span><span
+                    class="hint-content touch-controls"><span class="hint-section"><strong>Touch</strong><span
+                    class="hint-row"><kbd>Pinch</kbd> Zoom</span><span class="hint-row"><kbd>Drag</kbd> Pan</span><span
+                    class="hint-row"><kbd>Tap</kbd> Center</span><span
+                    class="hint-row"><kbd>Dbl-tap</kbd> Zoom in</span><span
+                    class="hint-row"><kbd>2-finger</kbd> Rotate</span><span
+                    class="hint-row"><kbd>Hold</kbd> Cont. zoom</span></span></span><a class="hint-link" target="_blank"
+                                                                                       href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Full Controls &rarr;</a></span></span>
+            <span class="middot">&middot;</span>
+            <a
+                    target="_blank"
+                    title="Synaptory blog: Unmasking Chaos"
+                    href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
+            <span class="middot">&middot;</span>
+            <span id="version" title="Current version"><a id="versionLink" target="_blank" title="GitHub repo"
+                                                          href="https://github.com/rbrnka/fractal-traveler">v1.9</a></span>
+            <span class="middot">&middot;</span> <span id="copy">by <a target="_blank" title="About me"
+                                                                       href="https://brnka.com">Radim Brnka</a> &copy; 2025-2026</span>
         </p>
     </div>
-    <p class="small">
-        <a target="_blank" title="
-### Mouse
-    - `Left Button Drag`: Pan
-    - `Right Button Drag`: Rotate
-    - `Wheel`: Zoom
-    - `Left Button Single Click`: Center & Generate URL link
-    - `Double click`: Zoom-in/out & Center
-    - `Middle Click`: Toggle guiding lines
-### Keyboard
-    - `F11`: Toggle fullscreen
-    - `Enter`: Toggle controls
-    - `Q / W`: Rotate counter-clockwise/clockwise (Shift: Slower speed)
-    - `E`: Toggle guiding lines
-    - `Shift + R`: Reset
-    - `T`: Randomize color palette, (Shift: cyclic color change, Alt: Reset colors)
-    - `Shift + S`: Take screenshot
-    - `Space`: Zoom-in (Ctrl/Alt: Zoom-out)
-    - `A`: Force resize
-    - `Left / Right`: Horizontal pan (Shift: smoother step)
-    - `Up / Down`: Vertical pan(Shift: Smooth step)
-    - `Alt + Left / Right`: Julia: Real part (cx) stepping (Shift: Smooth step)
-    - `Alt + Up / Down`: Julia: Imaginary part (cy) stepping (Shift: Smooth step)
-    - `Num 1-9`: Load Preset (Shift: Start dive)"
-           href="https://github.com/rbrnka/fractal-traveler?tab=readme-ov-file#controls">Controls</a>
-        <span class="middot">&middot;</span>
-        <a target="_blank" title="Readme &amp; JSDocs"
-           href="https://fractal.brnka.com/docs/">Documentation</a>
-        <span class="middot">&middot;</span>
-        <a target="_blank" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">Source Code</a>
-        <span class="middot">&middot;</span>
-        <span id="version" title="Current version">v1.8.1</span>
-    </p>
-</div>
-<div id="infoLabel" title="Click to copy full coordinates.">
-<!--    <textarea readonly id="infoText" title="Click to copy coordinates">Initialized successfully!</textarea>-->
-    <div id="infoText">Initialized successfully!</div>
-    <div id="debugInfo"></div>
-</div>
-<canvas id="fractalCanvas"></canvas>
-<div id="verticalLine" class="centerLine verticalLine"></div>
-<div id="horizontalLine" class="centerLine horizontalLine"></div>
+    <div id="infoLabel" title="Click to copy full coordinates.">
+        <div id="infoText">Initialized successfully!</div>
+    </div>
+    <canvas id="fractalCanvas"></canvas>
+    <canvas id="floatingCanvas"></canvas>
+    <div id="verticalLine" class="centerLine verticalLine"></div>
+    <div id="horizontalLine" class="centerLine horizontalLine"></div>
+    <!-- Save View Dialog -->
+    <div id="saveViewDialog" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3>Save Current View</h3>
+            <input type="text" id="saveViewName" placeholder="My View Name" maxlength="30">
+            <div class="dialog-buttons">
+                <button id="saveViewCancel" class="dialog-btn">Cancel</button>
+                <button id="saveViewConfirm" class="dialog-btn primary">Save</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

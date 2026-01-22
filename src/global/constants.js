@@ -2,23 +2,82 @@
  * @module Constants
  * @author Radim Brnka
  * @description Global constants used across the app.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 import {easeInOut, easeInOutCubic, easeInOutQuint, hexToRGBArray} from "./utils";
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * App version shown in the UI. Should match the package.json version.
+ * @type {string}
+ */
+export const VERSION = "2.0";
+
+// region > DEBUG CONSTANTS ////////////////////////////////////////////////////////////////////////////////////////////
+/**
+ * DEBUG_LEVEL
+ * @enum {number}
+ */
+export const DEBUG_LEVEL = {
+    NONE: 0,
+    VERBOSE: 1, /** Logs only */
+    FULL: 2
+}
+
 /**
  * DEBUG MODE. Set to false for prod deployment!
- * @type {boolean}
+ * @type {DEBUG_LEVEL}
  */
-export const DEBUG_MODE = false;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-// FEATURE FLAGS
-/** Allows to switch between fractal while keeping the params to allow Mandelbrot and Julia match each other */
+export const DEBUG_MODE = DEBUG_LEVEL.FULL;
+
+/**
+ *
+ * @type {{LOG: string, INFO: string, WARN: string, ERROR: string}}
+ */
+export const LOG_LEVEL = {
+    LOG: 'log',
+    DEBUG: 'debug',
+    WARN: 'warn',
+    ERROR: 'error'
+}
+
+/**
+ * Logs a message with an optional scope and severity level.
+ * @param {string} message - The message to log.
+ * @param {string} [scope=''] - The scope/context of the message.
+ * @param {string} [severity=LOG_LEVEL.LOG] - The severity level from LOG_LEVEL.
+ */
+export const log = (message, scope = '', severity = LOG_LEVEL.LOG) => {
+    const formattedScope = scope ? `[${scope}]` : '';
+
+    console[severity](
+        `%c${formattedScope}%c ${message}`,
+        CONSOLE_GROUP_STYLE,
+        CONSOLE_MESSAGE_STYLE
+    );
+}
+// endregion
+// region > FEATURE FLAGS
+/** Allows switching between fractal while keeping the params to allow Mandelbrot and Julia to match each other */
 export const FF_PERSISTENT_FRACTAL_SWITCHING = true;
 
-/** Enables bottom bar for user input for custom coords */
+/**
+ * Feature flag controlling the display of the persistent fractal switching button in the UI.
+ * When enabled, users can see a button to toggle between fractal types while maintaining
+ * the current parameters for seamless transitions between Mandelbrot and Julia sets.
+ *
+ * @type {boolean}
+ * @since 1.9
+ */
+export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
+
+/**
+ * Enables bottom bar for user input for custom coords
+ */
 export const FF_USER_INPUT_ALLOWED = false;
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
  * @type {string}
@@ -36,7 +95,7 @@ export const FRACTAL_TYPE = {
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Ease in-out transition types matching functions in Utils module
+ * Ease in-out transition types matching functions in the Utils module
  * @enum {Function}
  */
 export const EASE_TYPE = {
@@ -62,7 +121,7 @@ export const ROTATION_DIRECTION = {
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Default main GUI color
+ * Default main GUI color (Mandelbrot mode)
  * @type {string}
  */
 export const DEFAULT_ACCENT_COLOR = '#B4FF6A';
@@ -77,60 +136,31 @@ export const DEFAULT_BG_COLOR = 'rgba(24, 48, 13, 0.2)';
  * Default color for console group labels
  * @type {string}
  */
-export const DEFAULT_CONSOLE_GROUP_COLOR = '#bada55';
+const DEFAULT_CONSOLE_GROUP_COLOR = DEFAULT_ACCENT_COLOR;
+
+const DEFAULT_CONSOLE_MESSAGE_COLOR = '#fff';
+
+export const CONSOLE_GROUP_STYLE = `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`;
+
+export const CONSOLE_MESSAGE_STYLE = `color: ${DEFAULT_CONSOLE_MESSAGE_COLOR}`;
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Set of Julia-specific palettes. Keep the default first
- * @type {Array.<JULIA_PALETTE>}
+ * Default Julia-specific palette.
+ * @type {JULIA_PALETTE}
  */
-export const JULIA_PALETTES = [
-    {
-        id: 'Cosmos', keyColor: '#fefe66', theme: [
-            0.0, 0.0, 0.0,
-            1.0, 0.647, 0.0,
-            0.0, 0.0, 0.0,
-            1.2, 1.2, 1.0,
-            0.1, 0.1, 0.1
-        ]
-    },
-    {
-        id: 'Blue Mist', keyColor: '#4c4cb3', theme: [
-            0.0, 0.0, 0.0,
-            1.0, 0.647, 0.0,
-            1.0, 1.0, 1.0,
-            0.0, 0.0, 1.0,
-            0.0, 0.0, 0.5
-        ]
-    }, {
-        id: 'Fire', keyColor: '#663300', theme: [
-            0.4, 0.2, 0.0,
-            255 / 255, 144 / 255, 10 / 255,
-            0.2, 0.0, 0.0,
-            0.8, 0.7, 0.0,
-            49 / 255, 45 / 255, 4 / 255,
-        ]
-    },
-    {
-        id: 'Ocean', keyColor: '#0F52BA', theme: [
-            230 / 255, 243 / 255, 255 / 255,
-            49 / 255, 141 / 255, 178 / 255,
-            0.0, 13 / 255, 26 / 255,
-            4 / 255, 105 / 255, 151 / 255,
-            0, 40 / 255, 77 / 255
-        ]
-    },
-    {
-        id: 'Forest', keyColor: '#25591f', theme: [
-            129 / 255, 140 / 255, 60 / 255,
-            137 / 255, 89 / 255, 31 / 255,
-            45 / 255, 22 / 255, 6 / 255,
-            25 / 255, 89 / 255, 13 / 255,
-            0, 21 / 255, 0,
-        ]
-    },
-]
+export const DEFAULT_JULIA_PALETTE = {
+    id: "Default",
+    keyColor: "#4c4cb3",
+    theme: [
+        0.0, 0.0, 0.0,
+        1.0, 0.647, 0.0,
+        0.0, 0.0, 0.0,
+        1.0, 1.0, 1.0,
+        0.0, 0.0, 0.5
+    ]
+};
 // ---------------------------------------------------------------------------------------------------------------------
-/** Default color used based on the initial Mandelbrot coloring. It's accent color / 1.9 brightness factor that
+/** Default color used based on the initial Mandelbrot coloring. It's an accent color / 1.9 brightness factor that
  * is hardcoded in the updateColorTheme method.
  * @type {PALETTE}
  */
@@ -140,7 +170,7 @@ export const DEFAULT_MANDELBROT_THEME_COLOR = [95 / 255, 134 / 255, 56 / 255];
  * is hardcoded in the updateColorTheme method.
  * @type {PALETTE}
  */
-export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(JULIA_PALETTES[0].keyColor);
+export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(DEFAULT_JULIA_PALETTE.keyColor);
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * This is to allow switching between two precisions as the embedded PI constant is too accurate, which is not needed
@@ -156,14 +186,42 @@ const USE_PRECISE_PI = true;
 export const PI = USE_PRECISE_PI ? Math.PI : 3.1415926535;
 // ---------------------------------------------------------------------------------------------------------------------
 /**
- * Rotation constants for easy deg/rad conversion
- * @enum {number} radians
+ * Defines the compression quality for JPEG screenshots (0-1) in %
+ * @type {number}
  */
-export const DEG = {
-    _30: 30 * (PI / 180),
-    _90: 90 * (PI / 180),
-    _120: 120 * (PI / 180),
-    _150: 150 * (PI / 180),
-}
+export const SCREENSHOT_JPEG_COMPRESSION_QUALITY = 0.95;
 // ---------------------------------------------------------------------------------------------------------------------
-export const RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE = 'Randomize Color Palette (T)';
+/**
+ * Controls hint text in the UI.
+ * @type {string}
+ */
+export const CONTROLS_TOOLTIP = [
+"--- Mouse",
+"- Left Button Drag: Pan",
+"- Left Button Hold: Zoom in",
+"- Right Button Drag: Rotate",
+"- Right Button Hold: Zoom out",
+"- Wheel: Zoom",
+"- Left Button Single Click: Center & Generate URL link",
+"- Left/Right Button Double Click: Zoom-in/out & Center",
+"- Middle Button Drag: Toggle Julia preview in Mandelbrot mode",
+"",
+"--- Keyboard",
+"- F11: Toggle fullscreen",
+"- Enter: Toggle header",
+"- Q / W: Rotate counter-clockwise/clockwise (Shift: Slower speed)",
+"- E: Toggle guiding lines",
+"- Y: Switch between Julia and Mandelbrot with persistence",
+"- Shift + R: Reset",
+"- T: Randomize color palette (Shift: cyclic, Alt: reset)",
+"- Shift + S: Take screenshot",
+"- Alt + S: Save current view",
+"- Space: Zoom-in (Ctrl/Alt: Zoom-out, Shift: Smooth)",
+"- A: Force resize",
+"- L: Toggle debug panel",
+"- Left / Right: Horizontal pan (Shift: smoother step)",
+"- Up / Down: Vertical pan (Shift: smooth step)",
+"- Alt + Left / Right: Julia cx stepping (Shift: smooth)",
+"- Alt + Up / Down: Julia cy stepping (Shift: smooth)",
+"- Num 1-9: Load Preset (Shift: Start dive)"
+].join("\n");

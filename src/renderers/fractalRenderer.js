@@ -1,58 +1,65 @@
-import {updateInfo} from "../ui/ui";
-import {compareComplex, comparePalettes, hslToRgb, lerp, normalizeRotation, rgbToHsl} from "../global/utils";
-import {DEBUG_MODE, DEFAULT_CONSOLE_GROUP_COLOR, EASE_TYPE, PI} from "../global/constants";
+import {debugPanel, updateInfo} from "../ui/ui";
+import {
+    compareComplex,
+    comparePalettes,
+    ddAdd,
+    ddMake,
+    ddSet,
+    ddValue,
+    hslToRgb,
+    lerp,
+    normalizeRotation,
+    rgbToHsl
+} from "../global/utils";
+import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
+import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
+import Renderer from "./renderer";
 
 /**
  * FractalRenderer
  *
- * @author Radim Brnka
+ * @author Radim Brnka (c) 2025-2026
  * @description This module defines a fractalRenderer abstract class that encapsulates the WebGL code, including shader compilation, drawing, reset, and screenToFractal conversion. It also includes common animation methods.
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  * @abstract
  */
-export class FractalRenderer {
+class FractalRenderer extends Renderer {
 
     /**
      * @param {HTMLCanvasElement} canvas
      */
     constructor(canvas) {
-        this.canvas = canvas;
-        this.gl = this.canvas.getContext('webgl', {
-            antialias: false, // Already disabling anti-aliasing.
-            alpha: false, // Disable alpha channel if not needed.
-            depth: false, // Disable depth buffer.
-            stencil: false, // Disable stencil buffer.
-            preserveDrawingBuffer: false, // Do not preserve drawing buffer (faster).
-            powerPreference: 'high-performance', // Hint for high-performance GPU.
-            //failIfMajorPerformanceCaveat: true // Fail if forced to use software renderer.
-        });
+        super(canvas);
 
-        if (!this.gl) {
-            alert('WebGL is not supported by your browser or crashed.');
-            return;
-        }
+        // Defaults:
+        this.MAX_ITER = 2000;
 
-        // Default values:
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_ZOOM = 3.0;
         /** @type {COMPLEX} */
         this.DEFAULT_PAN = [0, 0];
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
-        this.MAX_ZOOM = 0.000017;
+        this.MAX_ZOOM = 1e-80;
         this.MIN_ZOOM = 40;
 
-        /** Interesting zoom-ins
-         *  @type {Array.<PRESET>}
+        /**
+         * Interesting points / details / zooms / views
+         * @type {Array.<PRESET>}
          */
         this.PRESETS = [];
 
-        /**
-         * Zoom. Lower number = higher zoom.
-         * @type {number}
-         */
+        /** @type {number} */
         this.zoom = this.DEFAULT_ZOOM;
 
         /** @type {COMPLEX} */
-        this.pan = [...this.DEFAULT_PAN]; // Copy
+        this.pan = [...this.DEFAULT_PAN];
+
+        /** DD accumulator mirrors into this.pan */
+        this.panDD = {
+            x: ddMake(this.pan[0], 0),
+            y: ddMake(this.pan[1], 0),
+        };
 
         /**
          * Rotation in rad
@@ -68,38 +75,159 @@ export class FractalRenderer {
         this.demoActive = false;
         this.currentPresetIndex = 0;
 
-        /**
-         * Determines the level of fractal rendering detail
-         * @type {number}
-         */
+        this.interactionActive = false;
+        this.interactionTimer = null;
+
+        /** @type {number} */
         this.iterations = 0;
         this.extraIterations = 0;
+
+        this.bestScore = NaN;
+        this.probeIters = NaN;
+
 
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
 
-        /**  Vertex shader initialization snippet */
-        this.vertexShaderSource = `
-			precision mediump float;
-			attribute vec4 a_position;
-	   
-			void main() {
-				gl_Position = a_position;
-			}
-		`;
+        // Uniform dirty tracking - only upload uniforms when values change
+        this._uniformCache = {
+            resW: -1,
+            resH: -1,
+            pan0: NaN,
+            pan1: NaN,
+            zoom: NaN,
+            rotation: NaN,
+            iterations: NaN,
+            color0: NaN,
+            color1: NaN,
+            color2: NaN,
+        };
 
-        this.canvas.addEventListener('webglcontextlost', this.onWebGLContextLost);
+        /** Vertex shader */
+        this.vertexShaderSource = vertexFragmentShaderRaw;
     }
 
-    onWebGLContextLost(event) {
-        event.preventDefault();
-        console.warn(`%c ${this.constructor.name}: onWebGLContextLost %c WebGL context lost. Attempting to recover...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-        this.init(); // Reinitialize WebGL context
+    /**
+     * Hook for perturbation renderers to request orbit rebuild.
+     * No-op by default.
+     */
+    markOrbitDirty() {}
+
+    /**
+     * Invalidates the uniform cache, forcing all uniforms to be re-uploaded on next draw().
+     * Called after GL program creation/recreation.
+     */
+    invalidateUniformCache() {
+        this._uniformCache.resW = -1;
+        this._uniformCache.resH = -1;
+        this._uniformCache.pan0 = NaN;
+        this._uniformCache.pan1 = NaN;
+        this._uniformCache.zoom = NaN;
+        this._uniformCache.rotation = NaN;
+        this._uniformCache.iterations = NaN;
+        this._uniformCache.color0 = NaN;
+        this._uniformCache.color1 = NaN;
+        this._uniformCache.color2 = NaN;
+    }
+
+    // --------- Pan API (use these; they keep DD + array in sync) ---------
+
+    /** @returns {number[]} the canonical array */
+    getPan() {
+        return [this.pan[0], this.pan[1]];
+    }
+
+    /**
+     * Sets the pan values for the object.
+     *
+     * @param {number} x - The horizontal pan value.
+     * @param {number} y - The vertical pan value.
+     * @return {void}
+     */
+    setPan(x, y) {
+        ddSet(this.panDD.x, x);
+        ddSet(this.panDD.y, y);
+        this.pan[0] = ddValue(this.panDD.x);
+        this.pan[1] = ddValue(this.panDD.y);
+    }
+
+    /**
+     * Adjusts the pan values by adding the specified deltas to the current pan values.
+     *
+     * @param {number} dx - The change in the x-direction to be added to the pan.
+     * @param {number} dy - The change in the y-direction to be added to the pan.
+     * @return {void}
+     */
+    addPan(dx, dy) {
+        ddAdd(this.panDD.x, dx);
+        ddAdd(this.panDD.y, dy);
+        this.pan[0] = ddValue(this.panDD.x);
+        this.pan[1] = ddValue(this.panDD.y);
+    }
+
+    /**
+     * Set pan so that fractal point (fxAnchor,fyAnchor) remains under a screen point
+     * whose view vector is (vx,vy).
+     */
+    setPanFromAnchor(fxAnchor, fyAnchor, vx, vy) {
+        const px = fxAnchor - vx * this.zoom;
+        const py = fyAnchor - vy * this.zoom;
+        this.setPan(px, py);
+    }
+
+    /**
+     * Sets zoom while keeping the fractal point under a given screen anchor fixed.
+     * Uses DD-preserving arithmetic to avoid precision loss at deep zoom.
+     *
+     * @param {number} targetZoom
+     * @param {number} anchorX CSS px relative to canvas
+     * @param {number} anchorY CSS px relative to canvas
+     */
+    setZoomKeepingAnchor(targetZoom, anchorX, anchorY) {
+        // View vector (rotated + aspect corrected) is stable because it does not include pan/zoom.
+        const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
+
+        // To keep fractal point under cursor fixed:
+        // Old: fractalPt = pan + v * oldZoom
+        // New: fractalPt = newPan + v * newZoom
+        // Therefore: newPan = pan + v * (oldZoom - newZoom)
+        // Using addPan preserves DD precision (unlike setPan which resets lo=0)
+        const deltaZoom = this.zoom - targetZoom;
+        this.addPan(vx * deltaZoom, vy * deltaZoom);
+
+        this.zoom = targetZoom;
+    }
+
+    /**
+     * Marks the app as "in interaction" (drag/wheel/key-pan) and schedules a settle phase.
+     * Perturbation renderers can use this to defer expensive orbit rebuilds until the user stops moving.
+     *
+     * @param {number} settleMs
+     */
+    noteInteraction(settleMs = 160) {
+        this.interactionActive = true;
+        this._lastInteractionTime = performance.now();
+
+        if (this.interactionTimer) {
+            clearTimeout(this.interactionTimer);
+            this.interactionTimer = null;
+        }
+
+        this.interactionTimer = setTimeout(() => {
+            this.interactionActive = false;
+
+            // Request a clean rebuild at rest for perturbation renderers (safe no-op otherwise)
+            this.markOrbitDirty();
+
+            // One clean redraw at settle time (prevents “swim” and removes lingering error)
+            this.draw();
+            updateInfo(true);
+        }, settleMs);
     }
 
     /** Destructor */
     destroy() {
-        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.groupCollapsed(`%c ${this.constructor.name}: %c destroy`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         // Cancel any ongoing animations.
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
@@ -123,8 +251,12 @@ export class FractalRenderer {
             this.fragmentShader = null;
         }
 
-        this.canvas = null;
-        this.gl = null;
+        if (this.interactionTimer) {
+            clearTimeout(this.interactionTimer);
+            this.interactionTimer = null;
+        }
+
+        super.destroy();
 
         console.groupEnd();
     }
@@ -137,80 +269,61 @@ export class FractalRenderer {
         });
     }
 
-    /** WebGL init & initial uniforms setting */
     init() {
         this.generatePresetIDs();
-        this.initGLProgram();  // Initialize WebGL program and uniforms
+        this.initGLProgram();
         this.draw();
     }
 
-    /** Updates the canvas size based on the current visual viewport and redraws the fractal */
     resizeCanvas() {
-        console.groupCollapsed(`%c ${this.constructor.name}: resizeCanvas`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        console.log(`Canvas before resize: ${this.canvas.width}x${this.canvas.height}`);
+        log(`resizeCanvas`, this.constructor.name);
 
         this.gl.useProgram(this.program);
 
-        // Use visual viewport if available, otherwise fallback to window dimensions.
-        const vw = window.visualViewport ? window.visualViewport.width : window.innerWidth;
-        const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+        // Keep the center fixed
+        const oldRect = this.canvas.getBoundingClientRect();
+        const cx = oldRect.width / 2;
+        const cy = oldRect.height / 2;
 
-        // Compute the center based on the visible viewport.
-        const centerX = vw / 2;
-        const centerY = vh / 2;
+        const [centerFx, centerFy] = this.screenToFractal(cx, cy);
 
-        // Get the device pixel ratio.
         const dpr = window.devicePixelRatio || 1;
+        this.canvas.width = Math.floor(oldRect.width * dpr);
+        this.canvas.height = Math.floor(oldRect.height * dpr);
 
-        // Set the drawing-buffer size to match the visible viewport.
-        this.canvas.width = Math.floor(vw * dpr);
-        this.canvas.height = Math.floor(vh * dpr);
+        this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+        if (this.resolutionLoc) this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
 
-        // Set the CSS size to match the visible viewport.
-        this.canvas.style.width = vw + "px";
-        this.canvas.style.height = vh + "px";
+        const [vx, vy] = this.screenToViewVector(cx, cy);
+        this.setPanFromAnchor(centerFx, centerFy, vx, vy);
 
-        console.log(`Canvas after resize: ${this.canvas.width}x${this.canvas.height}`);
-
-        // Update the WebGL viewport and the resolution uniform.
-        if (this.gl) {
-            this.gl.viewport(0, 0, this.canvas.width, this.canvas.height);
-        }
-        if (this.resolutionLoc) {
-            this.gl.uniform2f(this.resolutionLoc, this.canvas.width, this.canvas.height);
-        }
-
-        const [fx, fy] = this.screenToFractal(centerX, centerY);
-        this.pan[0] = fx;
-        this.pan[1] = fy;
-
+        // After resizing, request a clean rebuild for perturbation renderers (safe no-op otherwise)
+        this.markOrbitDirty();
         this.draw();
-
-        console.groupEnd();
     }
+
 
     /**
      * Defines the shader code for rendering the fractal shape
      *
      * @abstract
+     * @returns {string}
      */
     createFragmentShaderSource() {
         throw new Error('The draw method must be implemented in child classes');
     }
 
     /**
-     * Compiles the shader code
-     *
+     * Compiles shader code
      * @param {string} source
      * @param {GLenum} type
      * @return {WebGLShader|null}
      */
     compileShader(source, type) {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: compileShader`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-        if (DEBUG_MODE) console.log(`Shader GLenum type: ${type}`);
-        if (DEBUG_MODE) console.log(`Shader code: ${source}`);
-
-        this.gl.useProgram(this.program);
+        if (DEBUG_MODE) {
+            console.groupCollapsed(`%c ${this.constructor.name}: %c compileShader`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+            console.log(`Shader GLenum type: ${type}\nShader code: ${source}`);
+        }
 
         const shader = this.gl.createShader(type);
         this.gl.shaderSource(shader, source);
@@ -228,10 +341,10 @@ export class FractalRenderer {
     }
 
     /**
-     * Initializes the WebGL program, shaders and sets initial position
+     * Initializes WebGL program, shaders, quad, and uniform caches.
      */
     initGLProgram() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}: initGLProgram`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}:%c initGLProgram`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.program) this.gl.deleteProgram(this.program);
         if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
@@ -251,83 +364,128 @@ export class FractalRenderer {
         }
         this.gl.useProgram(this.program);
 
-        // Set up a full-screen quad
+        // Full-screen quad
         const positionBuffer = this.gl.createBuffer();
         this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
         const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
         this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
-        const positionLoc = this.gl.getAttribLocation(this.program, 'a_position');
+        const positionLoc = this.gl.getAttribLocation(this.program, "a_position");
         this.gl.enableVertexAttribArray(positionLoc);
         this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
+
+        this.updateUniforms();
+        this.invalidateUniformCache();
+
+        if (typeof this.onProgramCreated === "function") {
+            this.onProgramCreated();
+        }
 
         if (DEBUG_MODE) console.groupEnd();
     }
 
-    /**
-     * Updates uniforms (should be done on every redraw)
-     * @abstract
-     */
-    updateUniforms() {
-        this.gl.useProgram(this.program);
-        // Cache the uniform locations.
-        this.panLoc = this.gl.getUniformLocation(this.program, 'u_pan');
-        this.zoomLoc = this.gl.getUniformLocation(this.program, 'u_zoom');
-        this.iterLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
-        this.colorLoc = this.gl.getUniformLocation(this.program, 'u_colorPalette');
-        this.rotationLoc = this.gl.getUniformLocation(this.program, 'u_rotation');
-        this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
+    /** @abstract */
+    onProgramCreated() {
+        throw new Error("The onProgramCreated method must be implemented in child classes");
     }
 
     /**
-     * Draws the fractal's and sets basic uniforms. Customize iterations number to determine level of detail.
+     * kept for compatibility; perturbation renderers may ignore
      * @abstract
+     */
+    needsRebase() {
+        throw new Error("The needsRebase method must be implemented in child classes");
+    }
+
+    /**
+     * Cache common uniforms used by all renderers
+     */
+    updateUniforms() {
+        this.gl.useProgram(this.program);
+        this.panLoc = this.gl.getUniformLocation(this.program, "u_pan");
+        this.zoomLoc = this.gl.getUniformLocation(this.program, "u_zoom");
+        this.iterLoc = this.gl.getUniformLocation(this.program, "u_iterations");
+        this.colorLoc = this.gl.getUniformLocation(this.program, "u_colorPalette");
+        this.rotationLoc = this.gl.getUniformLocation(this.program, "u_rotation");
+        this.resolutionLoc = this.gl.getUniformLocation(this.program, "u_resolution");
+    }
+
+    /**
+     * Draws the fractal and sets basic uniforms.
+     * Subclasses can override draw() but must call super.draw() for viewport+common uniforms+draw call.
+     * Uses dirty checking to avoid redundant uniform uploads.
      */
     draw() {
         this.gl.useProgram(this.program);
 
         const w = this.canvas.width;
         const h = this.canvas.height;
+        const uc = this._uniformCache;
 
-        // Update the viewport.
         this.gl.viewport(0, 0, w, h);
 
-        if (this.resolutionLoc === undefined) {
-            // Cache the resolution location if not already cached.
-            this.resolutionLoc = this.gl.getUniformLocation(this.program, 'u_resolution');
-        }
-        if (this.resolutionLoc) {
+        // Only upload uniforms that have changed
+        if (this.resolutionLoc && (uc.resW !== w || uc.resH !== h)) {
             this.gl.uniform2f(this.resolutionLoc, w, h);
+            uc.resW = w;
+            uc.resH = h;
         }
 
-        this.gl.uniform2fv(this.panLoc, this.pan);
-        this.gl.uniform1f(this.zoomLoc, this.zoom);
-        this.gl.uniform1f(this.rotationLoc, this.rotation);
-        this.gl.uniform1f(this.iterLoc, this.iterations);
-        this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+        if (this.panLoc && (uc.pan0 !== this.pan[0] || uc.pan1 !== this.pan[1])) {
+            this.gl.uniform2fv(this.panLoc, this.pan);
+            uc.pan0 = this.pan[0];
+            uc.pan1 = this.pan[1];
+        }
 
-        this.updateUniforms();
+        if (this.zoomLoc && uc.zoom !== this.zoom) {
+            this.gl.uniform1f(this.zoomLoc, this.zoom);
+            uc.zoom = this.zoom;
+        }
+
+        if (this.rotationLoc && uc.rotation !== this.rotation) {
+            this.gl.uniform1f(this.rotationLoc, this.rotation);
+            uc.rotation = this.rotation;
+        }
+
+        if (this.iterLoc && uc.iterations !== this.iterations) {
+            this.gl.uniform1f(this.iterLoc, this.iterations);
+            uc.iterations = this.iterations;
+        }
+
+        if (this.colorLoc && (uc.color0 !== this.colorPalette[0] ||
+            uc.color1 !== this.colorPalette[1] ||
+            uc.color2 !== this.colorPalette[2])) {
+            this.gl.uniform3fv(this.colorLoc, this.colorPalette);
+            uc.color0 = this.colorPalette[0];
+            uc.color1 = this.colorPalette[1];
+            uc.color2 = this.colorPalette[2];
+        }
 
         this.gl.clearColor(0, 0, 0, 1);
         this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+        debugPanel?.beginGpuTimer();
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        debugPanel?.endGpuTimer();
     }
 
     /**
      * Resets the fractal to its initial state (default pan, zoom, palette, rotation, etc.), resizes and redraws.
      */
     reset() {
-        console.groupCollapsed(`%c ${this.constructor.name}: reset`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: reset`, CONSOLE_GROUP_STYLE);
 
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
 
         this.colorPalette = [...this.DEFAULT_PALETTE];
-        this.pan = [...this.DEFAULT_PAN];
+        this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
         this.extraIterations = 0;
         this.currentPresetIndex = 0;
+
         this.resizeCanvas();
+
+        this.markOrbitDirty();
         this.draw();
 
         console.groupEnd();
@@ -335,47 +493,90 @@ export class FractalRenderer {
     }
 
     /**
-     * Calculates coordinates from screen point [x, y] to the fractal scale [x, yi]
-     *
+     * Screen point -> fractal coordinates (float64 JS side; fine for UI)
      * @param {number} screenX
      * @param {number} screenY
-     * @returns {COMPLEX} fractal plane coords [x, yi]
+     * @returns {COMPLEX}
      */
     screenToFractal(screenX, screenY) {
         const dpr = window.devicePixelRatio || 1;
-        // Use the canvas's bounding rectangle for CSS dimensions.
         const rect = this.canvas.getBoundingClientRect();
-        // Use the actual CSS size of the canvas.
         const w = rect.width * dpr;
         const h = rect.height * dpr;
 
-        // Convert the screen (touch/mouse) coordinate to drawing-buffer pixels.
         const bufferX = screenX * dpr;
         const bufferY = screenY * dpr;
 
-        // Normalize to [0,1]
         const normX = bufferX / w;
         const normY = bufferY / h;
 
-        // In the shader, I subtract 0.5 and flip Y because gl_FragCoord.y starts from the bottom.
         let stX = normX - 0.5;
         let stY = (1 - normY) - 0.5;
 
-        // Adjust x by the aspect ratio.
         const aspect = w / h;
         stX *= aspect;
 
-        // Apply rotation correction (using the current fractalApp.rotation)
         const cosR = Math.cos(this.rotation);
         const sinR = Math.sin(this.rotation);
         const rotatedX = cosR * stX - sinR * stY;
         const rotatedY = sinR * stX + cosR * stY;
 
-        // Map to fractal coordinates (using current zoom and pan)
-        const fx = rotatedX * this.zoom + this.pan[0];
-        const fy = rotatedY * this.zoom + this.pan[1];
+        return [rotatedX * this.zoom + this.pan[0], rotatedY * this.zoom + this.pan[1]];
+    }
 
-        return [fx, fy];
+    /**
+     * Returns the pan delta needed to center on a screen point.
+     * This avoids precision loss at deep zoom by returning only the offset,
+     * which can be applied via addPan() to preserve DD precision.
+     *
+     * @param {number} screenX CSS px relative to canvas
+     * @param {number} screenY CSS px relative to canvas
+     * @returns {COMPLEX} [deltaX, deltaY] offset from current pan
+     */
+    screenToPanDelta(screenX, screenY) {
+        const [vx, vy] = this.screenToViewVector(screenX, screenY);
+        return [vx * this.zoom, vy * this.zoom];
+    }
+
+    /**
+     * Convert a screen point to the rotated, aspect-corrected "view vector" (no pan/zoom applied).
+     * This is exactly what your shader calls `rotated`.
+     *
+     * @param {number} screenX CSS pixels relative to canvas (like your handlers use)
+     * @param {number} screenY CSS pixels relative to canvas
+     * @returns {number[]} view-space rotated vector
+     */
+    screenToViewVector(screenX, screenY) {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = this.canvas.getBoundingClientRect();
+        const w = rect.width * dpr;
+        const h = rect.height * dpr;
+
+        const bufferX = screenX * dpr;
+        const bufferY = screenY * dpr;
+
+        const normX = bufferX / w;
+        const normY = bufferY / h;
+
+        let stX = normX - 0.5;
+        let stY = (1 - normY) - 0.5;
+
+        const aspect = w / h;
+        stX *= aspect;
+
+        const cosR = Math.cos(this.rotation);
+        const sinR = Math.sin(this.rotation);
+
+        return [cosR * stX - sinR * stY, sinR * stX + cosR * stY];
+    }
+
+    /**
+     * Compute CSS-space center of the canvas (for default anchored zoom).
+     * @returns {number[]}
+     */
+    getCanvasCssCenter() {
+        const rect = this.canvas.getBoundingClientRect();
+        return [rect.width / 2, rect.height / 2];
     }
 
     // endregion--------------------------------------------------------------------------------------------------------
@@ -383,16 +584,16 @@ export class FractalRenderer {
 
     /** Stops all currently running animations that are not a color transition */
     stopAllNonColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopAllNonColorAnimations`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         this.stopCurrentPanAnimation();
-        this.stopCurrentZoomAnimation()
+        this.stopCurrentZoomAnimation();
         this.stopCurrentRotationAnimation();
     }
 
     /** Stops currently running pan animation */
     stopCurrentPanAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentPanAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentPanAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentPanAnimationFrame !== null) {
             cancelAnimationFrame(this.currentPanAnimationFrame);
@@ -402,7 +603,7 @@ export class FractalRenderer {
 
     /** Stops currently running zoom animation */
     stopCurrentZoomAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentZoomAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentZoomAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentZoomAnimationFrame !== null) {
             cancelAnimationFrame(this.currentZoomAnimationFrame);
@@ -412,7 +613,7 @@ export class FractalRenderer {
 
     /** Stops currently running rotation animation */
     stopCurrentRotationAnimation() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentRotationAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentRotationAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         if (this.currentRotationAnimationFrame !== null) {
             cancelAnimationFrame(this.currentRotationAnimationFrame);
@@ -422,17 +623,28 @@ export class FractalRenderer {
 
     /** Stops currently running color animation */
     stopCurrentColorAnimations() {
-        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+        // Stop palette cycling if active (but not during internal palette transition)
+        if (this.paletteCyclingActive && !this._inPaletteCycleTransition) {
+            this.paletteCyclingActive = false;
+            if (this.paletteCyclingTimeoutId) {
+                clearTimeout(this.paletteCyclingTimeoutId);
+                this.paletteCyclingTimeoutId = null;
+            }
+        }
 
         if (this.currentColorAnimationFrame !== null) {
+            // Handle both requestAnimationFrame and setTimeout
             cancelAnimationFrame(this.currentColorAnimationFrame);
+            clearTimeout(this.currentColorAnimationFrame);
             this.currentColorAnimationFrame = null;
         }
     }
 
     /** Stops current demo and resets demo variables */
     stopDemo() {
-        console.log(`%c ${this.constructor.name}: %c stopDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c ${this.constructor.name}: %c stopDemo`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         this.demoActive = false;
         this.currentPresetIndex = 0;
         this.stopAllNonColorAnimations();
@@ -440,11 +652,7 @@ export class FractalRenderer {
 
     /** Default callback after every animation that requires on-screen info update */
     onAnimationFinished() {
-        this.resizeCanvas();
-
-        setTimeout(() => {
-            updateInfo();
-        }, 50);
+        setTimeout(() => updateInfo(), 50);
     }
 
     /**
@@ -457,7 +665,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateColorPaletteTransition(newPalette, duration = 250, coloringCallback = null) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateColorPaletteTransition`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         if (comparePalettes(this.colorPalette, newPalette)) {
@@ -468,18 +676,17 @@ export class FractalRenderer {
 
         const startPalette = [...this.colorPalette];
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
                 const progress = Math.min((timestamp - startTime) / duration, 1);
 
-                // Interpolate each channel.
                 this.colorPalette = [
                     lerp(startPalette[0], newPalette[0], progress),
                     lerp(startPalette[1], newPalette[1], progress),
-                    lerp(startPalette[2], newPalette[2], progress)
+                    lerp(startPalette[2], newPalette[2], progress),
                 ];
                 this.draw();
 
@@ -506,7 +713,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animateFullColorSpaceCycle(duration = 15000, coloringCallback = null) {
-        console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.log(`%c ${this.constructor.name}: animateFullColorSpaceCycle`, CONSOLE_GROUP_STYLE);
         this.stopCurrentColorAnimations();
 
         const currentRGB = this.colorPalette;
@@ -537,6 +744,87 @@ export class FractalRenderer {
     }
 
     /**
+     * Starts continuous sequential palette cycling.
+     * Smoothly transitions through all palettes in order, looping indefinitely.
+     *
+     * @param {number} [transitionDuration=2000] - Duration for each palette transition in ms.
+     * @param {number} [holdDuration=3000] - Duration to hold each palette before transitioning.
+     * @param {Function} [coloringCallback] - Callback during transitions (called per frame).
+     * @param {Function} [onPaletteComplete] - Callback when each palette transition completes.
+     * @return {Promise<void>}
+     */
+    async startPaletteCycling(transitionDuration = 2000, holdDuration = 3000, coloringCallback = null, onPaletteComplete = null) {
+        console.log(`%c ${this.constructor.name}: startPaletteCycling`, CONSOLE_GROUP_STYLE);
+        this.stopCurrentColorAnimations();
+
+        if (!this.PALETTES || this.PALETTES.length === 0) {
+            console.warn('No palettes available for cycling');
+            return;
+        }
+
+        // Use a cycling flag since applyPaletteByIndex clears currentColorAnimationFrame
+        this.paletteCyclingActive = true;
+
+        // Start from current palette or 0
+        let nextIndex = (this.currentPaletteIndex >= 0 ? this.currentPaletteIndex + 1 : 1) % this.PALETTES.length;
+
+        const cycleNext = async () => {
+            if (!this.paletteCyclingActive) return; // Stopped
+
+            // Apply next palette with transition (protect cycling flag during transition)
+            this._inPaletteCycleTransition = true;
+            await this.applyPaletteByIndex(nextIndex, transitionDuration, coloringCallback);
+            this._inPaletteCycleTransition = false;
+
+            // Notify that palette transition completed
+            if (this.paletteCyclingActive && onPaletteComplete) {
+                onPaletteComplete();
+            }
+
+            if (!this.paletteCyclingActive) return; // Stopped during transition
+
+            // Move to next palette
+            nextIndex = (nextIndex + 1) % this.PALETTES.length;
+
+            // Schedule next cycle after hold duration
+            this.paletteCyclingTimeoutId = setTimeout(() => {
+                if (this.paletteCyclingActive) {
+                    cycleNext();
+                }
+            }, holdDuration);
+        };
+
+        // Mark as active (for stopCurrentColorAnimations check) and start
+        this.currentColorAnimationFrame = 1; // Non-null marker
+        await cycleNext();
+    }
+
+    /**
+     * Transitions between palettes by their unique identifiers, animating the change over the specified duration.
+     *
+     * @param {PRESET} preset - The configuration object containing the palette definition.
+     * @param {string} preset.paletteId - The unique identifier for the target palette.
+     * @param {number} duration - The duration of the animation in milliseconds.
+     * @param {function} coloringCallback
+     * @return {Promise<void>} Resolves once the palette transition animation is complete.
+     */
+    async animatePaletteByIdTransition(preset, duration, coloringCallback = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePaletteByIdTransition`, CONSOLE_GROUP_STYLE);
+        if (preset.paletteId) {
+            log(`Preset palette definition found: "${preset.paletteId}"`);
+            const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+            if (paletteIndex >= 0) {
+                await this.applyPaletteByIndex(paletteIndex, duration, coloringCallback);
+            } else {
+                console.warn(`Palette "${preset.paletteId}" not found in PALETTES`);
+            }
+        } else {
+            log(`Preset palette definition not found, keeping current palette.`);
+        }
+        console.groupEnd();
+    }
+
+    /**
      * Animates pan from current position to the new one
      *
      * @param {COMPLEX} targetPan
@@ -545,8 +833,10 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanTo(targetPan, duration = 200, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentPanAnimation();
+
+        this.markOrbitDirty();
 
         if (compareComplex(this.pan, targetPan, 6)) {
             console.log(`Already at the target pan. Skipping.`);
@@ -557,24 +847,27 @@ export class FractalRenderer {
 
         const startPan = [...this.pan];
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
-                const easedProgress = easeFunction(progress);
+                const k = easeFunction(t);
 
-                this.pan[0] = lerp(startPan[0], targetPan[0], easedProgress);
-                this.pan[1] = lerp(startPan[1], targetPan[1], easedProgress);
+                const nx = lerp(startPan[0], targetPan[0], k);
+                const ny = lerp(startPan[1], targetPan[1], k);
+                this.setPan(nx, ny);
+
                 this.draw();
-
                 updateInfo(true);
 
-                if (easedProgress < 1) {
+                if (t < 1) {
                     this.currentPanAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this.markOrbitDirty();
+                    this.draw();
                     this.stopCurrentPanAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -586,47 +879,188 @@ export class FractalRenderer {
     }
 
     /**
-     * Animates to target zoom without panning.
+     * Animates pan by a delta (DD-stable). Unlike animatePanTo, this avoids computing
+     * targetPan = startPan + delta in a single float64 operation (which breaks in deep zoom).
+     *
+     * This method applies incremental DD pan updates based on animation progress.
+     *
+     * @param {COMPLEX} deltaPan
+     * @param [duration] in ms
+     * @param {EASE_TYPE|Function} easeFunction
+     * @return {Promise}
+     */
+    async animatePanBy(deltaPan, duration = 200, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanBy`, CONSOLE_GROUP_STYLE);
+        this.stopCurrentPanAnimation();
+
+        this.markOrbitDirty();
+
+        if (Math.abs(deltaPan[0]) < 1e-30 && Math.abs(deltaPan[1]) < 1e-30) {
+            console.log(`Zero delta pan. Skipping.`);
+            console.groupEnd();
+            return;
+        }
+
+        console.log(`Panning by ${deltaPan}.`);
+
+        await new Promise((resolve) => {
+            let startTime = null;
+            let prevK = 0;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+
+                const t = Math.min((timestamp - startTime) / duration, 1);
+                const k = easeFunction(t);
+
+                const dk = k - prevK;
+                prevK = k;
+
+                if (dk !== 0) {
+                    this.addPan(deltaPan[0] * dk, deltaPan[1] * dk);
+                }
+
+                this.draw();
+                updateInfo(true);
+
+                if (t < 1) {
+                    this.currentPanAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.markOrbitDirty();
+                    this.draw();
+                    this.stopCurrentPanAnimation();
+                    this.onAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+
+            this.currentPanAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    /**
+     * Animates zoom while keeping the fractal point under an anchor screen coordinate fixed.
      *
      * @param {number} targetZoom
-     * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction If none is provided, it defaults to exponential.
-     * @return {Promise<void>}
+     * @param {number} [duration]
+     * @param {EASE_TYPE|Function} easeFunction
+     * @param {number|null} [anchorX] CSS px relative to canvas; defaults to canvas center
+     * @param {number|null} [anchorY] CSS px relative to canvas; defaults to canvas center
      */
-    async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    async animateZoomTo(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE, anchorX = null, anchorY = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentZoomAnimation();
 
-        if (this.zoom.toFixed(6) === targetZoom.toFixed(6)) {
+        if (this.zoom.toFixed(20) === targetZoom.toFixed(20)) {
             console.log(`Already at the target zoom. Skipping.`);
             console.groupEnd();
             return;
         }
-        console.log(`Zooming from ${this.zoom.toFixed(6)} to ${targetZoom.toFixed(6)}.`);
+
+        // Default anchor = canvas center (CSS)
+        if (anchorX === null || anchorY === null) {
+            const [cx, cy] = this.getCanvasCssCenter();
+            anchorX = cx;
+            anchorY = cy;
+        }
 
         const startZoom = this.zoom;
+        const ratio = targetZoom / startZoom;
 
-        await new Promise(resolve => {
+        // Compute anchor once. During zoom animation, rotation is constant, so view-vector stays valid.
+        const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
+        const fxAnchor = vx * startZoom + this.pan[0];
+        const fyAnchor = vy * startZoom + this.pan[1];
+
+        // orbit boundary policy hook (safe no-op for non-perturbation renderers)
+        this.markOrbitDirty();
+
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
+
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
                 if (easeFunction !== EASE_TYPE.NONE) {
-                    const easedProgress = easeFunction(progress);
-                    this.zoom = lerp(startZoom, targetZoom, easedProgress);
+                    const k = easeFunction(t);
+                    this.zoom = startZoom + (targetZoom - startZoom) * k;
                 } else {
-                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, progress); // Default to exponential
+                    this.zoom = startZoom * Math.pow(ratio, t);
+                }
+
+                // Recompute pan from the fixed anchor point (stable in deep zoom)
+                this.setPanFromAnchor(fxAnchor, fyAnchor, vx, vy);
+
+                this.markOrbitDirty();
+                this.draw();
+                updateInfo(true);
+
+                if (t < 1) {
+                    this.currentZoomAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    this.markOrbitDirty();
+                    this.draw();
+                    this.stopCurrentZoomAnimation();
+                    this.onAnimationFinished();
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+
+            this.currentZoomAnimationFrame = requestAnimationFrame(step);
+        });
+    }
+
+    /**
+     * Animates zoom from current value to target zoom without adjusting pan position.
+     * Unlike animateZoomTo, this method does not keep any anchor point fixed during zooming.
+     * The fractal will appear to zoom in/out from its current center position.
+     *
+     * @param {number} targetZoom - The target zoom level to animate to
+     * @param {number} [duration=500] - Duration of the animation in milliseconds
+     * @param {EASE_TYPE|Function} [easeFunction=EASE_TYPE.NONE] - Easing function to apply; EASE_TYPE.NONE uses exponential interpolation
+     * @returns {Promise<void>} Promise that resolves when the animation completes
+     */
+    async animateZoomToNoPan(targetZoom, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomToNoPan`, CONSOLE_GROUP_STYLE);
+
+        this.stopCurrentZoomAnimation();
+
+        this.markOrbitDirty();
+
+        if (this.zoom.toFixed(20) === targetZoom.toFixed(20)) {
+            console.log(`Already at the target zoom. Skipping.`);
+            console.groupEnd();
+            return;
+        }
+
+        const startZoom = this.zoom;
+
+        await new Promise((resolve) => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const t = Math.min((timestamp - startTime) / duration, 1);
+
+                if (easeFunction !== EASE_TYPE.NONE) {
+                    const k = easeFunction(t);
+                    this.zoom = startZoom + (targetZoom - startZoom) * k;
+                } else {
+                    this.zoom = startZoom * Math.pow(targetZoom / startZoom, t);
                 }
 
                 this.draw();
-
                 updateInfo(true);
 
-                if (progress < 1) {
+                if (t < 1) {
                     this.currentZoomAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this.markOrbitDirty();
+                    this.draw();
                     this.stopCurrentZoomAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -637,21 +1071,11 @@ export class FractalRenderer {
         });
     }
 
-    /**
-     * Animates to target rotation. Rotation is normalized into [0, 2*PI] interval
-     *
-     * @param {number} targetRotation
-     * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction
-     * @return {Promise<void>}
-     */
     async animateRotationTo(targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateRotationTo`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
-        // Normalize
-        targetRotation = normalizeRotation(targetRotation);
-
+        // Compare actual values (not normalized) to allow multi-spin animations
         if (this.rotation.toFixed(6) === targetRotation.toFixed(6)) {
             console.log(`Already at the target rotation "${targetRotation}". Skipping.`);
             console.groupEnd();
@@ -661,22 +1085,25 @@ export class FractalRenderer {
 
         const startRotation = this.rotation;
 
-        await new Promise(resolve => {
+        await new Promise((resolve) => {
             let startTime = null;
 
             const step = (timestamp) => {
                 if (!startTime) startTime = timestamp;
-                const progress = Math.min((timestamp - startTime) / duration, 1);
-                const easedProgress = easeFunction(progress);
+                const t = Math.min((timestamp - startTime) / duration, 1);
 
-                this.rotation = lerp(startRotation, targetRotation, easedProgress);
+                const k = easeFunction(t);
+
+                this.rotation = lerp(startRotation, targetRotation, k);
                 this.draw();
-
                 updateInfo(true);
 
-                if (progress < 1) {
+                if (t < 1) {
                     this.currentRotationAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    // Normalize final rotation to keep it in valid range
+                    this.rotation = normalizeRotation(this.rotation);
+                    this.draw();
                     this.stopCurrentRotationAnimation();
                     this.onAnimationFinished();
                     console.groupEnd();
@@ -698,7 +1125,7 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanThenZoomTo(targetPan, targetZoom, panDuration, zoomDuration, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanThenZoomTo`, CONSOLE_GROUP_STYLE);
 
         await this.animatePanTo(targetPan, panDuration, easeFunction);
         await this.animateZoomTo(targetZoom, zoomDuration, easeFunction);
@@ -716,112 +1143,79 @@ export class FractalRenderer {
      * @return {Promise<void>}
      */
     async animatePanAndZoomTo(targetPan, targetZoom, duration = 1000, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanAndZoomTo`, CONSOLE_GROUP_STYLE);
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
-            this.animateZoomTo(targetZoom, duration, easeFunction)
+            this.animateZoomToNoPan(targetZoom, duration, easeFunction),
         ]);
 
         console.groupEnd();
     }
 
     /**
-     * Animates to target zoom and rotation simultaneously. Rotation is normalized into [0, 2*PI] interval
+     * Animates pan by delta and zoom simultaneously.
+     * Uses addPan() internally to preserve DD precision at deep zoom levels.
      *
+     * @param {COMPLEX} deltaPan - offset to add to current pan
      * @param {number} targetZoom
-     * @param {number} targetRotation
-     * @param {number} [duration] in ms
-     * @param {EASE_TYPE|Function} easeFunction
-     * @return {Promise<void>}
-     */
-    async animateZoomRotationTo(targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
-
-        await Promise.all([
-            this.animateZoomTo(targetZoom, duration, easeFunction),
-            this.animateRotationTo(targetRotation, duration, easeFunction)
-        ]);
-
-        console.groupEnd();
-    }
-
-    /**
-     * Animates pan, zoom and rotation simultaneously
-     *
-     * @param {COMPLEX} targetPan
-     * @param {number} targetZoom
-     * @param {number} targetRotation
      * @param {number} [duration] in milliseconds
      * @param {EASE_TYPE|Function} easeFunction
      * @return {Promise<void>}
      */
+    async animatePanByAndZoomTo(deltaPan, targetZoom, duration = 1000, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanByAndZoomTo`, CONSOLE_GROUP_STYLE);
+
+        await Promise.all([
+            this.animatePanBy(deltaPan, duration, easeFunction),
+            this.animateZoomToNoPan(targetZoom, duration, easeFunction),
+        ]);
+
+        console.groupEnd();
+    }
+
+    async animateZoomRotationTo(targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZoomRotationTo`, CONSOLE_GROUP_STYLE);
+
+        await Promise.all([
+            this.animateZoomTo(targetZoom, duration, easeFunction),
+            this.animateRotationTo(targetRotation, duration, EASE_TYPE.CUBIC)
+        ]);
+
+        console.groupEnd();
+    }
+
     async animatePanZoomRotationTo(targetPan, targetZoom, targetRotation, duration = 500, easeFunction = EASE_TYPE.NONE) {
-        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animatePanZoomRotationTo`, CONSOLE_GROUP_STYLE);
 
         await Promise.all([
             this.animatePanTo(targetPan, duration, easeFunction),
-            this.animateZoomTo(targetZoom, duration, easeFunction),
+            this.animateZoomToNoPan(targetZoom, duration, easeFunction),
             this.animateRotationTo(targetRotation, duration, easeFunction)
         ]);
 
         console.groupEnd();
     }
 
-    /**
-     *
-     * @param {ROTATION_DIRECTION} direction
-     * @param {number} step Speed in rad/frame
-     * @return {Promise<void>}
-     */
     async animateInfiniteRotation(direction, step = 0.001) {
-        console.log(`%c ${this.constructor.name}: animateInfiniteRotation`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+        console.groupCollapsed(`%c ${this.constructor.name}: animateInfiniteRotation`, CONSOLE_GROUP_STYLE);
         this.stopCurrentRotationAnimation();
 
-        const dir = direction >= 0 ? 1 : -1; // Normalize
+        const dir = direction >= 0 ? 1 : -1;
 
         await new Promise(() => {
-
             const rotationStep = () => {
                 this.rotation = normalizeRotation(this.rotation + dir * step + 2 * PI);
                 this.draw();
-
                 updateInfo(true);
-
                 this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
             };
-
             this.currentRotationAnimationFrame = requestAnimationFrame(rotationStep);
         });
         console.groupEnd();
     }
 
-    /**
-     * Animates travel to preset.
-     * @abstract
-     * @param {PRESET} preset - Parameters for the animation.
-     * @param {number} duration - Parameters for the animation.
-     * @return {Promise<void>}
-     */
-    async animateTravelToPreset(preset, duration) {
-        throw new Error('The animateTravelToPreset method must be implemented in child classes');
-    }
-
-    /**
-     * Animate travel to a preset with random rotation. This method waits for three stages:
-     *   1. Zoom-out with rotation.
-     *   2. Pan transition.
-     *   3. Zoom-in with rotation.
-     *
-     * @abstract
-     * @param {PRESET} preset - The target preset object with properties: pan, c, zoom, rotation.
-     * @param {number} zoomOutDuration - Duration (ms) for the zoom-out stage.
-     * @param {number} panDuration - Duration (ms) for the pan stage.
-     * @param {number} zoomInDuration - Duration (ms) for the zoom-in stage.
-     */
-    async animateTravelToPresetWithRandomRotation(preset, zoomOutDuration, panDuration, zoomInDuration) {
-        throw new Error('The animateTravelToPreset method must be implemented in child classes');
-    }
-
     // endregion--------------------------------------------------------------------------------------------------------
 }
+
+export default FractalRenderer;

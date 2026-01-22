@@ -1,8 +1,11 @@
 import {
     clearURLParams,
+    ddValue,
     destroyArrayOfButtons,
+    esc,
     getAnimationDuration,
-    hsbToRgb,
+    getFractalName,
+    isMobileDevice,
     isTouchDevice,
     normalizeRotation,
     updateURLParams
@@ -12,20 +15,24 @@ import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandl
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 import {takeScreenshot} from "./screenshotController";
 import {
+    CONSOLE_GROUP_STYLE,
+    CONSOLE_MESSAGE_STYLE,
+    DEBUG_LEVEL,
     DEBUG_MODE,
     DEFAULT_ACCENT_COLOR,
     DEFAULT_BG_COLOR,
-    DEFAULT_CONSOLE_GROUP_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
+    FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
     FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
+    log,
     PI,
-    RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE
+    VERSION
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
-import {MandelbrotRenderer} from "../renderers/mandelbrotRenderer";
-import {RiemannRenderer} from "../renderers/riemannRenderer";
+import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
+import RiemannRenderer from "../renderers/riemannRenderer";
 import {
     destroyJuliaSliders,
     disableJuliaSliders,
@@ -34,17 +41,26 @@ import {
     resetJuliaSliders,
     updateJuliaSliders
 } from "./juliaSlidersController";
+import {DebugPanel} from "./debugPanel";
+import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPreview} from "./juliaPreview";
+import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
 
 /**
  * @module UI
  * @author Radim Brnka
  * @description Contains code to manage the UI (header interactions, buttons, infoText update, etc.).
+ * @copyright Synaptory Fractal Traveler, 2025-2026
+ * @license MIT
  */
 
 let canvas;
 let fractalApp;
 
 let fractalMode = FRACTAL_TYPE.MANDELBROT;
+
+// LocalStorage keys for user presets
+const USER_PRESETS_KEY_MANDELBROT = 'u_mandelbrot_presets';
+const USER_PRESETS_KEY_JULIA = 'u_julia_presets';
 
 const DEMO_BUTTON_DEFAULT_TEXT = 'Demo';
 const DEMO_BUTTON_STOP_TEXT = 'Stop';
@@ -65,33 +81,55 @@ let resizeTimeout;
 
 // HTML elements
 let header;
+let logo; // H1
 let mandelbrotSwitch;
 let juliaSwitch;
+let persistSwitch;
 let resetButton;
-let randomizeColorsButton;
+let saveViewButton;
 let screenshotButton;
 let demoButton;
+// Dialog elements
+let saveViewDialog;
+let saveViewNameInput;
+let saveViewConfirmBtn;
+let saveViewCancelBtn;
+let presetsToggle;
+let presetsMenu;
+let divesToggle;
+let divesMenu;
+let divesDropdown;
+let paletteToggle;
+let paletteMenu;
+let paletteDropdown;
 let presetButtons = [];
 let diveButtons = [];
+let paletteButtons = [];
 let allButtons = [];
 let infoLabel;
 let infoText;
+export let debugPanel;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
 
+let pendingInfoTimer = null;
+
+
+export const getFractalMode = () => getFractalName(fractalMode);
+
 /**
  * Switches among fractal modes
  * @param {FRACTAL_TYPE} mode
- * @param {PRESET} [preset] If present, it's set as the default state through travelToPreset
+ * @param {PRESET|MANDELBROT_PRESET|JULIA_PRESET} [preset] If present, it's set as the default state through travelToPreset
  */
 export async function switchFractalMode(mode, preset = null) {
-    console.groupCollapsed(`%c switchFractalMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c switchFractalMode`, CONSOLE_GROUP_STYLE);
 
     if (mode === fractalMode) {
         console.warn(`Switching to the same mode? Why?`);
         console.groupEnd();
-        return;
+        if (DEBUG_MODE === DEBUG_LEVEL.NONE) return;
     }
 
     exitAnimationMode();
@@ -117,6 +155,12 @@ export async function switchFractalMode(mode, preset = null) {
             return;
     }
 
+    // Detach debug panel from old renderer BEFORE destroy
+    debugPanel?.setRenderer?.(null);
+
+    // Attach debug panel to new renderer AFTER init/constructor
+    debugPanel?.setRenderer?.(fractalApp);
+
     // Register control events
     if (isTouchDevice()) {
         unregisterTouchEventHandlers();
@@ -138,12 +182,12 @@ export async function switchFractalMode(mode, preset = null) {
         console.log(`Preset found, setting: ${JSON.stringify(preset)}`)
         if (isJuliaMode()) {
             await fractalApp.animateTravelToPreset({
-                pan: [0, 0], c: preset.c, zoom: 0.5, rotation: 0
-            }, 1000);
+                pan: [0, 0], c: preset.c, zoom: preset.zoom, rotation: 0
+            }, 500, 500, 500);
         } else {
             await fractalApp.animateTravelToPreset({
-                pan: preset.pan, zoom: 0.0005, rotation: 0
-            }, 500, 1000);
+                pan: preset.pan, zoom: preset.zoom, rotation: 0
+            }, 500, 500, 500);
         }
 
         exitAnimationMode();
@@ -156,36 +200,46 @@ export async function switchFractalMode(mode, preset = null) {
 
 /**
  * Switches among fractal modes but keeps the c/pan settings so the fractals match each other.
- * @param {FRACTAL_TYPE} mode
+ * @param {FRACTAL_TYPE} targetType
  * @return {Promise<void>}
  */
-export async function switchFractalModeWithPersistence(mode) {
-    console.groupCollapsed(`%c switchFractalModeWithPersistence`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+export async function switchFractalTypeWithPersistence(targetType) {
+    console.groupCollapsed(`%c switchFractalTypeWithPersistence`, CONSOLE_GROUP_STYLE);
 
-    if (mode === fractalMode) {
-        console.warn(`Switching to the same mode? Why?`);
+    if (targetType === fractalMode) {
+        console.warn(`Switching to the same fractal? Why?`);
         console.groupEnd();
         return;
     }
 
-    if (mode === FRACTAL_TYPE.MANDELBROT) {
-        console.log('MAND')
+    if (targetType === FRACTAL_TYPE.MANDELBROT) {
+        // Julia → Mandelbrot: Use c value as pan position
+        // Calculate appropriate zoom based on point analysis and current Julia zoom
+        const [cx, cy] = fractalApp.c;
+        const juliaDefaultZoom = 3.5;
+        const finalZoom = calculateMandelbrotZoomFromJulia(cx, cy, fractalApp.zoom, juliaDefaultZoom);
+
+        console.log('Julia → Mandelbrot: c=', [cx, cy], 'juliaZoom:', fractalApp.zoom, 'finalZoom:', finalZoom);
+
         await switchFractalMode(FRACTAL_TYPE.MANDELBROT, {
-            pan: fractalApp.c.slice(), zoom: 0.00005, rotation: 0
+            pan: fractalApp.c.slice(),
+            zoom: finalZoom,
+            rotation: 0
         });
     } else {
-        console.log('JUL')
+        // Mandelbrot → Julia: Use Mandelbrot pan as Julia c parameter
+        // Always show the full Julia set at default zoom since Julia structures vary
+        // wildly depending on c - user should see the whole set first
+        const juliaDefaultZoom = 3.5;
+
         await switchFractalMode(FRACTAL_TYPE.JULIA, {
-            pan: [0, 0], c: fractalApp.pan.slice(), zoom: 0.5, rotation: 0
+            pan: [0, 0], c: fractalApp.pan.slice(), zoom: juliaDefaultZoom, rotation: 0
         });
     }
-
     console.groupEnd();
 }
 
-export function isJuliaMode() {
-    return fractalMode === FRACTAL_TYPE.JULIA;
-}
+export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
 
 /**
  * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
@@ -196,11 +250,12 @@ export function enableMandelbrotMode() {
     mandelbrotSwitch.classList.add('active');
 
     destroyArrayOfButtons(diveButtons);
-    const diveBlock = document.getElementById('dives');
-    diveBlock.style.display = 'none';
+    divesDropdown.style.display = 'none';
 
     destroyJuliaSliders();
+    destroyJuliaPreview();
 
+    fractalApp.destroy();
     fractalApp = new MandelbrotRenderer(canvas);
     fractalMode = FRACTAL_TYPE.MANDELBROT;
 
@@ -209,14 +264,18 @@ export function enableMandelbrotMode() {
     if (activePresetIndex !== 0) resetActivePresetIndex();
     initPresetButtonEvents();
 
+    // Update palette dropdown for new renderer
+    initPaletteButtonEvents();
+
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
     window.location.hash = ''; // Update URL hash
 }
 
 export function enableJuliaMode() {
+    fractalApp.destroy();
     fractalApp = new JuliaRenderer(canvas);
     fractalMode = FRACTAL_TYPE.JULIA;
 
@@ -233,6 +292,9 @@ export function enableJuliaMode() {
     destroyArrayOfButtons(diveButtons);
     initDiveButtons();
 
+    // Update palette dropdown for new renderer
+    initPaletteButtonEvents();
+
     if (activePresetIndex !== 0) resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
@@ -240,7 +302,7 @@ export function enableJuliaMode() {
     header.style.background = 'rgba(20, 20, 20, 0.8)';
     infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
     window.location.hash = '#julia'; // Update URL hash
 }
@@ -255,13 +317,32 @@ export function enableRiemannMode() {
     window.location.hash = '#zeta'; // Update URL hash
 }
 
-export function updateRecolorButtonTitle() {
-    if (isJuliaMode()) {
-        let nextTheme = fractalApp.getNextColorThemeId();
-        if (nextTheme) randomizeColorsButton.title = 'Next theme: "' + nextTheme + '" (T)';
+export function updatePaletteDropdownState() {
+    if (!paletteToggle) return;
+
+    const palettes = fractalApp.PALETTES || [];
+    const currentIndex = fractalApp.currentPaletteIndex;
+    const isCycling = fractalApp.paletteCyclingActive;
+
+    // Update tooltip
+    if (palettes.length > 0 && currentIndex >= 0) {
+        const currentPalette = palettes[currentIndex];
+        paletteToggle.title = `Current: "${currentPalette.id}" (T to cycle)`;
     } else {
-        randomizeColorsButton.title = RANDOMIZE_COLOR_BUTTON_DEFAULT_TITLE;
+        paletteToggle.title = 'Change Color Palette (T)';
     }
+
+    // paletteButtons: [0] = Random, [1] = Palette Cycle, [2+] = palette indices
+    paletteButtons.forEach((btn, btnIndex) => {
+        if (btnIndex === 1) {
+            // Sync cycle button active state with actual cycling state
+            btn.classList.toggle('active', isCycling);
+        } else if (btnIndex >= 2) {
+            // Palette buttons - highlight current palette
+            const paletteIndex = btnIndex - 2;
+            btn.classList.toggle('active', currentIndex === paletteIndex);
+        }
+    });
 }
 
 /**
@@ -281,6 +362,8 @@ export function updateColorTheme(palette) {
     root.style.setProperty('--bg-color', bgColor);
     root.style.setProperty('--mid-color', midColor);
     root.style.setProperty('--accent-color', accentColor);
+
+    recolorJuliaPreview(palette);
 }
 
 /** Resets buttons, active presets and URL */
@@ -291,64 +374,74 @@ export function resetAppState() {
 }
 
 /**
- * Updates the bottom info bar
+ * Updates the bottom info bar.
+ * Throttled to avoid layout thrashing during animations (max ~10 updates/sec).
+ * @param {boolean} force - If true, ensures an update is scheduled even if throttled (won't be dropped)
  */
-export function updateInfo() {
+export function updateInfo(force = false) {
     const now = performance.now();
     const timeSinceLastUpdate = now - lastInfoUpdate;
 
+    // Always apply throttle - even force=true respects timing to prevent layout thrash
     if (timeSinceLastUpdate < infoUpdateThrottleLimit) {
-        return; // Skip update if called too soon
+        // If force=true, ensure we schedule a deferred update (don't drop it)
+        if (force && !pendingInfoTimer) {
+            const delay = Math.max(infoUpdateThrottleLimit - timeSinceLastUpdate, 0);
+
+            pendingInfoTimer = setTimeout(() => {
+                pendingInfoTimer = null;
+                updateInfo(true);
+            }, delay);
+        }
+        return;
     }
 
-    // Update the last update time
     lastInfoUpdate = now;
 
     if (!canvas || !fractalApp) {
         return;
     }
 
-    let text = (animationActive ? ` [AUTO] ` : ``);
+    let text = (animationActive ? ` <span class="middot">🎬</span> ` : ``);
 
-    const panX = fractalApp.pan[0] ?? 0;
-    const panY = fractalApp.pan[1] ?? 0;
+    const panX = ddValue(fractalApp.panDD.x) ?? 0;
+    const panY = ddValue(fractalApp.panDD.y) ?? 0;
 
-    text += `p = [${panX.toFixed(DEBUG_MODE ? 12 : 6) * 1}, ${panY.toFixed(DEBUG_MODE ? 12 : 6) * 1}i] · `;
+    text += `p:&nbsp;[${panX.toFixed(8)}, ${panY.toFixed(8)}i] <span class="middot">&middot;</span> `;
+
+    const currentZoom = fractalApp.zoom ?? 0;
+    const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
+    const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
+    text += `r:&nbsp;${normalizedRotation.toFixed(0)}° <span class="middot">&middot;</span> zoom:&nbsp;${currentZoom.toExponential(0)}`;
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
 
-        text += `c = [${cx.toFixed(DEBUG_MODE ? 12 : 4) * 1}, ${cy.toFixed(DEBUG_MODE ? 12 : 4) * 1}i] · `;
+        text += `<br/>c:&nbsp;[${cx.toFixed(4)}, ${cy.toFixed(4)}i]`;
     }
 
-    const currentZoom = fractalApp.zoom ?? 0;
-    const currentRotation = (fractalApp.rotation * 180 / PI) % 360;
-    const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
-    text += `r = ${normalizedRotation.toFixed(0)}° · zoom&nbsp;=&nbsp;${currentZoom.toFixed(6) * 1}`;
-
     if (animationActive) {
-        infoText.classList.add('animationActive');
+        if (infoText && !infoText.classList.contains('animationActive')) infoText.classList.add('animationActive');
     } else {
-        infoText.classList.remove('animationActive');
+        if (infoText?.classList.contains('animationActive')) infoText.classList.remove('animationActive');
     }
 
     if (FF_USER_INPUT_ALLOWED) {
         if (document.activeElement !== infoText) {
-            infoText.innerHTML = text;
+            if (infoText.innerHTML !== text) infoText.innerHTML = text;
         }
     } else {
-        infoText.innerHTML = text;
+        if (infoText.innerHTML !== text) infoText.innerHTML = text;
     }
 }
 
-export function isAnimationActive() {
-    return animationActive;
-}
+/** @returns {boolean} */
+export const isAnimationActive = () => animationActive;
 
 /** Enables controls, resets demo button */
 function exitAnimationMode() {
-    console.groupCollapsed(`%c exitAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c exitAnimationMode`, CONSOLE_GROUP_STYLE);
 
     if (!animationActive) {
         console.groupEnd();
@@ -356,12 +449,18 @@ function exitAnimationMode() {
     }
 
     animationActive = false;
-    infoText.classList.remove('animation');
+    infoText?.classList.remove('animation');
 
-    fractalApp.stopAllNonColorAnimations();
+    fractalApp?.stopAllNonColorAnimations();
+    // Note: Don't stop color animations here - palette cycling should be independent
 
-    demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
-    demoButton.classList.remove('active');
+    if (demoButton) {
+        demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
+        demoButton.classList.remove('active');
+    }
+
+    if (presetsToggle) presetsToggle.disabled = false;
+    if (divesToggle) divesToggle.disabled = false;
 
     if (isTouchDevice()) {
         registerTouchEventHandlers();
@@ -382,7 +481,7 @@ function exitAnimationMode() {
 
 /** Disables controls, activates demo button */
 function initAnimationMode() {
-    console.groupCollapsed(`%c initAnimationMode`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c initAnimationMode`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         console.groupEnd();
@@ -390,11 +489,18 @@ function initAnimationMode() {
     }
 
     animationActive = true;
-    infoText.classList.add('animation');
+    infoText?.classList.add('animation');
 
     // resetPresetAndDiveButtons();
-    demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
-    demoButton.classList.add('active');
+    if (demoButton) {
+        demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
+        demoButton.classList.add('active');
+    }
+
+    closePresetsDropdown();
+    if (presetsToggle) presetsToggle.disabled = true;
+    closeDivesDropdown();
+    if (divesToggle) divesToggle.disabled = true;
 
     // Unregister control events
     if (isTouchDevice()) {
@@ -417,7 +523,7 @@ function initAnimationMode() {
  * @return {Promise<void>}
  */
 export async function toggleDemo() {
-    console.groupCollapsed(`%c toggleDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c toggleDemo`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         resetPresetAndDiveButtonStates();
@@ -449,7 +555,7 @@ export async function toggleDemo() {
 
 /** Starts the Mandelbrot demo */
 async function startMandelbrotDemo() {
-    console.groupCollapsed(`%c startMandelbrotDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo();
 
@@ -465,7 +571,7 @@ async function startMandelbrotDemo() {
  */
 export async function startJuliaDive(dives, index) {
     if (animationActive && index === activeJuliaDiveIndex) {
-        console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c startJuliaDive: %c Dive ${index} already in progress. Skipping.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
@@ -475,9 +581,16 @@ export async function startJuliaDive(dives, index) {
 
     resetPresetAndDiveButtonStates();
     activeJuliaDiveIndex = index;
-    diveButtons[index].classList.add('active');
+    diveButtons[index]?.classList.add('active');
 
     const dive = dives[index];
+
+    // Stop palette cycling if dive has a defined palette
+    if (dive.paletteId) {
+        fractalApp.stopCurrentColorAnimations();
+        const cycleBtn = document.getElementById('palette-cycle');
+        if (cycleBtn) cycleBtn.classList.remove('active');
+    }
 
     // Validate configuration:
     if (dive.cxDirection < 0 && dive.endC[0] >= dive.startC[0]) {
@@ -504,15 +617,21 @@ export async function startJuliaDive(dives, index) {
         {pan: 0.5, zoom: 2, c: 1});
     console.log(duration);
 
-    // Phase 1: Set initial state
+    // Phase 1: Set initial state with optional palette transition
     // await fractalApp.animateTravelToPreset({
     //     pan: dive.pan, c: dive.startC.slice(), // copy initial c
     //     zoom: dive.zoom, rotation: dive.rotation
     // }, 1500, EASE_TYPE.QUINT);
     // Alternatively:
-    await fractalApp.animateToZoomAndC(fractalApp.DEFAULT_ZOOM, dive.startC, 1500);
+    await Promise.all([
+        fractalApp.animateToZoomAndC(fractalApp.DEFAULT_ZOOM, dive.startC, 1500),
+        fractalApp.animatePaletteByIdTransition(dive, 2500, updateColorTheme)
+    ]);
 
-    // Phase 2: Enter dive mode
+    // Update palette button state if dive changed the palette
+    updatePaletteDropdownState();
+
+    // Phase 2: Enter dive mode (infinite animation - never resolves)
     await Promise.all([
         fractalApp.animateDive(dive),
         fractalApp.animatePanZoomRotationTo(dive.pan, dive.zoom, dive.rotation, 1500)
@@ -521,7 +640,7 @@ export async function startJuliaDive(dives, index) {
 
 /** Starts the Julia demo */
 async function startJuliaDemo() {
-    console.groupCollapsed(`%c startJuliaDemo`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`);
+    console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
     if (animationActive) {
         console.log(`Animation already in progress. Stopping.`);
@@ -555,61 +674,56 @@ async function startJuliaDemo() {
  */
 export async function travelToPreset(presets, index) {
     if (animationActive) {
-        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         exitAnimationMode();
     }
 
     if (index === activePresetIndex) {
-        console.log(`%c travelToPreset: %c Already on preset ${index}, skipping.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+        console.log(`%c travelToPreset: %c Already on preset ${index}, skipping.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
-    console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
+    console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+    // Stop palette cycling if preset has a defined palette
+    if (presets[index]?.paletteId) {
+        const cycleBtn = document.getElementById('palette-cycle');
+        if (cycleBtn) cycleBtn.classList.remove('active');
+    }
 
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
-    presetButtons[index].classList.add('active');
+    presetButtons[index]?.classList.add('active');
 
     if (isJuliaMode()) {
         fractalApp.demoTime = 0;
-        await fractalApp.animateTravelToPreset(presets[index], 1500);
+        await fractalApp.animateTravelToPreset(presets[index], 1500, updateColorTheme);
     } else {
-        await fractalApp.animateTravelToPreset(presets[index]);
+        // Cinematic animation with zoom-out, pan, zoom-in with rotation
+        await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500, updateColorTheme);
     }
     activePresetIndex = index;
+
+    // Update palette button state if preset changed the palette
+    updatePaletteDropdownState();
 
     exitAnimationMode();
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
 }
 
 /** Inits debug bar with various information permanently shown on the screen */
-function initDebugMode() {
-    infoLabel.style.height = '80px';
-
-    const debugInfo = document.getElementById('debugInfo');
-    debugInfo.style.display = 'block';
-    const dpr = window.devicePixelRatio;
-
-    const {width, height} = canvas.getBoundingClientRect();
-    const displayWidth = Math.round(width * dpr);
-    const displayHeight = Math.round(height * dpr);
-    (function update() {
-        debugInfo.innerText = `WINDOW: ${window.innerWidth}x${window.innerHeight} (dpr: ${window.devicePixelRatio})
-        CANVAS: ${canvas.width}x${canvas.height}, aspect: ${(canvas.width / canvas.height).toFixed(2)} 
-        BoundingRect: ${width}x${height}, display W/H: ${displayWidth}x${displayHeight}`;
-        requestAnimationFrame(update);
-    })();
-
-    debugInfo.addEventListener('click', () => {
-        console.log(debugInfo.innerText);
-    });
-
-    toggleDebugLines();
+export function toggleDebugMode() {
+    if (debugPanel) {
+        debugPanel.toggle();
+    } else {
+        debugPanel = new DebugPanel(canvas, fractalApp, accentColor);
+        toggleCenterLines();
+    }
 }
 
 /** Toggles x/y axes */
-export function toggleDebugLines() {
+export function toggleCenterLines() {
     const verticalLine = document.getElementById('verticalLine');
     const horizontalLine = document.getElementById('horizontalLine');
 
@@ -623,8 +737,8 @@ export function toggleDebugLines() {
 }
 
 export function resetPresetAndDiveButtonStates() {
-    if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, `color: ${DEFAULT_CONSOLE_GROUP_COLOR}`, 'color: #fff');
-    presetButtons.concat(diveButtons).forEach(b => b.classList.remove('active'));
+    if (DEBUG_MODE) console.log(`%c resetPresetAndDiveButtonStates: %c Button states reset.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+    presetButtons.concat(diveButtons).forEach(b => b?.classList.remove('active'));
 }
 
 /**
@@ -635,23 +749,25 @@ export function resetActivePresetIndex() {
 }
 
 export async function randomizeColors() {
-    if (isJuliaMode()) {
-        await fractalApp.animateColorPaletteTransition(250, updateColorTheme);
-        updateRecolorButtonTitle();
+    // Stop color cycling and remove active state from cycle button
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (cycleBtn) cycleBtn.classList.remove('active');
+
+    const palettes = fractalApp.PALETTES || [];
+    if (palettes.length === 0) return;
+
+    // Pick a random palette index different from current if possible
+    let randomIndex;
+    if (palettes.length === 1) {
+        randomIndex = 0;
     } else {
-        // Generate a bright random color palette
-        // Generate colors with better separation and higher brightness
-        const hue = Math.random(); // Hue determines the "base color" (red, green, blue, etc.)
-        const saturation = Math.random() * 0.5 + 0.5; // Ensure higher saturation (more vivid colors)
-        const brightness = Math.random() * 0.5 + 0.5; // Ensure higher brightness
-
-        // Convert HSB/HSV to RGB
-        const newPalette = hsbToRgb(hue, saturation, brightness);
-
-        await fractalApp.animateColorPaletteTransition(newPalette, 250, () => {
-            updateColorTheme(newPalette);
-        }); // Update app colors
+        do {
+            randomIndex = Math.floor(Math.random() * palettes.length);
+        } while (randomIndex === fractalApp.currentPaletteIndex);
     }
+
+    await fractalApp.applyPaletteByIndex(randomIndex, 250, updateColorTheme);
+    updatePaletteDropdownState();
 }
 
 export function captureScreenshot() {
@@ -677,24 +793,201 @@ export function toggleHeader(show = null) {
 }
 
 export async function reset() {
+    console.groupCollapsed(`%c reset`, CONSOLE_GROUP_STYLE);
+
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
 
     exitAnimationMode();
 
+    // Stop palette cycling and remove active state
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (cycleBtn) cycleBtn.classList.remove('active');
+
     fractalApp.reset();
     if (isJuliaMode()) {
         resetJuliaSliders();
+    } else {
+        resetJuliaPreview();
     }
     resetAppState();
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
     presetButtons[0].classList.add('active');
+
+    console.groupEnd();
 }
+
+// region > USER PRESETS -----------------------------------------------------------------------------------------------
+
+/**
+ * Gets the localStorage key for user presets based on current fractal mode
+ * @returns {string}
+ */
+function getUserPresetsKey() {
+    return isJuliaMode() ? USER_PRESETS_KEY_JULIA : USER_PRESETS_KEY_MANDELBROT;
+}
+
+/**
+ * Gets user presets from localStorage for current fractal mode
+ * @returns {Array<PRESET>}
+ */
+export function getUserPresets() {
+    try {
+        const stored = localStorage.getItem(getUserPresetsKey());
+        return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+        console.warn('Failed to load user presets:', e);
+        return [];
+    }
+}
+
+/**
+ * Saves user presets to localStorage for current fractal mode
+ * @param {Array<PRESET>} presets
+ */
+function saveUserPresets(presets) {
+    try {
+        localStorage.setItem(getUserPresetsKey(), JSON.stringify(presets));
+    } catch (e) {
+        console.error('Failed to save user presets:', e);
+    }
+}
+
+/**
+ * Saves the current view as a user preset
+ * @param {string} name - The name for the preset
+ */
+function saveCurrentViewAsPreset(name) {
+    const userPresets = getUserPresets();
+
+    // Create the preset object with u_ prefix
+    const preset = {
+        id: `u_${Date.now()}`,
+        title: name,
+        pan: [ddValue(fractalApp.panDD.x), ddValue(fractalApp.panDD.y)],
+        zoom: fractalApp.zoom,
+        rotation: fractalApp.rotation
+    };
+
+    // Add Julia-specific c parameter
+    if (isJuliaMode() && fractalApp.c) {
+        preset.c = [...fractalApp.c];
+    }
+
+    // Store the current palette ID
+    if (fractalApp.PALETTES && fractalApp.currentPaletteIndex >= 0 &&
+        fractalApp.currentPaletteIndex < fractalApp.PALETTES.length) {
+        preset.paletteId = fractalApp.PALETTES[fractalApp.currentPaletteIndex].id;
+    }
+
+    userPresets.push(preset);
+    saveUserPresets(userPresets);
+
+    // Refresh the presets dropdown to include the new preset
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    log(`Saved user preset: ${name}`, 'saveCurrentViewAsPreset');
+}
+
+/**
+ * Deletes a user preset by its id
+ * @param {string} presetId
+ */
+function deleteUserPreset(presetId) {
+    let userPresets = getUserPresets();
+    userPresets = userPresets.filter(p => p.id !== presetId);
+    saveUserPresets(userPresets);
+
+    // Refresh the presets dropdown
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+
+    log(`Deleted user preset: ${presetId}`, 'deleteUserPreset');
+}
+
+/**
+ * Shows the save view dialog
+ */
+export function showSaveViewDialog() {
+    if (!saveViewDialog) return;
+
+    saveViewNameInput.value = '';
+    saveViewConfirmBtn.disabled = true;
+    saveViewDialog.classList.add('show');
+    saveViewNameInput.focus();
+}
+
+/**
+ * Hides the save view dialog
+ */
+function hideSaveViewDialog() {
+    if (!saveViewDialog) return;
+    saveViewDialog.classList.remove('show');
+}
+
+/**
+ * Initializes the save view dialog events
+ */
+function initSaveViewDialog() {
+    if (!saveViewDialog) return;
+
+    // Enable/disable save button based on input content
+    saveViewNameInput.addEventListener('input', () => {
+        saveViewConfirmBtn.disabled = !saveViewNameInput.value.trim();
+    });
+
+    saveViewConfirmBtn.addEventListener('click', () => {
+        const name = saveViewNameInput.value.trim();
+        if (name) {
+            saveCurrentViewAsPreset(name);
+            hideSaveViewDialog();
+        }
+    });
+
+    saveViewCancelBtn.addEventListener('click', () => {
+        hideSaveViewDialog();
+    });
+
+    // Close on overlay click
+    saveViewDialog.addEventListener('click', (e) => {
+        if (e.target === saveViewDialog) {
+            hideSaveViewDialog();
+        }
+    });
+
+    // Handle Enter key in input
+    saveViewNameInput.addEventListener('keydown', (e) => {
+        e.stopPropagation(); // Prevent hotkeys from firing
+        if (e.key === 'Enter') {
+            const name = saveViewNameInput.value.trim();
+            if (name) {
+                saveCurrentViewAsPreset(name);
+                hideSaveViewDialog();
+            }
+        } else if (e.key === 'Escape') {
+            hideSaveViewDialog();
+        }
+    });
+
+    log('Initialized.', 'initSaveViewDialog');
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
 
 // region > INITIALIZERS -----------------------------------------------------------------------------------------------
 
 function initHeaderEvents() {
 
-    document.getElementById('logo').addEventListener('pointerenter', () => {
+    let lastPointerType = 'mouse';
+
+    logo.addEventListener('pointerdown', (e) => {
+        lastPointerType = e.pointerType;
+    });
+
+    logo.addEventListener('pointerenter', (e) => {
+        // Skip hover behavior for touch - handled by click
+        if (e.pointerType === 'touch') return;
+
         if (headerMinimizeTimeout) {
             clearTimeout(headerMinimizeTimeout);
             headerMinimizeTimeout = null;
@@ -702,7 +995,17 @@ function initHeaderEvents() {
         toggleHeader(true);
     });
 
-    header.addEventListener('pointerleave', async () => {
+    // Toggle on tap/click for touch devices (and debug mode)
+    logo.addEventListener('click', () => {
+        if (lastPointerType === 'touch' || DEBUG_MODE > DEBUG_LEVEL.NONE) {
+            toggleHeader();
+        }
+    });
+
+    header.addEventListener('pointerleave', (e) => {
+        // Skip auto-hide for touch - handled by tapping outside
+        if (e.pointerType === 'touch') return;
+
         // Only minimize if it hasn't been toggled manually
         if (headerVisible && !DEBUG_MODE) {
             headerMinimizeTimeout = setTimeout(() => {
@@ -717,6 +1020,8 @@ function initHeaderEvents() {
         if (DEBUG_MODE) return;
         toggleHeader(false);
     });
+
+    log('Initialized.', 'initHeaderEvents');
 }
 
 function initControlButtonEvents() {
@@ -724,50 +1029,300 @@ function initControlButtonEvents() {
         await reset();
     });
 
-    randomizeColorsButton.addEventListener('click', randomizeColors);
+    saveViewButton.addEventListener('click', showSaveViewDialog);
 
     demoButton.addEventListener('click', toggleDemo);
 
     screenshotButton.addEventListener('click', captureScreenshot);
+
+    log('Initialized.', 'initControlButtonEvents');
 }
 
 function initPresetButtonEvents() {
     const presetBlock = document.getElementById('presets');
-    // presetBlock.innerHTML = 'Presets: ';
-    //
     presetButtons = [];
 
+    // Add built-in presets
     const presets = [...fractalApp.PRESETS];
     presets.forEach((preset, index) => {
         const btn = document.createElement('button');
         btn.id = 'preset' + (index);
         btn.className = 'preset';
-        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : '');
-        btn.textContent = (index).toString();
+        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : ` (${index})`);
+        btn.textContent = (preset.title || index).toString();
         btn.addEventListener('click', async () => {
+            closePresetsDropdown();
             await travelToPreset(presets, index);
         });
 
-        // Support for 10+ Presets
-        if (index % 10 === 0) {
-            btn.classList.add("first-of-ten");
-        }
-        if ((index + 1) % 22 === 0) {
-            btn.classList.add("last-of-ten");
-        }
+        presetBlock.appendChild(btn);
+        presetButtons.push(btn);
+    });
+
+    // Add user presets from localStorage
+    const userPresets = getUserPresets();
+    userPresets.forEach((preset) => {
+        const btn = document.createElement('button');
+        btn.id = 'preset-' + preset.id;
+        btn.className = 'preset user-preset';
+        btn.title = `${preset.title} (User) - Right-click to delete`;
+        btn.textContent = preset.title;
+
+        // Left click to travel to preset
+        btn.addEventListener('click', async (e) => {
+            closePresetsDropdown();
+            resetPresetAndDiveButtonStates();
+            initAnimationMode();
+            btn.classList.add('active');
+
+            if (isJuliaMode()) {
+                await fractalApp.animateTravelToPreset(preset, 1500, updateColorTheme);
+            } else {
+                await fractalApp.animateTravelToPreset(preset, 2000, 500, 1500, updateColorTheme);
+            }
+
+            exitAnimationMode();
+            updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
+        });
+
+        // Right click to delete
+        btn.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (confirm(`Delete view "${preset.title}"?`)) {
+                deleteUserPreset(preset.id);
+            }
+        });
+
+        // Long press to delete (touch devices)
+        let longPressTimer = null;
+        let touchMoved = false;
+        btn.addEventListener('touchstart', (e) => {
+            touchMoved = false;
+            longPressTimer = setTimeout(() => {
+                if (!touchMoved) {
+                    e.preventDefault();
+                    if (confirm(`Delete view "${preset.title}"?`)) {
+                        deleteUserPreset(preset.id);
+                    }
+                }
+            }, 600);
+        }, { passive: false });
+        btn.addEventListener('touchmove', () => {
+            touchMoved = true;
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
+        btn.addEventListener('touchend', () => {
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        });
 
         presetBlock.appendChild(btn);
         presetButtons.push(btn);
-        presetButtons[0].classList.add('active');
     });
+
+    if (presetButtons.length > 0) {
+        presetButtons[0].classList.add('active');
+    }
+
+    log('Initialized.', 'initPresetButtonEvents');
+}
+
+/** Toggles the presets dropdown menu */
+function togglePresetsDropdown() {
+    presetsMenu.classList.toggle('show');
+    const isOpen = presetsMenu.classList.contains('show');
+    presetsToggle.textContent = isOpen ? 'View ▴' : 'View ▾';
+}
+
+/** Closes the presets dropdown menu */
+function closePresetsDropdown() {
+    presetsMenu?.classList.remove('show');
+    if (presetsToggle) presetsToggle.textContent = 'View ▾';
+}
+
+function initPresetsDropdown() {
+    presetsToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closeDivesDropdown();
+        closePaletteDropdown();
+        togglePresetsDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!presetsMenu.contains(e.target) && e.target !== presetsToggle) {
+            closePresetsDropdown();
+        }
+    });
+
+    log('Initialized.', 'initPresetsDropdown');
+}
+
+/** Toggles the dives dropdown menu */
+function toggleDivesDropdown() {
+    divesMenu.classList.toggle('show');
+    const isOpen = divesMenu.classList.contains('show');
+    divesToggle.textContent = isOpen ? 'Dive ▴' : 'Dive ▾';
+}
+
+/** Closes the dives dropdown menu */
+function closeDivesDropdown() {
+    divesMenu?.classList.remove('show');
+    if (divesToggle) divesToggle.textContent = 'Dive ▾';
+}
+
+function initDivesDropdown() {
+    divesToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePresetsDropdown();
+        closePaletteDropdown();
+        toggleDivesDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!divesMenu.contains(e.target) && e.target !== divesToggle) {
+            closeDivesDropdown();
+        }
+    });
+
+    log('Initialized.', 'initDivesDropdown');
+}
+
+/** Toggles the palette dropdown menu */
+function togglePaletteDropdown() {
+    paletteMenu.classList.toggle('show');
+    const isOpen = paletteMenu.classList.contains('show');
+    paletteToggle.textContent = isOpen ? 'Palette ▴' : 'Palette ▾';
+}
+
+/** Closes the palette dropdown menu */
+function closePaletteDropdown() {
+    paletteMenu.classList.remove('show');
+    paletteToggle.textContent = 'Palette ▾';
+}
+
+function initPaletteButtonEvents() {
+    paletteButtons = [];
+    paletteMenu.innerHTML = ''; // Clear existing
+
+    const palettes = fractalApp.PALETTES || [];
+
+    // Always add "Random" option first
+    const randomBtn = document.createElement('button');
+    randomBtn.id = 'palette-random';
+    randomBtn.className = 'palette';
+    randomBtn.title = 'Pick a random palette (T)';
+    randomBtn.innerHTML = '<span class="color-swatch" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);"></span>Random';
+    randomBtn.addEventListener('click', async () => {
+        closePaletteDropdown();
+        await randomizeColors();
+    });
+    paletteMenu.appendChild(randomBtn);
+    paletteButtons.push(randomBtn);
+
+    // Add "Color Cycle" option (Shift+T functionality)
+    const cycleBtn = document.createElement('button');
+    cycleBtn.id = 'palette-cycle';
+    cycleBtn.className = 'palette';
+    cycleBtn.title = 'Cycle through palettes sequentially (Shift+T)';
+    cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Palette Cycle';
+    cycleBtn.addEventListener('click', async () => {
+        if (fractalApp.paletteCyclingActive) {
+            // Stop cycling
+            fractalApp.stopCurrentColorAnimations();
+            cycleBtn.classList.remove('active');
+        } else {
+            // Start cycling
+            cycleBtn.classList.add('active');
+            closePaletteDropdown();
+            await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
+        }
+    });
+    paletteMenu.appendChild(cycleBtn);
+    paletteButtons.push(cycleBtn);
+
+    // Add palette options if available
+    palettes.forEach((palette, index) => {
+        const btn = document.createElement('button');
+        btn.id = 'palette-' + index;
+        btn.className = 'palette';
+        btn.title = palette.id;
+
+        // Create two-color swatch to better represent palette
+        const primaryColor = palette.keyColor || '#888';
+        let secondaryColor = primaryColor;
+
+        if (palette.theme) {
+            if (palette.theme.length === 15) {
+                // Julia: extract color from stop 3 (index 9-11)
+                const r = Math.min(255, Math.round(palette.theme[9] * 255));
+                const g = Math.min(255, Math.round(palette.theme[10] * 255));
+                const b = Math.min(255, Math.round(palette.theme[11] * 255));
+                secondaryColor = `rgb(${r}, ${g}, ${b})`;
+            } else if (palette.theme.length === 3) {
+                // Mandelbrot: derive color from theme multipliers applied to keyColor
+                const hex = primaryColor.replace('#', '');
+                const kr = parseInt(hex.substring(0, 2), 16);
+                const kg = parseInt(hex.substring(2, 4), 16);
+                const kb = parseInt(hex.substring(4, 6), 16);
+                const r = Math.min(255, Math.round(kr * palette.theme[0] * 0.7));
+                const g = Math.min(255, Math.round(kg * palette.theme[1] * 0.7));
+                const b = Math.min(255, Math.round(kb * palette.theme[2] * 0.7));
+                secondaryColor = `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        btn.innerHTML = `<span class="color-swatch" style="background: linear-gradient(135deg, ${primaryColor} 50%, ${secondaryColor} 50%);"></span>${palette.id}`;
+
+        btn.addEventListener('click', async () => {
+            closePaletteDropdown();
+            // Stop color cycling and remove active state from cycle button
+            const cycleBtn = document.getElementById('palette-cycle');
+            if (cycleBtn) cycleBtn.classList.remove('active');
+            await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
+            updatePaletteDropdownState();
+        });
+
+        paletteMenu.appendChild(btn);
+        paletteButtons.push(btn);
+    });
+
+    // Set initial active state
+    updatePaletteDropdownState();
+
+    log('Initialized.', 'initPaletteButtonEvents');
+}
+
+function initPaletteDropdown() {
+    paletteToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePresetsDropdown();
+        closeDivesDropdown();
+        togglePaletteDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!paletteMenu.contains(e.target) && e.target !== paletteToggle) {
+            closePaletteDropdown();
+        }
+    });
+
+    log('Initialized.', 'initPaletteDropdown');
 }
 
 /**
  * Inits behavior common for all buttons
  */
 function initCommonButtonEvents() {
-    allButtons = diveButtons.concat(presetButtons);
-    allButtons.push(resetButton, randomizeColorsButton, screenshotButton, demoButton);
+    allButtons = diveButtons.concat(presetButtons).concat(paletteButtons);
+    allButtons.push(resetButton, saveViewButton, screenshotButton, demoButton);
 
     allButtons.forEach((btn) => {
         btn.addEventListener('mouseleave', () => {
@@ -778,13 +1333,13 @@ function initCommonButtonEvents() {
             btn.blur();
         });
     });
+
+    log('Initialized.', 'initCommonButtonEvents');
 }
 
 function initDiveButtons() {
     if (isJuliaMode()) {
         const diveBlock = document.getElementById('dives');
-        //diveBlock.innerHTML = 'Dives: ';
-
         diveButtons = [];
 
         const dives = [...fractalApp.DIVES];
@@ -793,8 +1348,9 @@ function initDiveButtons() {
             btn.id = 'dive' + (index);
             btn.className = 'dive';
             btn.title = (dive.title || ('Preset ' + index)) + ` (Shift+${index})`;
-            btn.textContent = (index).toString();
+            btn.textContent = dive.title || (index).toString();
             btn.addEventListener('click', async () => {
+                closeDivesDropdown();
                 await startJuliaDive(dives, index);
             });
 
@@ -802,15 +1358,17 @@ function initDiveButtons() {
             diveButtons.push(btn);
         });
 
-        diveBlock.style.display = 'block';
+        divesDropdown.style.display = 'inline-block';
     }
+
+    log('Initialized.', 'initDiveButtons');
 }
 
 function initFractalSwitchButtons() {
     mandelbrotSwitch.addEventListener('click', async (e) => {
         if (e.ctrlKey) {
             console.log('mandelbrotSwitch clicked (with persistence).');
-            await switchFractalModeWithPersistence(FRACTAL_TYPE.MANDELBROT);
+            await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT);
         } else {
             console.log('mandelbrotSwitch clicked.');
             await switchFractalMode(FRACTAL_TYPE.MANDELBROT);
@@ -819,20 +1377,61 @@ function initFractalSwitchButtons() {
 
     juliaSwitch.addEventListener('click', async (e) => {
         if (e.ctrlKey) {
-            await switchFractalModeWithPersistence(FRACTAL_TYPE.JULIA);
+            console.log('juliaSwitch clicked (with persistence).');
+            await switchFractalTypeWithPersistence(FRACTAL_TYPE.JULIA);
         } else {
             await switchFractalMode(FRACTAL_TYPE.JULIA);
         }
     });
+
+    if (FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
+        persistSwitch.addEventListener('click', async () => {
+            console.log('persistSwitch clicked.');
+            persistSwitch.blur(); // Release focus to prevent space key from re-triggering
+            if (isJuliaMode()) {
+                await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT)
+            } else {
+                await switchFractalTypeWithPersistence(FRACTAL_TYPE.JULIA);
+            }
+        });
+
+        persistSwitch.style.display = 'inline-flex';
+    }
+
+    log('Initialized.', 'initFractalSwitchButtons');
 }
 
 function initWindowEvents() {
+    // Resize canvas on window resize
     window.addEventListener('resize', () => {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             fractalApp.resizeCanvas(); // Adjust canvas dimensions
         }, 200); // Adjust delay as needed
     });
+
+    // Initialize draggable elements (debug info)
+    const dragElements = document.querySelectorAll(".draggable");
+
+    const move = (event, element) => {
+        let leftValue = parseInt(window.getComputedStyle(element).left);
+        let topValue = parseInt(window.getComputedStyle(element).top);
+        element.style.left = `${leftValue + event.movementX}px`;
+        element.style.top = `${topValue + event.movementY}px`;
+    }
+
+    dragElements.forEach((element) => {
+        element.addEventListener("mousedown", () => {
+            const onMove = (event) => move(event, element);
+
+            document.addEventListener("mousemove", onMove);
+            document.addEventListener("mouseup", () => {
+                document.removeEventListener("mousemove", onMove);
+            }, {once: true});
+        });
+    });
+
+    log('Initialized.', 'initWindowEvents');
 }
 
 /**
@@ -904,9 +1503,25 @@ export function parseUserInput(input) {
 
 function initInfoText() {
     if (!FF_USER_INPUT_ALLOWED) {
+
+        infoText.addEventListener('mouseenter', () => {
+            if (animationActive) return; // Disable during animations
+            infoText.innerHTML = 'Click to copy fractal state to clipboard.';
+        });
+
+        infoText.addEventListener('mouseleave', () => {
+            if (animationActive) return; // Disable during animations
+            updateInfo();
+        });
+
         infoText.addEventListener('click', () => {
-            let text = `{pan: [${fractalApp.pan}], rotation: ${fractalApp.rotation}, zoom: ${fractalApp.zoom}`
-                + (isJuliaMode() ? `, c: [${fractalApp.c}]}` : `}`);
+            if (animationActive) return; // Disable during animations
+
+            const viewPanX = ddValue(fractalApp.panDD.x);
+            const viewPanY = ddValue(fractalApp.panDD.y);
+
+            let text = `"pan": [${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}], ` +
+                `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}`+ (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
 
             navigator.clipboard.writeText(text).then(function () {
                 infoText.innerHTML = 'Copied to clipboard!';
@@ -958,6 +1573,34 @@ function initInfoText() {
     }
 }
 
+function bindHTMLElements() {
+    // Element binding
+    mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
+    juliaSwitch = document.getElementById('juliaSwitch');
+    persistSwitch = document.getElementById('persistSwitch');
+    header = document.getElementById('headerContainer');
+    logo = document.getElementById('logo');
+    infoLabel = document.getElementById('infoLabel');
+    infoText = document.getElementById('infoText');
+    resetButton = document.getElementById('reset');
+    saveViewButton = document.getElementById('saveView');
+    screenshotButton = document.getElementById('screenshot');
+    demoButton = document.getElementById('demo');
+    presetsToggle = document.getElementById('presets-toggle');
+    presetsMenu = document.getElementById('presets');
+    divesToggle = document.getElementById('dives-toggle');
+    divesMenu = document.getElementById('dives');
+    divesDropdown = document.getElementById('dives-dropdown');
+    paletteToggle = document.getElementById('palette-toggle');
+    paletteMenu = document.getElementById('palettes');
+    paletteDropdown = document.getElementById('palette-dropdown');
+    // Save View Dialog elements
+    saveViewDialog = document.getElementById('saveViewDialog');
+    saveViewNameInput = document.getElementById('saveViewName');
+    saveViewConfirmBtn = document.getElementById('saveViewConfirm');
+    saveViewCancelBtn = document.getElementById('saveViewCancel');
+}
+
 /**
  * Initializes the UI and registers UI event handlers
  * @param fractalRenderer
@@ -971,16 +1614,7 @@ export async function initUI(fractalRenderer) {
     fractalApp = fractalRenderer;
     canvas = fractalApp.canvas;
 
-    // Element binding
-    mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
-    juliaSwitch = document.getElementById('juliaSwitch');
-    header = document.getElementById('headerContainer');
-    infoLabel = document.getElementById('infoLabel');
-    infoText = document.getElementById('infoText');
-    resetButton = document.getElementById('reset');
-    randomizeColorsButton = document.getElementById('randomize');
-    screenshotButton = document.getElementById('screenshot');
-    demoButton = document.getElementById('demo');
+    bindHTMLElements();
 
     if (fractalRenderer instanceof JuliaRenderer) {
         fractalMode = FRACTAL_TYPE.JULIA;
@@ -997,11 +1631,19 @@ export async function initUI(fractalRenderer) {
         infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
         window.location.hash = '#julia'; // Update URL hash
+    } else {
+        initJuliaPreview();
     }
+
     initPresetButtonEvents();
+    initPresetsDropdown();
+    initDivesDropdown();
+    initPaletteButtonEvents();
+    initPaletteDropdown();
     initWindowEvents();
     initHeaderEvents();
     initControlButtonEvents();
+    initSaveViewDialog();
     initInfoText();
     initFractalSwitchButtons();
     initCommonButtonEvents(); // After all dynamic buttons are set
@@ -1014,10 +1656,30 @@ export async function initUI(fractalRenderer) {
         initMouseHandlers(fractalApp);
     }
 
-    updateRecolorButtonTitle();
+    updatePaletteDropdownState();
 
-    if (DEBUG_MODE) {
-        //initDebugMode();
+    if (DEBUG_MODE === DEBUG_LEVEL.FULL && !isMobileDevice()) {
+        toggleDebugMode();
+    }
+
+    document.getElementById("versionLink").innerHTML = `v${VERSION}`;
+
+    // Tap-to-toggle for controls hint on touch devices
+    const controlsHint = document.getElementById("controlsHint");
+    if (controlsHint) {
+        controlsHint.addEventListener("click", (e) => {
+            if (window.matchMedia("(pointer: coarse)").matches) {
+                e.preventDefault();
+                e.stopPropagation();
+                controlsHint.classList.toggle("active");
+            }
+        });
+        // Close tooltip when tapping outside
+        document.addEventListener("click", (e) => {
+            if (!controlsHint.contains(e.target)) {
+                controlsHint.classList.remove("active");
+            }
+        });
     }
 
     uiInitialized = true;

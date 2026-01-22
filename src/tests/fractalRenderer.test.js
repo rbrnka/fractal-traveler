@@ -1,52 +1,19 @@
+/**
+ * @jest-environment jsdom
+ */
 // src/__tests__/fractalRenderer.test.js
-
-// Helper: Create a dummy canvas element
-
-function createDummyCanvas(width = 800, height = 600) {
-    const canvas = document.createElement('canvas');
-    canvas.id = 'fractalCanvas';
-    canvas.width = width;
-    canvas.height = height;
-    document.body.appendChild(canvas);
-    return canvas;
-}
 
 describe('MandelbrotRenderer', () => {
     let canvas, mandelbrot;
-    beforeEach(() => {
-        // Mock the getContext method
-        HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
-            uniform1f: jest.fn(),
-            uniform2fv: jest.fn(),
-            uniform3fv: jest.fn(),
-            useProgram: jest.fn(),
-            viewport: jest.fn(),
-            clear: jest.fn(),
-            clearColor: jest.fn(),
-            createShader: jest.fn(() => ({})),
-            shaderSource: jest.fn(),
-            compileShader: jest.fn(),
-            getShaderParameter: jest.fn(() => true),
-            createProgram: jest.fn(() => ({})),
-            attachShader: jest.fn(),
-            linkProgram: jest.fn(),
-            getProgramParameter: jest.fn(() => true),
-            createBuffer: jest.fn(() => ({})),
-            bindBuffer: jest.fn(),
-            bufferData: jest.fn(),
-            enableVertexAttribArray: jest.fn(),
-            vertexAttribPointer: jest.fn(),
-            drawArrays: jest.fn(),
-            getUniformLocation: jest.fn(() => ({})),
-            getAttribLocation: jest.fn(() => ({})),
-        }));
 
-        // Set up a dummy canvas in the document
-        document.body.innerHTML = ''; // Clear any previous content
-        canvas = createDummyCanvas();
+    beforeEach(() => {
+        // Set up a dummy canvas using shared helper
+        cleanupDOM();
+        canvas = createMockCanvas();
+        appendCanvasToDOM(canvas);
+        // WebGL context mock is provided by jest.setup.js
         // Instantiate the MandelbrotRenderer
         //mandelbrot = new MandelbrotRenderer(canvas);
-
     });
 
     afterEach(() => {
@@ -71,5 +38,4 @@ describe('MandelbrotRenderer', () => {
         // expect(mandelbrot.pan).toEqual([...mandelbrot.DEFAULT_PAN]);
         // expect(mandelbrot.zoom).toEqual(mandelbrot.DEFAULT_ZOOM);
     });
-
 });

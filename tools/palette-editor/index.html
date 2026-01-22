@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synaptory Fractal Palette Editor</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
+    <link rel="stylesheet" media="all" href="palette-editor.css" type="text/css">
+    <link rel="icon" href="favicon.png">
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="header-left">
+            <h1>Synaptory Fractal Palette Editor</h1>
+        </div>
+        <div class="header-right">
+            <button class="btn btn-folder" onclick="openFolder()">Open Folder</button>
+            <button class="btn btn-fallback" onclick="document.getElementById('file-input').click()">Import JSON
+            </button>
+            <input type="file" id="file-input" accept=".json" style="display:none" onchange="loadFromFile(event)">
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- Palette List Panel -->
+        <div class="palette-list-panel">
+            <select id="fractal-type" onchange="switchMode(this.value)">
+                <option value="julia">Julia</option>
+                <option value="mandelbrot">Mandelbrot</option>
+            </select>
+
+            <div class="palette-list-header">
+                <span>Palettes</span>
+                <div class="palette-list-actions">
+                    <button class="btn btn-sm" onclick="addPalette()" title="Add new palette">+</button>
+                    <button class="btn btn-sm btn-danger" onclick="deletePalette()" title="Delete selected">−</button>
+                </div>
+            </div>
+            <div id="palette-list"></div>
+            <div id="unsaved-indicator" class="unsaved-indicator hidden">Unsaved changes</div>
+            <div id="folder-status" class="folder-status">No folder opened</div>
+        </div>
+
+        <!-- Editor Panel -->
+        <div class="editor-panel">
+            <!-- Palette Meta -->
+            <div class="palette-meta">
+                <div class="meta-field">
+                    <label>ID</label>
+                    <input type="text" id="palette-id" oninput="updatePaletteMeta()">
+                </div>
+                <div class="meta-field">
+                    <label>Key Color</label>
+                    <div class="keycolor-container">
+                        <input type="color" id="palette-keycolor" oninput="updatePaletteMeta()">
+                        <input type="text" id="palette-keycolor-hex" oninput="syncKeyColorFromHex()">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Julia Editor -->
+            <div id="julia-editor" class="color-editor">
+                <div id="editor-rows"></div>
+            </div>
+
+            <!-- Mandelbrot Editor -->
+            <div id="mandelbrot-editor" class="color-editor hidden">
+                <div class="cosine-section">
+                    <h4>Theme (Amplitude)</h4>
+                    <div class="cosine-row">
+                        <div class="cosine-channel">
+                            <label>R</label>
+                            <input type="range" min="0" max="5" step="0.1" data-param="theme" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="5" step="0.1" data-param="theme" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>G</label>
+                            <input type="range" min="0" max="5" step="0.1" data-param="theme" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="5" step="0.1" data-param="theme" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>B</label>
+                            <input type="range" min="0" max="5" step="0.1" data-param="theme" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="5" step="0.1" data-param="theme" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                    </div>
+                </div>
+                <div class="cosine-section">
+                    <h4>Frequency</h4>
+                    <div class="cosine-row">
+                        <div class="cosine-channel">
+                            <label>R</label>
+                            <input type="range" min="0" max="10" step="0.1" data-param="frequency" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="10" step="0.1" data-param="frequency" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>G</label>
+                            <input type="range" min="0" max="10" step="0.1" data-param="frequency" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="10" step="0.1" data-param="frequency" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>B</label>
+                            <input type="range" min="0" max="10" step="0.1" data-param="frequency" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="10" step="0.1" data-param="frequency" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                    </div>
+                </div>
+                <div class="cosine-section">
+                    <h4>Phase</h4>
+                    <div class="cosine-row">
+                        <div class="cosine-channel">
+                            <label>R</label>
+                            <input type="range" min="0" max="6.28" step="0.1" data-param="phase" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="6.28" step="0.1" data-param="phase" data-ch="0"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>G</label>
+                            <input type="range" min="0" max="6.28" step="0.1" data-param="phase" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="6.28" step="0.1" data-param="phase" data-ch="1"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                        <div class="cosine-channel">
+                            <label>B</label>
+                            <input type="range" min="0" max="6.28" step="0.1" data-param="phase" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                            <input type="number" min="0" max="6.28" step="0.1" data-param="phase" data-ch="2"
+                                   oninput="updateMandelbrotParam(this)">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Preview -->
+            <div class="preview-section">
+                <div id="palette-preview"></div>
+                <canvas id="mandelbrot-preview-canvas" width="300" height="40" class="hidden"></canvas>
+                <span class="preview-label">PREVIEW</span>
+            </div>
+
+            <!-- Actions -->
+            <div class="action-bar">
+                <button class="btn btn-save" onclick="saveChanges()">Save</button>
+                <button class="btn btn-revert" onclick="revertChanges()">Revert</button>
+                <button class="btn btn-copy" onclick="copyArray()">Copy Array</button>
+                <button class="btn btn-export" onclick="exportToFile()">Export JSON</button>
+            </div>
+
+            <!-- Output -->
+            <div class="output-section">
+                <h4>Array Output</h4>
+                <div id="output-text"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Developed for <a target="_blank" href="https://github.com/rbrnka/fractal-traveler">Synaptory Fractal Traveler</a>
+        <span class="middot">&middot;</span>
+        by <a target="_blank" href="https://brnka.com">Radim Brnka</a> &copy; 2025-2026
+    </footer>
+</div>
+
+<script>
+    // State
+    let currentMode = 'julia';
+    let juliaData = null;
+    let mandelbrotData = null;
+    let dirHandle = null;
+    let juliaFileHandle = null;
+    let mandelbrotFileHandle = null;
+    let selectedPaletteIndex = -1;
+    let hasUnsavedChanges = false;
+    let originalPaletteData = null;
+
+    // Store original file text to preserve precision in non-palette sections
+    let juliaOriginalText = null;
+    let mandelbrotOriginalText = null;
+
+    // Current palette being edited
+    let currentPalette = null;
+
+    // Julia colors (5 RGB)
+    let colors = Array.from({length: 5}, () => ({r: 127, g: 127, b: 127}));
+
+    // Mandelbrot params
+    let mandelbrotParams = {
+        theme: [1.0, 1.0, 1.0],
+        frequency: [3.14, 6.28, 1.72],
+        phase: [0, 0, 0]
+    };
+
+    // Helpers
+    const rgbToHex = (r, g, b) => "#" + [r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('');
+    const hexToRgb = (hex) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16)} : null;
+    };
+
+    // Custom JSON stringify that keeps arrays and simple objects compact
+    function compactJsonStringify(obj, indent = 2) {
+        const isPrimitive = (v) => v === null || typeof v === 'boolean' || typeof v === 'number' || typeof v === 'string';
+        const isSimpleArray = (arr) => Array.isArray(arr) && arr.every(v => isPrimitive(v));
+        const isSimpleObject = (o) => {
+            if (typeof o !== 'object' || o === null || Array.isArray(o)) return false;
+            return Object.values(o).every(v => isPrimitive(v) || isSimpleArray(v));
+        };
+
+        // Stringify number with maximum precision (17 significant digits for IEEE 754 doubles)
+        function numToString(n) {
+            if (!Number.isFinite(n)) return String(n);
+            // Use toPrecision for maximum accuracy, then clean up
+            const s = n.toPrecision(17);
+            // Remove trailing zeros after decimal point, but keep at least one digit
+            // Convert back through parseFloat to get canonical form
+            const parsed = parseFloat(s);
+            // Use exponential notation for very small/large numbers
+            if (Math.abs(parsed) < 1e-6 || Math.abs(parsed) >= 1e15) {
+                return parsed.toExponential();
+            }
+            return String(parsed);
+        }
+
+        function stringifyCompact(value) {
+            if (value === null) return 'null';
+            if (typeof value === 'boolean') return value ? 'true' : 'false';
+            if (typeof value === 'number') return numToString(value);
+            if (typeof value === 'string') return JSON.stringify(value);
+            if (Array.isArray(value)) {
+                return '[' + value.map(v => stringifyCompact(v)).join(', ') + ']';
+            }
+            if (typeof value === 'object') {
+                const items = Object.keys(value).map(k => JSON.stringify(k) + ': ' + stringifyCompact(value[k]));
+                return '{' + items.join(', ') + '}';
+            }
+            return String(value);
+        }
+
+        function stringify(value, level) {
+            const pad = ' '.repeat(level * indent);
+            const padNext = ' '.repeat((level + 1) * indent);
+
+            if (value === null) return 'null';
+            if (typeof value === 'boolean') return value ? 'true' : 'false';
+            if (typeof value === 'number') return numToString(value);
+            if (typeof value === 'string') return JSON.stringify(value);
+
+            if (Array.isArray(value)) {
+                if (value.length === 0) return '[]';
+                // Keep simple arrays (primitives only) on one line
+                if (isSimpleArray(value)) {
+                    return '[' + value.map(v => stringifyCompact(v)).join(', ') + ']';
+                }
+                // Arrays of simple objects (like presets) - each object on its own line
+                if (value.every(v => isSimpleObject(v))) {
+                    const items = value.map(v => padNext + stringifyCompact(v));
+                    return '[\n' + items.join(',\n') + '\n' + pad + ']';
+                }
+                // Complex arrays get formatted recursively
+                const items = value.map(v => padNext + stringify(v, level + 1));
+                return '[\n' + items.join(',\n') + '\n' + pad + ']';
+            }
+
+            if (typeof value === 'object') {
+                const keys = Object.keys(value);
+                if (keys.length === 0) return '{}';
+                // Keep simple objects on one line
+                if (isSimpleObject(value)) {
+                    return stringifyCompact(value);
+                }
+                const items = keys.map(k => padNext + JSON.stringify(k) + ': ' + stringify(value[k], level + 1));
+                return '{\n' + items.join(',\n') + '\n' + pad + '}';
+            }
+
+            return String(value);
+        }
+
+        return stringify(obj, 0);
+    }
+
+    // Replace only the "palettes" array in the original JSON text
+    // This preserves exact precision for presets, dives, and other sections
+    function replacePalettesInOriginal(originalText, newPalettes) {
+        // Find the "palettes" key and its array
+        const palettesRegex = /"palettes"\s*:\s*\[/;
+        const match = originalText.match(palettesRegex);
+        if (!match) {
+            console.error('Could not find "palettes" in original text');
+            return null;
+        }
+
+        const startIndex = match.index;
+        const arrayStartIndex = startIndex + match[0].length - 1; // Position of '['
+
+        // Find the matching closing bracket by counting brackets
+        let depth = 0;
+        let endIndex = -1;
+        for (let i = arrayStartIndex; i < originalText.length; i++) {
+            const char = originalText[i];
+            if (char === '[') depth++;
+            else if (char === ']') {
+                depth--;
+                if (depth === 0) {
+                    endIndex = i + 1;
+                    break;
+                }
+            }
+        }
+
+        if (endIndex === -1) {
+            console.error('Could not find closing bracket for palettes array');
+            return null;
+        }
+
+        // Generate the new palettes section
+        const newPalettesText = compactJsonStringify({palettes: newPalettes});
+        // Extract just the array part (remove the wrapper object)
+        const arrayMatch = newPalettesText.match(/"palettes":\s*(\[[\s\S]*\])/);
+        if (!arrayMatch) {
+            console.error('Could not extract palettes array from stringified data');
+            return null;
+        }
+
+        // Replace the old palettes array with the new one
+        const before = originalText.substring(0, arrayStartIndex);
+        const after = originalText.substring(endIndex);
+        return before + arrayMatch[1] + after;
+    }
+
+    // File System Access API
+    async function openFolder() {
+        try {
+            dirHandle = await window.showDirectoryPicker();
+            await loadDataFiles();
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                console.error('Error opening folder:', err);
+                alert('Error opening folder. Make sure to select the src/data folder.');
+            }
+        }
+    }
+
+    async function loadDataFiles() {
+        try {
+            // Load Julia
+            juliaFileHandle = await dirHandle.getFileHandle('julia.json');
+            const juliaFile = await juliaFileHandle.getFile();
+            juliaOriginalText = await juliaFile.text();
+            juliaData = JSON.parse(juliaOriginalText);
+            console.log('Loaded julia.json, handle:', juliaFileHandle);
+
+            // Load Mandelbrot
+            mandelbrotFileHandle = await dirHandle.getFileHandle('mandelbrot.json');
+            const mandelbrotFile = await mandelbrotFileHandle.getFile();
+            mandelbrotOriginalText = await mandelbrotFile.text();
+            mandelbrotData = JSON.parse(mandelbrotOriginalText);
+            console.log('Loaded mandelbrot.json, handle:', mandelbrotFileHandle);
+
+            // Update status
+            document.getElementById('folder-status').textContent = 'Folder: ' + dirHandle.name;
+            document.getElementById('folder-status').classList.add('connected');
+
+            updatePaletteList();
+            if (getCurrentPalettes().length > 0) {
+                selectPalette(0);
+            }
+        } catch (err) {
+            console.error('Error loading data files:', err);
+            alert('Error loading JSON files. Make sure julia.json and mandelbrot.json exist in the selected folder.');
+        }
+    }
+
+    // Fallback import
+    function loadFromFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                if (data.type === 'JULIA') {
+                    juliaData = data;
+                    if (currentMode !== 'julia') {
+                        document.getElementById('fractal-type').value = 'julia';
+                        switchMode('julia');
+                    }
+                } else if (data.type === 'MANDELBROT') {
+                    mandelbrotData = data;
+                    if (currentMode !== 'mandelbrot') {
+                        document.getElementById('fractal-type').value = 'mandelbrot';
+                        switchMode('mandelbrot');
+                    }
+                }
+                updatePaletteList();
+                if (getCurrentPalettes().length > 0) {
+                    selectPalette(0);
+                }
+            } catch (err) {
+                alert('Invalid JSON file');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    }
+
+    // Export fallback
+    function exportToFile() {
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        if (!data) {
+            alert('No data to export');
+            return;
+        }
+        const blob = new Blob([compactJsonStringify(data)], {type: 'application/json'});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = currentMode === 'julia' ? 'julia.json' : 'mandelbrot.json';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // Save changes
+    async function saveChanges() {
+        console.log('saveChanges called, hasUnsavedChanges:', hasUnsavedChanges);
+
+        if (!hasUnsavedChanges) {
+            alert('No unsaved changes to save.');
+            return;
+        }
+
+        const fileHandle = currentMode === 'julia' ? juliaFileHandle : mandelbrotFileHandle;
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        const originalText = currentMode === 'julia' ? juliaOriginalText : mandelbrotOriginalText;
+
+        console.log('Saving... fileHandle:', fileHandle, 'mode:', currentMode);
+        console.log('juliaFileHandle:', juliaFileHandle);
+        console.log('mandelbrotFileHandle:', mandelbrotFileHandle);
+
+        if (fileHandle && data && originalText) {
+            try {
+                // Replace only the palettes section, preserving original text for presets etc.
+                const newText = replacePalettesInOriginal(originalText, data.palettes);
+                if (!newText) {
+                    alert('Error: Could not update palettes in file. Try Export JSON instead.');
+                    return;
+                }
+
+                const writable = await fileHandle.createWritable();
+                await writable.write(newText);
+                await writable.close();
+
+                // Update the stored original text with the new version
+                if (currentMode === 'julia') {
+                    juliaOriginalText = newText;
+                } else {
+                    mandelbrotOriginalText = newText;
+                }
+
+                hasUnsavedChanges = false;
+                originalPaletteData = JSON.parse(JSON.stringify(currentPalette));
+                updateUnsavedIndicator();
+                alert('Saved successfully!');
+            } catch (err) {
+                console.error('Error saving:', err);
+                alert('Error saving file. Try using Export JSON instead.');
+            }
+        } else {
+            alert('No file handle. Use Export JSON to download the file.');
+        }
+    }
+
+    // Revert changes
+    function revertChanges() {
+        if (originalPaletteData && selectedPaletteIndex >= 0) {
+            const palettes = getCurrentPalettes();
+            palettes[selectedPaletteIndex] = JSON.parse(JSON.stringify(originalPaletteData));
+            selectPalette(selectedPaletteIndex);
+            hasUnsavedChanges = false;
+            updateUnsavedIndicator();
+        }
+    }
+
+    // Mode switching
+    function switchMode(mode) {
+        currentMode = mode;
+        selectedPaletteIndex = -1;
+
+        document.getElementById('julia-editor').classList.toggle('hidden', mode !== 'julia');
+        document.getElementById('mandelbrot-editor').classList.toggle('hidden', mode !== 'mandelbrot');
+        document.getElementById('palette-preview').classList.toggle('hidden', mode !== 'julia');
+        document.getElementById('mandelbrot-preview-canvas').classList.toggle('hidden', mode !== 'mandelbrot');
+
+        updatePaletteList();
+        if (getCurrentPalettes().length > 0) {
+            selectPalette(0);
+        } else {
+            clearEditor();
+        }
+    }
+
+    function getCurrentPalettes() {
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        return data?.palettes || [];
+    }
+
+    // Palette list
+    function updatePaletteList() {
+        const container = document.getElementById('palette-list');
+        const palettes = getCurrentPalettes();
+        container.innerHTML = '';
+
+        palettes.forEach((p, i) => {
+            const item = document.createElement('div');
+            item.className = 'palette-item' + (i === selectedPaletteIndex ? ' selected' : '');
+            item.innerHTML = `
+                <span class="palette-color" style="background: ${p.keyColor || '#888'}"></span>
+                <span class="palette-name">${p.id || 'Unnamed'}</span>
+            `;
+            item.onclick = () => selectPalette(i);
+            container.appendChild(item);
+        });
+    }
+
+    function selectPalette(index) {
+        const palettes = getCurrentPalettes();
+        if (index < 0 || index >= palettes.length) return;
+
+        selectedPaletteIndex = index;
+        currentPalette = palettes[index];
+        originalPaletteData = JSON.parse(JSON.stringify(currentPalette));
+        hasUnsavedChanges = false;
+        updateUnsavedIndicator();
+
+        // Update meta fields
+        document.getElementById('palette-id').value = currentPalette.id || '';
+        document.getElementById('palette-keycolor').value = currentPalette.keyColor || '#888888';
+        document.getElementById('palette-keycolor-hex').value = currentPalette.keyColor || '#888888';
+
+        if (currentMode === 'julia') {
+            loadJuliaPalette(currentPalette.theme);
+        } else {
+            loadMandelbrotPalette(currentPalette);
+        }
+
+        updatePaletteList();
+    }
+
+    function clearEditor() {
+        currentPalette = null;
+        document.getElementById('palette-id').value = '';
+        document.getElementById('palette-keycolor').value = '#888888';
+        document.getElementById('palette-keycolor-hex').value = '#888888';
+
+        if (currentMode === 'julia') {
+            colors = Array.from({length: 5}, () => ({r: 127, g: 127, b: 127}));
+            buildJuliaUI();
+        } else {
+            // Reset Mandelbrot params to defaults and update preview
+            mandelbrotParams = {
+                theme: [1.0, 1.0, 1.0],
+                frequency: [3.14, 6.28, 1.72],
+                phase: [0, 0, 0]
+            };
+            loadMandelbrotPalette(mandelbrotParams);
+        }
+    }
+
+    // Add/Delete palette
+    function addPalette() {
+        // Modify the data object directly to ensure changes persist
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        if (!data) {
+            alert('No data loaded. Open a folder or import a JSON file first.');
+            return;
+        }
+        if (!data.palettes) {
+            data.palettes = [];
+        }
+
+        let newPalette;
+        if (currentMode === 'julia') {
+            newPalette = {
+                id: 'New Palette',
+                keyColor: '#888888',
+                theme: [0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
+            };
+        } else {
+            newPalette = {
+                id: 'New Palette',
+                keyColor: '#888888',
+                theme: [1.0, 1.0, 1.0],
+                frequency: [3.14, 3.14, 3.14],
+                phase: [0, 0, 0]
+            };
+        }
+
+        data.palettes.push(newPalette);
+        updatePaletteList();
+        selectPalette(data.palettes.length - 1);
+
+        // Mark as unsaved AFTER selectPalette (which resets the flag)
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
+    }
+
+    function deletePalette() {
+        if (selectedPaletteIndex < 0) return;
+        if (!confirm('Delete this palette?')) return;
+
+        // Modify the data object directly to ensure changes persist
+        const data = currentMode === 'julia' ? juliaData : mandelbrotData;
+        if (!data || !data.palettes) return;
+
+        data.palettes.splice(selectedPaletteIndex, 1);
+        updatePaletteList();
+
+        if (data.palettes.length > 0) {
+            selectPalette(Math.min(selectedPaletteIndex, data.palettes.length - 1));
+        } else {
+            selectedPaletteIndex = -1;
+            clearEditor();
+        }
+
+        // Mark as unsaved AFTER selectPalette (which resets the flag)
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
+    }
+
+    // Julia editor
+    function loadJuliaPalette(theme) {
+        if (!theme || theme.length !== 15) {
+            colors = Array.from({length: 5}, () => ({r: 127, g: 127, b: 127}));
+        } else {
+            for (let i = 0; i < 5; i++) {
+                colors[i] = {
+                    r: Math.round(theme[i * 3] * 255),
+                    g: Math.round(theme[i * 3 + 1] * 255),
+                    b: Math.round(theme[i * 3 + 2] * 255)
+                };
+            }
+        }
+        buildJuliaUI();
+    }
+
+    function buildJuliaUI() {
+        const container = document.getElementById('editor-rows');
+        container.innerHTML = '';
+        colors.forEach((c, i) => {
+            const row = document.createElement('div');
+            row.className = 'color-row';
+            row.id = `row-${i}`;
+            row.innerHTML = `
+                <div class="color-index">#${i + 1}</div>
+                <div class="swatch-container">
+                    <input type="color" class="swatch-input" data-idx="${i}" value="${rgbToHex(c.r, c.g, c.b)}">
+                </div>
+                <div class="channel">
+                    <label>Hex</label>
+                    <input type="text" class="hex-input" data-idx="${i}" value="${rgbToHex(c.r, c.g, c.b)}">
+                </div>
+                ${['r', 'g', 'b'].map(ch => `
+                    <div class="channel">
+                        <label>${ch.toUpperCase()}</label>
+                        <input type="range" min="0" max="255" value="${c[ch]}" data-idx="${i}" data-ch="${ch}" class="r-input">
+                        <input type="number" min="0" max="255" value="${c[ch]}" data-idx="${i}" data-ch="${ch}" class="n-input">
+                    </div>
+                `).join('')}
+            `;
+            container.appendChild(row);
+        });
+        updateJuliaPreview();
+    }
+
+    // Julia input handler
+    document.addEventListener('input', (e) => {
+        if (e.target.closest('#julia-editor') && e.target.dataset.idx !== undefined) {
+            const idx = parseInt(e.target.dataset.idx);
+            const row = document.getElementById(`row-${idx}`);
+
+            if (e.target.classList.contains('swatch-input')) {
+                colors[idx] = hexToRgb(e.target.value);
+            } else if (e.target.classList.contains('hex-input')) {
+                const rgb = hexToRgb(e.target.value);
+                if (rgb) colors[idx] = rgb;
+            } else if (e.target.dataset.ch) {
+                const ch = e.target.dataset.ch;
+                colors[idx][ch] = parseInt(e.target.value) || 0;
+            }
+
+            const c = colors[idx];
+            const hex = rgbToHex(c.r, c.g, c.b);
+            row.querySelector('.swatch-input').value = hex;
+            row.querySelector('.hex-input').value = hex;
+            ['r', 'g', 'b'].forEach(ch => {
+                row.querySelector(`.r-input[data-ch="${ch}"]`).value = c[ch];
+                row.querySelector(`.n-input[data-ch="${ch}"]`).value = c[ch];
+            });
+
+            updateJuliaPreview();
+            syncJuliaToPalette();
+        }
+    });
+
+    function updateJuliaPreview() {
+        const stops = colors.map((c, i) => `rgb(${c.r},${c.g},${c.b}) ${i * 20}% ${(i + 1) * 20}%`);
+        document.getElementById('palette-preview').style.background = `conic-gradient(${stops.join(',')})`;
+        updateOutput();
+    }
+
+    function syncJuliaToPalette() {
+        if (!currentPalette) return;
+        currentPalette.theme = colors.flatMap(c => [
+            parseFloat((c.r / 255).toFixed(3)),
+            parseFloat((c.g / 255).toFixed(3)),
+            parseFloat((c.b / 255).toFixed(3))
+        ]);
+        markUnsaved();
+    }
+
+    // Mandelbrot editor
+    function loadMandelbrotPalette(palette) {
+        mandelbrotParams.theme = [...(palette.theme || [1, 1, 1])];
+        mandelbrotParams.frequency = [...(palette.frequency || [3.14, 6.28, 1.72])];
+        mandelbrotParams.phase = [...(palette.phase || [0, 0, 0])];
+
+        // Update sliders
+        ['theme', 'frequency', 'phase'].forEach(param => {
+            for (let i = 0; i < 3; i++) {
+                const inputs = document.querySelectorAll(`#mandelbrot-editor [data-param="${param}"][data-ch="${i}"]`);
+                inputs.forEach(inp => inp.value = mandelbrotParams[param][i]);
+            }
+        });
+
+        updateMandelbrotPreview();
+    }
+
+    function updateMandelbrotParam(input) {
+        const param = input.dataset.param;
+        const ch = parseInt(input.dataset.ch);
+        const value = parseFloat(input.value) || 0;
+
+        mandelbrotParams[param][ch] = value;
+
+        // Sync range and number inputs
+        const inputs = document.querySelectorAll(`#mandelbrot-editor [data-param="${param}"][data-ch="${ch}"]`);
+        inputs.forEach(inp => inp.value = value);
+
+        updateMandelbrotPreview();
+        syncMandelbrotToPalette();
+    }
+
+    function updateMandelbrotPreview() {
+        const canvas = document.getElementById('mandelbrot-preview-canvas');
+        const ctx = canvas.getContext('2d');
+        const {theme, frequency, phase} = mandelbrotParams;
+
+        for (let x = 0; x < canvas.width; x++) {
+            const t = x / canvas.width;
+            const r = Math.floor(255 * Math.max(0, Math.min(1, theme[0] * (0.5 + 0.5 * Math.cos(frequency[0] * t * Math.PI * 2 + phase[0])))));
+            const g = Math.floor(255 * Math.max(0, Math.min(1, theme[1] * (0.5 + 0.5 * Math.cos(frequency[1] * t * Math.PI * 2 + phase[1])))));
+            const b = Math.floor(255 * Math.max(0, Math.min(1, theme[2] * (0.5 + 0.5 * Math.cos(frequency[2] * t * Math.PI * 2 + phase[2])))));
+            ctx.fillStyle = `rgb(${r},${g},${b})`;
+            ctx.fillRect(x, 0, 1, canvas.height);
+        }
+
+        updateOutput();
+    }
+
+    function syncMandelbrotToPalette() {
+        if (!currentPalette) return;
+        currentPalette.theme = [...mandelbrotParams.theme];
+        currentPalette.frequency = [...mandelbrotParams.frequency];
+        currentPalette.phase = [...mandelbrotParams.phase];
+        markUnsaved();
+    }
+
+    // Meta updates
+    function updatePaletteMeta() {
+        // Always sync hex field from color picker
+        const keyColor = document.getElementById('palette-keycolor').value;
+        document.getElementById('palette-keycolor-hex').value = keyColor;
+
+        if (!currentPalette) return;
+        currentPalette.id = document.getElementById('palette-id').value;
+        currentPalette.keyColor = keyColor;
+        updatePaletteList();
+        markUnsaved();
+    }
+
+    function syncKeyColorFromHex() {
+        const hex = document.getElementById('palette-keycolor-hex').value;
+        if (/^#[0-9A-Fa-f]{6}$/.test(hex)) {
+            document.getElementById('palette-keycolor').value = hex;
+            if (currentPalette) {
+                currentPalette.keyColor = hex;
+                updatePaletteList();
+                markUnsaved();
+            }
+        }
+    }
+
+    // Output
+    function updateOutput() {
+        const outputEl = document.getElementById('output-text');
+        if (currentMode === 'julia') {
+            const normalized = colors.flatMap(c => [(c.r / 255).toFixed(3), (c.g / 255).toFixed(3), (c.b / 255).toFixed(3)]);
+            outputEl.textContent = `[${normalized.join(', ')}]`;
+        } else {
+            outputEl.textContent = `"theme": [${mandelbrotParams.theme.map(v => v.toFixed(2)).join(', ')}], \n"frequency": [${mandelbrotParams.frequency.map(v => v.toFixed(2)).join(', ')}],\n"phase": [${mandelbrotParams.phase.map(v => v.toFixed(2)).join(', ')}]`;
+        }
+    }
+
+    function copyArray() {
+        const text = document.getElementById('output-text').textContent;
+        navigator.clipboard.writeText(text);
+    }
+
+    // Unsaved indicator
+    function markUnsaved() {
+        hasUnsavedChanges = true;
+        updateUnsavedIndicator();
+    }
+
+    function updateUnsavedIndicator() {
+        document.getElementById('unsaved-indicator').classList.toggle('hidden', !hasUnsavedChanges);
+    }
+
+    // Init
+    buildJuliaUI();
+    updateJuliaPreview();
+    updateOutput();
+</script>
+</body>
+</html>
