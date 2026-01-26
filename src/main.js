@@ -6,8 +6,8 @@
  * @license MIT
  */
 
-import '../css/style.css';
-import '../css/debugPanel.css';
+import './css/style.css';
+import './css/debugPanel.css';
 import {JuliaRenderer} from "./renderers/juliaRenderer";
 import MandelbrotRenderer from "./renderers/mandelbrotRenderer";
 import RiemannRenderer from "./renderers/riemannRenderer";
