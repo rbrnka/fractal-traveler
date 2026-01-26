@@ -22,16 +22,16 @@ function getFilename() {
 }
 
 /**
- * Returns watermark text that fits current fractal type and its properties.
+ * Returns watermark text lines for current fractal type and its properties.
  * @param {FractalRenderer} fractalApp
- * @return {string}
+ * @return {{line1: string, line2: string}}
  */
-function getWatermarkText(fractalApp) {
+function getWatermarkLines(fractalApp) {
     const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
-
-    return `Created by ${APP_NAME} (${fractalType}: ` +
-        `p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
-        `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)})` : `)`}`;
+    const line1 = APP_NAME;
+    const line2 = `${fractalType}: p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
+        `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)}` : ``}`;
+    return {line1, line2};
 }
 
 /**
@@ -84,20 +84,30 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
     ctx.drawImage(canvas, 0, 0);
 
     // Define the watermark text and style
-    let watermarkText = getWatermarkText(fractalApp);
+    const {line1, line2} = getWatermarkLines(fractalApp);
     const fontSize = 12;
+    const lineSpacing = 4;
     const padding = 6;
     const borderWidth = 1;
 
-    ctx.font = `${fontSize}px`;
+    // Font styles matching h1 for line1
+    const line1Font = `italic ${fontSize}px "Bruno Ace SC", sans-serif`;
+    const line2Font = `${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace`;
+
     ctx.textAlign = 'center';
     ctx.letterSpacing = '1px';
     ctx.textBaseline = 'middle';
 
-    // Measure the text width and calculate the rectangle size
-    const textWidth = ctx.measureText(watermarkText).width;
-    const rectWidth = textWidth + padding * 2 + borderWidth * 2;
-    const rectHeight = fontSize + padding * 2 + borderWidth * 2;
+    // Measure text widths
+    ctx.font = line1Font;
+    const line1Width = ctx.measureText(line1).width;
+    ctx.font = line2Font;
+    const line2Width = ctx.measureText(line2).width;
+
+    // Calculate rectangle size for two lines
+    const maxTextWidth = Math.max(line1Width, line2Width);
+    const rectWidth = maxTextWidth + padding * 2 + borderWidth * 2;
+    const rectHeight = fontSize * 2 + lineSpacing + padding * 2 + borderWidth * 2;
 
     // Position the rectangle in the bottom-right corner
     const x = offscreenCanvas.width - rectWidth - padding;
@@ -105,20 +115,23 @@ export function takeScreenshot(canvas, fractalApp, accentColor) {
 
     // Draw the semi-transparent black background
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    drawRoundRect(ctx, x, y, rectWidth, rectHeight, 8);  // 10 is the corner radius, adjust as needed
+    drawRoundRect(ctx, x, y, rectWidth, rectHeight, 8);
     ctx.fill();
-
-    // Draw the border
-    // ctx.strokeStyle = accentColor;
-    // ctx.lineWidth = borderWidth;
-    // drawRoundRect(ctx, x, y, rectWidth, rectHeight, 8);
-    // ctx.stroke();
 
     // Draw the text centered within the rectangle
     const textX = x + rectWidth / 2;
-    const textY = y + rectHeight / 2 + 1;
+    const line1Y = y + padding + borderWidth + fontSize / 2;
+    const line2Y = line1Y + fontSize + lineSpacing;
+
+    // Draw line 1 (app name with h1 styling)
+    ctx.font = line1Font;
     ctx.fillStyle = accentColor;
-    ctx.fillText(watermarkText, textX, textY);
+    ctx.fillText(line1, textX, line1Y);
+
+    // Draw line 2 (coordinates)
+    ctx.font = line2Font;
+    ctx.fillStyle = accentColor;
+    ctx.fillText(line2, textX, line2Y);
 
     // Create a temporary link for downloading the image
     const link = document.createElement('a');
