@@ -2,10 +2,9 @@
 
 <p align="center">
   <a href="https://fractal.brnka.com/" title="Open the live app">
-    <img src="https://github.com/user-attachments/assets/9bc0e53e-a084-4284-812f-64747bf74323" alt="Synaptory Fractal Traveler — Mandelbrot & Julia explorer" />
+   <img width="1376" height="524" alt="image" src="https://github.com/user-attachments/assets/471e02df-2c16-473a-ae03-ed60a097847f" />
   </a>
 </p>
-
 <p align="center">
   A real-time Mandelbrot & Julia explorer built with modern JavaScript + WebGL.<br/>
   Smooth deep-zoom navigation, palette play, curated presets, and animated “dives”.
@@ -14,7 +13,7 @@
 <p align="center">
   <a href="https://fractal.brnka.com/">Live App</a> ·
   <a href="https://synaptory.substack.com/p/unmasking-chaos">Article: Unmasking Chaos</a> ·
-  <a href="https://github.com/rbrnka/fractal-traveler/wiki">Wiki</a> ·
+  <a href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Controls</a> ·
   <a href="https://fractal.brnka.com/docs/">Docs</a> ·
   <a href="https://fractal.brnka.com/archive">Archive of older versions</a> ·  
   <a href="https://fractal.brnka.com/editor">Palette editor</a>  
@@ -33,18 +32,6 @@
 
 ---
 
-## Table of contents
-
-- [About](#about)
-- [Features](#features)
-- [Try it now](#try-it-now)
-- [Controls](https://github.com/rbrnka/fractal-traveler/wiki/Controls)
-- [Gallery](https://github.com/rbrnka/fractal-traveler/wiki/Gallery)
-- [Changelog / Releases](https://github.com/rbrnka/fractal-traveler/releases)
-- [License](LICENSE)
-
----
-
 ## About
 
 **Synaptory Fractal Traveler** is an interactive exploration and learning experience for the **Mandelbrot set** and its 
@@ -53,6 +40,8 @@ companion **Julia sets**. It renders on the GPU (WebGL) and is designed around o
 > Make the beauty of “fractal travel” available for everyone to enjoy. 
 
 You can zoom, pan, rotate, recolor, take screenshots, share coordinates/links, and jump through curated presets that highlight the set’s interesting locations.
+
+Read more in [Wiki](https://github.com/rbrnka/fractal-traveler/wiki).
 
 ---
 
@@ -85,7 +74,7 @@ You can zoom, pan, rotate, recolor, take screenshots, share coordinates/links, a
   - Ready for local deployment and experimentation
   - Palette editor available
 
-> Check out the latest [release notes](https://github.com/rbrnka/fractal-traveler/releases/tag/2.0).
+Check out the latest [release notes](https://github.com/rbrnka/fractal-traveler/releases/tag/2.0).
 
 ---
 
