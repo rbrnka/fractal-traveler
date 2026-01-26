@@ -1,6 +1,5 @@
- <h1 align="center"><img alt="Synaptory Fractal Traveler" src="src/img/sft_logo.png"></h1>
+ <h1 align="center"><img width="1080" height="110" alt="image" src="https://github.com/user-attachments/assets/d22da54b-adc4-4fcf-882e-8d7bd2187661" /></h1>
 
----
 <p align="center">
   <a href="https://fractal.brnka.com/" title="Open the live app">
     <img src="https://github.com/user-attachments/assets/9bc0e53e-a084-4284-812f-64747bf74323" alt="Synaptory Fractal Traveler — Mandelbrot & Julia explorer" />
@@ -30,7 +29,7 @@
 </p>
 
 > [!IMPORTANT]
-> This is GPU-first, real-time rendering. A high-end GPU is strongly recommended for the best experience.
+> This is GPU-first, real-time rendering. A high-end GPU is strongly recommended for the best experience (optimal: RTX 3070 or equivalent)
 
 ---
 
@@ -39,6 +38,7 @@
 - [About](#about)
 - [Features](#features)
 - [Try it now](#try-it-now)
+- [Controls](https://github.com/rbrnka/fractal-traveler/wiki/Controls)
 - [Gallery](https://github.com/rbrnka/fractal-traveler/wiki/Gallery)
 - [Changelog / Releases](https://github.com/rbrnka/fractal-traveler/releases)
 - [License](LICENSE)
@@ -94,7 +94,7 @@ You can zoom, pan, rotate, recolor, take screenshots, share coordinates/links, a
 Live app: **https://fractal.brnka.com/**
 
 If you find something beautiful:
-1. Hit **Shift+S** for a clean screenshot.
-2. Hit **Alt+S** to save it locally.
-3. Hit **C** to copy coordinates and share it in the discussion (or anywhere you like).
+1. Hit `Shift+S` for a clean screenshot.
+2. Hit `Alt+S`to save it locally.
+3. Hit `C` to copy coordinates and share it in the discussion (or anywhere you like).
 
