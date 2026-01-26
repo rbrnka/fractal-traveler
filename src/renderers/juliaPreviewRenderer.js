@@ -1,7 +1,7 @@
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.preview.frag';
 import FractalRenderer from "./fractalRenderer";
-import data from '../data/julia.json' with {type: 'json'};
+import data from '../data/julia.json';
 import {DEFAULT_JULIA_PALETTE} from "../global/constants";
 
 /**

@@ -7,7 +7,7 @@ import {updateJuliaSliders} from "../ui/juliaSlidersController";
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/julia.frag';
 import fragmentShaderRawLegacy from '../shaders/julia.legacy.frag';
-import data from '../data/julia.json' with {type: 'json'};
+import data from '../data/julia.json';
 
 /**
  * JuliaRenderer (Rebased Perturbation)

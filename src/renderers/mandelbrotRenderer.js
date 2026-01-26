@@ -1,7 +1,7 @@
 import FractalRenderer from "./fractalRenderer";
 import {asyncDelay, ddSubDD, hexToRGBArray, lerp, normalizeRotation, splitFloat} from "../global/utils";
 import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
-import presetsData from '../data/mandelbrot.json' with {type: 'json'};
+import presetsData from '../data/mandelbrot.json';
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/mandelbrot.frag';
 
