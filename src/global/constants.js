@@ -26,10 +26,12 @@ export const DEBUG_LEVEL = {
 }
 
 /**
- * DEBUG MODE. Set to false for prod deployment!
- * @type {DEBUG_LEVEL}
+ * DEBUG MODE - Injected by webpack DefinePlugin at build time.
+ * Development builds: DEBUG_LEVEL.FULL
+ * Production builds: DEBUG_LEVEL.NONE (debug code tree-shaken away)
+ * @type {number}
  */
-export const DEBUG_MODE = DEBUG_LEVEL.FULL;
+export const DEBUG_MODE = DEBUG_LEVEL[process.env.DEBUG_MODE] || DEBUG_LEVEL.NONE;
 
 /**
  *

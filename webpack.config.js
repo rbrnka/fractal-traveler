@@ -1,36 +1,14 @@
 const path = require('path');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const TerserPlugin = require('terser-webpack-plugin');
+
 const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
-const FtpDeploy = require('ftp-deploy');
-require('dotenv').config(); // Load environment variables from .env
 
 module.exports = (env, argv) => {
     const isProduction = argv.mode === 'production';
-
-    // FTP deployment configuration
-    const ftpDeploy = new FtpDeploy();
-    const configFtp = {
-        user: process.env.FTP_USER,
-        password: process.env.FTP_PASSWORD,
-        host: process.env.FTP_HOST,
-        port: process.env.FTP_PORT || 21,
-        localRoot: path.join(__dirname, 'dist'),
-        remoteRoot: process.env.FTP_REMOTE_ROOT,
-        include: ['*', '**/*'],
-        exclude: ['*.map'],
-    };
-    const configFtpDocs = {
-        user: process.env.FTP_USER,
-        password: process.env.FTP_PASSWORD,
-        host: process.env.FTP_HOST,
-        port: process.env.FTP_PORT || 21,
-        localRoot: path.join(__dirname, 'doc'),
-        remoteRoot: process.env.FTP_REMOTE_DOC_ROOT,
-        include: ['*', '**/*']
-    };
 
     return {
         entry: './src/main.js',
@@ -56,7 +34,8 @@ module.exports = (env, argv) => {
                 {
                     test: /\.css$/,
                     use: [
-                        MiniCssExtractPlugin.loader,
+                        isProduction ? MiniCssExtractPlugin.loader : 'style-loader', // For instant CSS reload in dev
+                        // MiniCssExtractPlugin.loader, // For aligned behavior between dev and prod
                         'css-loader'
                     ]
                 },
@@ -64,9 +43,20 @@ module.exports = (env, argv) => {
                     test: /\.(frag|vert|glsl)$/,
                     type: 'asset/source',
                 },
+                {
+                    test: /\.json$/,
+                    type: 'json',
+                    include: path.resolve(__dirname, 'src/data')
+                }
             ]
         },
         plugins: [
+            new webpack.DefinePlugin({
+                '__DEV__': JSON.stringify(!isProduction),
+                'process.env.DEBUG_MODE': JSON.stringify(
+                    isProduction ? 'NONE' : 'FULL'
+                ),
+            }),
             new MiniCssExtractPlugin({
                 filename: 'css/style.css'
             }),
@@ -87,48 +77,25 @@ module.exports = (env, argv) => {
                         to: 'img'
                     }
                 ]
-            }),
-            // Add FTP deploy plugin
-            new (class {
-                apply(compiler) {
-                    compiler.hooks.done.tap('Deploy to FTP', () => {
-                        console.log('Deploying dist to production via FTP...');
-                        if (isProduction) {
-                            ftpDeploy.deploy(configFtp)
-                                .then(() => console.log('FTP Deploy Success!'))
-                                .catch((err) => console.error('FTP Deploy Error:', err))
-                                .finally(() => {
-                                    console.log('Deploying docs via FTP...');
-                                    ftpDeploy.deploy(configFtpDocs)
-                                        .then(() => console.log('FTP Deploy Docs Success!'))
-                                        .catch((err) => console.error('FTP Deploy Docs Error:', err));
-                                });
-                        } else {
-                            console.log('Skipped (not prod)');
-                        }
-                    });
-                }
-            })()
+            })
         ],
         optimization: {
             minimize: isProduction,
-            minimizer: isProduction
-                ? [
-                    new TerserPlugin({
-                        terserOptions: {
-                            compress: {
-                                drop_console: true, // Remove console.* in production
-                                drop_debugger: true // Remove debugger in production
-                            },
-                            output: {
-                                comments: false // Remove comments
-                            }
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        compress: {
+                            drop_console: true, // Remove console.* in production
+                            drop_debugger: true // Remove debugger in production
                         },
-                        extractComments: false
-                    }),
-                    new CssMinimizerPlugin()
-                ]
-                : []
+                        output: {
+                            comments: false // Remove comments
+                        }
+                    },
+                    extractComments: false
+                }),
+                new CssMinimizerPlugin()
+            ],
         },
         resolve: {
             extensions: ['.js']
