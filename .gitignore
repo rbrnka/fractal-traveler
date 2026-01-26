@@ -3,6 +3,8 @@
 *.iml
 .DS_Store
 Thumbs.db
+TODOs
+
 
 # Dependencies & Builds
 /dist
@@ -18,3 +20,7 @@ Thumbs.db
 # Temp & Others
 /backup
 /coverage
+/tools/archive/
+!/tools/archive/header.html
+!/tools/archive/footer.html
+!/tools/archive/.htaccess
