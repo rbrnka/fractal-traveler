@@ -4,6 +4,19 @@
 // __tests__/hotKeyController.test.js
 
 // Mock ui module before importing hotKeyController (which imports from ui)
+import * as ui from "../ui/ui";
+import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
+import {
+    charPressedEvent,
+    defaultKeyboardEvent,
+    downArrowPressedEvent,
+    leftArrowPressedEvent,
+    numPressedEvent,
+    rightArrowPressedEvent,
+    upArrowPressedEvent
+} from "./eventDefaults";
+import {ROTATION_DIRECTION} from "../global/constants";
+
 jest.mock('../ui/ui', () => ({
     isJuliaMode: jest.fn(() => true),
     travelToPreset: jest.fn(() => Promise.resolve()),
@@ -21,19 +34,9 @@ jest.mock('../ui/ui', () => ({
     captureScreenshot: jest.fn(),
     updateColorTheme: jest.fn(),
     updatePaletteDropdownState: jest.fn(),
+    copyInfoToClipboard: jest.fn(),
+    showSaveViewDialog: jest.fn(),
 }));
-
-import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
-import * as ui from '../ui/ui';
-import {
-    charPressedEvent,
-    downArrowPressedEvent,
-    leftArrowPressedEvent,
-    numPressedEvent,
-    rightArrowPressedEvent,
-    upArrowPressedEvent
-} from "./eventDefaults";
-import {ROTATION_DIRECTION} from "../global/constants";
 
 describe('HotKeyController', () => {
     let fractalApp;
@@ -133,6 +136,73 @@ describe('HotKeyController', () => {
         expect(fractalApp.animateZoomToNoPan).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
+    test('"Shift+R" resets the app', async () => {
+        document.dispatchEvent(charPressedEvent('r', true));
+        await Promise.resolve();
+        expect(ui.reset).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"Alt+S" invokes the view save dialog', async () => {
+        document.dispatchEvent(charPressedEvent('s', false, false, true));
+        await Promise.resolve();
+        expect(ui.showSaveViewDialog).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"Shift+S" captures the screenshot', async () => {
+        document.dispatchEvent(charPressedEvent('s', true));
+        await Promise.resolve();
+        expect(ui.captureScreenshot).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"Shift+T" triggers palette cycling', async () => {
+        document.dispatchEvent(charPressedEvent('t', true));
+        await Promise.resolve();
+
+        if (fractalApp.paletteCyclingActive) {
+            expect(fractalApp.stopCurrentColorAnimations).toHaveBeenCalled();
+        } else {
+            expect(fractalApp.startPaletteCycling).toHaveBeenCalled();
+        }
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"Alt+T" resets the palette', async () => {
+        document.dispatchEvent(charPressedEvent('t', false, false, true));
+        await Promise.resolve();
+
+        expect(fractalApp.applyPaletteByIndex).toHaveBeenCalled();
+        expect(ui.updatePaletteDropdownState).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"C" copies the text to clipboard', async () => {
+        document.dispatchEvent(charPressedEvent('c'));
+        await Promise.resolve();
+        expect(ui.copyInfoToClipboard).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"E" toggles the guiding lines', async () => {
+        document.dispatchEvent(charPressedEvent('e'));
+        await Promise.resolve();
+        expect(ui.toggleCenterLines).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"A" forces resize', async () => {
+        document.dispatchEvent(charPressedEvent('a'));
+        await Promise.resolve();
+        expect(fractalApp.resizeCanvas).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"L" toggles the debug panel', async () => {
+        document.dispatchEvent(charPressedEvent('l'));
+        await Promise.resolve();
+        expect(ui.toggleDebugMode).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('Enter key toggles the UI header', async () => {
+        document.dispatchEvent(defaultKeyboardEvent('Enter'));
+        await Promise.resolve();
+        expect(ui.toggleHeader).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
     test('Ignore hotkeys when user is typing in an input field', async () => {
         // Setup a mock input target
         const input = document.createElement('input');
@@ -147,11 +217,5 @@ describe('HotKeyController', () => {
 
         // randomization should NOT have been called
         expect(ui.randomizeColors).not.toHaveBeenCalled();
-    });
-    // -----------------------------------------------------------------------------------------------------------------
-    test('Enter key toggles the UI header', async () => {
-        // document.dispatchEvent(defaultKeyboardEvent('Enter'));
-        // await Promise.resolve();
-        // expect(mockUI.toggleHeader).toHaveBeenCalled();
     });
 });
