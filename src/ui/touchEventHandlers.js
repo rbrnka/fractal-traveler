@@ -48,6 +48,8 @@ let hasDragRect = false;
 let isPinching = false;
 let pinchStartDistance = null;
 let pinchStartAngle = null;
+let lastPinchCenterX = null;
+let lastPinchCenterY = null;
 
 // Long press zoom state
 let longPressTimeout = null;
@@ -220,7 +222,7 @@ function handleTouchStart(event) {
         // Stop any long press zoom when switching to pinch
         stopLongPressZoomIn();
 
-        // Two-finger gesture: pinch zoom + rotation
+        // Two-finger gesture: pinch zoom + rotation + pan
         isPinching = true;
         isTouchDragging = false;
 
@@ -239,6 +241,13 @@ function handleTouchStart(event) {
             touch1.clientY - touch0.clientY,
             touch1.clientX - touch0.clientX
         );
+
+        // Initialize midpoint for panning
+        const rect = canvas.getBoundingClientRect();
+        const centerClientX = (touch0.clientX + touch1.clientX) / 2;
+        const centerClientY = (touch0.clientY + touch1.clientY) / 2;
+        lastPinchCenterX = centerClientX - rect.left;
+        lastPinchCenterY = centerClientY - rect.top;
 
         // Stop any pending single-tap click when pinch starts
         if (touchClickTimeout) {
@@ -322,7 +331,7 @@ function handleTouchMove(event) {
         return;
     }
 
-    // Two-finger pinch: zoom + rotation around midpoint
+    // Two-finger pinch: pan + zoom + rotation around midpoint
     if (event.touches.length === 2) {
         event.preventDefault();
         isPinching = true;
@@ -349,10 +358,28 @@ function handleTouchMove(event) {
         const centerY = centerClientY - rect.top;
 
         // Initialize baseline if missing (or if gesture restarted)
-        if (!pinchStartDistance || !pinchStartAngle) {
+        if (!pinchStartDistance || !pinchStartAngle || lastPinchCenterX === null || lastPinchCenterY === null) {
             pinchStartDistance = currentDistance;
             pinchStartAngle = currentAngle;
+            lastPinchCenterX = centerX;
+            lastPinchCenterY = centerY;
             return;
+        }
+
+        // Pan: detect midpoint movement and apply pan delta
+        const centerDeltaX = centerX - lastPinchCenterX;
+        const centerDeltaY = centerY - lastPinchCenterY;
+
+        if (Math.abs(centerDeltaX) > 0.1 || Math.abs(centerDeltaY) > 0.1) {
+            // Convert screen delta to view delta and apply pan
+            const [vLastX, vLastY] = fractalApp.screenToViewVector(lastPinchCenterX, lastPinchCenterY);
+            const [vNowX, vNowY] = fractalApp.screenToViewVector(centerX, centerY);
+
+            if (Number.isFinite(fractalApp.zoom)) {
+                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                fractalApp.addPan(deltaX, deltaY);
+            }
         }
 
         // Zoom:
@@ -368,8 +395,8 @@ function handleTouchMove(event) {
         if (targetZoom < fractalApp.MAX_ZOOM) targetZoom = fractalApp.MAX_ZOOM;
         if (targetZoom > fractalApp.MIN_ZOOM) targetZoom = fractalApp.MIN_ZOOM;
 
-        // Apply stable anchor zoom at midpoint (deep-zoom safe)
-        fractalApp.setZoomKeepingAnchor(targetZoom, centerX, centerY);
+        // Apply zoom (without anchor adjustment since we handled pan separately)
+        fractalApp.zoom = targetZoom;
 
         // Rotation (incremental, like mouse right-drag)
         const angleDifference = currentAngle - pinchStartAngle;
@@ -377,8 +404,11 @@ function handleTouchMove(event) {
             fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
         }
 
+        // Update baselines for next frame
         pinchStartDistance = currentDistance;
         pinchStartAngle = currentAngle;
+        lastPinchCenterX = centerX;
+        lastPinchCenterY = centerY;
 
         markOrbitDirtySafe();
         fractalApp.noteInteraction(160);
@@ -395,6 +425,8 @@ function handleTouchEnd(event) {
     if (event.touches.length < 2) {
         pinchStartDistance = null;
         pinchStartAngle = null;
+        lastPinchCenterX = null;
+        lastPinchCenterY = null;
     }
 
     // When all touches end, decide if it was tap/double-tap or drag/pinch end.
