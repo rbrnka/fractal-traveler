@@ -351,6 +351,22 @@ button.dive.active {
     color: var(--accent-color);
 }
 
+/* Dive buttons with custom palette color */
+button.dive.has-palette {
+    border-width: 1px;
+    /*border-style: dotted;*/
+}
+
+button.dive.has-palette:hover {
+    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
+    text-shadow: 0 0 1px currentColor;
+}
+
+button.dive.has-palette.active {
+    border-color: currentColor;
+    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
+}
+
 .switch-field {
     /*border: 1px solid yellow;*/
     display: flex;
@@ -729,6 +745,22 @@ p.small {
     text-shadow: none;
     cursor: not-allowed;
     opacity: 0.6;
+}
+
+/* Preset with custom palette color */
+button.preset.has-palette {
+    border-width: 1px;
+    /*border-style: dotted;*/
+}
+
+button.preset.has-palette:hover {
+    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
+    text-shadow: 0 0 1px currentColor;
+}
+
+button.preset.has-palette.active {
+    border-color: currentColor;
+    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
 }
 
 /* User preset styling in dropdown */

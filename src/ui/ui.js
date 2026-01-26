@@ -439,6 +439,23 @@ export function updateInfo(force = false) {
 /** @returns {boolean} */
 export const isAnimationActive = () => animationActive;
 
+/**
+ * Updates the palette cycle button state to match the actual cycling state
+ */
+function updatePaletteCycleButtonState() {
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (!cycleBtn) return;
+
+    const shouldBeActive = fractalApp?.paletteCyclingActive || false;
+    const isActive = cycleBtn.classList.contains('active');
+
+    if (shouldBeActive && !isActive) {
+        cycleBtn.classList.add('active');
+    } else if (!shouldBeActive && isActive) {
+        cycleBtn.classList.remove('active');
+    }
+}
+
 /** Enables controls, resets demo button */
 function exitAnimationMode() {
     console.groupCollapsed(`%c exitAnimationMode`, CONSOLE_GROUP_STYLE);
@@ -1052,6 +1069,17 @@ function initPresetButtonEvents() {
             `${preset.index < 10 ? '(Num ' : '('}${preset.index})`;
 
         btn.textContent = (preset.id || preset.index).toString();
+
+        // Apply palette keyColor as border if preset has a paletteId
+        if (preset.paletteId && fractalApp.PALETTES) {
+            const palette = fractalApp.PALETTES.find(p => p.id === preset.paletteId);
+            if (palette && palette.keyColor) {
+                btn.style.borderColor = palette.keyColor;
+                btn.style.color = palette.keyColor;
+                btn.classList.add('has-palette');
+            }
+        }
+
         btn.addEventListener('click', async () => {
             closePresetsDropdown();
             await travelToPreset(presets, preset.index);
@@ -1069,6 +1097,16 @@ function initPresetButtonEvents() {
         btn.className = 'preset user-preset';
         btn.title = `${preset.id} (User) - Right-click to delete`;
         btn.textContent = preset.id;
+
+        // Apply palette keyColor as border if preset has a paletteId
+        if (preset.paletteId && fractalApp.PALETTES) {
+            const palette = fractalApp.PALETTES.find(p => p.id === preset.paletteId);
+            if (palette && palette.keyColor) {
+                btn.style.borderColor = palette.keyColor;
+                btn.style.color = palette.keyColor;
+                btn.classList.add('has-palette');
+            }
+        }
 
         // Left click to travel to preset
         btn.addEventListener('click', async (e) => {
@@ -1351,6 +1389,17 @@ function initDiveButtons() {
             btn.className = 'dive';
             btn.title = (dive.id || ('Preset ' + index)) + ` (Shift+${index})`;
             btn.textContent = dive.id || (index).toString();
+
+            // Apply palette keyColor as border if dive has a paletteId
+            if (dive.paletteId && fractalApp.PALETTES) {
+                const palette = fractalApp.PALETTES.find(p => p.id === dive.paletteId);
+                if (palette && palette.keyColor) {
+                    btn.style.borderColor = palette.keyColor;
+                    btn.style.color = palette.keyColor;
+                    btn.classList.add('has-palette');
+                }
+            }
+
             btn.addEventListener('click', async () => {
                 closeDivesDropdown();
                 await startJuliaDive(dives, index);

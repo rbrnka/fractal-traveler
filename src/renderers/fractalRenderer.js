@@ -184,17 +184,10 @@ class FractalRenderer extends Renderer {
      * @param {number} anchorY CSS px relative to canvas
      */
     setZoomKeepingAnchor(targetZoom, anchorX, anchorY) {
-        // View vector (rotated + aspect corrected) is stable because it does not include pan/zoom.
         const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
-
-        // To keep fractal point under cursor fixed:
-        // Old: fractalPt = pan + v * oldZoom
-        // New: fractalPt = newPan + v * newZoom
-        // Therefore: newPan = pan + v * (oldZoom - newZoom)
-        // Using addPan preserves DD precision (unlike setPan which resets lo=0)
         const deltaZoom = this.zoom - targetZoom;
-        this.addPan(vx * deltaZoom, vy * deltaZoom);
 
+        this.addPan(vx * deltaZoom, vy * deltaZoom);
         this.zoom = targetZoom;
     }
 
@@ -625,6 +618,9 @@ class FractalRenderer extends Renderer {
     stopCurrentColorAnimations() {
         console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
+        // Track if we're stopping an active cycle
+        const wasActivelyCycling = this.paletteCyclingActive && !this._inPaletteCycleTransition;
+
         // Stop palette cycling if active (but not during internal palette transition)
         if (this.paletteCyclingActive && !this._inPaletteCycleTransition) {
             this.paletteCyclingActive = false;
@@ -639,6 +635,14 @@ class FractalRenderer extends Renderer {
             cancelAnimationFrame(this.currentColorAnimationFrame);
             clearTimeout(this.currentColorAnimationFrame);
             this.currentColorAnimationFrame = null;
+        }
+
+        // Update UI button state if cycling was stopped
+        if (wasActivelyCycling && typeof window !== 'undefined') {
+            const cycleBtn = document.getElementById('palette-cycle');
+            if (cycleBtn) {
+                cycleBtn.classList.remove('active');
+            }
         }
     }
 
@@ -764,6 +768,14 @@ class FractalRenderer extends Renderer {
 
         // Use a cycling flag since applyPaletteByIndex clears currentColorAnimationFrame
         this.paletteCyclingActive = true;
+
+        // Update UI button state
+        if (typeof window !== 'undefined') {
+            const cycleBtn = document.getElementById('palette-cycle');
+            if (cycleBtn && !cycleBtn.classList.contains('active')) {
+                cycleBtn.classList.add('active');
+            }
+        }
 
         // Start from current palette or 0
         let nextIndex = (this.currentPaletteIndex >= 0 ? this.currentPaletteIndex + 1 : 1) % this.PALETTES.length;
