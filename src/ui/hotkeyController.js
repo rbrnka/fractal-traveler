@@ -9,6 +9,7 @@
 
 import {
     captureScreenshot,
+    copyInfoToClipboard,
     isAnimationActive,
     isJuliaMode,
     randomizeColors,
@@ -172,6 +173,11 @@ async function onKeyDown(event) {
 
         case 'KeyR': // Reset
             if (event.shiftKey) await reset();
+            handled = true;
+            break;
+
+        case 'KeyC': // Copy info to clipboard
+            copyInfoToClipboard();
             handled = true;
             break;
 

@@ -1517,17 +1517,7 @@ function initInfoText() {
         infoText.addEventListener('click', () => {
             if (animationActive) return; // Disable during animations
 
-            const viewPanX = ddValue(fractalApp.panDD.x);
-            const viewPanY = ddValue(fractalApp.panDD.y);
-
-            let text = `"pan": [${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}], ` +
-                `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}`+ (isJuliaMode() ? `, "c": [${fractalApp.c}]}` : `}`);
-
-            navigator.clipboard.writeText(text).then(function () {
-                infoText.innerHTML = 'Copied to clipboard!';
-            }, function (err) {
-                console.error('Not copied to clipboard! ' + err.toString());
-            });
+            copyInfoToClipboard();
         });
     } else {
         infoText.setAttribute("contenteditable", true);
@@ -1571,6 +1561,24 @@ function initInfoText() {
             }
         });
     }
+}
+
+export function copyInfoToClipboard() {
+    const viewPanX = ddValue(fractalApp.panDD.x);
+    const viewPanY = ddValue(fractalApp.panDD.y);
+    const randomTitle = Math.random().toString(36).slice(2).substring(2, 2 + 4);
+
+    let text =
+        `{"id": "${randomTitle}", ` +
+        (isJuliaMode() ? `"c": [${fractalApp.c}], ` : ``) +
+        `"pan": [${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}], ` +
+        `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}, "paletteId": ""}`;
+
+    navigator.clipboard.writeText(text).then(function () {
+        infoText.innerHTML = 'Copied to clipboard!';
+    }, function (err) {
+        console.error('Not copied to clipboard! ' + err.toString());
+    });
 }
 
 function bindHTMLElements() {
