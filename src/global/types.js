@@ -32,10 +32,10 @@
 // ---------------------------------------------------------------------------------------------------------------------
 /**
  * @typedef {Object} PRESET
- *      @property {number} [id] If present, helps unique demo rotation
- *      @property {string} [title] HTML element title (on hover)
+ *      @property {string} [id] Id name/title. Does not have to be unique but it's recommended.
  *      @property {COMPLEX} pan
  *      @property {number} zoom
+ *      @property {number} [index] Set dynamically for simpler cycling during demo animations
  *      @property {number} [rotation]
  *      @property {number} [speed] preset animation speed
  *      @property {string} [paletteId] color palette ID to match a JSON palette entry

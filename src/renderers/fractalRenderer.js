@@ -265,7 +265,7 @@ class FractalRenderer extends Renderer {
 
     generatePresetIDs() {
         this.PRESETS.forEach((preset, index) => {
-            preset.id = index;
+            preset.index = index;
         });
     }
 

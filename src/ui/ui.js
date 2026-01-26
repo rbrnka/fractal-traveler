@@ -861,8 +861,8 @@ function saveCurrentViewAsPreset(name) {
 
     // Create the preset object with u_ prefix
     const preset = {
-        id: `u_${Date.now()}`,
-        title: name,
+        // id: `u_${Date.now()}`,
+        id: name,
         pan: [ddValue(fractalApp.panDD.x), ddValue(fractalApp.panDD.y)],
         zoom: fractalApp.zoom,
         rotation: fractalApp.rotation
@@ -1044,15 +1044,17 @@ function initPresetButtonEvents() {
 
     // Add built-in presets
     const presets = [...fractalApp.PRESETS];
-    presets.forEach((preset, index) => {
+    presets.forEach((preset) => {
         const btn = document.createElement('button');
-        btn.id = 'preset' + (index);
+        btn.id = 'preset-' + (preset.index);
         btn.className = 'preset';
-        btn.title = (preset.title || ('Preset ' + index)) + (index < 10 ? ` (Num ${index})` : ` (${index})`);
-        btn.textContent = (preset.title || index).toString();
+        btn.title = `${(preset.id || ('Preset ' + preset.index))} ` +
+            `${preset.index < 10 ? '(Num ' : '('}${preset.index})`;
+
+        btn.textContent = (preset.id || preset.index).toString();
         btn.addEventListener('click', async () => {
             closePresetsDropdown();
-            await travelToPreset(presets, index);
+            await travelToPreset(presets, preset.index);
         });
 
         presetBlock.appendChild(btn);
@@ -1065,8 +1067,8 @@ function initPresetButtonEvents() {
         const btn = document.createElement('button');
         btn.id = 'preset-' + preset.id;
         btn.className = 'preset user-preset';
-        btn.title = `${preset.title} (User) - Right-click to delete`;
-        btn.textContent = preset.title;
+        btn.title = `${preset.id} (User) - Right-click to delete`;
+        btn.textContent = preset.id;
 
         // Left click to travel to preset
         btn.addEventListener('click', async (e) => {
@@ -1088,7 +1090,7 @@ function initPresetButtonEvents() {
         // Right click to delete
         btn.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            if (confirm(`Delete view "${preset.title}"?`)) {
+            if (confirm(`Delete view "${preset.id}"?`)) {
                 deleteUserPreset(preset.id);
             }
         });
@@ -1101,7 +1103,7 @@ function initPresetButtonEvents() {
             longPressTimer = setTimeout(() => {
                 if (!touchMoved) {
                     e.preventDefault();
-                    if (confirm(`Delete view "${preset.title}"?`)) {
+                    if (confirm(`Delete view "${preset.id}"?`)) {
                         deleteUserPreset(preset.id);
                     }
                 }
@@ -1347,8 +1349,8 @@ function initDiveButtons() {
             const btn = document.createElement('button');
             btn.id = 'dive' + (index);
             btn.className = 'dive';
-            btn.title = (dive.title || ('Preset ' + index)) + ` (Shift+${index})`;
-            btn.textContent = dive.title || (index).toString();
+            btn.title = (dive.id || ('Preset ' + index)) + ` (Shift+${index})`;
+            btn.textContent = dive.id || (index).toString();
             btn.addEventListener('click', async () => {
                 closeDivesDropdown();
                 await startJuliaDive(dives, index);

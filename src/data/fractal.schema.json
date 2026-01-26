@@ -3,7 +3,7 @@
   "title": "Fractal Configuration Schema",
   "description": "Schema for Mandelbrot and Julia fractal configurations including presets, palettes, and animated dives.",
   "type": "object",
-  "required": ["type", "presets", "palettes"],
+  "required": ["type", "views", "palettes"],
   "properties": {
     "$schema": {
       "type": "string",
@@ -22,7 +22,7 @@
       },
       "then": {
         "properties": {
-          "presets": {
+          "views": {
             "type": "array",
             "items": { "$ref": "#/definitions/MandelbrotPreset" }
           },
@@ -43,7 +43,7 @@
       },
       "then": {
         "properties": {
-          "presets": {
+          "views": {
             "type": "array",
             "items": { "$ref": "#/definitions/JuliaPreset" }
           },
@@ -95,10 +95,6 @@
       "additionalProperties": false,
       "properties": {
         "id": {
-          "type": "integer",
-          "description": "Unique identifier for the preset."
-        },
-        "title": {
           "type": "string",
           "description": "Display name of the preset."
         },
@@ -131,9 +127,9 @@
       "required": ["c", "pan", "zoom"],
       "additionalProperties": false,
       "properties": {
-        "title": {
+        "id": {
           "type": "string",
-          "description": "Display name of the preset."
+          "description": "Unique display name of the view."
         },
         "c": {
           "$ref": "#/definitions/Complex",
@@ -216,9 +212,9 @@
       "required": ["pan", "zoom", "startC", "endC", "step", "cxDirection", "cyDirection"],
       "additionalProperties": false,
       "properties": {
-        "title": {
+        "id": {
           "type": "string",
-          "description": "Display name of the dive."
+          "description": "Unique display name of the dive."
         },
         "pan": {
           "$ref": "#/definitions/Complex",

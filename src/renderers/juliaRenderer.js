@@ -35,16 +35,16 @@ export class JuliaRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.DEFAULT_ZOOM = data.presets[0].zoom;
+        this.DEFAULT_ZOOM = data.views[0].zoom;
         this.MAX_ZOOM = JuliaRenderer.FF_LEGACY_JULIA_RENDERER ? 3e-3 : 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
 
-        this.DEFAULT_ROTATION = data.presets[0].rotation;
+        this.DEFAULT_ROTATION = data.views[0].rotation;
         this.rotation = this.DEFAULT_ROTATION;
 
         // TODO Use less detailed initial set for less performant devices
         /** @type COMPLEX */
-        this.DEFAULT_C = [data.presets[0].c[0], data.presets[0].c[1]];
+        this.DEFAULT_C = [data.views[0].c[0], data.views[0].c[1]];
         /** @type COMPLEX */
         this.c = [...this.DEFAULT_C];
 
@@ -83,7 +83,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.rebaseArmed = true;
 
         /** @type {Array.<JULIA_PRESET>} */
-        this.PRESETS = data.presets.map(p => ({
+        this.PRESETS = data.views.map(p => ({
             ...p,
             rotation: degToRad(p.rotation || 0)
         }));
@@ -671,7 +671,7 @@ export class JuliaRenderer extends FractalRenderer {
         // Phase 3: Final zoom-in
         await this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT);
 
-        this.currentPresetIndex = preset.id || 0;
+        this.currentPresetIndex = preset.index;
 
         console.groupEnd();
     }

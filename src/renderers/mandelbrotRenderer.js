@@ -46,7 +46,7 @@ class MandelbrotRenderer extends FractalRenderer {
         this.floatTexExt = null;
 
         /** Mandelbrot-specific presets */
-        this.PRESETS = presetsData.presets;
+        this.PRESETS = presetsData.views;
 
         /**
          * @type {Array.<PALETTE>}
@@ -563,7 +563,7 @@ class MandelbrotRenderer extends FractalRenderer {
         // Ensure rotation ends at exact preset value
         this.rotation = presetRotation;
 
-        this.currentPresetIndex = preset.id || 0;
+        this.currentPresetIndex = preset.index || 0;
 
         console.log(`Travel complete.`);
         console.groupEnd();
