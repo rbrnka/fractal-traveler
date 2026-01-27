@@ -499,20 +499,32 @@ class MandelbrotRenderer extends FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
+        // Handle palette transition upfront if needed
+        if (preset.paletteId) {
+            const targetPaletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+            if (targetPaletteIndex >= 0 && targetPaletteIndex !== this.currentPaletteIndex) {
+                await this.animatePaletteByIdTransition(preset, 500, coloringCallback);
+            }
+        }
+
         const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
 
         // Determine how far we are from the preset
         // Zoom ratio: how many "zoom levels" away (log scale makes sense for exponential zoom)
         const zoomRatio = Math.abs(Math.log(this.zoom / preset.zoom));
-        const atTargetZoom = zoomRatio < 0.01;        // Within ~1% zoom
-        const nearTargetZoom = zoomRatio < 2.5;       // Within ~12x zoom difference
+        const atTargetZoom = zoomRatio < 0.01; // Within ~1% zoom
+        const nearTargetZoom = zoomRatio < 2.5; // Within ~12x zoom difference
 
         // Pan distance relative to current view size
         const panDist = Math.hypot(this.pan[0] - preset.pan[0], this.pan[1] - preset.pan[1]);
         const viewSize = Math.max(this.zoom, preset.zoom);
         const panRatio = panDist / viewSize;
-        const atTargetPan = panRatio < 0.001;         // Essentially same position
-        const nearTargetPan = panRatio < 3.0;         // Within 3 view-widths
+        log(panRatio.toString());
+        const atTargetPan = panRatio < 0.1; // Essentially same position
+        const nearTargetPan = panRatio < 3.0; // Within 3 view-widths
+
+        const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
+        const zoomInDurationWithSpeed = zoomInDuration * (preset.speed ?? 1);
 
         // Readjust duration scales with how far off we are (min 500ms, max panDuration)
         const readjustDuration = Math.max(500, Math.min(panDuration, 300 + panRatio * 200 + zoomRatio * 150));
@@ -534,30 +546,20 @@ class MandelbrotRenderer extends FractalRenderer {
                 this.animateRotationTo(presetRotation, panDuration, EASE_TYPE.CUBIC)
             ]);
         } else if (atTargetPan) {
-            // Same position, just zoom and rotate with cinematic spin
-            const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
-            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDuration * (preset.speed ?? 1), EASE_TYPE.QUINT);
+            // Same position, just zoom and rotate
+            await this.animateZoomRotationTo(preset.zoom, presetRotation, readjustDuration, EASE_TYPE.QUINT);
         } else {
             // Full 3-stage cinematic animation:
-
             // Stage 1: Zoom out to default zoom with random rotation (if significantly zoomed in)
             const needsZoomOut = this.zoom < this.DEFAULT_ZOOM * 0.9;
             if (needsZoomOut) {
                 const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
                 await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUINT);
             }
-
             // Stage 2: Pan to target coordinates
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
-
-            const zoomInDurationWithSpeed = zoomInDuration * (preset.speed ?? 1);
-
-            await Promise.all([
-                // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
-                this.animateZoomRotationTo(preset.zoom, presetRotation, zoomInDurationWithSpeed, EASE_TYPE.NONE),
-                // Apply palette transition in parallel
-                this.animatePaletteByIdTransition(preset, zoomInDurationWithSpeed, coloringCallback)
-            ]);
+            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
+            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDurationWithSpeed, EASE_TYPE.NONE);
         }
 
         // Ensure rotation ends at exact preset value
@@ -572,9 +574,11 @@ class MandelbrotRenderer extends FractalRenderer {
     /**
      * Animates infinite demo loop of traveling to the presets
      * @param {boolean} random Determines whether presets are looped in order from 1-9 or ordered randomly
+     * @param {Function} [coloringCallback] Optional callback for UI color updates
+     * @param {Function} [onPresetComplete] Optional callback when each preset completes
      * @return {Promise<void>}
      */
-    async animateDemo(random = true) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -605,7 +609,13 @@ class MandelbrotRenderer extends FractalRenderer {
             const currentPreset = this.PRESETS[this.currentPresetIndex];
             console.log(`Animating to preset ${this.currentPresetIndex}`);
 
-            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000);
+            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
+
+            // Call completion callback to update UI state
+            if (onPresetComplete) {
+                onPresetComplete();
+            }
+
             await asyncDelay(3500);
         }
 
