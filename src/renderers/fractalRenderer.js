@@ -11,7 +11,15 @@ import {
     normalizeRotation,
     rgbToHsl
 } from "../global/utils";
-import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, log, PI} from "../global/constants";
+import {
+    CONSOLE_GROUP_STYLE,
+    CONSOLE_MESSAGE_STYLE,
+    DEBUG_MODE,
+    EASE_TYPE,
+    FF_DEMO_ALWAYS_RESETS,
+    log,
+    PI
+} from "../global/constants";
 import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
 import Renderer from "./renderer";
 
@@ -650,7 +658,7 @@ class FractalRenderer extends Renderer {
     stopDemo() {
         console.log(`%c ${this.constructor.name}: %c stopDemo`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         this.demoActive = false;
-        this.currentPresetIndex = 0;
+        if (FF_DEMO_ALWAYS_RESETS) this.currentPresetIndex = 0;
         this.stopAllNonColorAnimations();
     }
 
