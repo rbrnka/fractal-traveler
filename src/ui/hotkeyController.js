@@ -25,6 +25,7 @@ import {
     toggleHeader,
     travelToPreset,
     updateColorTheme,
+    updatePaletteCycleButtonState,
     updatePaletteDropdownState,
 } from "./ui";
 import {
@@ -196,22 +197,19 @@ async function onKeyDown(event) {
         case 'KeyT': // Random colors / cycle palettes
             if (altKey) {
                 // Alt+T: Reset to first palette (matches UI button behavior)
-                const cycleBtn = document.getElementById('palette-cycle');
-                if (cycleBtn) cycleBtn.classList.remove('active');
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
+                updatePaletteCycleButtonState();
             } else if (event.shiftKey) {
                 // Shift+T: Toggle palette cycling
-                const cycleBtn = document.getElementById('palette-cycle');
                 if (fractalApp.paletteCyclingActive) {
                     // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
-                    if (cycleBtn) cycleBtn.classList.remove('active');
                 } else {
                     // Start cycling
-                    if (cycleBtn) cycleBtn.classList.add('active');
                     fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
                 }
+                updatePaletteCycleButtonState();
             } else {
                 // T: Pick a random palette
                 await randomizeColors();

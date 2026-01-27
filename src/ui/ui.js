@@ -442,7 +442,7 @@ export const isAnimationActive = () => animationActive;
 /**
  * Updates the palette cycle button state to match the actual cycling state
  */
-function updatePaletteCycleButtonState() {
+export function updatePaletteCycleButtonState() {
     const cycleBtn = document.getElementById('palette-cycle');
     if (!cycleBtn) return;
 
@@ -554,6 +554,11 @@ export async function toggleDemo() {
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
+    // Stop palette cycling if active before starting demo
+    if (fractalApp.paletteCyclingActive) {
+        fractalApp.stopCurrentColorAnimations();
+    }
+
     switch (fractalMode) {
         // @formatter:off
         case FRACTAL_TYPE.MANDELBROT: await startMandelbrotDemo(); break;
@@ -574,7 +579,7 @@ export async function toggleDemo() {
 async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo();
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState);
 
     console.log("Demo ended");
     console.groupEnd();
@@ -605,8 +610,6 @@ export async function startJuliaDive(dives, index) {
     // Stop palette cycling if dive has a defined palette
     if (dive.paletteId) {
         fractalApp.stopCurrentColorAnimations();
-        const cycleBtn = document.getElementById('palette-cycle');
-        if (cycleBtn) cycleBtn.classList.remove('active');
     }
 
     // Validate configuration:
@@ -702,12 +705,6 @@ export async function travelToPreset(presets, index) {
 
     console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
-    // Stop palette cycling if preset has a defined palette
-    if (presets[index]?.paletteId) {
-        const cycleBtn = document.getElementById('palette-cycle');
-        if (cycleBtn) cycleBtn.classList.remove('active');
-    }
-
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
@@ -720,6 +717,10 @@ export async function travelToPreset(presets, index) {
         // Cinematic animation with zoom-out, pan, zoom-in with rotation
         await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500, updateColorTheme);
     }
+
+    // Sync button state after travel (in case preset had paletteId that stopped cycling)
+    updatePaletteCycleButtonState();
+
     activePresetIndex = index;
 
     // Update palette button state if preset changed the palette
@@ -766,10 +767,6 @@ export function resetActivePresetIndex() {
 }
 
 export async function randomizeColors() {
-    // Stop color cycling and remove active state from cycle button
-    const cycleBtn = document.getElementById('palette-cycle');
-    if (cycleBtn) cycleBtn.classList.remove('active');
-
     const palettes = fractalApp.PALETTES || [];
     if (palettes.length === 0) return;
 
@@ -785,6 +782,7 @@ export async function randomizeColors() {
 
     await fractalApp.applyPaletteByIndex(randomIndex, 250, updateColorTheme);
     updatePaletteDropdownState();
+    updatePaletteCycleButtonState();
 }
 
 export function captureScreenshot() {
@@ -816,11 +814,8 @@ export async function reset() {
 
     exitAnimationMode();
 
-    // Stop palette cycling and remove active state
-    const cycleBtn = document.getElementById('palette-cycle');
-    if (cycleBtn) cycleBtn.classList.remove('active');
-
     fractalApp.reset();
+
     if (isJuliaMode()) {
         resetJuliaSliders();
     } else {
@@ -828,6 +823,7 @@ export async function reset() {
     }
     resetAppState();
     updatePaletteDropdownState();
+    updatePaletteCycleButtonState();
     presetButtons[0].classList.add('active');
 
     console.groupEnd();
@@ -1274,15 +1270,13 @@ function initPaletteButtonEvents() {
     cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Palette Cycle';
     cycleBtn.addEventListener('click', async () => {
         if (fractalApp.paletteCyclingActive) {
-            // Stop cycling
             fractalApp.stopCurrentColorAnimations();
-            cycleBtn.classList.remove('active');
         } else {
-            // Start cycling
-            cycleBtn.classList.add('active');
             closePaletteDropdown();
             await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
         }
+        // Ensure button state is synced
+        updatePaletteCycleButtonState();
     });
     paletteMenu.appendChild(cycleBtn);
     paletteButtons.push(cycleBtn);
@@ -1322,11 +1316,9 @@ function initPaletteButtonEvents() {
 
         btn.addEventListener('click', async () => {
             closePaletteDropdown();
-            // Stop color cycling and remove active state from cycle button
-            const cycleBtn = document.getElementById('palette-cycle');
-            if (cycleBtn) cycleBtn.classList.remove('active');
             await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
             updatePaletteDropdownState();
+            updatePaletteCycleButtonState();
         });
 
         paletteMenu.appendChild(btn);
