@@ -15,6 +15,7 @@ import {
     randomizeColors,
     reset,
     resetAppState,
+    showEditCoordsDialog,
     showSaveViewDialog,
     startJuliaDive,
     switchFractalMode,
@@ -257,6 +258,11 @@ async function onKeyDown(event) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 fractalApp.draw();
             }
+            handled = true;
+            break;
+
+        case 'KeyP':
+            showEditCoordsDialog();
             handled = true;
             break;
 

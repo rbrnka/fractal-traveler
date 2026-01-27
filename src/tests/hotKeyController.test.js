@@ -34,8 +34,10 @@ jest.mock('../ui/ui', () => ({
     captureScreenshot: jest.fn(),
     updateColorTheme: jest.fn(),
     updatePaletteDropdownState: jest.fn(),
+    updatePaletteCycleButtonState: jest.fn(),
     copyInfoToClipboard: jest.fn(),
     showSaveViewDialog: jest.fn(),
+    showEditCoordsDialog: jest.fn(),
 }));
 
 describe('HotKeyController', () => {
@@ -195,6 +197,12 @@ describe('HotKeyController', () => {
         document.dispatchEvent(charPressedEvent('l'));
         await Promise.resolve();
         expect(ui.toggleDebugMode).toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    test('"P" opens the edit coords dialog', async () => {
+        document.dispatchEvent(charPressedEvent('p'));
+        await Promise.resolve();
+        expect(ui.showEditCoordsDialog).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('Enter key toggles the UI header', async () => {

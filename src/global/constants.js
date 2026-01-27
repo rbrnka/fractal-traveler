@@ -80,11 +80,6 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
  */
 export const FF_DEMO_ALWAYS_RESETS = false;
 
-/**
- * Enables bottom bar for user input for custom coords
- */
-export const FF_USER_INPUT_ALLOWED = false;
-
 // endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name

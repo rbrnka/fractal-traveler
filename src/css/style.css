@@ -764,6 +764,84 @@ dialog.dialog-overlay::backdrop {
     opacity: 0.6;
 }
 
+/* Edit Coordinates Dialog */
+
+.coord-input-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px 12px;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.coord-input-grid label {
+    margin: 0;
+    text-align: right;
+    white-space: nowrap;
+}
+
+.coord-input {
+    padding: 6px 10px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 13px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+}
+
+.coord-input:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 6px rgb(from var(--accent-color) r g b / 0.3);
+}
+
+.coord-input.invalid {
+    border-color: #ff4444;
+}
+
+.json-label {
+    display: block;
+    font-size: 12px;
+    color: #aaa;
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+
+.json-textarea {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.5);
+    color: #fff;
+    font-family: 'Courier New', Consolas, monospace;
+    font-size: 12px;
+    outline: none;
+    box-sizing: border-box;
+    resize: vertical;
+    min-height: 100px;
+    transition: border-color 0.2s;
+}
+
+.json-textarea:focus {
+    border-color: var(--accent-color);
+    box-shadow: 0 0 8px rgb(from var(--accent-color) r g b / 0.3);
+}
+
+.json-textarea.invalid {
+    border-color: #ff4444;
+}
+
+.coord-error {
+    color: #ff6666;
+    font-size: 12px;
+    min-height: 18px;
+    margin-top: 8px;
+}
+
 /* ========================================
    Preset Buttons
    ======================================== */

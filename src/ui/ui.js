@@ -24,7 +24,6 @@ import {
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
-    FF_USER_INPUT_ALLOWED,
     FRACTAL_TYPE,
     log,
     PI,
@@ -94,6 +93,18 @@ let saveViewDialog;
 let saveViewNameInput;
 let saveViewConfirmBtn;
 let saveViewCancelBtn;
+let editCoordsDialog;
+let editPanXInput;
+let editPanYInput;
+let editZoomInput;
+let editRotationInput;
+let editCxInput;
+let editCyInput;
+let editJsonInput;
+let editCoordsError;
+let editCoordsApplyBtn;
+let editCoordsCancelBtn;
+let juliaCInputs;
 let presetsToggle;
 let presetsMenu;
 let divesToggle;
@@ -427,13 +438,7 @@ export function updateInfo(force = false) {
         if (infoText?.classList.contains('animationActive')) infoText.classList.remove('animationActive');
     }
 
-    if (FF_USER_INPUT_ALLOWED) {
-        if (document.activeElement !== infoText) {
-            if (infoText.innerHTML !== text) infoText.innerHTML = text;
-        }
-    } else {
-        if (infoText.innerHTML !== text) infoText.innerHTML = text;
-    }
+    if (infoText.innerHTML !== text) infoText.innerHTML = text;
 }
 
 /** @returns {boolean} */
@@ -985,6 +990,322 @@ function initSaveViewDialog() {
     log('Initialized.', 'initSaveViewDialog');
 }
 
+/**
+ * Shows the edit coordinates dialog
+ */
+export function showEditCoordsDialog() {
+    if (!editCoordsDialog) return;
+
+    // Show/hide Julia C inputs based on current mode
+    if (juliaCInputs) {
+        juliaCInputs.style.display = isJuliaMode() ? 'contents' : 'none';
+    }
+
+    // Populate individual fields with current values (shortened precision)
+    const viewPanX = ddValue(fractalApp.panDD.x);
+    const viewPanY = ddValue(fractalApp.panDD.y);
+
+    editPanXInput.value = viewPanX.toFixed(8);
+    editPanYInput.value = viewPanY.toFixed(8);
+    editZoomInput.value = fractalApp.zoom.toExponential(6);
+    editRotationInput.value = (fractalApp.rotation * 180 / Math.PI).toFixed(2);
+
+    if (isJuliaMode()) {
+        editCxInput.value = fractalApp.c[0].toFixed(8);
+        editCyInput.value = fractalApp.c[1].toFixed(8);
+    }
+
+    // Clear JSON textarea and error
+    editJsonInput.value = '';
+    editCoordsError.textContent = '';
+
+    // Clear validation states
+    [editPanXInput, editPanYInput, editZoomInput, editRotationInput, editCxInput, editCyInput, editJsonInput].forEach(input => {
+        if (input) input.classList.remove('invalid');
+    });
+
+    editCoordsDialog.classList.add('show');
+    editPanXInput.focus();
+}
+
+/**
+ * Hides the edit coordinates dialog
+ */
+function hideEditCoordsDialog() {
+    if (!editCoordsDialog) return;
+    editCoordsDialog.classList.remove('show');
+}
+
+/**
+ * Parses user input from either JSON or individual fields
+ * Tries JSON first, then falls back to field-by-field parsing
+ * @returns {Object} Parsed coordinates object or {error: string}
+ */
+function parseEditCoordsInput() {
+    const jsonText = editJsonInput.value.trim();
+
+    // If JSON textarea has content, prioritize that
+    if (jsonText) {
+        try {
+            const parsed = JSON.parse(jsonText);
+
+            // Validate required fields
+            if (!parsed.pan || !Array.isArray(parsed.pan) || parsed.pan.length !== 2) {
+                return {error: 'JSON must include "pan" as array [x, y]'};
+            }
+            if (typeof parsed.pan[0] !== 'number' || isNaN(parsed.pan[0])) {
+                return {error: 'JSON "pan[0]" must be a valid number'};
+            }
+            if (typeof parsed.pan[1] !== 'number' || isNaN(parsed.pan[1])) {
+                return {error: 'JSON "pan[1]" must be a valid number'};
+            }
+            if (typeof parsed.zoom !== 'number' || isNaN(parsed.zoom)) {
+                return {error: 'JSON "zoom" must be a valid number'};
+            }
+            if (parsed.zoom <= 0) {
+                return {error: 'JSON "zoom" must be positive'};
+            }
+            if (typeof parsed.rotation !== 'number' || isNaN(parsed.rotation)) {
+                return {error: 'JSON "rotation" must be a valid number (in radians)'};
+            }
+
+            // Validate Julia C if in Julia mode
+            if (isJuliaMode()) {
+                if (!parsed.c || !Array.isArray(parsed.c) || parsed.c.length !== 2) {
+                    return {error: 'JSON must include "c" as array [real, imag] in Julia mode'};
+                }
+                if (typeof parsed.c[0] !== 'number' || isNaN(parsed.c[0])) {
+                    return {error: 'JSON "c[0]" must be a valid number'};
+                }
+                if (typeof parsed.c[1] !== 'number' || isNaN(parsed.c[1])) {
+                    return {error: 'JSON "c[1]" must be a valid number'};
+                }
+            }
+
+            // Return only the necessary fields (strip id, paletteId if empty, etc.)
+            const result = {
+                pan: [parsed.pan[0], parsed.pan[1]],
+                zoom: parsed.zoom,
+                rotation: parsed.rotation
+            };
+
+            // Add optional fields if present and non-empty
+            if (parsed.c && Array.isArray(parsed.c) && parsed.c.length === 2) {
+                result.c = [parsed.c[0], parsed.c[1]];
+            }
+            if (parsed.paletteId && parsed.paletteId.trim()) {
+                result.paletteId = parsed.paletteId;
+            }
+
+            return result;
+
+        } catch (e) {
+            return {error: `Invalid JSON: ${e.message}`};
+        }
+    }
+
+    // Otherwise, parse from individual fields
+    const panXStr = editPanXInput.value.trim();
+    const panYStr = editPanYInput.value.trim();
+    const zoomStr = editZoomInput.value.trim();
+    const rotationStr = editRotationInput.value.trim();
+
+    // Check for empty fields
+    if (!panXStr) return {error: 'Pan X is required'};
+    if (!panYStr) return {error: 'Pan Y is required'};
+    if (!zoomStr) return {error: 'Zoom is required'};
+    if (!rotationStr) return {error: 'Rotation is required'};
+
+    const panX = parseFloat(panXStr);
+    const panY = parseFloat(panYStr);
+    const zoom = parseFloat(zoomStr);
+    const rotationDeg = parseFloat(rotationStr);
+
+    // Validate numbers
+    if (isNaN(panX)) return {error: `Pan X "${panXStr}" is not a valid number`};
+    if (isNaN(panY)) return {error: `Pan Y "${panYStr}" is not a valid number`};
+    if (isNaN(zoom)) return {error: `Zoom "${zoomStr}" is not a valid number`};
+    if (zoom <= 0) return {error: 'Zoom must be a positive number'};
+    if (isNaN(rotationDeg)) return {error: `Rotation "${rotationStr}" is not a valid number`};
+
+    const result = {
+        pan: [panX, panY],
+        zoom: zoom,
+        rotation: normalizeRotation(rotationDeg * Math.PI / 180) // Convert degrees to radians
+    };
+
+    // Add Julia C if in Julia mode
+    if (isJuliaMode()) {
+        const cxStr = editCxInput.value.trim();
+        const cyStr = editCyInput.value.trim();
+
+        if (!cxStr) return {error: 'C Real is required in Julia mode'};
+        if (!cyStr) return {error: 'C Imag is required in Julia mode'};
+
+        const cx = parseFloat(cxStr);
+        const cy = parseFloat(cyStr);
+
+        if (isNaN(cx)) return {error: `C Real "${cxStr}" is not a valid number`};
+        if (isNaN(cy)) return {error: `C Imag "${cyStr}" is not a valid number`};
+
+        result.c = [cx, cy];
+    }
+
+    return result;
+}
+
+/**
+ * Validates current input and updates UI accordingly
+ * @returns {boolean} True if valid
+ */
+function validateEditCoordsInput() {
+    const result = parseEditCoordsInput();
+
+    // Clear all invalid states first
+    [editPanXInput, editPanYInput, editZoomInput, editRotationInput, editCxInput, editCyInput, editJsonInput].forEach(input => {
+        if (input) input.classList.remove('invalid');
+    });
+
+    if (result.error) {
+        editCoordsError.textContent = result.error;
+        editCoordsApplyBtn.disabled = true;
+
+        // Mark specific field as invalid based on error message
+        if (editJsonInput.value.trim()) {
+            editJsonInput.classList.add('invalid');
+        } else {
+            // Mark individual field based on error
+            if (result.error.includes('Pan X')) editPanXInput.classList.add('invalid');
+            else if (result.error.includes('Pan Y')) editPanYInput.classList.add('invalid');
+            else if (result.error.includes('Zoom')) editZoomInput.classList.add('invalid');
+            else if (result.error.includes('Rotation')) editRotationInput.classList.add('invalid');
+            else if (result.error.includes('C Real')) editCxInput.classList.add('invalid');
+            else if (result.error.includes('C Imag')) editCyInput.classList.add('invalid');
+        }
+
+        return false;
+    }
+
+    // Clear error and enable apply button
+    editCoordsError.textContent = '';
+    editCoordsApplyBtn.disabled = false;
+
+    return true;
+}
+
+/**
+ * Applies the edited coordinates and animates travel
+ */
+async function applyEditedCoords() {
+    const result = parseEditCoordsInput();
+
+    if (result.error) {
+        editCoordsError.textContent = result.error;
+        return;
+    }
+
+    hideEditCoordsDialog();
+
+    // Animate travel to the new coordinates
+    initAnimationMode();
+
+    // Different signatures for different fractal types
+    if (isJuliaMode()) {
+        // JuliaRenderer: animateTravelToPreset(preset, duration, coloringCallback)
+        await fractalApp.animateTravelToPreset(result, 1500, updateColorTheme);
+    } else {
+        // MandelbrotRenderer: animateTravelToPreset(preset, zoomOutDuration, panDuration, zoomInDuration, coloringCallback)
+        await fractalApp.animateTravelToPreset(result, 1000, 500, 1000, updateColorTheme);
+    }
+
+    exitAnimationMode();
+}
+
+/**
+ * Initializes the edit coordinates dialog events
+ */
+function initEditCoordsDialog() {
+    if (!editCoordsDialog) return;
+
+    // Filter input to allow only valid number characters
+    const numericInputs = [editPanXInput, editPanYInput, editZoomInput, editRotationInput, editCxInput, editCyInput];
+    numericInputs.forEach(input => {
+        if (!input) return;
+
+        input.addEventListener('input', (e) => {
+            // Allow: digits, decimal point, minus sign, e/E for scientific notation
+            let value = e.target.value;
+
+            // Remove invalid characters (keep digits, -, ., e, E)
+            let filtered = value.replace(/[^0-9.\-eE]/g, '');
+
+            // Ensure only one decimal point
+            const parts = filtered.split('.');
+            if (parts.length > 2) {
+                filtered = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            // Ensure minus only at start
+            if (filtered.includes('-')) {
+                const minusCount = (filtered.match(/-/g) || []).length;
+                if (minusCount > 1 || filtered.indexOf('-') !== 0) {
+                    filtered = filtered.replace(/-/g, '');
+                    if (value.startsWith('-')) {
+                        filtered = '-' + filtered;
+                    }
+                }
+            }
+
+            // Update value if it changed
+            if (value !== filtered) {
+                e.target.value = filtered;
+            }
+        });
+    });
+
+    // Validate on input change
+    const allInputs = [editPanXInput, editPanYInput, editZoomInput, editRotationInput, editCxInput, editCyInput, editJsonInput];
+    allInputs.forEach(input => {
+        if (!input) return;
+        input.addEventListener('input', validateEditCoordsInput);
+    });
+
+    // Apply button
+    editCoordsApplyBtn.addEventListener('click', async () => {
+        await applyEditedCoords();
+    });
+
+    // Cancel button
+    editCoordsCancelBtn.addEventListener('click', () => {
+        hideEditCoordsDialog();
+    });
+
+    // Close on overlay click
+    editCoordsDialog.addEventListener('click', (e) => {
+        if (e.target === editCoordsDialog) {
+            hideEditCoordsDialog();
+        }
+    });
+
+    // Handle keyboard shortcuts in inputs
+    allInputs.forEach(input => {
+        if (!input) return;
+        input.addEventListener('keydown', (e) => {
+            e.stopPropagation(); // Prevent hotkeys from firing
+
+            if (e.key === 'Enter') {
+                if (validateEditCoordsInput()) {
+                    applyEditedCoords();
+                }
+            } else if (e.key === 'Escape') {
+                hideEditCoordsDialog();
+            }
+        });
+    });
+
+    log('Initialized.', 'initEditCoordsDialog');
+}
+
 // endregion -----------------------------------------------------------------------------------------------------------
 
 // region > INITIALIZERS -----------------------------------------------------------------------------------------------
@@ -1105,7 +1426,7 @@ function initPresetButtonEvents() {
         }
 
         // Left click to travel to preset
-        btn.addEventListener('click', async (e) => {
+        btn.addEventListener('click', async () => {
             closePresetsDropdown();
             resetPresetAndDiveButtonStates();
             initAnimationMode();
@@ -1142,7 +1463,7 @@ function initPresetButtonEvents() {
                     }
                 }
             }, 600);
-        }, { passive: false });
+        }, {passive: false});
         btn.addEventListener('touchmove', () => {
             touchMoved = true;
             if (longPressTimer) {
@@ -1477,133 +1798,58 @@ function initWindowEvents() {
     log('Initialized.', 'initWindowEvents');
 }
 
-/**
- * Parses a string of the form:
- *   p = [<panX>, <panY>i] c = [<cX>, <cY>i] zoom = <zoom> r = <rotation>
- * and returns an object with the parsed numbers.
- * If a part is invalid or missing, an error message is returned.
- *
- * @param {string} input The input string.
- * @returns {PRESET|Object}
- */
-export function parseUserInput(input) {
-
-    // https://regex101.com/
-    const panRegex = /\s*p\s*=\s*[\[\(]?\s*(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*[\]\)]?/i;
-    const cRegex = /\s*c\s*=\s*[\[\(]?\s*(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*[\]\)]?/i;
-    const zoomRegex = /\s*zoom\s*=\s*([\d.]+)/i;
-    const rotationRegex = /\s*r\s*=\s*([\d.]+)/i;
-
-    let errors = [];
-
-    // Validate and extract pan.
-    const panMatch = input.match(panRegex);
-    if (!panMatch) {
-        errors.push(`Pan coordinates (p) are missing or invalid.`);
-    }
-    // Validate and extract Julia c in Julia mode
-    const cMatch = input.match(cRegex);
-    if (!cMatch && isJuliaMode()) {
-        errors.push(`Julia constant (c) is missing or invalid.`);
-    }
-    // Validate and extract zoom.
-    const zoomMatch = input.match(zoomRegex);
-    if (!zoomMatch) {
-        errors.push(`Zoom (zoom) value is missing or invalid.`);
-    }
-    // Validate and extract rotation.
-    const rotationMatch = input.match(rotationRegex);
-    if (!rotationMatch) {
-        errors.push(`Rotation (r) value is missing or invalid.`);
-    }
-
-    // If any errors, return error object.
-    if (errors.length > 0) {
-        return {error: errors.join(" ")};
-    }
-
-    // Otherwise, parse values.
-    const panX = parseFloat(panMatch[1]);
-    const panY = parseFloat(panMatch[2]);
-    const z = parseFloat(zoomMatch[1]);
-    const r = normalizeRotation(parseFloat(rotationMatch[1]) * Math.PI / 180);
-
-    // Optionally check for isNaN here too.
-    // if ([panX, panY, cX, cY, z, r].some(v => isNaN(v))) {
-    //     return { error: "One or more numeric values could not be parsed." };
-    // }
-
-    if (isJuliaMode()) {
-        const cX = parseFloat(cMatch[1]);
-        const cY = parseFloat(cMatch[2]);
-
-        return {pan: [panX, panY], c: [cX, cY], zoom: z, rotation: r};
-    } else {
-        return {pan: [panX, panY], zoom: z, rotation: r};
-    }
-
-}
-
 function initInfoText() {
-    if (!FF_USER_INPUT_ALLOWED) {
+    infoText.addEventListener('mouseenter', () => {
+        if (animationActive) return; // Disable during animations
+        infoText.innerHTML = 'Left click to copy, Right click to edit.';
+    });
 
-        infoText.addEventListener('mouseenter', () => {
-            if (animationActive) return; // Disable during animations
-            infoText.innerHTML = 'Click to copy fractal state to clipboard.';
-        });
+    infoText.addEventListener('mouseleave', () => {
+        if (animationActive) return; // Disable during animations
+        updateInfo();
+    });
 
-        infoText.addEventListener('mouseleave', () => {
-            if (animationActive) return; // Disable during animations
-            updateInfo();
-        });
+    infoText.addEventListener('click', () => {
+        if (animationActive) return; // Disable during animations
 
-        infoText.addEventListener('click', () => {
-            if (animationActive) return; // Disable during animations
+        copyInfoToClipboard();
+    });
 
-            copyInfoToClipboard();
-        });
-    } else {
-        infoText.setAttribute("contenteditable", true);
-        infoText.style.cursor = 'auto';
-        infoText.removeAttribute("readonly");
+    // Right-click to edit coordinates
+    infoText.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        if (animationActive) return; // Disable during animations
 
-        infoText.addEventListener('focus', () => {
-            infoLabel.style.zoom = '200%';
-        })
+        showEditCoordsDialog();
+    });
 
-        infoText.addEventListener('blur', () => {
-            infoLabel.style.zoom = '120%';
-        })
+    // Long touch to edit coordinates (for touch devices)
+    let longTouchTimer = null;
+    const LONG_TOUCH_DURATION = 500; // ms
 
-        infoText.addEventListener("keydown", function (e) {
-            e.stopPropagation();
+    infoText.addEventListener('touchstart', (e) => {
+        if (animationActive) return;
 
-            if (e.key === "Enter") {
-                e.preventDefault(); // Prevent a newline
+        longTouchTimer = setTimeout(() => {
+            e.preventDefault();
+            showEditCoordsDialog();
+            longTouchTimer = null;
+        }, LONG_TOUCH_DURATION);
+    }, { passive: false });
 
-                //const regex = /\s*p\s*=\s*\[(-?[\d.]+)\s*[,|\s+]\s*(-?[\d.]+)\s*i?\s*\]\s*·?\s*r\s*=\s*(-?[\d.]+)\s*°?\s*·?\s*zoom\s*=\s*(-?[\d.]+)/;
-                /* for C capture the same as for P
-                    Allowed complex notations:
-                    p = [ -0.500000000000, 0.000000000000i] · r = 0° · zoom = 3.000000
-                    p = [-0.500000000000 + 2i] · r = 0° · zoom = 3.000000
-                    p = [ 0.500000000000, 0.000000000000] · r = 0° · zoom = 3.000000
-                    p = [0.500000000000 + 0.000000000000] · r = 0° · zoom = 3.000000
-                    p = (0.500000000000 + 0.000000000001) · r = 0° · zoom = 3.000000
-                    p = (0.500000000000 - 0.000000000001) · r = 0° · zoom = 3.000000
-                    p = (0.500000000000 - 0.000000000001i) · r = 0 · zoom = -3.000000 (No match)
-                 */
+    infoText.addEventListener('touchend', () => {
+        if (longTouchTimer) {
+            clearTimeout(longTouchTimer);
+            longTouchTimer = null;
+        }
+    });
 
-                const result = parseUserInput(infoText.innerHTML);
-                if (result.error) {
-                    infoLabel.style.color = '#f00';
-                    alert(result.error);
-                } else {
-                    infoLabel.style.color = '#fff';
-                    fractalApp.animateTravelToPreset(result);
-                }
-            }
-        });
-    }
+    infoText.addEventListener('touchmove', () => {
+        if (longTouchTimer) {
+            clearTimeout(longTouchTimer);
+            longTouchTimer = null;
+        }
+    });
 }
 
 export function copyInfoToClipboard() {
@@ -1650,6 +1896,19 @@ function bindHTMLElements() {
     saveViewNameInput = document.getElementById('saveViewName');
     saveViewConfirmBtn = document.getElementById('saveViewConfirm');
     saveViewCancelBtn = document.getElementById('saveViewCancel');
+    // Edit Coordinates Dialog elements
+    editCoordsDialog = document.getElementById('editCoordsDialog');
+    editPanXInput = document.getElementById('editPanX');
+    editPanYInput = document.getElementById('editPanY');
+    editZoomInput = document.getElementById('editZoom');
+    editRotationInput = document.getElementById('editRotation');
+    editCxInput = document.getElementById('editCx');
+    editCyInput = document.getElementById('editCy');
+    editJsonInput = document.getElementById('editJsonInput');
+    editCoordsError = document.getElementById('editCoordsError');
+    editCoordsApplyBtn = document.getElementById('editCoordsApply');
+    editCoordsCancelBtn = document.getElementById('editCoordsCancel');
+    juliaCInputs = document.getElementById('juliaCInputs');
 }
 
 /**
@@ -1695,6 +1954,7 @@ export async function initUI(fractalRenderer) {
     initHeaderEvents();
     initControlButtonEvents();
     initSaveViewDialog();
+    initEditCoordsDialog();
     initInfoText();
     initFractalSwitchButtons();
     initCommonButtonEvents(); // After all dynamic buttons are set

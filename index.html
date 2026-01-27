@@ -124,7 +124,7 @@
         </footer>
     </header>
 
-    <aside id="infoLabel" title="Click to copy full coordinates.">
+    <aside id="infoLabel" title="Click to copy, Right click to edit coordinates.">
         <div id="infoText">Initialized successfully!</div>
     </aside>
 
@@ -143,6 +143,43 @@
             <div class="dialog-buttons">
                 <button type="button" id="saveViewCancel" class="dialog-btn">Cancel</button>
                 <button type="button" id="saveViewConfirm" class="dialog-btn primary">Save</button>
+            </div>
+        </div>
+    </dialog>
+
+    <dialog id="editCoordsDialog" class="dialog-overlay">
+        <div class="dialog-box">
+            <h3>Edit Fractal Coordinates</h3>
+            <div class="coord-input-grid">
+                <label for="editPanX">Pan X:</label>
+                <input type="text" inputmode="decimal" id="editPanX" class="coord-input" placeholder="0.0">
+
+                <label for="editPanY">Pan Y:</label>
+                <input type="text" inputmode="decimal" id="editPanY" class="coord-input" placeholder="0.0">
+
+                <label for="editZoom">Zoom:</label>
+                <input type="text" inputmode="decimal" id="editZoom" class="coord-input" placeholder="3.0">
+
+                <label for="editRotation">Rotation (°):</label>
+                <input type="text" inputmode="decimal" id="editRotation" class="coord-input" placeholder="0">
+
+                <div id="juliaCInputs" style="display: contents;">
+                    <label for="editCx">C Real:</label>
+                    <input type="text" inputmode="decimal" id="editCx" class="coord-input" placeholder="0.0">
+
+                    <label for="editCy">C Imag:</label>
+                    <input type="text" inputmode="decimal" id="editCy" class="coord-input" placeholder="0.0">
+                </div>
+            </div>
+
+            <label for="editJsonInput" class="json-label">Or paste full preset/view JSON:</label>
+            <textarea id="editJsonInput" class="json-textarea" placeholder='{"pan": [0, 0], "zoom": 3, "rotation": 0}' rows="5"></textarea>
+
+            <div id="editCoordsError" class="coord-error"></div>
+
+            <div class="dialog-buttons">
+                <button type="button" id="editCoordsCancel" class="dialog-btn">Cancel</button>
+                <button type="button" id="editCoordsApply" class="dialog-btn primary">Apply</button>
             </div>
         </div>
     </dialog>
