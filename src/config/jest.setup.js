@@ -3,6 +3,8 @@
 // =============================================================================
 // Mock WebGL Context
 // =============================================================================
+import {FRACTAL_TYPE} from "../global/constants";
+
 const mockWebGLContext = {
     uniform1f: jest.fn(),
     uniform2f: jest.fn(),
@@ -54,7 +56,7 @@ Object.defineProperty(navigator, 'clipboard', {
 // Mock Touch and TouchEvent for JSDOM
 // =============================================================================
 global.Touch = class {
-    constructor({ identifier, target, clientX, clientY }) {
+    constructor({identifier, target, clientX, clientY}) {
         this.identifier = identifier;
         this.target = target;
         this.clientX = clientX;
@@ -63,8 +65,8 @@ global.Touch = class {
 };
 
 global.TouchEvent = class extends Event {
-    constructor(type, { touches = [], changedTouches = [], bubbles = true, cancelable = true }) {
-        super(type, { bubbles, cancelable });
+    constructor(type, {touches = [], changedTouches = [], bubbles = true, cancelable = true}) {
+        super(type, {bubbles, cancelable});
         this.touches = touches;
         this.changedTouches = changedTouches;
     }
@@ -151,13 +153,13 @@ global.createMockFractalApp = (canvas = null) => {
         const s = a + b;
         const bb = s - a;
         const err = (a - (s - bb)) + (b - bb);
-        return { s, err };
+        return {s, err};
     };
 
     const quickTwoSum = (a, b) => {
         const s = a + b;
         const err = b - (s - a);
-        return { s, err };
+        return {s, err};
     };
 
     const ddAdd = (dd, n) => {
@@ -170,8 +172,8 @@ global.createMockFractalApp = (canvas = null) => {
 
     // DD precision pan tracking
     const panDD = {
-        x: { hi: -0.5, lo: 0 },
-        y: { hi: 0, lo: 0 }
+        x: {hi: -0.5, lo: 0},
+        y: {hi: 0, lo: 0}
     };
 
     const fractalApp = {
@@ -201,10 +203,14 @@ global.createMockFractalApp = (canvas = null) => {
         // Control methods
         stopCurrentRotationAnimation: jest.fn(),
         stopAllNonColorAnimations: jest.fn(),
+        stopCurrentColorAnimations: jest.fn(),
+        startPaletteCycling: jest.fn(),
+        applyPaletteByIndex: jest.fn(),
+
         noteInteraction: jest.fn(),
         markOrbitDirty: jest.fn(),
-
         // Rendering methods
+        resizeCanvas: jest.fn(),
         draw: jest.fn(),
         updateInfo: jest.fn(),
         updateInfoOnAnimationFinished: jest.fn(),
@@ -225,7 +231,7 @@ global.createMockFractalApp = (canvas = null) => {
             const normY = y / 600;
             return [normX - 0.5, (1 - normY) - 0.5];
         }),
-        screenToPanDelta: jest.fn(function(x, y) {
+        screenToPanDelta: jest.fn(function (x, y) {
             // Returns pan delta needed to center on screen point
             const [vx, vy] = this.screenToViewVector(x, y);
             return [vx * this.zoom, vy * this.zoom];
@@ -244,15 +250,98 @@ global.createMockFractalApp = (canvas = null) => {
 // =============================================================================
 // Factory: Create Mock UI Module
 // =============================================================================
-global.createMockUI = () => ({
+global.createMockUI = () => {
+    // Create the object structure first
+    const mockUI = {
+        fractalMode: FRACTAL_TYPE.MANDELBROT,
+
+        // Mode management
+        getFractalMode: jest.fn(() => 'mandelbrot'),
+        switchFractalMode: jest.fn(() => Promise.resolve()),
+        switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
+        isJuliaMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.JULIA),
+        enableJuliaMode: jest.fn(() => {
+            mockUI.fractalMode = FRACTAL_TYPE.JULIA;
+        }),
+        enableMandelbrotMode: jest.fn(() => {
+            mockUI.fractalMode = FRACTAL_TYPE.MANDELBROT;
+        }),
+        enableRiemannMode: jest.fn(),
+
+        // Palette/color management
+        updatePaletteDropdownState: jest.fn(),
+        updateColorTheme: jest.fn(),
+        updatePaletteCycleButtonState: jest.fn(),
+        randomizeColors: jest.fn(),
+
+        // State management
+        resetAppState: jest.fn(),
+        updateInfo: jest.fn(),
+        isAnimationActive: jest.fn(() => false),
+
+        // Demo and presets
+        toggleDemo: jest.fn(() => Promise.resolve()),
+        startJuliaDive: jest.fn(() => Promise.resolve()),
+        travelToPreset: jest.fn(() => Promise.resolve()),
+        resetPresetAndDiveButtonStates: jest.fn(),
+        resetActivePresetIndex: jest.fn(),
+        getUserPresets: jest.fn(() => []),
+
+        // UI toggles
+        toggleDebugMode: jest.fn(),
+        toggleCenterLines: jest.fn(),
+        toggleHeader: jest.fn(),
+
+        // Screenshots and dialogs
+        captureScreenshot: jest.fn(),
+        showSaveViewDialog: jest.fn(),
+        showEditCoordsDialog: jest.fn(),
+        copyInfoToClipboard: jest.fn(),
+
+        // Reset
+        reset: jest.fn(() => Promise.resolve()),
+
+        // Init
+        initUI: jest.fn(() => Promise.resolve()),
+    };
+
+    return mockUI;
+};
+
+// =============================================================================
+// Global UI Module Mock (for jest.mock usage)
+// =============================================================================
+global.mockUIModule = {
+    getFractalMode: jest.fn(() => 'mandelbrot'),
+    switchFractalMode: jest.fn(() => Promise.resolve()),
+    switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
     isJuliaMode: jest.fn(() => true),
-    travelToPreset: jest.fn(() => Promise.resolve()),
-    startJuliaDive: jest.fn(() => Promise.resolve()),
-    isAnimationActive: jest.fn(() => false),
-    toggleHeader: jest.fn(),
+    enableJuliaMode: jest.fn(),
+    enableMandelbrotMode: jest.fn(),
+    enableRiemannMode: jest.fn(),
+    updatePaletteDropdownState: jest.fn(),
+    updateColorTheme: jest.fn(),
+    updatePaletteCycleButtonState: jest.fn(),
     randomizeColors: jest.fn(),
+    resetAppState: jest.fn(),
+    updateInfo: jest.fn(),
+    isAnimationActive: jest.fn(() => false),
+    toggleDemo: jest.fn(() => Promise.resolve()),
+    startJuliaDive: jest.fn(() => Promise.resolve()),
+    travelToPreset: jest.fn(() => Promise.resolve()),
+    resetPresetAndDiveButtonStates: jest.fn(),
+    resetActivePresetIndex: jest.fn(),
+    getUserPresets: jest.fn(() => []),
+    toggleDebugMode: jest.fn(),
     toggleCenterLines: jest.fn(),
-});
+    toggleHeader: jest.fn(),
+    captureScreenshot: jest.fn(),
+    showSaveViewDialog: jest.fn(),
+    showEditCoordsDialog: jest.fn(),
+    copyInfoToClipboard: jest.fn(),
+    reset: jest.fn(() => Promise.resolve()),
+    initUI: jest.fn(() => Promise.resolve()),
+};
 
 // =============================================================================
 // Setup Default DOM Structure

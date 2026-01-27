@@ -3,7 +3,9 @@
  */
 // __tests__/hotKeyController.test.js
 
-// Mock ui module before importing hotKeyController (which imports from ui)
+// Mock ui module using global mock from jest.setup.js
+jest.mock('../ui/ui', () => global.mockUIModule);
+
 import * as ui from "../ui/ui";
 import {destroyHotKeys, initHotKeys} from '../ui/hotKeyController';
 import {
@@ -16,29 +18,6 @@ import {
     upArrowPressedEvent
 } from "./eventDefaults";
 import {ROTATION_DIRECTION} from "../global/constants";
-
-jest.mock('../ui/ui', () => ({
-    isJuliaMode: jest.fn(() => true),
-    travelToPreset: jest.fn(() => Promise.resolve()),
-    startJuliaDive: jest.fn(() => Promise.resolve()),
-    isAnimationActive: jest.fn(() => false),
-    toggleHeader: jest.fn(),
-    randomizeColors: jest.fn(),
-    toggleCenterLines: jest.fn(),
-    toggleDebugMode: jest.fn(),
-    toggleDemo: jest.fn(() => Promise.resolve()),
-    reset: jest.fn(() => Promise.resolve()),
-    resetAppState: jest.fn(),
-    switchFractalMode: jest.fn(() => Promise.resolve()),
-    switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
-    captureScreenshot: jest.fn(),
-    updateColorTheme: jest.fn(),
-    updatePaletteDropdownState: jest.fn(),
-    updatePaletteCycleButtonState: jest.fn(),
-    copyInfoToClipboard: jest.fn(),
-    showSaveViewDialog: jest.fn(),
-    showEditCoordsDialog: jest.fn(),
-}));
 
 describe('HotKeyController', () => {
     let fractalApp;
