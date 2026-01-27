@@ -670,6 +670,8 @@ main {
     z-index: 99999;
     justify-content: center;
     align-items: center;
+    cursor: auto;
+    user-select: none;
 }
 
 .dialog-overlay.show,
@@ -701,8 +703,8 @@ dialog.dialog-overlay::backdrop {
 }
 
 .dialog-box h3 {
-    margin: 0 0 16px;
-    font-size: 16px;
+    margin: 0 0 30px;
+    font-size: 18px;
     color: #fff;
     text-shadow: 0 0 8px var(--accent-color);
 }
