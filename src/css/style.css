@@ -30,9 +30,13 @@ html, body {
     text-align: center;
     width: 100%;
     height: 100%;
-    -webkit-text-size-adjust: 100%; /* Prevent iOS Safari font size adjustment */
+    -webkit-text-size-adjust: 100%;
     text-size-adjust: 100%;
 }
+
+/* ========================================
+   Animations
+   ======================================== */
 
 @keyframes fadeInTop {
     0% { top: -320px; }
@@ -43,6 +47,24 @@ html, body {
     0% { bottom: -30px; }
     100% { bottom: 0; }
 }
+
+@keyframes glow-pulse {
+    from {
+        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--bg-color);
+    }
+    to {
+        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--accent-color);
+    }
+}
+
+@keyframes color-cycle-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ========================================
+   Header Container
+   ======================================== */
 
 #headerContainer {
     position: fixed;
@@ -59,10 +81,10 @@ html, body {
     height: auto;
     overflow: visible;
     border-top: none;
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Standard syntax */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     top: -320px;
     transition: 0.1s ease-in;
@@ -77,34 +99,13 @@ html, body {
     overflow: hidden;
 }
 
-#fractalCanvas {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
-    flex: 1;
-    display: block;
-}
-
-#floatingCanvas {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 250px;
-    height: 200px;
-    display: none;
-    background-color: #000;
-    border: 1px solid var(--accent-color);
-    border-radius: 8px;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px var(--accent-color);
-    pointer-events: none;
-    z-index: 9998;
-}
+/* ========================================
+   Logo / Title
+   ======================================== */
 
 h1 {
-    padding: 0 0 0 0;
-    margin: 6px auto 6px auto;
+    padding: 0;
+    margin: 6px auto;
     color: #fff;
     z-index: 1000;
     font-family: "Bruno Ace SC", sans-serif;
@@ -112,60 +113,72 @@ h1 {
     letter-spacing: 1px;
     font-style: italic;
     text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--accent-color);
-    width: 320px;
     white-space: nowrap;
     animation: glow-pulse 2s ease-in-out infinite alternate;
 }
 
-@keyframes glow-pulse {
-    from {
-        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--bg-color);
-    }
-    to {
-        text-shadow: 0 0 4px var(--accent-color), 0 0 12px var(--accent-color);
-    }
+/* ========================================
+   Control Area
+   ======================================== */
+
+#controlArea {
+    background: var(--bg-color);
+    border-radius: 10px;
+    width: fit-content;
+    position: relative;
+    margin: 0 10px;
+    padding: 4px 20px 8px;
+    cursor: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
 }
 
-p {
-    margin: 5px 0 3px 0;
+.tagline {
+    margin: 2px 0 4px;
     color: #ccc;
-    z-index: 1000;
     font-size: 12px;
     line-height: 14px;
     text-shadow: 0 0 10px #000;
+    white-space: nowrap;
 }
 
-a {
-    color: #fff;
-    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
-    transition: text-decoration-color 300ms;
-    text-shadow: 0 0 8px var(--accent-color);
+/* ========================================
+   Control Rows (Label + Button Group)
+   ======================================== */
+
+.control-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin: 2px 0;
 }
 
-a:hover {
-    text-decoration-color: var(--accent-color);
-}
-
-span {
+.control-label {
     font-size: 12px;
+    font-weight: bold;
     color: #fff;
     text-shadow: 0 0 10px #000;
+    min-width: 60px;
+    text-align: right;
 }
 
-hr {
-    width: 90%;
-    display: block;
-    height: 1px;
-    border: 0;
-    border-top: 1px solid #222;
-    padding: 0;
-    margin: 5px auto 1px auto;
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
 }
+
+/* ========================================
+   Buttons
+   ======================================== */
 
 button {
     position: relative;
     z-index: 10;
-    margin: 2px 1px;
+    margin: 0;
     cursor: pointer;
     align-items: center;
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
@@ -181,28 +194,17 @@ button {
     line-height: 1;
     outline: none;
     overflow: hidden;
-    padding: 10px 10px;
+    padding: 10px;
     text-align: center;
     text-decoration: none;
     transition: all 150ms;
-    vertical-align: baseline;
+    vertical-align: middle;
     white-space: nowrap;
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
     opacity: .85;
     border: 1px solid rgb(from var(--accent-color) r g b / 0.3);
-}
-
-button:first-of-type {
-    /*border-radius: 4px 0 0 4px;*/
-    /*border-left: none;*/
-}
-
-button:last-of-type,
-button.last-of-ten {
-    /*border-radius: 0 4px 4px 0;*/
-    /*border-right: none;*/
 }
 
 button:hover {
@@ -213,24 +215,7 @@ button:hover {
 button.active {
     color: var(--accent-color);
     background-image: linear-gradient(#222, #666);
-    /*box-shadow: 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);*/
     text-shadow: 0 0 4px var(--accent-color);
-}
-
-button:first-of-type:hover {
-    box-shadow: -2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
-}
-
-button:first-of-type.active {
-    box-shadow: -4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
-}
-
-button:last-of-type:hover {
-    box-shadow: 2px 0 4px var(--accent-color), 0 2px 4px var(--accent-color), 0 -2px 4px var(--accent-color);
-}
-
-button:last-of-type.active {
-    box-shadow: 4px 0 8px var(--accent-color), 0 4px 8px var(--accent-color), 0 -4px 8px var(--accent-color);
 }
 
 button:focus {
@@ -238,49 +223,203 @@ button:focus {
     text-shadow: 0 0 4px var(--accent-color);
 }
 
+/* Fractal Switch Buttons */
+#fractal-switch .button-group button {
+    height: 30px;
+    min-width: 80px;
+}
+
+#persistSwitch {
+    min-width: 20px !important;
+    width: 20px;
+    display: none;
+}
+
+#persistSwitch:focus {
+    background-image: linear-gradient(#000, #222);
+}
+
+/* Control Buttons */
+#controlButtons .button-group button {
+    min-width: 70px;
+}
+
+#reset {
+    color: #FF3131;
+}
+
+/* ========================================
+   Dropdowns
+   ======================================== */
+
+.dropdown {
+    position: relative;
+    display: inline-flex;
+}
+
+.dropdown-toggle {
+    min-width: 70px;
+}
+
+.dropdown-toggle:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.5) 100%);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgb(from var(--accent-color) r g b / 0.3);
+    border-radius: 8px;
+    padding: 8px;
+    z-index: 10000;
+    min-width: 200px;
+    max-width: 320px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+    margin-top: 4px;
+}
+
+.dropdown-menu.show {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+}
+
+.dropdown-menu button.preset {
+    flex: 0 0 auto;
+    min-width: 40px;
+}
+
+#dives-dropdown {
+    display: none;
+}
+
+/* Scrollable dropdown on mobile */
+@media (pointer: coarse) {
+    .dropdown-menu {
+        max-height: 50vh;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dropdown-menu.show {
+        align-content: flex-start;
+    }
+}
+
+/* Palette dropdown */
+#palette-dropdown .dropdown-menu {
+    min-width: 120px;
+    max-width: 200px;
+}
+
+#palette-dropdown .dropdown-menu button.palette {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+#palette-dropdown .dropdown-menu button.palette .color-swatch {
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    flex-shrink: 0;
+}
+
+.color-cycle-swatch {
+    background: conic-gradient(from 0deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b);
+    animation: color-cycle-spin 3s linear infinite;
+}
+
+#palette-cycle.active {
+    color: var(--accent-color);
+}
+
+/* ========================================
+   Dive Buttons
+   ======================================== */
+
+button.dive {
+    white-space: normal;
+    display: inline-flex;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    padding: 15px 10px;
+    color: rgb(from var(--accent-color) r g b / 0.8);
+}
+
+button.dive.active {
+    color: var(--accent-color);
+}
+
+button.dive.has-palette {
+    border-width: 1px;
+}
+
+button.dive.has-palette:hover {
+    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
+    text-shadow: 0 0 1px currentColor;
+}
+
+button.dive.has-palette.active {
+    border-color: currentColor;
+    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
+}
+
+/* ========================================
+   Sliders
+   ======================================== */
+
 #sliders {
     text-align: center;
-    flex-direction: column; /* Stack children vertically */
-    align-items: center; /* Center the slider-container */
-    gap: 5px; /* Add spacing between sliders */
-    margin: 5px 0 10px 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0 10px;
     display: none;
 }
 
 .slider-container {
     display: flex;
-    flex-direction: row; /* Align label and slider horizontally */
-    align-items: center; /* Vertically align label and slider */
-    gap: 0; /* Add spacing between label and slider */
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
     min-width: 380px;
-}
-
-label, .sliderValue {
-    color: #ccc;
-    font-size: 12px;
-    text-align: right; /* Align text to the right */
-}
-
-.sliderValue {
-    min-width: 4.5em; /* Fixed width to prevent wiggle on sign change */
-    font-variant-numeric: tabular-nums; /* Equal-width digits */
-    font-family: monospace, monospace;
-    display: inline-block;
 }
 
 .slider-container label {
     text-shadow: 0 0 10px var(--accent-color);
     color: #fff;
-    font-weight: bolder;
+    font-weight: bold;
     font-size: 12px;
+    text-align: right;
 }
 
-.slider-container span {
+.sliderValue {
+    min-width: 4.5em;
+    font-variant-numeric: tabular-nums;
+    font-family: monospace, monospace;
+    display: inline-block;
+    color: #ccc;
+    font-size: 12px;
     text-shadow: 0 0 1px var(--accent-color);
 }
 
 .slider {
-    flex: 1; /* Allow the slider to take remaining space */
+    flex: 1;
     height: 10px;
     -webkit-appearance: none;
     background: var(--bg-color);
@@ -322,7 +461,6 @@ label, .sliderValue {
     background: #333;
 }
 
-/* Visual feedback when slider is near zero - helps user hit the zero point */
 .slider.near-zero::-webkit-slider-thumb {
     background-color: rgba(1, 1, 1, 0.8);
 }
@@ -331,249 +469,116 @@ label, .sliderValue {
     background-color: rgba(1, 1, 1, 0.8);
 }
 
-#dives-dropdown {
-    display: none;
-}
+/* ========================================
+   Header Footer
+   ======================================== */
 
-button.dive {
-    white-space: normal;
-    display: inline-flex;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    padding: 15px 10px;
-    color: rgb(from var(--accent-color) r g b / 0.8);
-}
-
-button.dive.active {
-    color: var(--accent-color);
-}
-
-/* Dive buttons with custom palette color */
-button.dive.has-palette {
-    border-width: 1px;
-    /*border-style: dotted;*/
-}
-
-button.dive.has-palette:hover {
-    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
-    text-shadow: 0 0 1px currentColor;
-}
-
-button.dive.has-palette.active {
-    border-color: currentColor;
-    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
-}
-
-.switch-field {
-    /*border: 1px solid yellow;*/
-    display: flex;
-    overflow: hidden;
-    margin: 0 auto;
-    width: 300px;
-    padding: 10px 20px 5px 20px;
-}
-
-.switch-field span {
-    padding: 8px 5px 0 0;
-    font-weight: bolder;
-}
-
-.switch-field button {
-    height: 30px;
-    width: 80px;
-}
-
-#mandelbrotSwitch {
-    /*border-right: 1px solid var(--accent-color);*/
-}
-
-#juliaSwitch {
-
-}
-
-#persistSwitch {
-    width: 20px;
-    display: none;
-}
-
-#persistSwitch:focus {
-    background-image: linear-gradient(#000, #222);
-}
-
-#controlArea {
-    background: var(--bg-color);
-    border-radius: 10px;
-    width: fit-content;
-    position: relative;
-    margin: 0 10px 0 10px;
-    padding: 1px 20px 4px 20px;
-    cursor: auto;
-}
-
-#controlButtons {
-    margin: 2px 0 0 0;
-}
-
-#controlButtons span {
-    font-weight: bolder;
-}
-
-#controlButtons button {
-    min-width: 80px;
-    justify-content: center;
-    display: inline-flex;
-    flex-direction: column;
-    vertical-align: baseline;
-}
-
-#controlButtons .dropdown.inline {
-    display: inline-block;
-    vertical-align: baseline;
-}
-
-#controlButtons .dropdown.inline .dropdown-toggle {
-    width: 90px;
-}
-
-/* Palette dropdown items */
-#palette-dropdown .dropdown-menu {
-    min-width: 120px;
-    max-width: 200px;
-}
-
-#palette-dropdown .dropdown-menu button.palette {
-    flex: 1 1 auto;
-    min-width: 80px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 6px;
-    white-space: nowrap;
-}
-
-#palette-dropdown .dropdown-menu button.palette .color-swatch {
-    width: 14px;
-    height: 14px;
-    border-radius: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    flex-shrink: 0;
-}
-
-/* Animated color cycle swatch */
-.color-cycle-swatch {
-    background: conic-gradient(from 0deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b);
-    animation: color-cycle-spin 3s linear infinite;
-}
-
-@keyframes color-cycle-spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-#palette-cycle.active {
-    color: var(--accent-color);
-}
-
-#reset {
-    color: #FF3131;
-}
-
-p.small {
+.header-footer {
     font-size: 11px;
+    margin: 5px 0 3px;
+    color: #ccc;
+    text-shadow: 0 0 10px #000;
 }
 
-#presets-dives {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    margin: 5px 0;
-}
-#presets-dives span {
-    font-weight: bolder;
-}
-
-/* Dropdown styles */
-.dropdown {
-    position: relative;
-    display: inline-block;
-}
-
-.dropdown-toggle {
-    min-width: 80px;
-}
-
-.dropdown-toggle:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-    pointer-events: none;
-}
-
-.dropdown-menu {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.9) 20%, rgba(0, 0, 0, 0.5) 100%);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgb(from var(--accent-color) r g b / 0.3);
-    border-radius: 8px;
-    padding: 8px;
-    z-index: 10000;
-    min-width: 200px;
-    max-width: 320px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
-    margin-top: 4px;
-}
-
-.dropdown-menu.show {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 4px;
-}
-
-/* Scrollable dropdown on mobile */
-@media (pointer: coarse) {
-    .dropdown-menu {
-        max-height: 50vh;
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-    }
-
-    .dropdown-menu.show {
-        align-content: flex-start;
-    }
-}
-
-.dropdown-menu button.preset {
-    flex: 0 0 auto;
-    min-width: 40px;
-}
-
-
-.highlight {
-    color: #fff;
+.middot {
+    color: var(--accent-color);
 }
 
 #version {
     color: var(--accent-color);
     text-shadow: 0 0 8px var(--accent-color);
-    font-size: 11px;
 }
 
 #copy {
     color: #ccc;
-    font-size: 11px;
 }
+
+/* ========================================
+   Links
+   ======================================== */
+
+a {
+    color: #fff;
+    text-decoration: underline 0.1em rgba(255, 255, 255, 0);
+    transition: text-decoration-color 300ms;
+    text-shadow: 0 0 8px var(--accent-color);
+}
+
+a:hover {
+    text-decoration-color: var(--accent-color);
+}
+
+/* ========================================
+   General Typography
+   ======================================== */
+
+p {
+    margin: 5px 0 3px;
+    color: #ccc;
+    z-index: 1000;
+    font-size: 12px;
+    line-height: 14px;
+    text-shadow: 0 0 10px #000;
+}
+
+span {
+    font-size: 12px;
+    color: #fff;
+    text-shadow: 0 0 10px #000;
+}
+
+hr {
+    width: 90%;
+    display: block;
+    height: 1px;
+    border: 0;
+    border-top: 1px solid #222;
+    padding: 0;
+    margin: 5px auto 1px;
+}
+
+/* ========================================
+   Canvas
+   ======================================== */
+
+#fractalCanvas {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100vw;
+    height: 100vh;
+    flex: 1;
+    display: block;
+}
+
+#floatingCanvas {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 250px;
+    height: 200px;
+    display: none;
+    background-color: #000;
+    border: 1px solid var(--accent-color);
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), 0 0 10px var(--accent-color);
+    pointer-events: none;
+    z-index: 9998;
+}
+
+main {
+    display: contents;
+}
+
+/* ========================================
+   Info Label (Bottom)
+   ======================================== */
 
 #infoLabel {
     width: 380px;
     min-height: 14px;
     max-height: 30px;
-    padding: 3px 5px 3px 5px;
+    padding: 3px 5px;
     background-color: var(--bg-color);
     backdrop-filter: blur(8px);
     z-index: 9999;
@@ -583,11 +588,11 @@ p.small {
     overflow: hidden;
     border: 1px solid var(--bg-color);
     border-bottom: none;
-    position: absolute;
-    left: 0;
-    right: 0;
-    margin-inline: auto;
-    opacity: 0; /* Keep it hidden by default */
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
     pointer-events: none;
 }
 
@@ -597,13 +602,8 @@ p.small {
     pointer-events: auto;
 }
 
-.middot {
-    color: var(--accent-color);
-}
-
 #infoText {
     color: #fff;
-    /*color: var(--accent-color);*/
     font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
     width: 100%;
     font-size: 11px;
@@ -612,10 +612,10 @@ p.small {
     text-align: center;
     resize: none;
     overflow: auto;
-    -webkit-user-select: none; /* Safari */
-    -moz-user-select: none; /* Firefox */
-    -ms-user-select: none; /* IE 10+ */
-    user-select: none; /* Standard syntax */
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
     cursor: pointer;
     text-shadow: 0 0 8px #000;
     caret-color: var(--accent-color);
@@ -625,12 +625,15 @@ p.small {
     outline: none !important;
 }
 
-/* Center guideline styles with dashed borders */
+/* ========================================
+   Center Guidelines
+   ======================================== */
+
 .centerLine {
     position: absolute;
     pointer-events: none;
     z-index: 1000;
-    display: none; /* Initially hidden */
+    display: none;
 }
 
 .verticalLine {
@@ -651,7 +654,10 @@ p.small {
     background: transparent;
 }
 
-/* Save View Dialog */
+/* ========================================
+   Save View Dialog
+   ======================================== */
+
 .dialog-overlay {
     display: none;
     position: fixed;
@@ -666,8 +672,22 @@ p.small {
     align-items: center;
 }
 
-.dialog-overlay.show {
+.dialog-overlay.show,
+dialog.dialog-overlay[open] {
     display: flex;
+}
+
+dialog.dialog-overlay {
+    border: none;
+    padding: 0;
+    background: transparent;
+    max-width: 100vw;
+    max-height: 100vh;
+}
+
+dialog.dialog-overlay::backdrop {
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
 }
 
 .dialog-box {
@@ -681,7 +701,7 @@ p.small {
 }
 
 .dialog-box h3 {
-    margin: 0 0 16px 0;
+    margin: 0 0 16px;
     font-size: 16px;
     color: #fff;
     text-shadow: 0 0 8px var(--accent-color);
@@ -744,10 +764,12 @@ p.small {
     opacity: 0.6;
 }
 
-/* Preset with custom palette color */
+/* ========================================
+   Preset Buttons
+   ======================================== */
+
 button.preset.has-palette {
     border-width: 1px;
-    /*border-style: dotted;*/
 }
 
 button.preset.has-palette:hover {
@@ -760,7 +782,6 @@ button.preset.has-palette.active {
     box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
 }
 
-/* User preset styling in dropdown */
 button.preset.user-preset {
     color: rgb(from var(--accent-color) r g b / 0.9);
     border-color: rgb(from var(--accent-color) r g b / 0.4);
@@ -777,23 +798,10 @@ button.preset.user-preset::before {
     opacity: 0.7;
 }
 
-/*button.preset.user-preset:hover::after {*/
-/*    content: '\00d7';*/
-/*    position: absolute;*/
-/*    top: -2px;*/
-/*    right: -2px;*/
-/*    width: 14px;*/
-/*    height: 14px;*/
-/*    background: #ff4444;*/
-/*    border-radius: 50%;*/
-/*    font-size: 10px;*/
-/*    line-height: 14px;*/
-/*    text-align: center;*/
-/*    color: #fff;*/
-/*    cursor: pointer;*/
-/*}*/
+/* ========================================
+   Controls Hint Tooltip
+   ======================================== */
 
-/* Controls Hint Tooltip */
 .hint-trigger {
     position: relative;
     display: inline-block;
@@ -846,7 +854,6 @@ button.preset.user-preset::before {
     border-bottom-color: rgb(from var(--accent-color) r g b / 0.4);
 }
 
-/* Invisible bridge to prevent tooltip from closing when moving mouse to it */
 .hint-tooltip::before {
     content: '';
     position: absolute;
@@ -887,7 +894,6 @@ button.preset.user-preset::before {
     border: 1px solid #444;
     border-radius: 3px;
     padding: 1px 4px;
-    /*font-size: 10px;*/
     font-family: inherit;
     color: #fff;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -896,6 +902,14 @@ button.preset.user-preset::before {
 
 .hint-content {
     display: none;
+}
+
+.hint-link {
+    display: block;
+    text-align: center;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    transition: text-shadow 0.2s;
 }
 
 /* Show mouse controls on non-touch devices */
@@ -912,7 +926,6 @@ button.preset.user-preset::before {
         display: block;
     }
 
-    /* Tap to toggle on touch devices */
     .hint-trigger:hover .hint-tooltip {
         display: none;
         opacity: 0;
@@ -925,15 +938,10 @@ button.preset.user-preset::before {
     }
 }
 
-.hint-link {
-    display: block;
-    text-align: center;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-    transition: text-shadow 0.2s;
-}
+/* ========================================
+   Responsive: Scale header on narrow screens
+   ======================================== */
 
-/* Scale down header on narrow screens to maintain layout integrity */
 @media screen and (max-width: 440px) {
     #headerContainer {
         transform: translateX(-50%) scale(0.9);

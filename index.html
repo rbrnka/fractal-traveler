@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Synaptory Fractal Traveler</title>
     <meta charset="UTF-8">
-    <meta name="author" content="Radim Brnka &copy; 2025-2026">
-    <meta name="description"
-          content="Synaptory Fractal Traveler. If you’re curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
-    <meta property="og:title" content="Synaptory: Fractal Traveler">
-    <meta property="og:description"
-          content="Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
-    <meta property="og:image" content="img/icon.png">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+    <title>Synaptory Fractal Traveler</title>
+    <meta name="author" content="Radim Brnka">
+    <meta name="description" content="Synaptory Fractal Traveler. If you're curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
+    <meta property="og:title" content="Synaptory: Fractal Traveler">
+    <meta property="og:description" content="Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
+    <meta property="og:image" content="img/icon.png">
+    <meta name="theme-color" content="#000000">
 
-    <link rel="image_src" href="img/icon.png">
     <link rel="icon" href="img/icon.png" type="image/png">
+    <link rel="apple-touch-icon" href="img/icon.png">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,110 +21,130 @@
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZDM1T1PJ2"></script>
     <script>
         window.dataLayer = window.dataLayer || [];
-
-        function gtag() {
-            dataLayer.push(arguments);
-        }
-
+        function gtag() { dataLayer.push(arguments); }
         gtag('js', new Date());
         gtag('config', 'G-DZDM1T1PJ2');
     </script>
 </head>
 <body>
     <div id="debugInfo" class="draggable"></div>
-    <div id="headerContainer">
+
+    <header id="headerContainer">
         <h1 id="logo">Synaptory Fractal&nbsp;Traveler</h1>
-        <div id="controlArea">
-            <p>Developed for interactive exploration and learning.</p>
-            <div class="switch-field">
-                <span>Fractal:</span>
-                <button id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot
-                </button>
-                <button id="persistSwitch" title="Switches between the fractals with persistent settings.">&hArr;</button>
-                <button id="juliaSwitch" class="" title="Julia mode (CTRL: Persist parameters)">Julia</button>
+
+        <nav id="controlArea" aria-label="Fractal controls">
+            <p class="tagline">Developed for interactive exploration and learning.</p>
+
+            <div class="control-row" id="fractal-switch">
+                <span class="control-label">Fractal:</span>
+                <div class="button-group">
+                    <button type="button" id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot</button>
+                    <button type="button" id="persistSwitch" title="Switches between the fractals with persistent settings.">&hArr;</button>
+                    <button type="button" id="juliaSwitch" title="Julia mode (CTRL: Persist parameters)">Julia</button>
+                </div>
             </div>
-            <div id="presets-dives">
-                <span>Settings:</span>
-                <div id="presets-dropdown" class="dropdown">
-                    <button id="presets-toggle" class="dropdown-toggle" title="Interesting Fractal Locations">View ▾
-                    </button>
-                    <div id="presets" class="dropdown-menu"></div>
+
+            <div class="control-row" id="presets-dives">
+                <span class="control-label">Settings:</span>
+                <div class="button-group">
+                    <div id="presets-dropdown" class="dropdown">
+                        <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Fractal Locations">View &#x25BE;</button>
+                        <div id="presets" class="dropdown-menu"></div>
+                    </div>
+                    <div id="dives-dropdown" class="dropdown">
+                        <button type="button" id="dives-toggle" class="dropdown-toggle" title="Real-time Fractal Calculations">Dive &#x25BE;</button>
+                        <div id="dives" class="dropdown-menu"></div>
+                    </div>
+                    <div id="palette-dropdown" class="dropdown">
+                        <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette &#x25BE;</button>
+                        <div id="palettes" class="dropdown-menu"></div>
+                    </div>
+                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
                 </div>
-                <div id="dives-dropdown" class="dropdown">
-                    <button id="dives-toggle" class="dropdown-toggle" title="Real-time Fractal Calculations">Dive ▾
-                    </button>
-                    <div id="dives" class="dropdown-menu"></div>
-                </div>
-                <div id="palette-dropdown" class="dropdown inline">
-                    <button id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette ▾</button>
-                    <div id="palettes" class="dropdown-menu"></div>
-                </div>
-                <button id="demo" class="" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
             </div>
+
             <div id="sliders">
                 <div class="slider-container">
                     <label for="realSlider" title="Real part">cx:</label>
                     <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.0001" value="-0.8000">
-                    <span class="sliderValue" id="realSliderValue">0</span>
+                    <output class="sliderValue" id="realSliderValue" for="realSlider">0</output>
                 </div>
                 <div class="slider-container">
                     <label for="imagSlider" title="Imaginary part">cy:</label>
                     <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.0001" value="0.1560">
-                    <span class="sliderValue" id="imagSliderValue">0</span>
+                    <output class="sliderValue" id="imagSliderValue" for="imagSlider">0</output>
                 </div>
             </div>
-            <div id="controlButtons">
-                <span>Actions:</span>
-                <button id="screenshot" class="" title="Save Image (Shift+S)">Capture</button>
-                <button id="saveView" class="" title="Save current view locally (Alt+S)">Save</button>
-                <button id="reset" class="" title="Reset the view (Shift+R)">Reset</button>
+
+            <div class="control-row" id="controlButtons">
+                <span class="control-label">Actions:</span>
+                <div class="button-group">
+                    <button type="button" id="screenshot" title="Save Image (Shift+S)">Capture</button>
+                    <button type="button" id="saveView" title="Save current view locally (Alt+S)">Save</button>
+                    <button type="button" id="reset" title="Reset the view (Shift+R)">Reset</button>
+                </div>
             </div>
-        </div>
-        <p class="small">
-            <span id="controlsHint" class="hint-trigger">Controls<span class="hint-tooltip"><span
-                    class="hint-content mouse-controls"><span class="hint-section"><strong>Mouse</strong><span
-                    class="hint-row"><kbd>Scroll</kbd> Zoom</span><span class="hint-row"><kbd>Drag</kbd> Pan</span><span
-                    class="hint-row"><kbd>Click</kbd> Center</span><span
-                    class="hint-row"><kbd>Dbl-click</kbd> Zoom &amp; Pan</span><span
-                    class="hint-row"><kbd>Right drag</kbd> Rotate</span><span
-                    class="hint-row"><kbd>Hold</kbd> Cont. zoom</span><span
-                    class="hint-row"><kbd>Middle</kbd> Julia preview</span></span></span><span
-                    class="hint-content touch-controls"><span class="hint-section"><strong>Touch</strong><span
-                    class="hint-row"><kbd>Pinch</kbd> Zoom</span><span class="hint-row"><kbd>Drag</kbd> Pan</span><span
-                    class="hint-row"><kbd>Tap</kbd> Center</span><span
-                    class="hint-row"><kbd>Dbl-tap</kbd> Zoom in</span><span
-                    class="hint-row"><kbd>2-finger</kbd> Rotate</span><span
-                    class="hint-row"><kbd>Hold</kbd> Cont. zoom</span></span></span><a class="hint-link" target="_blank"
-                                                                                       href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Full Controls &rarr;</a></span></span>
+        </nav>
+
+        <footer class="header-footer">
+            <span id="controlsHint" class="hint-trigger">Controls
+                <span class="hint-tooltip">
+                    <span class="hint-content mouse-controls">
+                        <span class="hint-section">
+                            <strong>Mouse</strong>
+                            <span class="hint-row"><kbd>Scroll</kbd> Zoom</span>
+                            <span class="hint-row"><kbd>Drag</kbd> Pan</span>
+                            <span class="hint-row"><kbd>Click</kbd> Center</span>
+                            <span class="hint-row"><kbd>Dbl-click</kbd> Zoom &amp; Pan</span>
+                            <span class="hint-row"><kbd>Right drag</kbd> Rotate</span>
+                            <span class="hint-row"><kbd>Hold</kbd> Cont. zoom</span>
+                            <span class="hint-row"><kbd>Middle</kbd> Julia preview</span>
+                        </span>
+                    </span>
+                    <span class="hint-content touch-controls">
+                        <span class="hint-section">
+                            <strong>Touch</strong>
+                            <span class="hint-row"><kbd>Pinch</kbd> Zoom</span>
+                            <span class="hint-row"><kbd>Drag</kbd> Pan</span>
+                            <span class="hint-row"><kbd>Tap</kbd> Center</span>
+                            <span class="hint-row"><kbd>Dbl-tap</kbd> Zoom in</span>
+                            <span class="hint-row"><kbd>2-finger</kbd> Rotate</span>
+                            <span class="hint-row"><kbd>Hold</kbd> Cont. zoom</span>
+                        </span>
+                    </span>
+                    <a class="hint-link" target="_blank" rel="noopener" href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Full Controls &rarr;</a>
+                </span>
+            </span>
             <span class="middot">&middot;</span>
-            <a
-                    target="_blank"
-                    title="Synaptory blog: Unmasking Chaos"
-                    href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
+            <a target="_blank" rel="noopener" title="Synaptory blog: Unmasking Chaos" href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
             <span class="middot">&middot;</span>
-            <span id="version" title="Current version"><a id="versionLink" target="_blank" title="GitHub repo"
-                                                          href="https://github.com/rbrnka/fractal-traveler">v1.9</a></span>
-            <span class="middot">&middot;</span> <span id="copy">by <a target="_blank" title="About me"
-                                                                       href="https://brnka.com">Radim Brnka</a> &copy; 2025-2026</span>
-        </p>
-    </div>
-    <div id="infoLabel" title="Click to copy full coordinates.">
+            <span id="version" title="Current version"><a id="versionLink" target="_blank" rel="noopener" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">v1.9</a></span>
+            <span class="middot">&middot;</span>
+            <span id="copy">by <a target="_blank" rel="noopener" title="About me" href="https://brnka.com">Radim Brnka</a> &copy; 2025-2026</span>
+        </footer>
+    </header>
+
+    <aside id="infoLabel" title="Click to copy full coordinates.">
         <div id="infoText">Initialized successfully!</div>
-    </div>
-    <canvas id="fractalCanvas"></canvas>
-    <canvas id="floatingCanvas"></canvas>
+    </aside>
+
+    <main>
+        <canvas id="fractalCanvas"></canvas>
+        <canvas id="floatingCanvas"></canvas>
+    </main>
+
     <div id="verticalLine" class="centerLine verticalLine"></div>
     <div id="horizontalLine" class="centerLine horizontalLine"></div>
-    <!-- Save View Dialog -->
-    <div id="saveViewDialog" class="dialog-overlay">
+
+    <dialog id="saveViewDialog" class="dialog-overlay">
         <div class="dialog-box">
             <h3>Save Current View</h3>
             <input type="text" id="saveViewName" placeholder="My View Name" maxlength="30">
             <div class="dialog-buttons">
-                <button id="saveViewCancel" class="dialog-btn">Cancel</button>
-                <button id="saveViewConfirm" class="dialog-btn primary">Save</button>
+                <button type="button" id="saveViewCancel" class="dialog-btn">Cancel</button>
+                <button type="button" id="saveViewConfirm" class="dialog-btn primary">Save</button>
             </div>
         </div>
-    </div>
+    </dialog>
 </body>
 </html>
