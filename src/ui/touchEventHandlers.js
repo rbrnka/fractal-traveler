@@ -9,6 +9,7 @@
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
 import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
+import {clampPanDelta} from "./mouseEventHandlers";
 
 /** How long should we wait before distinguish between double tap and two single taps. */
 const DOUBLE_TAP_THRESHOLD = 300;
@@ -469,7 +470,11 @@ function handleTouchEnd(event) {
                 touchClickTimeout = null;
 
                 // Use delta-based pan to preserve DD precision at deep zoom
-                const deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+                let deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+
+                // Clamp to prevent panning out of view
+                deltaPan = clampPanDelta(fractalApp.pan, deltaPan);
+
                 console.log(`%c handleTouchEnd: %c Double Tap: Centering on ${touchX}x${touchY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
@@ -479,7 +484,11 @@ function handleTouchEnd(event) {
             } else {
                 touchClickTimeout = setTimeout(() => {
                     // Use delta-based pan to preserve DD precision at deep zoom
-                    const deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+                    let deltaPan = fractalApp.screenToPanDelta(touchX, touchY);
+
+                    // Clamp to prevent panning out of view
+                    deltaPan = clampPanDelta(fractalApp.pan, deltaPan);
+
                     console.log(`%c handleTouchEnd: %c Single Tap Click: Centering on ${touchX}x${touchY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                     // Centering action using delta-based pan:

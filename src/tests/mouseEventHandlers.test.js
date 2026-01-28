@@ -2,7 +2,12 @@
  * @jest-environment jsdom
  */
 // __tests__/mouseEventHandlers.test.js
-import {initMouseHandlers, unregisterMouseEventHandlers} from '../ui/mouseEventHandlers';
+import {
+    clampPanDelta,
+    initMouseHandlers,
+    MAX_PAN_DISTANCE,
+    unregisterMouseEventHandlers
+} from '../ui/mouseEventHandlers';
 import {
     mouseLeftDownEvent,
     mouseLeftMoveEvent,
@@ -289,5 +294,139 @@ describe('Deep Zoom Panning Precision', () => {
 
         expect(sum).toBeCloseTo(initialSum + tinyDelta, 30);
         expect(fractalApp.panDD.x.lo).not.toBe(0);
+    });
+});
+
+describe('Pan Bounds Clamping', () => {
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should not clamp when within bounds', () => {
+        const currentPan = [0, 0];
+        const deltaPan = [0.5, 0.5];
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        expect(result).toEqual(deltaPan);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should clamp when exceeding MAX_PAN_DISTANCE', () => {
+        const currentPan = [0, 0];
+        const deltaPan = [5, 0]; // Would result in distance 5 > 3.5
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        expect(distance).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+        expect(result[0]).toBeLessThan(deltaPan[0]);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should clamp diagonal movement correctly', () => {
+        const currentPan = [1, 1];
+        const deltaPan = [3, 3]; // Would result in distance ~5.66 > 3.5
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        expect(distance).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should clamp when starting from existing pan position', () => {
+        const currentPan = [2, 0];
+        const deltaPan = [3, 0]; // Would result in pan [5, 0], distance 5 > 3.5
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        expect(distance).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should handle negative coordinates', () => {
+        const currentPan = [-1, -1];
+        const deltaPan = [-3, -3]; // Would result in distance ~5.66 > 3.5
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        expect(distance).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should preserve direction when clamping', () => {
+        const currentPan = [0, 0];
+        const deltaPan = [10, 0]; // Would pan right to [10, 0]
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        // Result should still be pointing right (positive X)
+        expect(result[0]).toBeGreaterThan(0);
+        expect(result[1]).toBe(0);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        expect(resultingPan[0]).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should allow movement at exactly MAX_PAN_DISTANCE boundary', () => {
+        const currentPan = [MAX_PAN_DISTANCE, 0];
+        const deltaPan = [0, 0.1]; // Small perpendicular movement
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        // Should be clamped to MAX_PAN_DISTANCE
+        expect(distance).toBeLessThanOrEqual(MAX_PAN_DISTANCE + 0.001);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should handle zero delta', () => {
+        const currentPan = [1, 1];
+        const deltaPan = [0, 0];
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        expect(result).toEqual([0, 0]);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should clamp click in far corner at default view (real-world scenario)', () => {
+        // Default view: zoom = 3, centered at origin
+        // Click in far corner would translate to ~1.5 from center
+        // After centering, we'd be at [1.5, 1.5] which is within bounds
+        const currentPan = [0, 0];
+        const deltaPan = [1.5, 1.5]; // Corner click
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        // This should pass through without clamping (distance ~2.12 < 3.5)
+        expect(result).toEqual(deltaPan);
+    });
+
+    // -----------------------------------------------------------------------------------------------------------------
+    test('should clamp extreme click at default view', () => {
+        // Simulating clicking way outside the canvas bounds
+        const currentPan = [0, 0];
+        const deltaPan = [5, 5]; // Extreme click, would go to [5, 5], distance ~7.07
+
+        const result = clampPanDelta(currentPan, deltaPan);
+
+        const resultingPan = [currentPan[0] + result[0], currentPan[1] + result[1]];
+        const distance = Math.sqrt(resultingPan[0]**2 + resultingPan[1]**2);
+
+        expect(distance).toBeCloseTo(MAX_PAN_DISTANCE, 5);
+        // Should maintain diagonal direction (equal x and y)
+        expect(Math.abs(resultingPan[0])).toBeCloseTo(Math.abs(resultingPan[1]), 5);
     });
 });

@@ -17,6 +17,8 @@ const DOUBLE_CLICK_THRESHOLD = 300;
 const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // double-click zoom in/out
 const ROTATION_SENSITIVITY = 0.01;
+/** Maximum distance from origin to prevent panning out of view */
+export const MAX_PAN_DISTANCE = 3.5; // Fractals are contained within ~radius 2, allow some margin
 
 /** Long press zoom configuration */
 const LONG_PRESS_THRESHOLD = 400; // ms before zoom starts
@@ -70,6 +72,36 @@ let isMiddleButtonHeld = false;
 
 // Cached rect (avoid layout thrash / inconsistencies during drag)
 let dragRectLeft = 0;
+
+/**
+ * Clamps pan delta to ensure resulting pan stays within bounds
+ * @param {Array<number>} currentPan - Current pan [x, y]
+ * @param {Array<number>} deltaPan - Proposed delta [dx, dy]
+ * @returns {Array<number>} - Clamped delta [dx, dy]
+ */
+export function clampPanDelta(currentPan, deltaPan) {
+    const newPanX = currentPan[0] + deltaPan[0];
+    const newPanY = currentPan[1] + deltaPan[1];
+    const distance = Math.sqrt(newPanX * newPanX + newPanY * newPanY);
+
+    // If within bounds, return unchanged
+    if (distance <= MAX_PAN_DISTANCE) {
+        return deltaPan;
+    }
+
+    // Clamp to max distance by scaling back the new position
+    const scale = MAX_PAN_DISTANCE / distance;
+    const clampedPanX = newPanX * scale;
+    const clampedPanY = newPanY * scale;
+
+    // Return the delta that would achieve the clamped position
+    const clampedDeltaX = clampedPanX - currentPan[0];
+    const clampedDeltaY = clampedPanY - currentPan[1];
+
+    console.log(`%c clampPanDelta: %c Pan would exceed bounds (distance: ${distance.toFixed(2)} > ${MAX_PAN_DISTANCE}). Clamping to [${clampedDeltaX.toFixed(4)}, ${clampedDeltaY.toFixed(4)}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+    return [clampedDeltaX, clampedDeltaY];
+}
 let dragRectTop = 0;
 let hasDragRect = false;
 
@@ -546,7 +578,11 @@ function handleMouseUp(event) {
                 const targetZoom = fractalApp.zoom * ZOOM_STEP;
                 if (targetZoom > fractalApp.MAX_ZOOM) {
                     // Use delta-based pan to preserve DD precision at deep zoom
-                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    let deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+
+                    // Clamp to prevent panning out of view
+                    deltaPan = clampPanDelta(fractalApp.pan, deltaPan);
+
                     console.log(`%c handleMouseUp: %c Double Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                     fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
                 } else {
@@ -556,7 +592,11 @@ function handleMouseUp(event) {
                 // Set a timeout for the single-click action.
                 clickTimeout = setTimeout(() => {
                     // Use delta-based pan to preserve DD precision at deep zoom
-                    const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                    let deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+
+                    // Clamp to prevent panning out of view
+                    deltaPan = clampPanDelta(fractalApp.pan, deltaPan);
+
                     console.log(`%c handleMouseUp: %c Single Left Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
                     // Centering action using delta-based pan:
@@ -615,7 +655,11 @@ function handleMouseUp(event) {
             const targetZoom = fractalApp.zoom / ZOOM_STEP;
             if (targetZoom < fractalApp.MIN_ZOOM) {
                 // Use delta-based pan to preserve DD precision at deep zoom
-                const deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+                let deltaPan = fractalApp.screenToPanDelta(mouseX, mouseY);
+
+                // Clamp to prevent panning out of view
+                deltaPan = clampPanDelta(fractalApp.pan, deltaPan);
+
                 console.log(`%c handleMouseUp: %c Double Right Click: Centering on ${mouseX}x${mouseY} -> delta [${deltaPan[0]}, ${deltaPan[1]}] zoom ${fractalApp.zoom.toFixed(6)} -> ${targetZoom}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
                 fractalApp.animatePanByAndZoomTo(deltaPan, targetZoom, 1000, EASE_TYPE.QUINT).then(resetAppState);
             } else {
