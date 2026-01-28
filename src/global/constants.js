@@ -191,17 +191,12 @@ export const CONSOLE_MESSAGE_STYLE = `color: ${DEFAULT_CONSOLE_MESSAGE_COLOR}`;
  * Default Julia-specific palette.
  * @type {JULIA_PALETTE}
  */
-export const DEFAULT_JULIA_PALETTE = {
-    id: "Default",
-    keyColor: "#4c4cb3",
-    theme: [
-        0.0, 0.0, 0.0,
-        1.0, 0.647, 0.0,
-        0.0, 0.0, 0.0,
-        1.0, 1.0, 1.0,
-        0.0, 0.0, 0.5
-    ]
-};
+export const DEFAULT_JULIA_PALETTE =
+    {
+        "id": "Event Horizon",
+        "keyColor": "#c74a00",
+        "theme": [0.859, 0.565, 0.306, 0.18, 0.129, 0.216, 0.067, 0.067, 0.082, 0.467, 0, 0, 0.78, 0.29, 0]
+    };
 // ---------------------------------------------------------------------------------------------------------------------
 /** Default color used based on the initial Mandelbrot coloring. It's an accent color / 1.9 brightness factor that
  * is hardcoded in the updateColorTheme method.

@@ -60,8 +60,6 @@ export class JuliaRenderer extends FractalRenderer {
         // IMPORTANT: use setPan (syncs DD + array) – keep this.pan canonical (TODO remove pan completely at some point)
         this.setPan(this.DEFAULT_PAN[0], this.DEFAULT_PAN[1]);
 
-        this.colorPalette = [...this.DEFAULT_PALETTE];
-
         // --- Perturbation state with DD precision ---
         this.refZ0 = [0, 0];
         this.refZ0DD = {
@@ -106,10 +104,24 @@ export class JuliaRenderer extends FractalRenderer {
         /** @type {Array.<JULIA_PALETTE>} */
         this.PALETTES = data.palettes || [];
 
-        this.currentPaletteIndex = 0;
+        // Derive default palette index from the first preset's paletteId
+        const firstPresetPaletteId = data.views[0]?.paletteId;
+        this.DEFAULT_PALETTE_INDEX = firstPresetPaletteId
+            ? this.PALETTES.findIndex(p => p.id === firstPresetPaletteId)
+            : 0;
+        if (this.DEFAULT_PALETTE_INDEX < 0) this.DEFAULT_PALETTE_INDEX = 0;
+
+        this.currentPaletteIndex = this.DEFAULT_PALETTE_INDEX;
         this.innerStops = this.PALETTES.length > 0
             ? new Float32Array(this.PALETTES[this.currentPaletteIndex].theme)
             : new Float32Array(DEFAULT_JULIA_PALETTE.theme);
+
+        // Initialize colorPalette (3-element RGB) for UI theming from keyColor
+        const initialPalette = this.PALETTES[this.currentPaletteIndex] || DEFAULT_JULIA_PALETTE;
+        const keyColor = initialPalette.keyColor ? hexToRGB(initialPalette.keyColor) : null;
+        this.colorPalette = keyColor
+            ? [keyColor.r, keyColor.g, keyColor.b]
+            : [initialPalette.theme[9], initialPalette.theme[10], initialPalette.theme[11]]; // Fallback to 4th stop
 
         this.currentCAnimationFrame = null;
         this.cAnimationActive = false; // Defers orbit rebuild during C-animation for performance
@@ -441,10 +453,17 @@ export class JuliaRenderer extends FractalRenderer {
      */
     reset() {
         this.c = [...this.DEFAULT_C];
-        this.currentPaletteIndex = 0;
-        this.innerStops = this.PALETTES.length > 0
-            ? new Float32Array(this.PALETTES[0].theme)
-            : new Float32Array([0, 0, 0, 1, 0.647, 0, 0, 0, 0, 1.2, 1.2, 1.0, 0.1, 0.1, 0.1]);
+
+        // Reset to the palette matching the first preset (Event Horizon, index 13)
+        this.currentPaletteIndex = this.DEFAULT_PALETTE_INDEX;
+        const resetPalette = this.PALETTES[this.currentPaletteIndex] || DEFAULT_JULIA_PALETTE;
+        this.innerStops = new Float32Array(resetPalette.theme);
+
+        // Update colorPalette for UI theming
+        const keyColor = resetPalette.keyColor ? hexToRGB(resetPalette.keyColor) : null;
+        this.colorPalette = keyColor
+            ? [keyColor.r, keyColor.g, keyColor.b]
+            : [resetPalette.theme[9], resetPalette.theme[10], resetPalette.theme[11]];
 
         this.orbitDirty = true;
         this._prevPan0 = NaN;
