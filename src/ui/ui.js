@@ -1392,7 +1392,7 @@ function initPresetButtonEvents() {
             const palette = fractalApp.PALETTES.find(p => p.id === preset.paletteId);
             if (palette && palette.keyColor) {
                 btn.style.borderColor = palette.keyColor;
-                btn.style.color = palette.keyColor;
+                btn.style.setProperty('--palette-color', palette.keyColor);
                 btn.classList.add('has-palette');
             }
         }
@@ -1420,7 +1420,7 @@ function initPresetButtonEvents() {
             const palette = fractalApp.PALETTES.find(p => p.id === preset.paletteId);
             if (palette && palette.keyColor) {
                 btn.style.borderColor = palette.keyColor;
-                btn.style.color = palette.keyColor;
+                btn.style.setProperty('--palette-color', palette.keyColor);
                 btn.classList.add('has-palette');
             }
         }
@@ -1708,7 +1708,7 @@ function initDiveButtons() {
                 const palette = fractalApp.PALETTES.find(p => p.id === dive.paletteId);
                 if (palette && palette.keyColor) {
                     btn.style.borderColor = palette.keyColor;
-                    btn.style.color = palette.keyColor;
+                    btn.style.setProperty('--palette-color', palette.keyColor);
                     btn.classList.add('has-palette');
                 }
             }

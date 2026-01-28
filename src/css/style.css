@@ -13,6 +13,7 @@
     --bg-color: rgba(24, 48, 13, 0.2);
     --mid-color: rgba(72, 144, 52, 0.6);
     --accent-color: rgba(180, 255, 106, 1);
+    --palette-color: var(--accent-color);
 }
 
 html {
@@ -358,7 +359,6 @@ button.dive {
     overflow-wrap: break-word;
     word-wrap: break-word;
     padding: 15px 10px;
-    color: rgb(from var(--accent-color) r g b / 0.8);
 }
 
 button.dive.active {
@@ -367,16 +367,15 @@ button.dive.active {
 
 button.dive.has-palette {
     border-width: 1px;
+    border-style: dotted;
 }
 
 button.dive.has-palette:hover {
-    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
-    text-shadow: 0 0 1px currentColor;
+    box-shadow: 0 2px 4px var(--palette-color), 0 -2px 4px var(--palette-color);
 }
 
 button.dive.has-palette.active {
-    border-color: currentColor;
-    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
+    box-shadow: 0 0 8px var(--palette-color), inset 0 0 2px var(--palette-color);
 }
 
 /* ========================================
@@ -850,20 +849,18 @@ dialog.dialog-overlay::backdrop {
 
 button.preset.has-palette {
     border-width: 1px;
+    border-style: dotted;
 }
 
 button.preset.has-palette:hover {
-    box-shadow: 0 2px 4px currentColor, 0 -2px 4px currentColor;
-    text-shadow: 0 0 1px currentColor;
+    box-shadow: 0 2px 4px var(--palette-color), 0 -2px 4px var(--palette-color);
 }
 
 button.preset.has-palette.active {
-    border-color: currentColor;
-    box-shadow: 0 0 8px currentColor, inset 0 0 2px currentColor;
+    box-shadow: 0 0 8px var(--palette-color), inset 0 0 2px var(--palette-color);
 }
 
 button.preset.user-preset {
-    color: rgb(from var(--accent-color) r g b / 0.9);
     border-color: rgb(from var(--accent-color) r g b / 0.4);
     position: relative;
 }
