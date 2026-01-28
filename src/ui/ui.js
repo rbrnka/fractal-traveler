@@ -680,7 +680,7 @@ export async function startJuliaDive(dives, index) {
 async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState);
+    await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState);
     // await fractalApp.animateRandomDemo(); // sin/cos original demo
 
     console.log("Demo ended");
