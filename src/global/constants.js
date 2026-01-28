@@ -112,7 +112,7 @@ export const ADAPTIVE_QUALITY_STEP = 50;
  * @default -1500 for optimal visual quality.
  * @type {number}
  */
-export const ADAPTIVE_QUALITY_MIN = DEBUG_MODE === DEBUG_LEVEL.NONE ? - 1500 : -3000;
+export const ADAPTIVE_QUALITY_MIN = DEBUG_MODE === DEBUG_LEVEL.NONE ? -1500 : -3000;
 
 /**
  * Cooldown between quality adjustments in milliseconds.

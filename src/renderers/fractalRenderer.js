@@ -551,13 +551,14 @@ class FractalRenderer extends Renderer {
 
     /**
      * Directly adjusts extraIterations for manual quality control.
-     * Useful for finding the right adaptiveQualityMin limit.
-     * @param {number} delta - Amount to change (positive = better quality, negative = lower quality)
+     * Useful for finding the right adaptiveQualityMin limit or boosting quality.
+     * @param {number} delta - Amount to change (positive = more iterations, negative = fewer)
      */
     adjustExtraIterations(delta) {
         const oldExtra = this.extraIterations;
-        // Clamp between adaptiveQualityMin and 0
-        this.extraIterations = Math.max(this.adaptiveQualityMin, Math.min(0, this.extraIterations + delta));
+        // Clamp between adaptiveQualityMin and its positive counterpart
+        const maxExtra = Math.abs(this.adaptiveQualityMin);
+        this.extraIterations = Math.max(this.adaptiveQualityMin, Math.min(maxExtra, this.extraIterations + delta));
         if (oldExtra !== this.extraIterations) {
             log(`extraIterations: ${oldExtra} → ${this.extraIterations} (delta: ${delta > 0 ? '+' : ''}${delta})`, this.constructor.name);
             this.draw();

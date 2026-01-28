@@ -266,8 +266,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'NumpadAdd': // Directly increase extraIterations (better quality)
-        case 'Equal':
+        case 'NumpadAdd': // Numpad + (Shift for soft step)
+        case 'Equal': // = or + key
             if (fractalApp.adaptiveQualityEnabled) {
                 const step = event.shiftKey ? 25 : 100;
                 fractalApp.adjustExtraIterations(step);
@@ -275,8 +275,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'NumpadSubtract': // Directly decrease extraIterations (lower quality)
-        case 'Minus':
+        case 'NumpadSubtract': // Numpad - (Shift for soft step)
+        case 'Minus': // - key
             if (fractalApp.adaptiveQualityEnabled) {
                 const step = event.shiftKey ? -25 : -100;
                 fractalApp.adjustExtraIterations(step);

@@ -495,11 +495,12 @@ export class DebugPanel {
             }
         }
 
-        // Quality level as percentage (0 = full reduction, 100 = baseline)
-        const qualityPct = Math.round(100 * (1 + extraIters / Math.abs(adaptiveMin)));
-        const qualityClass = qualityPct < 50 ? 'dbg-bad' : qualityPct < 80 ? 'dbg-warn' : 'dbg-ok';
+        // Quality level: 0 extraIters = 100%, negative = below, positive = above
+        const qualityPct = 100 + Math.round(100 * extraIters / Math.abs(adaptiveMin));
+        const qualityClass = extraIters < 0 ? (qualityPct < 50 ? 'dbg-bad' : 'dbg-warn') : (extraIters > 0 ? 'dbg-ok' : 'dbg-dim');
+        const maxExtra = Math.abs(adaptiveMin);
 
-        return `<span class="dbg-title">adaptQ</span>: <span class="${qualityClass}">${extraIters}</span>/<span class="dbg-dim">${adaptiveMin}</span> <span class="dbg-dim">(${qualityPct}%)</span> <span class="${stateClass}">[${state}]</span> <span class="dbg-dim">[${minFps}&larr;${targetFps} FPS]</span>`;
+        return `<span class="dbg-title">adaptQ</span>: <span class="${qualityClass}">${extraIters > 0 ? '+' : ''}${extraIters}</span> <span class="dbg-dim">[${adaptiveMin}..+${maxExtra}]</span> <span class="dbg-dim">(${qualityPct}%)</span> <span class="${stateClass}">[${state}]</span> <span class="dbg-dim">[${minFps}&larr;${targetFps} FPS]</span>`;
     }
 
     /**
