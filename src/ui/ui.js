@@ -202,7 +202,7 @@ export async function switchFractalMode(mode, preset = null) {
         }
 
         exitAnimationMode();
-        updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
+        updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
     }
 
     console.log(`Switched to ${mode === FRACTAL_TYPE.MANDELBROT ? 'Mandelbrot' : 'Julia'}`);
@@ -354,6 +354,19 @@ export function updatePaletteDropdownState() {
             btn.classList.toggle('active', currentIndex === paletteIndex);
         }
     });
+}
+
+/**
+ * Returns the current palette ID from the fractal renderer
+ * @returns {string|null}
+ */
+export function getCurrentPaletteId() {
+    const palettes = fractalApp?.PALETTES || [];
+    const currentIndex = fractalApp?.currentPaletteIndex;
+    if (palettes.length > 0 && currentIndex >= 0 && currentIndex < palettes.length) {
+        return palettes[currentIndex].id;
+    }
+    return null;
 }
 
 /**
@@ -732,7 +745,7 @@ export async function travelToPreset(presets, index) {
     updatePaletteDropdownState();
 
     exitAnimationMode();
-    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
+    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
 }
 
 /** Inits debug bar with various information permanently shown on the screen */
@@ -1439,7 +1452,7 @@ function initPresetButtonEvents() {
             }
 
             exitAnimationMode();
-            updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null);
+            updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
         });
 
         // Right click to delete
@@ -1856,12 +1869,13 @@ export function copyInfoToClipboard() {
     const viewPanX = ddValue(fractalApp.panDD.x);
     const viewPanY = ddValue(fractalApp.panDD.y);
     const randomTitle = Math.random().toString(36).slice(2).substring(2, 2 + 4);
+    const paletteId = getCurrentPaletteId() || '';
 
     let text =
         `{"id": "${randomTitle}", ` +
         (isJuliaMode() ? `"c": [${fractalApp.c}], ` : ``) +
         `"pan": [${esc(viewPanX.toFixed(24))}, ${esc(viewPanY.toFixed(24))}], ` +
-        `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}, "paletteId": ""}`;
+        `"rotation": ${normalizeRotation(fractalApp.rotation)}, "zoom": ${fractalApp.zoom}, "paletteId": "${paletteId}"}`;
 
     navigator.clipboard.writeText(text).then(function () {
         infoText.innerHTML = 'Copied to clipboard!';

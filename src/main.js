@@ -36,7 +36,8 @@ async function initFractalApp() {
         pan: [params.px, params.py],
         zoom: params.zoom,
         c: [params.cx, params.cy],
-        rotation: params.r
+        rotation: params.r,
+        paletteId: params.paletteId
     };
 
     const onDefault = () => {

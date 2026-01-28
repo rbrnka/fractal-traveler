@@ -24,6 +24,7 @@
  *      @property {number|null} [cy] Julia only
  *      @property {number|null} [zoom]
  *      @property {number|null} [r] rotation
+ *      @property {string|null} [paletteId] color palette ID
  * @description URL Preset is an object containing properties of specific point in the fractal on the scene compatible
  * with URL encoding. All array values (pan, c) are expanded
  */

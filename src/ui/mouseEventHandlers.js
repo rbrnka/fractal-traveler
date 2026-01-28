@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, isJuliaMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
@@ -605,9 +605,9 @@ function handleMouseUp(event) {
                         // Get the updated fractal coordinates after pan
                         const [newFx, newFy] = fractalApp.screenToFractal(mouseX, mouseY);
                         if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1]);
+                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1], getCurrentPaletteId());
                         } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation);
+                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation, null, null, getCurrentPaletteId());
                         }
                     });
 

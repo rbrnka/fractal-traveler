@@ -19,8 +19,9 @@ let urlParamsSet = false;
  * @param {number|null} cy Julia only
  * @param {number} zoom
  * @param {number} rotation
+ * @param {string|null} paletteId optional palette ID
  */
-export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null) {
+export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null, paletteId = null) {
     const formatNumber = (value) => {
         if (value == null) return null;
         // 15–17 digits is where JS double precision is meaningfully preserved.
@@ -36,6 +37,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
         r: rotation != null ? Number(rotation).toPrecision(17) : 0,
         cx: formatNumber(cx),
         cy: formatNumber(cy),
+        palette: paletteId,
     };
 
     if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -104,6 +106,7 @@ export function loadFractalParamsFromURL() {
             r: decodedParams.r != null ? parseFloat(decodedParams.r) : 0, // Rotation is not necessary to be defined
             cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
+            paletteId: decodedParams.palette || null,
         };
     } catch (e) {
         console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
