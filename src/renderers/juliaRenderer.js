@@ -502,6 +502,8 @@ export class JuliaRenderer extends FractalRenderer {
         const startStops = Array.from(this.innerStops);
 
         await new Promise((resolve) => {
+            // Store resolve so stopCurrentColorAnimations can call it if interrupted
+            this._colorAnimationResolve = resolve;
             let startTime = null;
 
             const step = (timestamp) => {
@@ -535,6 +537,7 @@ export class JuliaRenderer extends FractalRenderer {
                 if (progress < 1) {
                     this.currentColorAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this._colorAnimationResolve = null;
                     this.stopCurrentColorAnimations();
                     console.groupEnd();
                     resolve();
@@ -666,6 +669,7 @@ export class JuliaRenderer extends FractalRenderer {
     async animateTravelToPreset(preset, duration = 500, coloringCallback = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
+        this.stopCurrentColorAnimations();
 
         const durationWithSpeed = duration * (preset.speed ?? 1);
 

@@ -2,7 +2,7 @@
   "$schema": "./fractal.schema.json",
   "type": "JULIA",
   "views": [
-    {"id": "Default", "c": [-0.4388924480101485,0.5734033317450103], "zoom": 3.5, "rotation": 0, "pan": [0, 0] },
+    {"id": "Kissing Dragons", "c": [-0.835, -0.232], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "paletteId": "Event Horizon" },
     {"id": "Tentacles" , "c": [-0.8, 0.156], "zoom": 3.5, "rotation": 0, "pan": [0, 0], "paletteId": "Supernova Remnant"},
     {"id": "Seahorses", "c": [-0.7436399999999269,0.13182000000014282], "pan": [0,0 ], "rotation": 0.0022885911618804045, "zoom": 0.14420993610649507, "paletteId": "Ocean" },
     {"id": "Darkness", "c": [0.3586059096423313, 0.32287599414730545], "pan": [0.10410036735673252, -0.10610085351477151], "rotation": 278.6, "zoom": 1.8513247913869684 },
@@ -13,7 +13,6 @@
     {"id": "Black Holes", "c": [-0.4, 0.6], "zoom": 3.5, "rotation": 120, "pan": [0, 0], "paletteId": "Event Horizon" },
     {"id": "Serpent", "c": [-1.768967328653661, 0.0019446820495425676], "pan": [0, 0], "rotation": 0, "zoom": 0.2589096374896196 },
     {"id": "Dancing Snowflakes", "c": [-0.70176, -0.3842], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "paletteId": "Glacial" },
-    {"id": "Kissing Dragons", "c": [-0.835, -0.232], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "paletteId": "Event Horizon" },
     {"id": "Brain", "c": [-0.5925376099331446, 0.6218581017272109], "pan": [0, 0], "rotation": 135.8, "zoom": 0.12255613179332117 },
     {"id": "Main Cardioid", "c": [-0.75, 0.1], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "paletteId": "Aurora" },
     {"id": "Clown", "c": [-0.7500162952792153, 0.0032826017747574765], "zoom": 1.7, "rotation": 0, "pan": [0, 0], "paletteId": "Fire" },

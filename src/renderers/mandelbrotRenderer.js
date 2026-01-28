@@ -441,6 +441,8 @@ class MandelbrotRenderer extends FractalRenderer {
         const targetPhase = newPalette.phase || this.DEFAULT_PHASE;
 
         await new Promise((resolve) => {
+            // Store resolve so stopCurrentColorAnimations can call it if interrupted
+            this._colorAnimationResolve = resolve;
             let startTime = null;
 
             const step = (timestamp) => {
@@ -475,6 +477,7 @@ class MandelbrotRenderer extends FractalRenderer {
                 if (progress < 1) {
                     this.currentColorAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this._colorAnimationResolve = null;
                     this.stopCurrentColorAnimations();
                     resolve();
                 }

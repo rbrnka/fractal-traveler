@@ -85,6 +85,8 @@ class FractalRenderer extends Renderer {
         this.currentZoomAnimationFrame = null;
         this.currentRotationAnimationFrame = null;
         this.currentColorAnimationFrame = null;
+        /** Resolve callback for pending color animation (to handle interruption) */
+        this._colorAnimationResolve = null;
 
         this.demoActive = false;
         this.currentPresetIndex = 0;
@@ -104,10 +106,6 @@ class FractalRenderer extends Renderer {
 
         /** Runtime adjustable min iterations offset (initialized from constant) */
         this.adaptiveQualityMin = ADAPTIVE_QUALITY_MIN;
-
-        this.bestScore = NaN;
-        this.probeIters = NaN;
-
 
         /** @type PALETTE */
         this.colorPalette = [...this.DEFAULT_PALETTE];
@@ -742,6 +740,12 @@ class FractalRenderer extends Renderer {
             this.currentColorAnimationFrame = null;
         }
 
+        // Resolve any pending color animation promise so Promise.all doesn't hang
+        if (this._colorAnimationResolve) {
+            this._colorAnimationResolve();
+            this._colorAnimationResolve = null;
+        }
+
         // Update UI button state if cycling was stopped
         if (wasActivelyCycling && typeof window !== 'undefined') {
             const cycleBtn = document.getElementById('palette-cycle');
@@ -786,6 +790,8 @@ class FractalRenderer extends Renderer {
         const startPalette = [...this.colorPalette];
 
         await new Promise((resolve) => {
+            // Store resolve so stopCurrentColorAnimations can call it if interrupted
+            this._colorAnimationResolve = resolve;
             let startTime = null;
 
             const step = (timestamp) => {
@@ -804,6 +810,7 @@ class FractalRenderer extends Renderer {
                 if (progress < 1) {
                     this.currentColorAnimationFrame = requestAnimationFrame(step);
                 } else {
+                    this._colorAnimationResolve = null;
                     this.stopCurrentColorAnimations();
                     console.groupEnd();
                     resolve();
