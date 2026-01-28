@@ -610,6 +610,10 @@ class MandelbrotRenderer extends FractalRenderer {
 
         this.currentPresetIndex = preset.index || 0;
 
+        // Force a clean orbit rebuild with full grid search now that animation is complete
+        this.markOrbitDirty();
+        this.draw();
+
         console.log(`Travel complete.`);
         console.groupEnd();
     }
