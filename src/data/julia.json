@@ -17,6 +17,7 @@
     {"id": "Main Cardioid", "c": [-0.75, 0.1], "zoom": 3.5, "rotation": 150, "pan": [0, 0], "paletteId": "Aurora" },
     {"id": "Clown", "c": [-0.7500162952792153, 0.0032826017747574765], "zoom": 1.7, "rotation": 0, "pan": [0, 0], "paletteId": "Fire" },
     {"id": "Flash", "c": [-0.281617101877492,0.8393694179369712], "pan": [0.045667371209326783343396, -0.033015042267682218057878], "rotation": 2.039999999999994, "zoom": 1.295789074877871, "paletteId": "Electric" },
+    {"id": "Snowflakes", "c": [-0.16475525235629437,0.8374038729291197], "pan": [0,  0], "rotation": 2.039999999999994, "zoom": 2.0868812629815614, "paletteId": "Glacial" },
     {"id": "Cauliflower Medallion", "c": [-1.74876455, 0], "zoom": 0.45, "rotation": 90, "pan": [0, 0], "paletteId": "Emerald" },
     {"id": "Mitochondria", "c": [-0.1060055299522249, 0.9257297130853293], "rotation": 340, "pan": [0, 0], "zoom": 0.11, "paletteId": "Event Horizon" },
     {"id": "Mandebulbs", "c": [-0.12129038469447653, 0.649576297434808], "pan": [0.1045565992379065, 0.0073015054986378], "rotation": 313.6, "zoom": 1.6581189769919353, "paletteId": "Cyber Sunset"},
@@ -26,8 +27,7 @@
     {"id": "Chromosome", "c": [0.1294753560021048, 0.6256313013048348], "pan": [0, 0], "rotation": 110.58, "zoom": 1.322314018297482, "paletteId": "Electric" },
     {"id": "Misiurewicz Point", "c": [0.3072075408559901, 0.48395526205533185], "pan": [0, 0], "rotation": 310.15, "zoom": 2.1068875547385417 },
     {"id": "Flowers", "c": [-1.768927341692215, -0.009640117346988308] ,"pan": [0, 0], "rotation": 0, "zoom": 0.29302566239489597, "paletteId": "Deep Nebula" },
-    {"id": "Black Holes", "c": [0.3633977303405407, 0.3166912692104581], "pan": [0.12908510596292824, -0.13588306846615342], "rotation": 97.4, "zoom": 0.12982442828873209, "paletteId": "Event Horizon" },
-    {"id": "Snowflakes", "c": [-0.16475525235629437,0.8374038729291197], "pan": [0,  0], "rotation": 2.039999999999994, "zoom": 2.0868812629815614, "paletteId": "Glacial" }
+    {"id": "Black Holes", "c": [0.3633977303405407, 0.3166912692104581], "pan": [0.12908510596292824, -0.13588306846615342], "rotation": 97.4, "zoom": 0.12982442828873209, "paletteId": "Event Horizon" }
   ],
   "dives": [
     {"id": "Orbiting Black holes", "pan": [0, 0], "rotation": 0, "zoom": 1.7, "startC": [-0.246, 0.64], "step": 0.000005, "cxDirection": 1, "cyDirection": 1, "endC": [-0.2298, 0.67], "paletteId": "Event Horizon" },
