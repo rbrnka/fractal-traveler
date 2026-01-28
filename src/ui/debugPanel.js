@@ -1,5 +1,11 @@
 import {ddValue, esc, isTouchDevice} from "../global/utils";
-import {log, LOG_LEVEL} from "../global/constants";
+import {
+    ADAPTIVE_QUALITY_MIN,
+    ADAPTIVE_QUALITY_THRESHOLD_HIGH,
+    ADAPTIVE_QUALITY_THRESHOLD_LOW,
+    log,
+    LOG_LEVEL
+} from "../global/constants";
 import {getFractalMode, isAnimationActive, isJuliaMode} from "./ui";
 
 /**
@@ -82,11 +88,16 @@ export class DebugPanel {
 
         // ---- Persistent perf state ----
         this.perf = {
-            // rAF timing
+            // rAF timing (debug panel update rate - typically monitor refresh rate)
             lastRafTs: performance.now(),
             fps: 0,
             frameMs: 0,
             frameMsSmoothed: NaN,
+
+            // Actual render FPS (how often draw() is called)
+            drawCount: 0,
+            lastDrawCountReset: performance.now(),
+            renderFps: 0,
 
             // CPU timing of this panel update itself (not your fractal draw)
             panelCpuMs: 0,
@@ -97,6 +108,7 @@ export class DebugPanel {
             gpuMs: NaN,
             gpuMsSmoothed: NaN,
             gpuDisjoint: false,
+            gpuLastUpdateTs: 0,  // timestamp of last GPU measurement
 
             // Timer query bookkeeping
             queryInFlight: null,
@@ -153,6 +165,9 @@ export class DebugPanel {
         if (!this.extTimer || !this.gl) return;
         if (this.perf.queryInFlight) return; // keep it simple: one in flight
 
+        // Track draw calls for render FPS
+        this.perf.drawCount++;
+
         // EXT_disjoint_timer_query is async; begin/end must bracket the draw call
         const q = this.extTimer.createQueryEXT();
         this.extTimer.beginQueryEXT(this.extTimer.TIME_ELAPSED_EXT, q);
@@ -193,6 +208,7 @@ export class DebugPanel {
             const ms = ns / 1e6;
             this.perf.gpuMs = ms;
             this.perf.gpuMsSmoothed = this.smooth(this.perf.gpuMsSmoothed, ms, 0.15);
+            this.perf.gpuLastUpdateTs = performance.now();
         } else {
             this.perf.gpuMs = NaN;
             // keep previous smoothed value; disjoint is a transient condition
@@ -213,12 +229,22 @@ export class DebugPanel {
         // Poll GPU timers first (results arrive later)
         this.pollGpuTimers();
 
-        // rAF timing / FPS
+        // rAF timing (debug panel update rate)
         const dt = ts - this.perf.lastRafTs;
         this.perf.lastRafTs = ts;
         this.perf.frameMs = dt;
         this.perf.frameMsSmoothed = this.smooth(this.perf.frameMsSmoothed, dt, 0.1);
         this.perf.fps = dt > 0 ? 1000 / dt : 0;
+
+        // Calculate actual render FPS (based on draw() calls)
+        const now = performance.now();
+        const drawCountInterval = now - this.perf.lastDrawCountReset;
+        if (drawCountInterval >= 1000) {
+            // Update render FPS every second
+            this.perf.renderFps = (this.perf.drawCount * 1000) / drawCountInterval;
+            this.perf.drawCount = 0;
+            this.perf.lastDrawCountReset = now;
+        }
 
         const dpr = window.devicePixelRatio || 1;
 
@@ -321,8 +347,8 @@ export class DebugPanel {
                         : "ok";
 
         const fpsLevel =
-            this.perf.fps < 30 ? "bad"
-                : this.perf.fps < 50 ? "warn"
+            this.perf.renderFps < 30 ? "bad"
+                : this.perf.renderFps < 50 ? "warn"
                     : "ok";
 
         // panel CPU time (debug UI overhead)
@@ -330,12 +356,18 @@ export class DebugPanel {
         this.perf.panelCpuMs = panelCpuMs;
         this.perf.panelCpuMsSmoothed = this.smooth(this.perf.panelCpuMsSmoothed, panelCpuMs, 0.2);
 
+        // Check if GPU measurements are stale (no recent draws)
+        const gpuAge = performance.now() - this.perf.gpuLastUpdateTs;
+        const gpuIsStale = gpuAge > 500;
+
         const gpuHint =
             this.perf.gpuSupported
                 ? (Number.isFinite(gpuSmooth)
-                    ? (gpuSmooth > frameBudgetMs ? "Likely GPU-bound" : "GPU OK")
-                    : "GPU timer available (wrap draw with begin/end)")
-                : "No GPU timer support";
+                    ? (gpuIsStale
+                        ? "static"
+                        : (gpuSmooth > frameBudgetMs ? "GPU-bound" : "OK"))
+                    : "awaiting measurement")
+                : "No GPU timer";
 
         // ---------- Output ----------
 
@@ -418,12 +450,78 @@ export class DebugPanel {
             ref drift=<span class="${levelClass(driftLevel)}">${esc(driftViewUnits.toFixed(4))}</span> <span class="dbg-dim">view-units</span><br/>
             <br/>
             <span class="dbg-title">———— Performance ————</span><br/>
-            <span class="dbg-title">FPS</span>=<span class="${levelClass(fpsLevel)}">${esc(this.perf.fps.toFixed(1))}</span> <span class="dbg-dim">(${esc(this.perf.frameMsSmoothed?.toFixed?.(1) ?? '?')}ms/frame)</span><br/>
-            <span class="dbg-title">GPU</span>=<span class="${levelClass(gpuLevel)}">${esc(Number.isFinite(gpuSmooth) ? gpuSmooth.toFixed(2) + 'ms' : 'n/a')}</span> <span class="dbg-dim">${esc(gpuHint)}</span><br/>
+            <span class="dbg-title">renderFPS</span>=<span class="${levelClass(fpsLevel)}">${esc(this.perf.renderFps.toFixed(1))}</span> <span class="dbg-dim">(rAF=${esc(this.perf.fps.toFixed(0))})</span><br/>
+            <span class="dbg-title">GPU</span>=<span class="${levelClass(gpuLevel)}">${this._renderGpuTime(gpuSmooth)}</span> <span class="dbg-dim">${esc(gpuHint)}</span><br/>
+            ${this._renderAdaptiveQuality()}<br/>
             `;
 
         requestAnimationFrame(this.update);
     };
+
+    /**
+     * Renders adaptive quality status for the debug panel.
+     * @returns {string} HTML string for adaptive quality info
+     */
+    _renderAdaptiveQuality() {
+        const enabled = this.fractalApp.adaptiveQualityEnabled;
+
+        // Calculate FPS thresholds for display
+        const minFps = Math.round(1000 / ADAPTIVE_QUALITY_THRESHOLD_HIGH);
+        const targetFps = Math.round(1000 / ADAPTIVE_QUALITY_THRESHOLD_LOW);
+
+        if (!enabled) {
+            return `<span class="dbg-title">adaptQ</span>: <span class="dbg-dim">OFF</span> <span class="dbg-dim">(F to toggle)</span>`;
+        }
+
+        const extraIters = this.fractalApp.extraIterations || 0;
+        const adaptiveMin = this.fractalApp.adaptiveQualityMin || ADAPTIVE_QUALITY_MIN;
+        const gpuMs = this.perf.gpuMsSmoothed;
+        const interacting = this.fractalApp.interactionActive;
+
+        // Determine current state
+        let state = 'stable';
+        let stateClass = 'dbg-ok';
+
+        if (interacting) {
+            state = 'paused';
+            stateClass = 'dbg-dim';
+        } else if (Number.isFinite(gpuMs)) {
+            if (gpuMs > ADAPTIVE_QUALITY_THRESHOLD_HIGH && extraIters > adaptiveMin) {
+                state = 'reducing';
+                stateClass = 'dbg-warn';
+            } else if (gpuMs < ADAPTIVE_QUALITY_THRESHOLD_LOW && extraIters < 0) {
+                state = 'restoring';
+                stateClass = 'dbg-ok';
+            }
+        }
+
+        // Quality level as percentage (0 = full reduction, 100 = baseline)
+        const qualityPct = Math.round(100 * (1 + extraIters / Math.abs(adaptiveMin)));
+        const qualityClass = qualityPct < 50 ? 'dbg-bad' : qualityPct < 80 ? 'dbg-warn' : 'dbg-ok';
+
+        return `<span class="dbg-title">adaptQ</span>: <span class="${qualityClass}">${extraIters}</span>/<span class="dbg-dim">${adaptiveMin}</span> <span class="dbg-dim">(${qualityPct}%)</span> <span class="${stateClass}">[${state}]</span> <span class="dbg-dim">[${minFps}&larr;${targetFps} FPS]</span>`;
+    }
+
+    /**
+     * Renders GPU time with staleness indicator.
+     * @param {number} gpuSmooth - Smoothed GPU time in ms
+     * @returns {string} HTML string for GPU time
+     */
+    _renderGpuTime(gpuSmooth) {
+        if (!Number.isFinite(gpuSmooth)) {
+            return 'n/a';
+        }
+
+        const now = performance.now();
+        const gpuAge = now - this.perf.gpuLastUpdateTs;
+        const isStale = gpuAge > 500; // Consider stale after 500ms without updates
+
+        if (isStale) {
+            return `<span class="dbg-dim">${gpuSmooth.toFixed(2)}ms (stale)</span>`;
+        }
+
+        return `${gpuSmooth.toFixed(2)}ms`;
+    }
 
     /** Toggle the visibility of the debug panel. */
     toggle = () => {

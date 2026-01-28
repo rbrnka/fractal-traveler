@@ -261,6 +261,29 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
+        case 'KeyF': // Toggle adaptive quality
+            fractalApp.toggleAdaptiveQuality();
+            handled = true;
+            break;
+
+        case 'NumpadAdd': // Directly increase extraIterations (better quality)
+        case 'Equal':
+            if (fractalApp.adaptiveQualityEnabled) {
+                const step = event.shiftKey ? 25 : 100;
+                fractalApp.adjustExtraIterations(step);
+            }
+            handled = true;
+            break;
+
+        case 'NumpadSubtract': // Directly decrease extraIterations (lower quality)
+        case 'Minus':
+            if (fractalApp.adaptiveQualityEnabled) {
+                const step = event.shiftKey ? -25 : -100;
+                fractalApp.adjustExtraIterations(step);
+            }
+            handled = true;
+            break;
+
         case 'KeyP':
             showEditCoordsDialog();
             handled = true;

@@ -80,6 +80,46 @@ export const FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED = true;
  */
 export const FF_DEMO_ALWAYS_RESETS = false;
 
+/**
+ * Feature flag for adaptive quality control.
+ * When enabled, automatically adjusts iteration count based on GPU performance.
+ * @type {boolean}
+ */
+export const FF_ADAPTIVE_QUALITY = false;
+
+/**
+ * GPU time threshold in ms above which quality will be reduced.
+ * @default 40 ms (~25 FPS).
+ * @type {number}
+ */
+export const ADAPTIVE_QUALITY_THRESHOLD_HIGH = 1000 / 25;
+
+/**
+ * GPU time threshold in ms below which quality will be restored
+ * @default 16 ms (~60 FPS).
+ * @type {number}
+ */
+export const ADAPTIVE_QUALITY_THRESHOLD_LOW = 1000 / 60;
+
+/**
+ * Iteration adjustment step per quality change.
+ * @type {number}
+ */
+export const ADAPTIVE_QUALITY_STEP = 50;
+
+/**
+ * Minimum extraIterations offset (most aggressive quality reduction).
+ * @default -1500 for optimal visual quality.
+ * @type {number}
+ */
+export const ADAPTIVE_QUALITY_MIN = DEBUG_MODE === DEBUG_LEVEL.NONE ? - 1500 : -3000;
+
+/**
+ * Cooldown between quality adjustments in milliseconds.
+ * @type {number}
+ */
+export const ADAPTIVE_QUALITY_COOLDOWN = 500;
+
 // endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 /**
  * Application name
@@ -194,37 +234,3 @@ export const PI = USE_PRECISE_PI ? Math.PI : 3.1415926535;
  */
 export const SCREENSHOT_JPEG_COMPRESSION_QUALITY = 0.95;
 // ---------------------------------------------------------------------------------------------------------------------
-/**
- * Controls hint text in the UI.
- * @type {string}
- */
-export const CONTROLS_TOOLTIP = [
-"--- Mouse",
-"- Left Button Drag: Pan",
-"- Left Button Hold: Zoom in",
-"- Right Button Drag: Rotate",
-"- Right Button Hold: Zoom out",
-"- Wheel: Zoom",
-"- Left Button Single Click: Center & Generate URL link",
-"- Left/Right Button Double Click: Zoom-in/out & Center",
-"- Middle Button Drag: Toggle Julia preview in Mandelbrot mode",
-"",
-"--- Keyboard",
-"- F11: Toggle fullscreen",
-"- Enter: Toggle header",
-"- Q / W: Rotate counter-clockwise/clockwise (Shift: Slower speed)",
-"- E: Toggle guiding lines",
-"- Y: Switch between Julia and Mandelbrot with persistence",
-"- Shift + R: Reset",
-"- T: Randomize color palette (Shift: cyclic, Alt: reset)",
-"- Shift + S: Take screenshot",
-"- Alt + S: Save current view",
-"- Space: Zoom-in (Ctrl/Alt: Zoom-out, Shift: Smooth)",
-"- A: Force resize",
-"- L: Toggle debug panel",
-"- Left / Right: Horizontal pan (Shift: smoother step)",
-"- Up / Down: Vertical pan (Shift: smooth step)",
-"- Alt + Left / Right: Julia cx stepping (Shift: smooth)",
-"- Alt + Up / Down: Julia cy stepping (Shift: smooth)",
-"- Num 1-9: Load Preset (Shift: Start dive)"
-].join("\n");

@@ -12,10 +12,16 @@ import {
     rgbToHsl
 } from "../global/utils";
 import {
+    ADAPTIVE_QUALITY_COOLDOWN,
+    ADAPTIVE_QUALITY_MIN,
+    ADAPTIVE_QUALITY_STEP,
+    ADAPTIVE_QUALITY_THRESHOLD_HIGH,
+    ADAPTIVE_QUALITY_THRESHOLD_LOW,
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
     DEBUG_MODE,
     EASE_TYPE,
+    FF_ADAPTIVE_QUALITY,
     FF_DEMO_ALWAYS_RESETS,
     log,
     PI
@@ -89,6 +95,15 @@ class FractalRenderer extends Renderer {
         /** @type {number} */
         this.iterations = 0;
         this.extraIterations = 0;
+
+        /** Timestamp of last adaptive quality adjustment */
+        this.adaptiveQualityLastAdjustment = 0;
+
+        /** Runtime toggle for adaptive quality (initialized from constant) */
+        this.adaptiveQualityEnabled = FF_ADAPTIVE_QUALITY;
+
+        /** Runtime adjustable min iterations offset (initialized from constant) */
+        this.adaptiveQualityMin = ADAPTIVE_QUALITY_MIN;
 
         this.bestScore = NaN;
         this.probeIters = NaN;
@@ -466,6 +481,87 @@ class FractalRenderer extends Renderer {
         debugPanel?.beginGpuTimer();
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
         debugPanel?.endGpuTimer();
+        this.adjustAdaptiveQuality();
+    }
+
+    /**
+     * Adjusts extraIterations based on GPU performance metrics.
+     * Called after each frame when adaptive quality is enabled.
+     */
+    adjustAdaptiveQuality() {
+        if (!this.adaptiveQualityEnabled) return;
+        if (!debugPanel?.perf) return;
+
+        const gpuMs = debugPanel.perf.gpuMsSmoothed;
+        if (!Number.isFinite(gpuMs)) return;
+
+        // Don't adjust during active interaction (avoid jarring quality shifts while dragging)
+        if (this.interactionActive) return;
+
+        // Cooldown between adjustments
+        const now = performance.now();
+        if (now - this.adaptiveQualityLastAdjustment < ADAPTIVE_QUALITY_COOLDOWN) return;
+
+        // Reduce quality if GPU time too high
+        if (gpuMs > ADAPTIVE_QUALITY_THRESHOLD_HIGH) {
+            const newExtra = Math.max(this.adaptiveQualityMin, this.extraIterations - ADAPTIVE_QUALITY_STEP);
+            if (newExtra !== this.extraIterations) {
+                this.extraIterations = newExtra;
+                this.adaptiveQualityLastAdjustment = now;
+            }
+        }
+        // Restore quality if GPU time is comfortable and we're below baseline
+        else if (gpuMs < ADAPTIVE_QUALITY_THRESHOLD_LOW && this.extraIterations < 0) {
+            const newExtra = Math.min(0, this.extraIterations + ADAPTIVE_QUALITY_STEP);
+            if (newExtra !== this.extraIterations) {
+                this.extraIterations = newExtra;
+                this.adaptiveQualityLastAdjustment = now;
+            }
+        }
+    }
+
+    /**
+     * Toggles adaptive quality on/off.
+     * When turning off, resets extraIterations to 0.
+     */
+    toggleAdaptiveQuality() {
+        this.adaptiveQualityEnabled = !this.adaptiveQualityEnabled;
+        if (!this.adaptiveQualityEnabled) {
+            this.extraIterations = 0;
+        }
+        log(`Adaptive quality: ${this.adaptiveQualityEnabled ? 'ON' : 'OFF'}`, this.constructor.name);
+        this.draw();
+    }
+
+    /**
+     * Adjusts the minimum iterations offset for adaptive quality.
+     * @param {number} delta - Amount to change (positive = less aggressive, negative = more aggressive)
+     */
+    adjustAdaptiveQualityMin(delta) {
+        const oldMin = this.adaptiveQualityMin;
+        // Clamp between -3000 (very aggressive) and -100 (minimal)
+        this.adaptiveQualityMin = Math.max(-3000, Math.min(-100, this.adaptiveQualityMin + delta));
+        // Also clamp current extraIterations to new min
+        if (this.extraIterations < this.adaptiveQualityMin) {
+            this.extraIterations = this.adaptiveQualityMin;
+        }
+        log(`Adaptive quality min: ${oldMin} → ${this.adaptiveQualityMin} (delta: ${delta > 0 ? '+' : ''}${delta})`, this.constructor.name);
+        this.draw();
+    }
+
+    /**
+     * Directly adjusts extraIterations for manual quality control.
+     * Useful for finding the right adaptiveQualityMin limit.
+     * @param {number} delta - Amount to change (positive = better quality, negative = lower quality)
+     */
+    adjustExtraIterations(delta) {
+        const oldExtra = this.extraIterations;
+        // Clamp between adaptiveQualityMin and 0
+        this.extraIterations = Math.max(this.adaptiveQualityMin, Math.min(0, this.extraIterations + delta));
+        if (oldExtra !== this.extraIterations) {
+            log(`extraIterations: ${oldExtra} → ${this.extraIterations} (delta: ${delta > 0 ? '+' : ''}${delta})`, this.constructor.name);
+            this.draw();
+        }
     }
 
     /**
