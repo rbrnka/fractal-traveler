@@ -499,14 +499,6 @@ class MandelbrotRenderer extends FractalRenderer {
         console.groupCollapsed(`%c ${this.constructor.name}: animateTravelToPreset`, CONSOLE_GROUP_STYLE);
         log(`Traveling to preset: ${JSON.stringify(preset)}`);
 
-        // Handle palette transition upfront if needed
-        if (preset.paletteId) {
-            const targetPaletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
-            if (targetPaletteIndex >= 0 && targetPaletteIndex !== this.currentPaletteIndex) {
-                await this.animatePaletteByIdTransition(preset, 500, coloringCallback);
-            }
-        }
-
         const presetRotation = normalizeRotation(preset.rotation ?? this.DEFAULT_ROTATION);
 
         // Determine how far we are from the preset
@@ -519,51 +511,102 @@ class MandelbrotRenderer extends FractalRenderer {
         const panDist = Math.hypot(this.pan[0] - preset.pan[0], this.pan[1] - preset.pan[1]);
         const viewSize = Math.max(this.zoom, preset.zoom);
         const panRatio = panDist / viewSize;
-        log(panRatio.toString());
         const atTargetPan = panRatio < 0.1; // Essentially same position
         const nearTargetPan = panRatio < 3.0; // Within 3 view-widths
 
-        const extraSpins = (Math.random() > 0.5 ? 1 : -1) * (PI * 2 + Math.random() * PI * 2);
+        // Palette proximity check
+        let targetPaletteIndex = -1;
+        let atTargetPalette = true;
+        if (preset.paletteId) {
+            targetPaletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+            atTargetPalette = targetPaletteIndex < 0 || targetPaletteIndex === this.currentPaletteIndex;
+        }
+
         const zoomInDurationWithSpeed = zoomInDuration * (preset.speed ?? 1);
 
         // Readjust duration scales with how far off we are (min 500ms, max panDuration)
         const readjustDuration = Math.max(500, Math.min(panDuration, 300 + panRatio * 200 + zoomRatio * 150));
 
-        if (atTargetZoom && atTargetPan) {
-            // Only need to rotate
+        if (atTargetZoom && atTargetPan && atTargetPalette) {
+            // Already at target - only rotate if needed
             await this.animateRotationTo(presetRotation, zoomOutDuration, EASE_TYPE.QUINT);
+        } else if (atTargetZoom && atTargetPan) {
+            // At position and zoom, but different palette - rotate with palette transition
+            const animations = [
+                this.animateRotationTo(presetRotation, zoomOutDuration, EASE_TYPE.QUINT)
+            ];
+            if (!atTargetPalette) {
+                animations.push(this.animatePaletteByIdTransition(preset, zoomOutDuration, coloringCallback));
+            }
+            await Promise.all(animations);
         } else if (nearTargetZoom && nearTargetPan) {
             // Close to preset - smooth readjustment without cinematic animation
             log(`Near preset, readjusting (zoomRatio=${zoomRatio.toFixed(2)}, panRatio=${panRatio.toFixed(2)})`);
-            await Promise.all([
+            const animations = [
                 this.animatePanAndZoomTo(preset.pan, preset.zoom, readjustDuration, EASE_TYPE.CUBIC),
                 this.animateRotationTo(presetRotation, readjustDuration, EASE_TYPE.CUBIC)
-            ]);
+            ];
+            if (!atTargetPalette) {
+                animations.push(this.animatePaletteByIdTransition(preset, readjustDuration, coloringCallback));
+            }
+            await Promise.all(animations);
         } else if (atTargetZoom) {
-            // Same zoom but panned far away - pan back with rotation
-            await Promise.all([
+            // Same zoom but panned far away - pan back with rotation and palette
+            const animations = [
                 this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC),
                 this.animateRotationTo(presetRotation, panDuration, EASE_TYPE.CUBIC)
-            ]);
+            ];
+            if (!atTargetPalette) {
+                animations.push(this.animatePaletteByIdTransition(preset, panDuration, coloringCallback));
+            }
+            await Promise.all(animations);
         } else if (atTargetPan) {
-            // Same position, just zoom and rotate
-            await this.animateZoomRotationTo(preset.zoom, presetRotation, readjustDuration, EASE_TYPE.QUINT);
+            // Same position, just zoom and rotate with palette
+            const animations = [
+                this.animateZoomRotationTo(preset.zoom, presetRotation, readjustDuration, EASE_TYPE.QUINT)
+            ];
+            if (!atTargetPalette) {
+                animations.push(this.animatePaletteByIdTransition(preset, readjustDuration, coloringCallback));
+            }
+            await Promise.all(animations);
         } else {
             // Full 3-stage cinematic animation:
+
             // Stage 1: Zoom out to default zoom with random rotation (if significantly zoomed in)
             const needsZoomOut = this.zoom < this.DEFAULT_ZOOM * 0.9;
             if (needsZoomOut) {
                 const zoomOutRotation = this.rotation + (Math.random() * PI * 2 - PI);
                 await this.animateZoomRotationTo(this.DEFAULT_ZOOM, zoomOutRotation, zoomOutDuration, EASE_TYPE.QUINT);
             }
+
             // Stage 2: Pan to target coordinates
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
-            // Stage 3: Zoom in with cinematic rotation (1-2 extra spins)
-            await this.animateZoomRotationTo(preset.zoom, presetRotation + extraSpins, zoomInDurationWithSpeed, EASE_TYPE.NONE);
+
+            // Stage 3: Zoom in with cinematic rotation AND palette transition in parallel
+            // Calculate extra rotations: 1-2 full spins in random direction
+            const extraFullRotations = 1 + Math.floor(Math.random() * 2); // 1 or 2 full rotations
+            const rotationDirection = Math.random() > 0.5 ? 1 : -1;
+
+            // Calculate shortest angular path from current to preset rotation
+            let deltaAngle = presetRotation - this.rotation;
+            while (deltaAngle > PI) deltaAngle -= PI * 2;
+            while (deltaAngle < -PI) deltaAngle += PI * 2;
+
+            // Target includes the path to preset plus extra full rotations
+            // This will end exactly at presetRotation after normalization
+            const targetRotationWithSpins = this.rotation + deltaAngle + (rotationDirection * extraFullRotations * PI * 2);
+
+            const finalAnimations = [
+                this.animateZoomRotationTo(preset.zoom, targetRotationWithSpins, zoomInDurationWithSpeed, EASE_TYPE.NONE)
+            ];
+            if (!atTargetPalette) {
+                finalAnimations.push(this.animatePaletteByIdTransition(preset, zoomInDurationWithSpeed, coloringCallback));
+            }
+            await Promise.all(finalAnimations);
         }
 
-        // Ensure rotation ends at exact preset value
-        this.rotation = presetRotation;
+        // Normalize rotation to ensure it's exactly at preset value (handles 2π wrapping)
+        this.rotation = normalizeRotation(this.rotation);
 
         this.currentPresetIndex = preset.index || 0;
 
