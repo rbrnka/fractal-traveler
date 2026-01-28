@@ -90,60 +90,7 @@ global.createMockCanvas = (width = 800, height = 600, id = 'fractalCanvas') => {
 };
 
 // =============================================================================
-// Factory: Create Mock FractalApp (standard)
-// =============================================================================
-// global.createMockFractalApp = (canvas = null) => {
-//     const mockCanvas = canvas || global.createMockCanvas();
-//
-//     const fractalApp = {
-//         canvas: mockCanvas,
-//         pan: [0, 0],
-//         c: [0, 0],
-//         rotation: 0,
-//         zoom: 3.5,
-//
-//         MAX_ZOOM: 0.000017,
-//         MIN_ZOOM: 400,
-//         DIVES: [{}, {}, {}],
-//
-//         // Animation methods
-//         animatePanTo: jest.fn(() => Promise.resolve()),
-//         animateZoomTo: jest.fn(() => Promise.resolve()),
-//         animatePanBy: jest.fn(() => Promise.resolve()),
-//         animatePanAndZoomTo: jest.fn(() => Promise.resolve()),
-//         animateToC: jest.fn(() => Promise.resolve()),
-//         animateInfiniteRotation: jest.fn(() => Promise.resolve()),
-//         animateTravelToPreset: jest.fn(() => Promise.resolve()),
-//         animateDive: jest.fn(() => Promise.resolve()),
-//
-//         // Control methods
-//         stopCurrentRotationAnimation: jest.fn(),
-//         stopAllNonColorAnimations: jest.fn(),
-//         noteInteraction: jest.fn(),
-//
-//         // Rendering methods
-//         draw: jest.fn(),
-//         updateInfo: jest.fn(),
-//         updateInfoOnAnimationFinished: jest.fn(),
-//         updateJuliaSliders: jest.fn(),
-//
-//         // Pan/zoom methods
-//         addPan: jest.fn((dx, dy) => {
-//             fractalApp.pan[0] += dx / 100;
-//             fractalApp.pan[1] += dy / 100;
-//         }),
-//         screenToFractal: jest.fn((x, y) => [x / 100, y / 100]),
-//         screenToViewVector: jest.fn((x, y) => [x / 100, y / 100]),
-//         setZoomKeepingAnchor: jest.fn((targetZoom) => {
-//             fractalApp.zoom = targetZoom;
-//         }),
-//     };
-//
-//     return fractalApp;
-// };
-
-// =============================================================================
-// Factory: Create Mock FractalApp with DD Precision (for deep zoom tests)
+// Factory: Create Mock FractalApp (with DD Precision for deep zoom tests)
 // =============================================================================
 global.createMockFractalApp = (canvas = null) => {
     const mockCanvas = canvas || global.createMockCanvas();
@@ -252,8 +199,9 @@ global.createMockFractalApp = (canvas = null) => {
 // =============================================================================
 global.createMockUI = () => {
     // Create the object structure first
+    // Default to Julia mode to match expected test behavior (tests can override with mockReturnValue)
     const mockUI = {
-        fractalMode: FRACTAL_TYPE.MANDELBROT,
+        fractalMode: FRACTAL_TYPE.JULIA,
 
         // Mode management
         getFractalMode: jest.fn(() => 'mandelbrot'),
@@ -310,38 +258,9 @@ global.createMockUI = () => {
 
 // =============================================================================
 // Global UI Module Mock (for jest.mock usage)
+// Uses createMockUI() to avoid duplication - single source of truth
 // =============================================================================
-global.mockUIModule = {
-    getFractalMode: jest.fn(() => 'mandelbrot'),
-    switchFractalMode: jest.fn(() => Promise.resolve()),
-    switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
-    isJuliaMode: jest.fn(() => true),
-    enableJuliaMode: jest.fn(),
-    enableMandelbrotMode: jest.fn(),
-    enableRiemannMode: jest.fn(),
-    updatePaletteDropdownState: jest.fn(),
-    updateColorTheme: jest.fn(),
-    updatePaletteCycleButtonState: jest.fn(),
-    randomizeColors: jest.fn(),
-    resetAppState: jest.fn(),
-    updateInfo: jest.fn(),
-    isAnimationActive: jest.fn(() => false),
-    toggleDemo: jest.fn(() => Promise.resolve()),
-    startJuliaDive: jest.fn(() => Promise.resolve()),
-    travelToPreset: jest.fn(() => Promise.resolve()),
-    resetPresetAndDiveButtonStates: jest.fn(),
-    resetActivePresetIndex: jest.fn(),
-    getUserPresets: jest.fn(() => []),
-    toggleDebugMode: jest.fn(),
-    toggleCenterLines: jest.fn(),
-    toggleHeader: jest.fn(),
-    captureScreenshot: jest.fn(),
-    showSaveViewDialog: jest.fn(),
-    showEditCoordsDialog: jest.fn(),
-    copyInfoToClipboard: jest.fn(),
-    reset: jest.fn(() => Promise.resolve()),
-    initUI: jest.fn(() => Promise.resolve()),
-};
+global.mockUIModule = global.createMockUI();
 
 // =============================================================================
 // Setup Default DOM Structure
@@ -375,6 +294,61 @@ global.appendCanvasToDOM = (canvas) => {
 // =============================================================================
 global.cleanupDOM = () => {
     document.body.innerHTML = '';
+};
+
+// =============================================================================
+// Factory: Create Mock Adaptive Quality Renderer
+// =============================================================================
+/**
+ * Creates a mock renderer for testing adaptive quality logic.
+ * @param {Function} getGpuMs - Getter function that returns the current GPU timing value
+ * @param {Object} constants - Object containing adaptive quality constants
+ * @returns {Object} Mock renderer with adjustAdaptiveQuality method
+ */
+global.createMockAdaptiveQualityRenderer = (getGpuMs, constants) => {
+    const {
+        ADAPTIVE_QUALITY_COOLDOWN,
+        ADAPTIVE_QUALITY_MIN,
+        ADAPTIVE_QUALITY_STEP,
+        ADAPTIVE_QUALITY_THRESHOLD_HIGH,
+        ADAPTIVE_QUALITY_THRESHOLD_LOW,
+    } = constants;
+
+    return {
+        extraIterations: 0,
+        adaptiveQualityLastAdjustment: 0,
+        interactionActive: false,
+
+        adjustAdaptiveQuality() {
+            const gpuMsValue = getGpuMs();
+
+            // Check if perf data is available
+            if (gpuMsValue === null || gpuMsValue === undefined) return;
+
+            const gpuMs = gpuMsValue;
+            if (!Number.isFinite(gpuMs)) return;
+
+            if (this.interactionActive) return;
+
+            const now = performance.now();
+            if (now - this.adaptiveQualityLastAdjustment < ADAPTIVE_QUALITY_COOLDOWN) return;
+
+            if (gpuMs > ADAPTIVE_QUALITY_THRESHOLD_HIGH) {
+                const newExtra = Math.max(ADAPTIVE_QUALITY_MIN, this.extraIterations - ADAPTIVE_QUALITY_STEP);
+                if (newExtra !== this.extraIterations) {
+                    this.extraIterations = newExtra;
+                    this.adaptiveQualityLastAdjustment = now;
+                }
+            }
+            else if (gpuMs < ADAPTIVE_QUALITY_THRESHOLD_LOW && this.extraIterations < 0) {
+                const newExtra = Math.min(0, this.extraIterations + ADAPTIVE_QUALITY_STEP);
+                if (newExtra !== this.extraIterations) {
+                    this.extraIterations = newExtra;
+                    this.adaptiveQualityLastAdjustment = now;
+                }
+            }
+        }
+    };
 };
 
 // Initialize default DOM structure
