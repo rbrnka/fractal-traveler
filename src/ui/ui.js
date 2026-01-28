@@ -1229,27 +1229,29 @@ function initEditCoordsDialog() {
         if (!input) return;
 
         input.addEventListener('input', (e) => {
-            // Allow: digits, decimal point, minus sign, e/E for scientific notation
             let value = e.target.value;
 
-            // Remove invalid characters (keep digits, -, ., e, E)
+            // 1. Initial cleanup: Keep only digits, dots, minus signs, and e/E
             let filtered = value.replace(/[^0-9.\-eE]/g, '');
 
-            // Ensure only one decimal point
-            const parts = filtered.split('.');
-            if (parts.length > 2) {
-                filtered = parts[0] + '.' + parts.slice(1).join('');
+            // 2. Ensure only one decimal point
+            const dotParts = filtered.split('.');
+            if (dotParts.length > 2) {
+                filtered = dotParts[0] + '.' + dotParts.slice(1).join('');
             }
 
-            // Ensure minus only at start
-            if (filtered.includes('-')) {
-                const minusCount = (filtered.match(/-/g) || []).length;
-                if (minusCount > 1 || filtered.indexOf('-') !== 0) {
-                    filtered = filtered.replace(/-/g, '');
-                    if (value.startsWith('-')) {
-                        filtered = '-' + filtered;
-                    }
-                }
+            // 3. Allow minus at start OR after 'e'
+            filtered = filtered.replace(/-/g, (match, offset) => {
+                if (offset === 0) return match;
+                const prevChar = filtered[offset - 1];
+                if (prevChar === 'e' || prevChar === 'E') return match;
+                return '';
+            });
+
+            // 4. Ensure only one 'e'
+            const eParts = filtered.split(/[eE]/);
+            if (eParts.length > 2) {
+                filtered = eParts[0] + 'e' + eParts[1];
             }
 
             // Update value if it changed
