@@ -48,7 +48,7 @@ export class JuliaRenderer extends FractalRenderer {
         this.MAX_ZOOM = JuliaRenderer.FF_LEGACY_JULIA_RENDERER ? 3e-3 : 1e-17;
         this.zoom = this.DEFAULT_ZOOM;
 
-        this.DEFAULT_ROTATION = data.views[0].rotation;
+        this.DEFAULT_ROTATION = degToRad(data.views[0].rotation || 0);
         this.rotation = this.DEFAULT_ROTATION;
 
         // TODO Use less detailed initial set for less performant devices
