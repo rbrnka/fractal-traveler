@@ -510,12 +510,12 @@ class MandelbrotRenderer extends FractalRenderer {
         const atTargetZoom = zoomRatio < 0.01; // Within ~1% zoom
         const nearTargetZoom = zoomRatio < 2.5; // Within ~12x zoom difference
 
-        // Pan distance relative to current view size
+        // Pan distance relative to TARGET view size (what matters at the end)
         const panDist = Math.hypot(this.pan[0] - preset.pan[0], this.pan[1] - preset.pan[1]);
-        const viewSize = Math.max(this.zoom, preset.zoom);
-        const panRatio = panDist / viewSize;
-        const atTargetPan = panRatio < 0.1; // Essentially same position
-        const nearTargetPan = panRatio < 3.0; // Within 3 view-widths
+        const targetViewSize = preset.zoom;
+        const panRatio = panDist / targetViewSize;
+        const atTargetPan = panRatio < 0.1; // Essentially same position at target zoom
+        const nearTargetPan = panRatio < 3.0; // Within 3 view-widths at target zoom
 
         // Palette proximity check
         let targetPaletteIndex = -1;
