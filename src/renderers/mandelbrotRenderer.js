@@ -206,9 +206,6 @@ class MandelbrotRenderer extends FractalRenderer {
             this.refPanDD.y.lo = 0;
         }
         // else: keep current refPan for stability
-
-        this.bestScore = bestScore;
-        this.probeIters = probeIters;
     }
 
     computeReferenceOrbit() {
