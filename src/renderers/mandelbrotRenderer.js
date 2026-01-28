@@ -586,8 +586,8 @@ class MandelbrotRenderer extends FractalRenderer {
             await this.animatePanTo(preset.pan, panDuration, EASE_TYPE.CUBIC);
 
             // Stage 3: Zoom in with cinematic rotation AND palette transition in parallel
-            // Calculate extra rotations: 1-2 full spins in random direction
-            const extraFullRotations = 1 + Math.floor(Math.random() * 2); // 1 or 2 full rotations
+            // Calculate extra rotations
+            const extraFullRotations = Math.floor(Math.random() * 2); // 1 or 2 full rotations
             const rotationDirection = Math.random() > 0.5 ? 1 : -1;
 
             // Calculate shortest angular path from current to preset rotation
