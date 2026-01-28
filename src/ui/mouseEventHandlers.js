@@ -568,7 +568,6 @@ function handleMouseUp(event) {
             const rect = canvas.getBoundingClientRect();
             const mouseX = event.clientX - rect.left;
             const mouseY = event.clientY - rect.top;
-            const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
             // If there is already a pending click, then we have a double-click.
             if (clickTimeout !== null) { // --- Double-click action ---
@@ -645,7 +644,6 @@ function handleMouseUp(event) {
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
-        const [fx, fy] = fractalApp.screenToFractal(mouseX, mouseY);
 
         if (clickTimeout !== null) {
             // Double-click detected
