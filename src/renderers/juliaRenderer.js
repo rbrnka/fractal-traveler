@@ -692,21 +692,104 @@ export class JuliaRenderer extends FractalRenderer {
 
         const durationWithSpeed = duration * (preset.speed ?? 1);
 
-        // Phase 1: Setting default params.
+        // Phase 1: Setting default params (zoom out to default view)
         await this.animatePanAndZoomTo(this.DEFAULT_PAN, this.DEFAULT_ZOOM, 1000);
-        // Phase 2: Animating to preset.
-        await Promise.all([
-            this.animateToC(preset.c, durationWithSpeed),
-            this.animateRotationTo(preset.rotation, duration, EASE_TYPE.QUINT),
-            this.animatePanTo(preset.pan, duration, EASE_TYPE.QUINT),
-            this.animatePaletteByIdTransition(preset, durationWithSpeed, coloringCallback)
-        ]);
-        // Phase 3: Final zoom-in
-        await this.animateZoomTo(preset.zoom, duration, EASE_TYPE.QUINT);
 
-        this.currentPresetIndex = preset.index;
+        // Phase 2: Consolidated animation to preset
+        // Capture start values
+        const startC = [...this.c];
+        const startPan = [...this.pan];
+        const startZoom = this.zoom;
+        const startRotation = this.rotation;
+        const startStops = Array.from(this.innerStops);
 
-        console.groupEnd();
+        // Target values
+        const targetC = preset.c || this.DEFAULT_C;
+        const targetPan = preset.pan || this.DEFAULT_PAN;
+        const targetZoom = preset.zoom || this.DEFAULT_ZOOM;
+        const targetRotation = preset.rotation ?? 0;
+
+        // Target palette (if specified)
+        let targetPalette = null;
+        if (preset.paletteId) {
+            const paletteIndex = this.PALETTES.findIndex(p => p.id === preset.paletteId);
+            if (paletteIndex >= 0) {
+                targetPalette = this.PALETTES[paletteIndex];
+                this.currentPaletteIndex = paletteIndex;
+            }
+        }
+
+        // Use the longer duration for the main animation
+        const mainDuration = Math.max(duration, durationWithSpeed);
+        const easeFunc = EASE_TYPE.QUINT;
+
+        this.cAnimationActive = true;
+        this.markOrbitDirty();
+
+        await new Promise((resolve) => {
+            let startTime = null;
+
+            const step = (timestamp) => {
+                if (!startTime) startTime = timestamp;
+                const t = Math.min((timestamp - startTime) / mainDuration, 1);
+                const k = easeFunc(t);
+
+                // Interpolate C
+                this.c[0] = lerp(startC[0], targetC[0], k);
+                this.c[1] = lerp(startC[1], targetC[1], k);
+
+                // Interpolate pan
+                this.setPan(
+                    lerp(startPan[0], targetPan[0], k),
+                    lerp(startPan[1], targetPan[1], k)
+                );
+
+                // Interpolate zoom (exponential for smooth zoom feel)
+                this.zoom = startZoom * Math.pow(targetZoom / startZoom, k);
+
+                // Interpolate rotation
+                this.rotation = lerp(startRotation, targetRotation, k);
+
+                // Interpolate palette if target specified
+                if (targetPalette) {
+                    const interpolatedStops = startStops.map((v, i) =>
+                        lerp(v, targetPalette.theme[i], k)
+                    );
+                    this.innerStops = new Float32Array(interpolatedStops);
+
+                    // Update colorPalette for UI theme
+                    if (targetPalette.keyColor) {
+                        const keyColor = hexToRGB(targetPalette.keyColor);
+                        if (keyColor) {
+                            this.colorPalette = [keyColor.r, keyColor.g, keyColor.b];
+                        }
+                    }
+                }
+
+                // Single draw call per frame
+                this.draw();
+                updateInfo(true);
+                updateJuliaSliders();
+
+                if (coloringCallback) {
+                    coloringCallback();
+                }
+
+                if (t < 1) {
+                    this.currentCAnimationFrame = requestAnimationFrame(step);
+                } else {
+                    // Animation complete - finalize state
+                    this.cAnimationActive = false;
+                    this.markOrbitDirty();
+                    this.draw();
+                    this.currentPresetIndex = preset.index;
+                    console.groupEnd();
+                    resolve();
+                }
+            };
+
+            this.currentCAnimationFrame = requestAnimationFrame(step);
+        });
     }
 
     /**
@@ -778,7 +861,7 @@ export class JuliaRenderer extends FractalRenderer {
      * Animates infinite demo loop with oscillating c between predefined values
      * @return {Promise<void>}
      */
-    async animateDemo() {
+    async animateRandomDemo() {
         console.log(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -803,6 +886,60 @@ export class JuliaRenderer extends FractalRenderer {
             };
             this.currentCAnimationFrame = requestAnimationFrame(step);
         });
+    }
+
+
+    /**
+     * Animates infinite demo loop of traveling to the presets
+     * @param {boolean} random Determines whether presets are looped in order or randomly
+     * @param {Function} [coloringCallback] Optional callback for UI color updates
+     * @param {Function} [onPresetComplete] Optional callback when each preset completes
+     * @return {Promise<void>}
+     */
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
+        this.stopAllNonColorAnimations();
+
+        if (!this.PRESETS.length) {
+            console.warn('No presets defined for Julia mode');
+            console.groupEnd();
+            return;
+        }
+
+        this.demoActive = true;
+
+        const getNextPresetIndex = (random) => {
+            if (random) {
+                let index;
+                do {
+                    index = Math.floor(Math.random() * this.PRESETS.length);
+                } while (index === this.currentPresetIndex || index === 0);
+                return index;
+            } else {
+                // Sequential: increment index, but if it wraps to 0, skip to 1.
+                const nextIdx = (this.currentPresetIndex + 1) % this.PRESETS.length;
+                return nextIdx === 0 ? 1 : nextIdx;
+            }
+        };
+
+        // Continue cycling through presets while demo is active.
+        while (this.demoActive) {
+            this.currentPresetIndex = getNextPresetIndex(random);
+            const currentPreset = this.PRESETS[this.currentPresetIndex];
+            console.log(`Animating to preset ${this.currentPresetIndex}: ${currentPreset.id || 'unnamed'}`);
+
+            await this.animateTravelToPreset(currentPreset, 4000, coloringCallback);
+
+            // Call completion callback to update UI state
+            if (onPresetComplete) {
+                onPresetComplete();
+            }
+
+            await asyncDelay(500);
+        }
+
+        console.log(`Demo interrupted.`);
+        console.groupEnd();
     }
 
     // endregion--------------------------------------------------------------------------------------------------------
