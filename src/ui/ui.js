@@ -680,27 +680,10 @@ export async function startJuliaDive(dives, index) {
 async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
-    if (animationActive) {
-        console.log(`Animation already in progress. Stopping.`);
-        exitAnimationMode();
-    }
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState);
+    // await fractalApp.animateRandomDemo(); // sin/cos original demo
 
-    initAnimationMode();
-
-    resetPresetAndDiveButtonStates();
-
-    // Initialize or continue the demo?
-    if (fractalApp.demoTime === 0) {
-        await fractalApp.animateTravelToPreset({
-            pan: fractalApp.DEFAULT_PAN, c: [-0.25, 0.7], // For smooth c transition
-            zoom: fractalApp.DEFAULT_ZOOM, rotation: fractalApp.DEFAULT_ROTATION
-        }, 1000);
-    }
-
-    await fractalApp.animateDemo();
-
-    exitAnimationMode();
-
+    console.log("Demo ended");
     console.groupEnd();
 }
 

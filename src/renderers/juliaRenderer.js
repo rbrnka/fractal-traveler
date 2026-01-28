@@ -1,6 +1,15 @@
 import {updateInfo} from "../ui/ui";
 import FractalRenderer from "./fractalRenderer";
-import {compareComplex, ddSubDD, degToRad, hexToRGB, lerp, normalizeRotation, splitFloat,} from "../global/utils";
+import {
+    asyncDelay,
+    compareComplex,
+    ddSubDD,
+    degToRad,
+    hexToRGB,
+    lerp,
+    normalizeRotation,
+    splitFloat,
+} from "../global/utils";
 import "../global/types";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEFAULT_JULIA_PALETTE, EASE_TYPE,} from "../global/constants";
 import {updateJuliaSliders} from "../ui/juliaSlidersController";
@@ -647,7 +656,8 @@ export class JuliaRenderer extends FractalRenderer {
     }
 
     /**
-     * Animates travel to a preset.
+     * Animates travel to a preset using a single consolidated animation loop.
+     *
      * @param {JULIA_PRESET|PRESET} preset
      * @param {number} [duration] in ms
      * @param {Function} [coloringCallback=null] Optional callback for UI color updates
