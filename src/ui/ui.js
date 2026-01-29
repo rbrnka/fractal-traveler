@@ -575,6 +575,7 @@ export async function toggleDemo() {
     // Stop palette cycling if active before starting demo
     if (fractalApp.paletteCyclingActive) {
         fractalApp.stopCurrentColorAnimations();
+        updatePaletteCycleButtonState();
     }
 
     switch (fractalMode) {
@@ -628,6 +629,7 @@ export async function startJuliaDive(dives, index) {
     // Stop palette cycling if dive has a defined palette
     if (dive.paletteId) {
         fractalApp.stopCurrentColorAnimations();
+        updatePaletteCycleButtonState();
     }
 
     // Validate configuration:
