@@ -833,7 +833,7 @@ export async function reset() {
     resetAppState();
     updatePaletteDropdownState();
     updatePaletteCycleButtonState();
-    presetButtons[0].classList.add('active');
+    presetButtons[0]?.classList.add('active');
 
     console.groupEnd();
 }
