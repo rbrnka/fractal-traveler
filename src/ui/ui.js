@@ -881,7 +881,8 @@ function saveCurrentViewAsPreset(name) {
         id: name,
         pan: [ddValue(fractalApp.panDD.x), ddValue(fractalApp.panDD.y)],
         zoom: fractalApp.zoom,
-        rotation: fractalApp.rotation
+        rotation: fractalApp.rotation,
+        speed: 10
     };
 
     // Add Julia-specific c parameter
