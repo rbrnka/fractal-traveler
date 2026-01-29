@@ -598,7 +598,7 @@ export async function toggleDemo() {
 async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState);
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
 
     console.log("Demo ended");
     console.groupEnd();
@@ -682,7 +682,7 @@ export async function startJuliaDive(dives, index) {
 async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState);
+    await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState, getUserPresets());
     // await fractalApp.animateRandomDemo(); // sin/cos original demo
 
     console.log("Demo ended");

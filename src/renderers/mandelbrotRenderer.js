@@ -623,38 +623,55 @@ class MandelbrotRenderer extends FractalRenderer {
      * @param {boolean} random Determines whether presets are looped in order from 1-9 or ordered randomly
      * @param {Function} [coloringCallback] Optional callback for UI color updates
      * @param {Function} [onPresetComplete] Optional callback when each preset completes
+     * @param {Array<PRESET>} [userPresets] Optional array of user-saved presets to include in the demo
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = []) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
-        if (!this.PRESETS.length) {
+        // Merge built-in presets with user presets
+        const allPresets = [...this.PRESETS, ...userPresets];
+
+        if (!allPresets.length) {
             console.warn('No presets defined for Mandelbrot mode ');
             return;
         }
 
+        console.log(`Demo includes ${this.PRESETS.length} built-in + ${userPresets.length} user presets`);
         this.demoActive = true;
 
+        // Simple index cycling - just go through all presets
+        let demoIndex = 0;
         const getNextPresetIndex = (random) => {
+            if (allPresets.length <= 1) {
+                return 0; // Only one preset, always return it
+            }
+
             if (random) {
+                // Pick a random preset different from current
                 let index;
                 do {
-                    index = Math.floor(Math.random() * this.PRESETS.length);
-                } while (index === this.currentPresetIndex || index === 0);
+                    index = Math.floor(Math.random() * allPresets.length);
+                } while (index === demoIndex && allPresets.length > 1);
                 return index;
             } else {
-                // Sequential: increment index, but if it wraps to 0, skip to 1.
-                const nextIdx = (this.currentPresetIndex + 1) % this.PRESETS.length;
-                return nextIdx === 0 ? 1 : nextIdx;
+                // Sequential: just increment
+                return (demoIndex + 1) % allPresets.length;
             }
         };
 
         // Continue cycling through presets while demo is active.
         while (this.demoActive) {
-            this.currentPresetIndex = getNextPresetIndex(random);
-            const currentPreset = this.PRESETS[this.currentPresetIndex];
-            console.log(`Animating to preset ${this.currentPresetIndex}`);
+            demoIndex = getNextPresetIndex(random);
+            const currentPreset = allPresets[demoIndex];
+
+            if (!currentPreset) {
+                console.warn(`No preset at index ${demoIndex}, stopping demo`);
+                break;
+            }
+
+            console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
             await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
 
