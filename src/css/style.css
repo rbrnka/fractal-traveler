@@ -483,6 +483,12 @@ button.dive.has-palette.active {
     color: var(--accent-color);
 }
 
+.aq-indicator {
+    color: #ffcc00;
+    text-shadow: 0 0 6px #ffcc00;
+    font-size: 10px;
+}
+
 #version {
     color: var(--accent-color);
     text-shadow: 0 0 8px var(--accent-color);

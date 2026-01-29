@@ -438,6 +438,12 @@ export function updateInfo(force = false) {
     const normalizedRotation = currentRotation < 0 ? currentRotation + 360 : currentRotation;
     text += `r:&nbsp;${normalizedRotation.toFixed(0)}° <span class="middot">&middot;</span> zoom:&nbsp;${currentZoom.toExponential(0)}`;
 
+    // Show adaptive quality indicator when quality is reduced
+    if (fractalApp.adaptiveQualityEnabled && fractalApp.extraIterations < 0) {
+        const qualityPct = Math.round(100 + (fractalApp.extraIterations / Math.abs(fractalApp.adaptiveQualityMin)) * 100);
+        text += ` <span class="middot">&middot;</span> <span class="aq-indicator">⚡${qualityPct}%</span>`;
+    }
+
     if (fractalMode === FRACTAL_TYPE.JULIA) {
         const cx = fractalApp.c[0] ?? 0;
         const cy = fractalApp.c[1] ?? 0;
