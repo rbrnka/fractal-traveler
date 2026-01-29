@@ -13,7 +13,7 @@ module.exports = (env, argv) => {
     return {
         entry: './src/main.js',
         output: {
-            filename: 'js/bundle.js',
+            filename: isProduction ? 'js/bundle.[contenthash].js' : 'js/bundle.js',
             path: path.resolve(__dirname, 'dist'),
             publicPath: '',
             clean: true, // Clean the dist folder before each build
@@ -58,7 +58,7 @@ module.exports = (env, argv) => {
                 ),
             }),
             new MiniCssExtractPlugin({
-                filename: 'css/style.css'
+                filename: isProduction ? 'css/style.[contenthash].css' : 'css/style.css'
             }),
             new HtmlWebpackPlugin({
                 template: './index.html',
