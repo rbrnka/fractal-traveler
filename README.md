@@ -11,13 +11,13 @@
 </p>
 
 <p align="center">
-  <a href="https://fractal.brnka.com/">Live App</a> ·
-  <a href="https://synaptory.substack.com/p/unmasking-chaos">Article: Unmasking Chaos</a> ·
-  <a href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Controls</a> ·
-  <a href="https://fractal.brnka.com/gallery/">Gallery</a> ·
-  <a href="https://fractal.brnka.com/docs/">Docs</a> ·
-  <a href="https://fractal.brnka.com/archive">Archive of older versions</a> ·  
-  <a href="https://fractal.brnka.com/editor">Palette editor</a>  
+  🎮 <a href="https://fractal.brnka.com/">Live App</a> ·
+  📜 <a href="https://synaptory.substack.com/p/unmasking-chaos">Article: Unmasking Chaos</a> ·
+  ⌨️ <a href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Controls</a> ·
+  🖼️ <a href="https://fractal.brnka.com/gallery/">Gallery</a> ·
+  📖 <a href="https://fractal.brnka.com/docs/">Docs</a> ·
+  🗃️ <a href="https://fractal.brnka.com/archive">Archive of older versions</a> ·  
+  🎨 <a href="https://fractal.brnka.com/editor">Palette editor</a>  
 </p>
 
 ---
