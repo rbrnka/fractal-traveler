@@ -3,20 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Synaptory Fractal Traveler</title>
+    <title>Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets in Real-Time</title>
     <meta name="author" content="Radim Brnka">
-    <meta name="description" content="Synaptory Fractal Traveler. If you're curious about what the Mandelbrot and Julia fractals may look like, travel the set using your mouse or touch.">
-    <meta property="og:title" content="Synaptory: Fractal Traveler">
-    <meta property="og:description" content="Fractal Zoomer/Traveler App. Explore some of the intricate structures of the Mandelbrot and Julia sets with mouse or touch.">
-    <meta property="og:image" content="img/icon.png">
-    <meta name="theme-color" content="#000000">
+    <meta name="description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through stunning fractal landscapes using mouse or touch.">
+    <meta name="keywords" content="fractal, Mandelbrot set, Julia set, fractal explorer, fractal zoomer, GPU rendering, WebGL, interactive fractal, real-time fractal, fractal art, mathematics visualization">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://fractal.brnka.com/">
 
+    <!-- Open Graph -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://fractal.brnka.com/">
+    <meta property="og:site_name" content="Synaptory Fractal Traveler">
+    <meta property="og:title" content="Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets">
+    <meta property="og:description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through stunning fractal landscapes.">
+    <meta property="og:image" content="https://fractal.brnka.com/img/og_icon.png">
+    <meta property="og:image:alt" content="Synaptory Fractal Traveler - Julia set fractal rendering">
+    <meta property="og:locale" content="en_US">
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets">
+    <meta name="twitter:description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering.">
+    <meta name="twitter:image" content="https://fractal.brnka.com/img/og_icon.png">
+    <meta name="twitter:image:alt" content="Synaptory Fractal Traveler - Julia set fractal rendering">
+
+    <meta name="theme-color" content="#000000">
     <link rel="icon" href="img/icon.png" type="image/png">
     <link rel="apple-touch-icon" href="img/icon.png">
+    <link rel="manifest" href="manifest.json">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bruno+Ace+SC&display=swap" rel="stylesheet">
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Synaptory Fractal Traveler",
+        "url": "https://fractal.brnka.com/",
+        "description": "GPU-accelerated real-time fractal explorer for Mandelbrot and Julia sets. Features deep zoom, smooth animations, curated presets, and interactive touch/mouse controls.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any",
+        "browserRequirements": "Requires WebGL support",
+        "softwareVersion": "2.1",
+        "author": {
+            "@type": "Person",
+            "name": "Radim Brnka",
+            "url": "https://brnka.com"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "image": "https://fractal.brnka.com/img/icon.png",
+        "screenshot": "https://fractal.brnka.com/img/icon.png",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
 
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-DZDM1T1PJ2"></script>
     <script>
@@ -130,8 +176,14 @@
     </aside>
 
     <main>
-        <canvas id="fractalCanvas"></canvas>
+        <canvas id="fractalCanvas" role="img" aria-label="Interactive fractal rendering canvas"></canvas>
         <canvas id="floatingCanvas"></canvas>
+        <noscript>
+            <div style="color:#fff;background:#000;padding:2em;text-align:center;">
+                <h2>Synaptory Fractal Traveler</h2>
+                <p>This application requires JavaScript and WebGL to render interactive Mandelbrot and Julia set fractals in real-time. Please enable JavaScript to explore the infinite beauty of fractal mathematics.</p>
+            </div>
+        </noscript>
     </main>
 
     <div id="verticalLine" class="centerLine verticalLine"></div>

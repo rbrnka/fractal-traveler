@@ -75,6 +75,18 @@ module.exports = (env, argv) => {
                     {
                         from: path.resolve(__dirname, 'src/img'),
                         to: 'img'
+                    },
+                    {
+                        from: path.resolve(__dirname, 'robots.txt'),
+                        to: 'robots.txt'
+                    },
+                    {
+                        from: path.resolve(__dirname, 'sitemap.xml'),
+                        to: 'sitemap.xml'
+                    },
+                    {
+                        from: path.resolve(__dirname, 'manifest.json'),
+                        to: 'manifest.json'
                     }
                 ]
             })

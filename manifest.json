@@ -1,0 +1,19 @@
+{
+    "name": "Synaptory Fractal Traveler",
+    "short_name": "Fractal Traveler",
+    "description": "GPU-accelerated real-time fractal explorer for Mandelbrot and Julia sets. Zoom, pan, and rotate through infinite fractal landscapes.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#000000",
+    "orientation": "any",
+    "categories": ["education", "entertainment"],
+    "icons": [
+        {
+            "src": "img/icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}
