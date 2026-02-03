@@ -75,10 +75,9 @@ if (is_dir($libraryFsPath) && is_readable($libraryFsPath)) {
       color: var(--accent-color);
       z-index: 1000;
       font-family: "Bruno Ace SC", sans-serif;
-      font-size: 20pt;
+      font-size: clamp(11pt, 4vw, 20pt);
       letter-spacing: 1px;
       font-style: italic;
-      white-space: nowrap;
       animation: glow-pulse 2s ease-in-out infinite alternate;
     }
 
@@ -182,12 +181,12 @@ if (is_dir($libraryFsPath) && is_readable($libraryFsPath)) {
       x-data="galleryApp"
       @keydown.window="onKeydown($event)">
 
-  <header class="p-8 md:p-12 border-b border-white/5 flex justify-between items-end bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40">
-    <div>
+  <header class="px-4 py-2 sm:px-8 sm:py-3 md:px-12 md:py-4 border-b border-white/5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40">
+    <a href="https://fractal.brnka.com" class="min-w-0 no-underline hover:opacity-80 transition-opacity">
       <h1 class="gallery-h1">Synaptory Fractal Traveler</h1>
-      <p class="brand-font text-[10pt] tracking-[0.18em] text-white italic uppercase mt-2">Gallery</p>
-    </div>
-    <div class="text-[14px] font-mono text-zinc-400 border border-zinc-800 px-3 py-1 rounded-full uppercase">
+      <p class="brand-font text-[8pt] sm:text-[10pt] tracking-[0.18em] text-white italic uppercase mt-0.5 sm:mt-1">Gallery</p>
+    </a>
+    <div class="text-[12px] sm:text-[14px] font-mono text-zinc-400 border border-zinc-800 px-3 py-1 rounded-full uppercase self-start sm:self-auto shrink-0">
       <span x-text="images.length"></span> Images
     </div>
   </header>
@@ -233,23 +232,23 @@ if (is_dir($libraryFsPath) && is_readable($libraryFsPath)) {
     <!-- ... keep your prev/next buttons here ... -->
 
     <!-- Main image area -->
-    <div class="relative z-10 w-full h-full p-4 md:p-12" @click.stop>
+    <div class="relative z-10 w-full h-full p-4 md:p-12">
       <!-- Scroll container for "real size" mode -->
       <div id="zoomContainer"
            class="w-full h-full flex items-center justify-center"
-           :class="zoomed ? 'overflow-auto cursor-zoom-out' : 'overflow-hidden cursor-zoom-in'">
+           :class="zoomed ? 'overflow-auto' : 'overflow-hidden'">
 
         <img :src="activeImg"
              @click.stop="toggleZoom()"
              :class="zoomed
-                ? 'max-w-none max-h-none object-none'
-                : 'max-w-full max-h-full object-contain'"
+                ? 'max-w-none max-h-none object-none cursor-zoom-out'
+                : 'max-w-full max-h-full object-contain cursor-zoom-in'"
              class="shadow-[0_0_100px_rgba(0,0,0,0.9)] select-none"
              alt="">
       </div>
 
       <!-- filename + hint -->
-      <div class="mt-4 text-center">
+      <div class="mt-4 text-center" @click.stop>
         <div class="text-[10px] font-mono text-white/60" x-text="images[activeIndex] ?? ''"></div>
         <div class="text-[10px] tracking-widest uppercase text-white/25 mt-1">
           Click image: <span x-text="zoomed ? 'fit screen' : 'real size'"></span>
