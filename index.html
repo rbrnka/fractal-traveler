@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets in Real-Time</title>
+    <title>Synaptory Fractal Traveler - Mandelbrot & Julia Explorer</title>
     <meta name="author" content="Radim Brnka">
-    <meta name="description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through stunning fractal landscapes using mouse or touch.">
+<!--    <meta name="description" content="Explore Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through fractal landscapes.">-->
+    <meta name="description" content="A GPU-accelerated web application for exploring the Mandelbrot set and Julia sets in real-time, allowing smoothtravel through the infinite complexity of fractal geometry.">
     <meta name="keywords" content="fractal, Mandelbrot set, Julia set, fractal explorer, fractal zoomer, GPU rendering, WebGL, interactive fractal, real-time fractal, fractal art, mathematics visualization">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://fractal.brnka.com/">
@@ -163,7 +164,7 @@
             </span>&nbsp;<span class="middot">&middot;</span>
             <a target="_blank" rel="noopener" title="Synaptory blog: Unmasking Chaos" href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
             <span class="middot">&middot;</span>
-            <a target="_blank" rel="noopener" title="About me" href="https://fractal.brnka.com/gallery">Gallery</a>
+            <a title="Synaptory Fractal Traveler Gallery" href="https://fractal.brnka.com/gallery/">Gallery</a>
             <span class="middot">&middot;</span>
             <a id="versionLink" target="_blank" rel="noopener" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">v2.1</a>
             <span class="middot">&middot;</span>
@@ -186,12 +187,21 @@
         </noscript>
     </main>
 
+    <section class="sr-only" aria-label="About Synaptory Fractal Traveler">
+        <h2>Explore Mandelbrot and Julia Fractals in Real-Time</h2>
+        <p>Synaptory Fractal Traveler is a GPU-accelerated web application for exploring the Mandelbrot set and Julia sets in real-time. Built with WebGL, it renders fractals directly on your GPU, allowing smooth zooming, panning, and rotation through the infinite complexity of fractal geometry.</p>
+        <p>The Mandelbrot set is one of the most famous objects in mathematics, revealing infinitely detailed structures at every scale. As you zoom deeper, you discover spirals, seahorse valleys, and intricate self-similar patterns that emerge from a simple equation: z = z&sup2; + c. Each point on the Mandelbrot set boundary corresponds to a unique Julia set, and this application lets you explore both in real-time.</p>
+        <p>Navigate using mouse controls: scroll to zoom, drag to pan, double-click to center and zoom, or right-drag to rotate. Touch controls are fully supported: pinch to zoom, drag to pan, and use two fingers to rotate. Choose from over 30 curated views showcasing fascinating locations like Seahorse Valley, Misiurewicz Points, and the Corona region. Switch between color palettes including Event Horizon, Aurora, Fire, and Ocean to transform the visual experience.</p>
+        <p>Julia set dives animate through parameter space, creating mesmerizing real-time transitions between fractal forms. Save your favorite views locally, capture high-quality screenshots, and share exact coordinates via URL. The adaptive quality system automatically adjusts rendering precision based on your GPU performance.</p>
+        <p>Fractal Traveler is free and open-source under the MIT license. Visit the <a href="https://fractal.brnka.com/gallery/">fractal gallery</a> for curated screenshots, read the <a href="https://fractal.brnka.com/docs/">documentation</a>, or explore the source code on <a href="https://github.com/rbrnka/fractal-traveler">GitHub</a>.</p>
+    </section>
+
     <div id="verticalLine" class="centerLine verticalLine"></div>
     <div id="horizontalLine" class="centerLine horizontalLine"></div>
 
     <dialog id="saveViewDialog" class="dialog-overlay">
         <div class="dialog-box">
-            <h3>Save Current View</h3>
+            <h2>Save Current View</h2>
             <input type="text" id="saveViewName" placeholder="My View Name" maxlength="30">
             <div class="dialog-buttons">
                 <button type="button" id="saveViewCancel" class="dialog-btn">Cancel</button>
@@ -202,7 +212,7 @@
 
     <dialog id="editCoordsDialog" class="dialog-overlay">
         <div class="dialog-box">
-            <h3>Edit Fractal Coordinates</h3>
+            <h2>Edit Fractal Coordinates</h2>
             <div class="coord-input-grid">
                 <label for="editPanX">Pan X:</label>
                 <input type="text" inputmode="decimal" id="editPanX" class="coord-input" placeholder="0.0">
