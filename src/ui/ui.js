@@ -894,6 +894,7 @@ function saveCurrentViewAsPreset(name) {
     // Add Julia-specific c parameter
     if (isJuliaMode() && fractalApp.c) {
         preset.c = [...fractalApp.c];
+        preset.speed = 2;
     }
 
     // Store the current palette ID
