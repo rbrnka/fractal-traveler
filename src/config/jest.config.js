@@ -2,6 +2,10 @@
 module.exports = {
     rootDir: '../../',
 
+    globals: {
+        __APP_VERSION__: '0.0-test',
+    },
+
     setupFilesAfterEnv: ['<rootDir>/src/config/jest.setup.js'],
 
     moduleNameMapper: {
