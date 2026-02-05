@@ -8,6 +8,7 @@ uniform vec2 u_pan;// Pan offset in attractor space.
 uniform float u_zoom;// Zoom factor.
 uniform float u_rotation;// Rotation angle in radians.
 uniform vec3 u_params;// Rossler parameters: a, b, c.
+uniform float u_iterations;// Dynamic iteration count (adaptive quality).
 uniform vec3 u_colorPalette;// Theme multiplier.
 uniform vec3 u_frequency;// Sine wave frequencies per channel.
 uniform vec3 u_phase;// Sine wave phase offsets per channel.
@@ -16,6 +17,8 @@ uniform vec3 u_phase;// Sine wave phase offsets per channel.
 const int MAX_ITERATIONS = __MAX_ITER__;
 // Time step for RK4 integration.
 const float dt = 0.04;
+// Iterations to skip while orbit settles onto attractor.
+const int TRANSIENT = 200;
 
 // Rossler system derivative.
 vec3 rosslerDerivative(vec3 p, vec3 params) {
@@ -23,9 +26,9 @@ vec3 rosslerDerivative(vec3 p, vec3 params) {
     float b = params.y;
     float c = params.z;
     return vec3(
-        -p.y - p.z,
-        p.x + a * p.y,
-        b + p.z * (p.x - c)
+    -p.y - p.z,
+    p.x + a * p.y,
+    b + p.z * (p.x - c)
     );
 }
 
@@ -51,51 +54,59 @@ void main() {
     // Map fragment coordinates to normalized space.
     float aspect = u_resolution.x / u_resolution.y;
     vec2 uv = gl_FragCoord.xy / u_resolution;
-    uv -= 0.5;// center at (0,0)
+    uv -= 0.5;
     uv.x *= aspect;
 
     // Apply rotation.
     float cosR = cos(u_rotation);
     float sinR = sin(u_rotation);
     vec2 rotated = vec2(
-        uv.x * cosR - uv.y * sinR,
-        uv.x * sinR + uv.y * cosR
+    uv.x * cosR - uv.y * sinR,
+    uv.x * sinR + uv.y * cosR
     );
 
     // Apply pan and zoom.
     vec2 pos = rotated * u_zoom + u_pan;
 
-    // Zoom-adaptive line thickness: ~3 pixels in world space.
-    float threshold = u_zoom * 3.0 / u_resolution.y;
+    // Thin line: ~0.75 pixels in world space.
+    float threshold = u_zoom * 0.75 / u_resolution.y;
 
-    // Accumulate density: each orbit segment that passes near this pixel
-    // contributes to the total. This gives smooth anti-aliased lines and
-    // a rich value range for sine-based coloring.
+    // Fixed initial condition — all pixels trace the same orbit,
+    // producing a smooth distance field (no per-pixel chaos).
+    vec3 p = vec3(0.1, 0.0, 0.0);
+
+    // Accumulate density and z-weighted average for smooth coloring.
     float density = 0.0;
-    vec3 p = vec3(pos, 0.0);
+    float weightedZ = 0.0;
     vec2 prevXY = p.xy;
 
     for (int i = 0; i < MAX_ITERATIONS; i++) {
+        if (float(i) >= u_iterations) break;
         p = rosslerStepRK4(p, u_params);
-        // Stability guard: break if orbit diverges.
         if (length(p) > 1e6) break;
 
-        // Distance to segment between previous and current orbit point.
-        float d = distToSegment(pos, prevXY, p.xy);
-        density += 1.0 - smoothstep(0.0, threshold, d);
-
+        if (i >= TRANSIENT) {
+            float d = distToSegment(pos, prevXY, p.xy);
+            float w = 1.0 - smoothstep(0.0, threshold, d);
+            density += w;
+            weightedZ += w * p.z;
+        }
         prevXY = p.xy;
     }
 
-    // Soft brightness ramp from density (0→0, ~3→0.78, ~6→0.95, ∞→1).
-    float brightness = 1.0 - exp(-density * 0.5);
+    // Quick saturating brightness — even a single pass gives a solid line.
+    float brightness = 1.0 - exp(-density * 3.0);
 
-    // Sine-based palette coloring driven by accumulated density.
-    vec3 col = brightness * vec3(
-        0.5 + 0.5 * sin(density * u_frequency.r + u_phase.r),
-        0.5 + 0.5 * sin(density * u_frequency.g + u_phase.g),
-        0.5 + 0.5 * sin(density * u_frequency.b + u_phase.b)
-    ) * u_colorPalette;
+    // Smooth z-average across all nearby orbit passes for spatial gradient.
+    float avgZ = density > 0.001 ? weightedZ / density : 0.0;
+    float zNorm = clamp(avgZ / u_params.z, 0.0, 1.0);
+
+    // 3D depth gradient: darker at the flat spiral, brighter at the spike.
+    vec3 col = brightness * mix(
+        u_colorPalette * 0.7,
+        u_colorPalette * 1.4,
+        sqrt(zNorm)
+    );
 
     gl_FragColor = vec4(col, 1.0);
 }

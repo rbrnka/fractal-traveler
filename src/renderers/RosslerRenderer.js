@@ -16,7 +16,7 @@ export class RosslerRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.MAX_ITER = 3000;
+        this.MAX_ITER = 10000;
 
         // Default view parameters.
         this.DEFAULT_ROTATION = 0;
@@ -69,6 +69,9 @@ export class RosslerRenderer extends FractalRenderer {
 
     draw() {
         this.gl.useProgram(this.program);
+
+        // Compute dynamic iteration count (base + adaptive quality adjustment)
+        this.iterations = Math.max(500, Math.min(this.MAX_ITER, this.MAX_ITER + this.extraIterations));
 
         // Upload Rossler-specific uniforms
         if (this.paramsLoc) {
