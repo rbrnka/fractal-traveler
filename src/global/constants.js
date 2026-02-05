@@ -121,12 +121,7 @@ export const ADAPTIVE_QUALITY_MIN = DEBUG_MODE === DEBUG_LEVEL.NONE ? -1000 : -3
 export const ADAPTIVE_QUALITY_COOLDOWN = 500;
 
 // endregion ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-/**
- * Application name
- * @type {string}
- */
-export const APP_NAME = 'Synaptory Fractal Traveler';
-// ---------------------------------------------------------------------------------------------------------------------
+
 /**
  * Enum of fractal types
  * @enum {number}
@@ -229,3 +224,20 @@ export const PI = USE_PRECISE_PI ? Math.PI : 3.1415926535;
  */
 export const SCREENSHOT_JPEG_COMPRESSION_QUALITY = 0.95;
 // ---------------------------------------------------------------------------------------------------------------------
+/**
+ * A configuration object that provides application details
+ */
+export const APP = {
+    //@formatter:off
+    /** App version — injected from package.json by webpack DefinePlugin */
+    version: __APP_VERSION__,
+    prefix: 'Synaptory Fractal ', // Keep the space!
+    suffixes: [
+        "Traveler", "Atlas", "Lens", "Scout", "Studio", "Lab", "Viewer", "Explorer", "Engine", "Navigator", "Surveyor",
+        "Seeker", "Wanderer", "Voyager", "Drifter", "Portal", "Gateway", "Microscope", "Telescope", "Prism", "Cockpit",
+        "Forge", "Workshop", "Reactor", "Core", "Kernel", "Matrix", "Plane", "Realm", "Horizon"
+    ],
+    get randomName() { return this.prefix + this.suffixes[Math.floor(Math.random() * this.suffixes.length)]; },
+    get defaultName() { return this.prefix + this.suffixes[0]; }
+    //@formatter:on
+}

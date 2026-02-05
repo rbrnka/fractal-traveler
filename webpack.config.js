@@ -9,6 +9,7 @@ const CssMinimizerPlugin = require('css-minimizer-webpack-plugin');
 
 module.exports = (env, argv) => {
     const isProduction = argv.mode === 'production';
+    const appVersion = require('./package.json').version;
 
     return {
         entry: './src/main.js',
@@ -53,6 +54,7 @@ module.exports = (env, argv) => {
         plugins: [
             new webpack.DefinePlugin({
                 '__DEV__': JSON.stringify(!isProduction),
+                '__APP_VERSION__': JSON.stringify(appVersion),
                 'process.env.DEBUG_MODE': JSON.stringify(
                     isProduction ? 'NONE' : 'FULL'
                 ),
@@ -62,6 +64,7 @@ module.exports = (env, argv) => {
             }),
             new HtmlWebpackPlugin({
                 template: './index.html',
+                templateParameters: {appVersion},
                 minify: isProduction
                     ? {
                         removeComments: true,

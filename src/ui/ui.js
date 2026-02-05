@@ -15,6 +15,7 @@ import {initTouchHandlers, registerTouchEventHandlers, unregisterTouchEventHandl
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 import {takeScreenshot} from "./screenshotController";
 import {
+    APP,
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
     DEBUG_LEVEL,
@@ -26,8 +27,7 @@ import {
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
     FRACTAL_TYPE,
     log,
-    PI,
-    VERSION
+    PI
 } from "../global/constants";
 import {destroyHotKeys, initHotKeys} from "./hotkeyController";
 import MandelbrotRenderer from "../renderers/mandelbrotRenderer";
@@ -1343,6 +1343,10 @@ function initHeaderEvents() {
         }
     });
 
+    logo.innerHTML = APP.randomName;
+
+    document.getElementById("versionLink").innerHTML = `v${APP.version}`;
+
     header.addEventListener('pointerleave', (e) => {
         // Skip auto-hide for touch - handled by tapping outside
         if (e.pointerType === 'touch') return;
@@ -1980,8 +1984,6 @@ export async function initUI(fractalRenderer) {
     if (DEBUG_MODE === DEBUG_LEVEL.FULL && !isMobileDevice()) {
         toggleDebugMode();
     }
-
-    document.getElementById("versionLink").innerHTML = `v${VERSION}`;
 
     // Tap-to-toggle for controls hint on touch devices
     const controlsHint = document.getElementById("controlsHint");

@@ -7,7 +7,7 @@
  */
 
 import {JuliaRenderer} from "../renderers/juliaRenderer";
-import {APP_NAME, CONSOLE_GROUP_STYLE, SCREENSHOT_JPEG_COMPRESSION_QUALITY} from "../global/constants";
+import {APP, CONSOLE_GROUP_STYLE, SCREENSHOT_JPEG_COMPRESSION_QUALITY} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
 import {isJuliaMode} from "./ui";
 
@@ -28,7 +28,7 @@ function getFilename() {
  */
 function getWatermarkLines(fractalApp) {
     const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
-    const line1 = APP_NAME;
+    const line1 = APP.defaultName;
     const line2 = `${fractalType}: p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
         `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)}` : ``}`;
     return {line1, line2};
