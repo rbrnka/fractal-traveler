@@ -325,10 +325,11 @@ export function enableJuliaMode() {
 
 export function enableRiemannMode() {
     fractalApp = new RiemannRenderer(canvas);
-    fractalApp.useAnalyticExtension = false;
     fractalMode = FRACTAL_TYPE.RIEMANN;
 
     destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+    initPaletteButtonEvents();
 
     window.location.hash = '#zeta'; // Update URL hash
 }
@@ -606,6 +607,10 @@ export async function toggleDemo() {
 
         case FRACTAL_TYPE.JULIA: await startJuliaDemo(); break;
 
+        case FRACTAL_TYPE.RIEMANN: await startRiemannDemo(); break;
+
+        case FRACTAL_TYPE.ROSSLER: await startRosslerDemo(); break;
+
         default:
             console.warn(`No demo defined for mode ${fractalMode}`);
             exitAnimationMode();
@@ -619,6 +624,26 @@ export async function toggleDemo() {
 /** Starts the Mandelbrot demo */
 async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
+
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+
+    console.log("Demo ended");
+    console.groupEnd();
+}
+
+/** Starts the Riemann demo */
+async function startRiemannDemo() {
+    console.groupCollapsed(`%c startRiemannDemo`, CONSOLE_GROUP_STYLE);
+
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+
+    console.log("Demo ended");
+    console.groupEnd();
+}
+
+/** Starts the Rossler demo */
+async function startRosslerDemo() {
+    console.groupCollapsed(`%c startRosslerDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
 

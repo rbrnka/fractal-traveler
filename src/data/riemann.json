@@ -1,0 +1,20 @@
+{
+  "$schema": "./fractal.schema.json",
+  "type": "RIEMANN",
+  "views": [
+    {"id": "Overview", "pan": [0.5, 0], "zoom": 40, "rotation": 0, "paletteId": "Default"},
+    {"id": "First Zero", "pan": [0.5, 14.1347], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Pole", "pan": [1.0, 0], "zoom": 5, "rotation": 0, "paletteId": "Thermal"},
+    {"id": "Critical Strip", "pan": [0.5, 0], "zoom": 15, "rotation": 0, "paletteId": "Default"},
+    {"id": "Trivial Zeros", "pan": [-4, 0], "zoom": 20, "rotation": 0, "paletteId": "Arctic"},
+    {"id": "Second Zero", "pan": [0.5, 21.022], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Deep Zeros", "pan": [0.5, 49.77], "zoom": 6, "rotation": 0, "paletteId": "Monochrome"}
+  ],
+  "palettes": [
+    {"id": "Default", "keyColor": "#4FC3F7", "theme": [1, 1, 1]},
+    {"id": "Twilight", "keyColor": "#7C4DFF", "theme": [0.7, 0.5, 1.4]},
+    {"id": "Thermal", "keyColor": "#FF6D00", "theme": [1.5, 0.8, 0.3]},
+    {"id": "Arctic", "keyColor": "#00E5FF", "theme": [0.3, 1.2, 1.5]},
+    {"id": "Monochrome", "keyColor": "#BDBDBD", "theme": [1.0, 1.0, 1.0]}
+  ]
+}

@@ -253,9 +253,18 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyN':
-            if (DEBUG_MODE) {
-                log('Analytic Extension toggled.');
+            if (fractalApp.useAnalyticExtension !== undefined) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
+                log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
+                fractalApp.draw();
+            }
+            handled = true;
+            break;
+
+        case 'Comma':
+            if (fractalApp.showCriticalLine !== undefined) {
+                fractalApp.showCriticalLine = !fractalApp.showCriticalLine;
+                log(`Critical line: ${fractalApp.showCriticalLine ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
             }
             handled = true;
