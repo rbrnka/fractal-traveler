@@ -1360,7 +1360,7 @@ function initHeaderEvents() {
         }
     });
 
-    logo.innerHTML = APP.randomName;
+    logo.innerHTML = DEBUG_MODE > DEBUG_LEVEL.NONE ? APP.randomName : APP.defaultName;
 
     document.getElementById("versionLink").innerHTML = `v${APP.version}`;
 
