@@ -112,6 +112,9 @@ module.exports = (env, argv) => {
                 new CssMinimizerPlugin()
             ],
         },
+        performance: {
+            assetFilter: (assetFilename) => !/\.(png|map)$/.test(assetFilename),
+        },
         resolve: {
             extensions: ['.js']
         },
