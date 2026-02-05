@@ -3,13 +3,10 @@
 *.iml
 .DS_Store
 Thumbs.db
-TODOs
-
 
 # Dependencies & Builds
 /dist
 /node_modules
-/out
 /doc/
 
 #Security
@@ -18,6 +15,7 @@ TODOs
 !.env.example
 
 # Temp & Others
+TODOs
 /backup
 /coverage
 /tools/archive/
