@@ -1,0 +1,18 @@
+{
+  "$schema": "./fractal.schema.json",
+  "type": "ROSSLER",
+  "views": [
+    {"id": "Classic", "params": [0.2, 0.2, 5.7], "zoom": 30, "rotation": 0, "pan": [0, 0], "paletteId": "Default"},
+    {"id": "Funnel", "params": [0.2, 0.2, 14.0], "zoom": 50, "rotation": 0, "pan": [0, 0], "paletteId": "Neon"},
+    {"id": "Band Merge", "params": [0.3, 0.2, 5.7], "zoom": 30, "rotation": 0, "pan": [0, 0], "paletteId": "Electric"},
+    {"id": "Spiral", "params": [0.1, 0.1, 14.0], "zoom": 40, "rotation": 0, "pan": [0, 0], "paletteId": "Solar Flare"},
+    {"id": "Chaotic", "params": [0.2, 0.2, 9.0], "zoom": 35, "rotation": 0, "pan": [0, 0], "paletteId": "Event Horizon"}
+  ],
+  "palettes": [
+    {"id": "Default", "keyColor": "#96d954", "theme": [1, 1, 1], "frequency": [3.1415, 6.283, 1.72], "phase": [0, 0, 0]},
+    {"id": "Neon", "keyColor": "#c872ff", "theme": [0.8, 1, 2.9], "frequency": [6.2, 5.1, 1.5], "phase": [0, 3, 0]},
+    {"id": "Electric", "keyColor": "#00E5FF", "theme": [0.3, 1.3, 1.5], "frequency": [2, 3.5, 4], "phase": [0, 0, 0]},
+    {"id": "Solar Flare", "keyColor": "#FF8000", "theme": [1.6, 1, 0.2], "frequency": [3, 4, 2], "phase": [0, 0, 0]},
+    {"id": "Event Horizon", "keyColor": "#e132ff", "theme": [0.9, 0.2, 1.6], "frequency": [2.5, 1.5, 3.5], "phase": [0, 0, 0]}
+  ]
+}

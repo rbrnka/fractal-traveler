@@ -43,6 +43,7 @@ import {
 import {DebugPanel} from "./debugPanel";
 import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPreview} from "./juliaPreview";
 import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
+import {RosslerRenderer} from "../renderers/RosslerRenderer";
 
 /**
  * @module UI
@@ -158,6 +159,10 @@ export async function switchFractalMode(mode, preset = null) {
 
         case FRACTAL_TYPE.RIEMANN:
             enableRiemannMode();
+            break;
+
+        case FRACTAL_TYPE.ROSSLER:
+            enableRosslerMode();
             break;
 
         default:
@@ -326,6 +331,17 @@ export function enableRiemannMode() {
     destroyArrayOfButtons(presetButtons);
 
     window.location.hash = '#zeta'; // Update URL hash
+}
+
+export function enableRosslerMode() {
+    fractalApp = new RosslerRenderer(canvas);
+    fractalMode = FRACTAL_TYPE.ROSSLER;
+
+    destroyArrayOfButtons(presetButtons);
+    initPresetButtonEvents();
+    initPaletteButtonEvents();
+
+    window.location.hash = '#ross'; // Update URL hash
 }
 
 export function updatePaletteDropdownState() {

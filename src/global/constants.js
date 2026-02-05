@@ -123,7 +123,8 @@ export const ADAPTIVE_QUALITY_COOLDOWN = 500;
 export const FRACTAL_TYPE = {
     MANDELBROT: 0,
     JULIA: 1,
-    RIEMANN: 2
+    RIEMANN: 2,
+    ROSSLER: 3,
 }
 // ---------------------------------------------------------------------------------------------------------------------
 /**

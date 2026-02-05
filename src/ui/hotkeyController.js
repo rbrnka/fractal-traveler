@@ -261,6 +261,11 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
+        case 'KeyV': // Rossler Mode
+            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
+            handled = true;
+            break;
+
         case 'KeyF': // Toggle adaptive quality
             fractalApp.toggleAdaptiveQuality();
             handled = true;
