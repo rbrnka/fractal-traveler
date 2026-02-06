@@ -230,7 +230,7 @@ export const APP = {
     suffixes: [
         "Traveler", "Atlas", "Lens", "Scout", "Studio", "Lab", "Viewer", "Explorer", "Engine", "Navigator", "Surveyor",
         "Seeker", "Wanderer", "Voyager", "Drifter", "Portal", "Gateway", "Microscope", "Telescope", "Prism", "Cockpit",
-        "Forge", "Workshop", "Reactor", "Core", "Kernel", "Matrix", "Plane", "Realm", "Horizon"
+        "Forge", "Workshop", "Reactor", "Core", "Kernel", "Matrix", "Plane", "Realm", "Horizon", "Iterator"
     ],
     get randomName() { return this.prefix + this.suffixes[Math.floor(Math.random() * this.suffixes.length)]; },
     get defaultName() { return this.prefix + this.suffixes[0]; }
