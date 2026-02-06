@@ -324,10 +324,14 @@ export function enableJuliaMode() {
 }
 
 export function enableRiemannMode() {
+    fractalApp.destroy();
     fractalApp = new RiemannRenderer(canvas);
     fractalMode = FRACTAL_TYPE.RIEMANN;
 
     destroyArrayOfButtons(presetButtons);
+    destroyArrayOfButtons(diveButtons);
+    divesDropdown.style.display = 'none';
+
     initPresetButtonEvents();
     initPaletteButtonEvents();
 
@@ -335,6 +339,7 @@ export function enableRiemannMode() {
 }
 
 export function enableRosslerMode() {
+    fractalApp.destroy();
     fractalApp = new RosslerRenderer(canvas);
     fractalMode = FRACTAL_TYPE.ROSSLER;
 

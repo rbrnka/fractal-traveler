@@ -12,7 +12,7 @@ class RiemannRenderer extends FractalRenderer {
         super(canvas);
 
         this.MAX_TERMS = 500;
-        this.DEFAULT_ZOOM = 30;
+        this.DEFAULT_ZOOM = 50;
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.DEFAULT_FREQUENCY = [1.0, 1.0, 1.0];
