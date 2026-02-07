@@ -31,7 +31,7 @@ class RiemannRenderer extends FractalRenderer {
 
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
-        this.ZEROS = presetsData.zeros || [];
+        this.TOUR = presetsData.tour || [];
         this.currentPaletteIndex = 0;
         this.zeroTourActive = false;
 
@@ -263,32 +263,33 @@ class RiemannRenderer extends FractalRenderer {
     }
 
     /**
-     * Animates a tour through all the Riemann zeros sequentially.
-     * @param {Function} [onZeroReached=null] - Callback when each zero is reached (zero, index)
-     * @param {number} [holdDuration=4000] - How long to hold at each zero (ms)
+     * Animates a comprehensive tour through significant points of the Riemann zeta function.
+     * Includes the pole, trivial zeros, special values, saddle points, gram points, and non-trivial zeros.
+     * @param {Function} [onPointReached=null] - Callback when each point is reached (point, index)
+     * @param {number} [holdDuration=4000] - How long to hold at each point (ms)
      * @return {Promise<void>}
      */
-    async animateZeroTour(onZeroReached = null, holdDuration = 4000) {
+    async animateZeroTour(onPointReached = null, holdDuration = 4000) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateZeroTour`, CONSOLE_GROUP_STYLE);
 
         this.stopAllNonColorAnimations();
         this.zeroTourActive = true;
 
-        for (let i = 0; i < this.ZEROS.length && this.zeroTourActive; i++) {
-            const zero = this.ZEROS[i];
+        for (let i = 0; i < this.TOUR.length && this.zeroTourActive; i++) {
+            const point = this.TOUR[i];
             const preset = {
-                pan: [0.5, zero.imaginary],
-                zoom: 8,
+                pan: point.pan,
+                zoom: point.zoom || 8,
                 rotation: 0,
-                paletteId: 'Twilight'
+                paletteId: point.paletteId || 'Default'
             };
 
-            log(`Traveling to zero ${i + 1}/${this.ZEROS.length}: ${zero.name}`);
+            log(`Traveling to ${point.type}: ${i + 1}/${this.TOUR.length}: ${point.name}`);
 
             await this.animateTravelToPreset(preset, 2000, 1000, 2500);
 
-            if (onZeroReached && this.zeroTourActive) {
-                onZeroReached(zero, i);
+            if (onPointReached && this.zeroTourActive) {
+                onPointReached(point, i);
             }
 
             if (this.zeroTourActive) {

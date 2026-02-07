@@ -2274,11 +2274,11 @@ function handleZeroTourClick() {
 }
 
 /**
- * Starts the Zero Tour animation
+ * Starts the Zeta Tour animation through all significant points
  */
 async function startZeroTour() {
-    if (!fractalApp.ZEROS || fractalApp.ZEROS.length === 0) {
-        log('No zeros data available for tour', 'startZeroTour');
+    if (!fractalApp.TOUR || fractalApp.TOUR.length === 0) {
+        log('No tour data available', 'startZeroTour');
         return;
     }
 
@@ -2292,12 +2292,12 @@ async function startZeroTour() {
 
     // Show total in overlay
     if (zeroInfoTotal) {
-        zeroInfoTotal.textContent = fractalApp.ZEROS.length.toString();
+        zeroInfoTotal.textContent = fractalApp.TOUR.length.toString();
     }
 
     // Start the tour with callback
-    await fractalApp.animateZeroTour((zero, index) => {
-        showZeroInfo(zero, index);
+    await fractalApp.animateZeroTour((point, index) => {
+        showZeroInfo(point, index);
     }, 4000);
 
     // Tour ended (either completed or stopped)
@@ -2305,7 +2305,7 @@ async function startZeroTour() {
 }
 
 /**
- * Stops the Zero Tour animation
+ * Stops the Zeta Tour animation
  */
 function stopZeroTour() {
     if (fractalApp?.zeroTourActive) {
@@ -2314,7 +2314,7 @@ function stopZeroTour() {
 
     // Update button state
     if (zeroTourButton) {
-        zeroTourButton.textContent = 'Zero Tour';
+        zeroTourButton.textContent = 'Zeta Tour';
         zeroTourButton.classList.remove('active');
     }
 
@@ -2323,23 +2323,45 @@ function stopZeroTour() {
 }
 
 /**
- * Shows the zero info overlay with information about the current zero
- * @param {Object} zero - The zero object with id, imaginary, name, description
+ * Shows the tour info overlay with information about the current point
+ * @param {Object} point - The tour point with pan, name, type, description
  * @param {number} index - The current index (0-based)
  */
-function showZeroInfo(zero, index) {
+function showZeroInfo(point, index) {
     if (!zeroInfoOverlay) return;
 
     if (zeroInfoTitle) {
-        zeroInfoTitle.textContent = zero.name || `Zero #${zero.id}`;
+        // Format type for display
+        const typeLabels = {
+            'overview': 'Overview',
+            'pole': 'Pole',
+            'special': 'Special Value',
+            'trivial': 'Trivial Zero',
+            'nontrivial': 'Non-trivial Zero',
+            'gram': 'Gram Point',
+            'saddle': 'Saddle Point',
+            'symmetry': 'Symmetry'
+        };
+        const typeLabel = typeLabels[point.type] || point.type;
+        zeroInfoTitle.textContent = point.name;
+        // Could show type as subtitle: `${typeLabel}: ${point.name}`
     }
 
     if (zeroInfoValue) {
-        zeroInfoValue.textContent = `s = 1/2 + ${zero.imaginary}i`;
+        // Format coordinates for display
+        const re = point.pan[0];
+        const im = point.pan[1];
+        if (im === 0) {
+            zeroInfoValue.textContent = `s = ${re}`;
+        } else if (re === 0.5) {
+            zeroInfoValue.textContent = `s = ½ + ${im}i`;
+        } else {
+            zeroInfoValue.textContent = `s = ${re} + ${im}i`;
+        }
     }
 
     if (zeroInfoDescription) {
-        zeroInfoDescription.textContent = zero.description || '';
+        zeroInfoDescription.textContent = point.description || '';
     }
 
     if (zeroInfoCurrent) {

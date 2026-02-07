@@ -22,66 +22,126 @@
     {"id": "Zero Cluster", "pan": [0.5, 40], "zoom": 3, "rotation": 0, "paletteId": "Default"},
     {"id": "Negative Axis", "pan": [-6, 0], "zoom": 20, "rotation": 0, "paletteId": "Arctic"}
   ],
-  "zeros": [
+  "tour": [
     {
-      "id": 1,
-      "imaginary": 14.1347,
-      "name": "The Gateway Zero",
-      "description": "Found by Riemann in 1859. It confirms the Zeta function's link to the distribution of primes."
+      "id": 1, "type": "overview", "name": "The Critical Strip",
+      "pan": [0.5, 20], "zoom": 60,
+      "description": "The strip 0 < Re(s) < 1 where all non-trivial zeros reside. The Riemann Hypothesis claims they all lie on Re(s) = ½.",
+      "paletteId": "Default"
     },
     {
-      "id": 2,
-      "imaginary": 21.022,
-      "name": "The Spacing Benchmark",
-      "description": "Its distance from the first zero (~6.89) began the study of 'spectral gaps' in number theory."
+      "id": 2, "type": "pole", "name": "The Pole",
+      "pan": [1.0, 0], "zoom": 5,
+      "description": "The only singularity of ζ(s). A simple pole with residue 1, where the function explodes to infinity.",
+      "paletteId": "Thermal"
     },
     {
-      "id": 3,
-      "imaginary": 25.0109,
-      "name": "The Stability Zero",
-      "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2)."
+      "id": 3, "type": "special", "name": "The Origin",
+      "pan": [0, 0], "zoom": 8,
+      "description": "ζ(0) = −½. This mysterious value connects to the sum 1+2+3+... = −1/12 via analytic continuation.",
+      "paletteId": "Arctic"
     },
     {
-      "id": 4,
-      "imaginary": 30.4249,
-      "name": "The Chaos Indicator",
-      "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
+      "id": 4, "type": "special", "name": "The Basel Problem",
+      "pan": [2, 0], "zoom": 10,
+      "description": "ζ(2) = π²/6 ≈ 1.645. Euler's 1734 solution stunned the mathematical world.",
+      "paletteId": "Default"
     },
     {
-      "id": 5,
-      "imaginary": 32.9351,
-      "name": "The Near Twin",
-      "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
+      "id": 5, "type": "special", "name": "Apéry's Constant",
+      "pan": [3, 0], "zoom": 10,
+      "description": "ζ(3) ≈ 1.202. Proven irrational by Roger Apéry in 1978, still mysterious today.",
+      "paletteId": "Default"
     },
     {
-      "id": 6,
-      "imaginary": 37.5862,
-      "name": "Hardy’s Milestone",
-      "description": "Confirmed by G.H. Hardy in 1914, proving infinitely many zeros exist on the critical line."
+      "id": 6, "type": "trivial", "name": "First Trivial Zero",
+      "pan": [-2, 0], "zoom": 12,
+      "description": "ζ(−2) = 0. Trivial zeros arise from sin(πs/2) in the functional equation. 'Trivial' because their existence is easily proven.",
+      "paletteId": "Arctic"
     },
     {
-      "id": 7,
-      "imaginary": 40.9187,
-      "name": "The Pre-Computer Limit",
-      "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation."
+      "id": 7, "type": "trivial", "name": "Second Trivial Zero",
+      "pan": [-4, 0], "zoom": 12,
+      "description": "ζ(−4) = 0. All negative even integers are zeros—infinitely many",
+      "paletteId": "Arctic"
     },
     {
-      "id": 8,
-      "imaginary": 43.3271,
-      "name": "The Repulsion Effect",
-      "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms."
+      "id": 9, "type": "saddle", "name": "First Saddle Point",
+      "pan": [0.5, 6.29], "zoom": 12,
+      "description": "Where ζ'(s) = 0. Saddle points reveal the topology of the zeta landscape.",
+      "paletteId": "Monochrome"
     },
     {
-      "id": 9,
-      "imaginary": 48.0051,
-      "name": "The Prime Regulator",
-      "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem."
+      "id": 10, "type": "gram", "name": "Gram Point g₁",
+      "pan": [0.5, 17.85], "zoom": 10,
+      "description": "Where Im(ζ(½+it)) = 0. Gram points bracket zeros and help locate them.",
+      "paletteId": "Arctic"
     },
     {
-      "id": 10,
-      "imaginary": 49.7738,
-      "name": "The Gram Point Link",
-      "description": "Calculated by J.P. Gram (1903), who developed the 'Gram Points' used to predict zero locations."
+      "id": 11, "type": "nontrivial", "name": "The Gateway Zero",
+      "pan": [0.5, 14.1347], "zoom": 8,
+      "description": "Found by Riemann in 1859. It confirms the Zeta function's link to the distribution of primes.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 12, "type": "nontrivial", "name": "The Spacing Benchmark",
+      "pan": [0.5, 21.022], "zoom": 8,
+      "description": "Its distance from the first zero (~6.89) began the study of 'spectral gaps' in number theory.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 13, "type": "nontrivial", "name": "The Stability Zero",
+      "pan": [0.5, 25.0109], "zoom": 8,
+      "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2).",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 14, "type": "nontrivial", "name": "The Chaos Indicator",
+      "pan": [0.5, 30.4249], "zoom": 8,
+      "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 15, "type": "nontrivial", "name": "The Near Twin",
+      "pan": [0.5, 32.9351], "zoom": 8,
+      "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 16, "type": "nontrivial", "name": "Hardy's Milestone",
+      "pan": [0.5, 37.5862], "zoom": 8,
+      "description": "Confirmed by G.H. Hardy in 1914, proving infinitely many zeros exist on the critical line.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 17, "type": "nontrivial", "name": "The Pre-Computer Limit",
+      "pan": [0.5, 40.9187], "zoom": 4,
+      "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 18, "type": "nontrivial", "name": "The Repulsion Effect",
+      "pan": [0.5, 43.3271], "zoom": 4,
+      "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 19, "type": "nontrivial", "name": "The Prime Regulator",
+      "pan": [0.5, 48.0051], "zoom": 4,
+      "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem.",
+      "paletteId": "Twilight"
+    },
+    {
+      "id": 20, "type": "nontrivial", "name": "The Gram Point Link",
+      "pan": [0.5, 49.7738], "zoom": 6,
+      "description": "Calculated by J.P. Gram (1903), who developed methods to predict zero locations.",
+      "paletteId": "Monochrome"
+    },
+    {
+      "id": 21, "type": "symmetry", "name": "Functional Equation",
+      "pan": [0.5, 0], "zoom": 20,
+      "description": "The symmetry ζ(s) ↔ ζ(1−s) reflects the function across the critical line.",
+      "paletteId": "Default"
     }
   ],
   "palettes": [
