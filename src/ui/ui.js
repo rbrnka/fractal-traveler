@@ -2324,7 +2324,7 @@ function stopZeroTour() {
 
     // Update button state
     if (zeroTourButton) {
-        zeroTourButton.textContent = 'Zeta Tour';
+        zeroTourButton.textContent = 'Tour';
         zeroTourButton.classList.remove('active');
     }
 
