@@ -895,9 +895,10 @@ export class JuliaRenderer extends FractalRenderer {
      * @param {Function} [coloringCallback] Optional callback for UI color updates
      * @param {Function} [onPresetComplete] Optional callback when each preset completes
      * @param {Array<JULIA_PRESET>} [userPresets] Optional array of user-saved presets to include in the demo
+     * @param {Function} [onPresetReached] Optional callback(preset, index, total) when preset is reached
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = []) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -944,6 +945,11 @@ export class JuliaRenderer extends FractalRenderer {
             }
 
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
+
+            // Show overlay at the start of animation
+            if (onPresetReached) {
+                onPresetReached(currentPreset, demoIndex, allPresets.length);
+            }
 
             await this.animateTravelToPreset(currentPreset, 4000, coloringCallback);
 

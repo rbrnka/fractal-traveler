@@ -15,7 +15,7 @@ class RiemannRenderer extends FractalRenderer {
         this.DEFAULT_ZOOM = 50;
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
-        this.DEFAULT_FREQUENCY = [1.0, 1.0, 1.0];
+        this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
         this.DEFAULT_PHASE = [0, 0, 0];
         this.MIN_ZOOM = 4000;
 
@@ -210,9 +210,10 @@ class RiemannRenderer extends FractalRenderer {
      * @param {Function} [coloringCallback] - Optional callback for UI color updates
      * @param {Function} [onPresetComplete] - Optional callback when each preset completes
      * @param {Array} [userPresets] - Optional array of user-saved presets
+     * @param {Function} [onPresetReached] - Optional callback(preset, index, total) when preset is reached
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = []) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -251,11 +252,16 @@ class RiemannRenderer extends FractalRenderer {
 
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
-            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
+            await this.animateTravelToPreset(currentPreset, 1000, 1000, 1000, coloringCallback);
+
+            // Show overlay at the start of animation
+            if (onPresetReached) {
+                onPresetReached(currentPreset, demoIndex, allPresets.length);
+            }
 
             if (onPresetComplete) onPresetComplete();
 
-            await asyncDelay(3500);
+            await asyncDelay(10000);
         }
 
         console.log(`Demo interrupted.`);
@@ -286,11 +292,12 @@ class RiemannRenderer extends FractalRenderer {
 
             log(`Traveling to ${point.type}: ${i + 1}/${this.TOUR.length}: ${point.name}`);
 
-            await this.animateTravelToPreset(preset, 2000, 1000, 2500);
-
+            // Show overlay at the start of animation
             if (onPointReached && this.zeroTourActive) {
                 onPointReached(point, i);
             }
+
+            await this.animateTravelToPreset(preset, 2000, 1000, 2500);
 
             if (this.zeroTourActive) {
                 await asyncDelay(holdDuration);

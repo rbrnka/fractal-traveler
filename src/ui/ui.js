@@ -61,8 +61,10 @@ let fractalMode = FRACTAL_TYPE.MANDELBROT;
 // LocalStorage keys for user presets
 const USER_PRESETS_KEY_MANDELBROT = 'u_mandelbrot_presets';
 const USER_PRESETS_KEY_JULIA = 'u_julia_presets';
+const USER_PRESETS_KEY_RIEMANN = 'u_riemann_presets';
+const USER_PRESETS_KEY_ROSSLER = 'u_rossler_presets';
 
-const DEMO_BUTTON_DEFAULT_TEXT = 'Demo';
+const DEMO_BUTTON_DEFAULT_TEXT = 'Tour';
 const DEMO_BUTTON_STOP_TEXT = 'Stop';
 
 let accentColor = DEFAULT_ACCENT_COLOR;
@@ -138,12 +140,29 @@ let contourValue;
 let termsSlider;
 let termsValue;
 let zeroTourButton;
-let zeroInfoOverlay;
-let zeroInfoTitle;
-let zeroInfoValue;
-let zeroInfoDescription;
-let zeroInfoCurrent;
-let zeroInfoTotal;
+let viewInfoOverlay;
+let viewInfoTitle;
+let viewInfoValue;
+let viewInfoDescription;
+let viewInfoCurrent;
+let viewInfoTotal;
+
+// Rossler controls
+let rosslerControls;
+let rosslerASlider;
+let rosslerBSlider;
+let rosslerCSlider;
+let rosslerAValue;
+let rosslerBValue;
+let rosslerCValue;
+let rosslerFreqRSlider;
+let rosslerFreqGSlider;
+let rosslerFreqBSlider;
+let rosslerFreqRValue;
+let rosslerFreqGValue;
+let rosslerFreqBValue;
+let rosslerIterSlider;
+let rosslerIterValue;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
@@ -293,6 +312,7 @@ export function enableMandelbrotMode() {
     destroyJuliaSliders();
     destroyJuliaPreview();
     destroyRiemannControls();
+    destroyRosslerControls();
 
     // Show Demo button and persist switch (may have been hidden in other modes)
     if (demoButton) demoButton.style.display = 'inline-flex';
@@ -341,6 +361,7 @@ export function enableJuliaMode() {
     initPaletteButtonEvents();
 
     destroyRiemannControls();
+    destroyRosslerControls();
 
     // Show Demo button and persist switch (may have been hidden in other modes)
     if (demoButton) demoButton.style.display = 'inline-flex';
@@ -374,6 +395,7 @@ export function enableRiemannMode() {
 
     destroyJuliaSliders();
     destroyJuliaPreview();
+    destroyRosslerControls();
 
     initPresetButtonEvents();
     initPaletteButtonEvents();
@@ -404,6 +426,7 @@ export function enableRosslerMode() {
     initPresetButtonEvents();
     initPaletteButtonEvents();
     destroyRiemannControls();
+    initRosslerControls();
 
     // Show Demo button, hide persist switch (only for Mandelbrot/Julia)
     if (demoButton) demoButton.style.display = 'inline-flex';
@@ -580,6 +603,9 @@ function exitAnimationMode() {
     fractalApp?.stopAllNonColorAnimations();
     // Note: Don't stop color animations here - palette cycling should be independent
 
+    // Hide view info overlay when exiting animation mode
+    hideViewInfo();
+
     if (demoButton) {
         demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
         demoButton.classList.remove('active');
@@ -655,6 +681,7 @@ export async function toggleDemo() {
         resetPresetAndDiveButtonStates();
         activeJuliaDiveIndex = -1;
         fractalApp.stopDemo();
+        hideViewInfo();
         exitAnimationMode();
         console.groupEnd();
         return;
@@ -689,12 +716,25 @@ export async function toggleDemo() {
     console.groupEnd();
 }
 
+/**
+ * Callback for demo to show view info overlay
+ * @param {Object} preset - The preset object
+ * @param {number} index - Current index
+ * @param {number} total - Total presets
+ * @param {boolean} [isRiemann=false] - Whether this is Riemann mode
+ */
+function onDemoPresetReached(preset, index, total, isRiemann = false) {
+    showViewInfo(preset, index, total, isRiemann);
+}
+
 /** Starts the Mandelbrot demo */
 async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
 
+    hideViewInfo();
     console.log("Demo ended");
     console.groupEnd();
 }
@@ -703,8 +743,10 @@ async function startMandelbrotDemo() {
 async function startRiemannDemo() {
     console.groupCollapsed(`%c startRiemannDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
+        (preset, index, total) => onDemoPresetReached(preset, index, total, true));
 
+    hideViewInfo();
     console.log("Demo ended");
     console.groupEnd();
 }
@@ -713,8 +755,10 @@ async function startRiemannDemo() {
 async function startRosslerDemo() {
     console.groupCollapsed(`%c startRosslerDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
 
+    hideViewInfo();
     console.log("Demo ended");
     console.groupEnd();
 }
@@ -797,9 +841,11 @@ export async function startJuliaDive(dives, index) {
 async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState, getUserPresets());
+    await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
     // await fractalApp.animateRandomDemo(); // sin/cos original demo
 
+    hideViewInfo();
     console.log("Demo ended");
     console.groupEnd();
 }
@@ -902,6 +948,7 @@ export async function randomizeColors() {
     updatePaletteDropdownState();
     updatePaletteCycleButtonState();
     syncRiemannControls();
+    syncRosslerControls();
 }
 
 export function captureScreenshot() {
@@ -931,6 +978,9 @@ export async function reset() {
 
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
 
+    // Stop zero tour if active
+    stopZeroTour();
+
     exitAnimationMode();
 
     fractalApp.reset();
@@ -941,8 +991,9 @@ export async function reset() {
         resetJuliaPreview();
     }
 
-    // Sync Riemann controls if in Riemann mode
+    // Sync mode-specific controls
     syncRiemannControls();
+    syncRosslerControls();
 
     resetAppState();
     updatePaletteDropdownState();
@@ -959,7 +1010,12 @@ export async function reset() {
  * @returns {string}
  */
 function getUserPresetsKey() {
-    return isJuliaMode() ? USER_PRESETS_KEY_JULIA : USER_PRESETS_KEY_MANDELBROT;
+    switch (fractalMode) {
+        case FRACTAL_TYPE.JULIA: return USER_PRESETS_KEY_JULIA;
+        case FRACTAL_TYPE.RIEMANN: return USER_PRESETS_KEY_RIEMANN;
+        case FRACTAL_TYPE.ROSSLER: return USER_PRESETS_KEY_ROSSLER;
+        default: return USER_PRESETS_KEY_MANDELBROT;
+    }
 }
 
 /**
@@ -1833,6 +1889,7 @@ function initPaletteButtonEvents() {
         if (fractalApp.paletteCyclingActive) {
             fractalApp.stopCurrentColorAnimations();
             syncRiemannControls();
+            syncRosslerControls();
         } else {
             closePaletteDropdown();
             await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
@@ -2300,15 +2357,12 @@ async function startZeroTour() {
         zeroTourButton.classList.add('active');
     }
 
-    // Show total in overlay
-    if (zeroInfoTotal) {
-        zeroInfoTotal.textContent = fractalApp.TOUR.length.toString();
-    }
+    const totalPoints = fractalApp.TOUR.length;
 
     // Start the tour with callback
     await fractalApp.animateZeroTour((point, index) => {
-        showZeroInfo(point, index);
-    }, 4000);
+        showViewInfo(point, index, totalPoints, true);
+    }, 7000);
 
     // Tour ended (either completed or stopped)
     stopZeroTour();
@@ -2329,64 +2383,91 @@ function stopZeroTour() {
     }
 
     // Hide the overlay
-    hideZeroInfo();
+    hideViewInfo();
 }
 
 /**
- * Shows the tour info overlay with information about the current point
- * @param {Object} point - The tour point with pan, name, type, description
+ * Shows the view info overlay with information about the current view/point
+ * Works for both Zeta Tour points (with descriptions) and Demo presets (just title)
+ * @param {Object} preset - The preset/point with id or name, pan, and optional description
  * @param {number} index - The current index (0-based)
+ * @param {number} total - Total number of items
+ * @param {boolean} [isRiemann=false] - Whether this is Riemann mode (show coordinates differently)
  */
-function showZeroInfo(point, index) {
-    if (!zeroInfoOverlay) return;
+function showViewInfo(preset, index, total, isRiemann = false) {
+    if (!viewInfoOverlay) return;
 
-    if (zeroInfoTitle) {
-        // Format type for display
-        const typeLabels = {
-            'overview': 'Overview',
-            'pole': 'Pole',
-            'special': 'Special Value',
-            'trivial': 'Trivial Zero',
-            'nontrivial': 'Non-trivial Zero',
-            'gram': 'Gram Point',
-            'saddle': 'Saddle Point',
-            'symmetry': 'Symmetry'
-        };
-        const typeLabel = typeLabels[point.type] || point.type;
-        zeroInfoTitle.textContent = point.name;
-        // Could show type as subtitle: `${typeLabel}: ${point.name}`
-    }
+    // Get the title - use 'name' for tour points, 'id' for regular presets
+    const title = preset.name || preset.id || 'View';
 
-    if (zeroInfoValue) {
-        // Format coordinates for display
-        const re = point.pan[0];
-        const im = point.pan[1];
-        if (im === 0) {
-            zeroInfoValue.textContent = `s = ${re}`;
-        } else if (re === 0.5) {
-            zeroInfoValue.textContent = `s = ½ + ${im}i`;
-        } else {
-            zeroInfoValue.textContent = `s = ${re} + ${im}i`;
+    // Get palette color from preset's paletteId
+    let accentColor = null;
+    if (preset.paletteId && fractalApp?.PALETTES) {
+        const palette = fractalApp.PALETTES.find(p => p.id === preset.paletteId);
+        if (palette?.keyColor) {
+            accentColor = palette.keyColor;
         }
     }
 
-    if (zeroInfoDescription) {
-        zeroInfoDescription.textContent = point.description || '';
+    // Apply accent color to overlay elements
+    if (accentColor) {
+        viewInfoOverlay.style.borderColor = accentColor;
+        if (viewInfoTitle) viewInfoTitle.style.color = accentColor;
+    } else {
+        // Reset to default CSS values
+        viewInfoOverlay.style.borderColor = '';
+        if (viewInfoTitle) viewInfoTitle.style.color = '';
     }
 
-    if (zeroInfoCurrent) {
-        zeroInfoCurrent.textContent = (index + 1).toString();
+    if (viewInfoTitle) {
+        viewInfoTitle.textContent = title;
     }
 
-    zeroInfoOverlay.classList.remove('zero-info-hidden');
+    if (viewInfoValue) {
+        if (isRiemann && preset.pan) {
+            // Format Riemann coordinates
+            const re = preset.pan[0];
+            const im = preset.pan[1];
+            if (im === 0) {
+                viewInfoValue.textContent = `s = ${re}`;
+            } else if (re === 0.5) {
+                viewInfoValue.textContent = `s = ½ + ${im}i`;
+            } else {
+                viewInfoValue.textContent = `s = ${re} + ${im}i`;
+            }
+            viewInfoValue.style.display = '';
+        } else {
+            // Hide value for non-Riemann modes
+            viewInfoValue.style.display = 'none';
+        }
+    }
+
+    if (viewInfoDescription) {
+        if (preset.description) {
+            viewInfoDescription.textContent = preset.description;
+            viewInfoDescription.style.display = '';
+        } else {
+            viewInfoDescription.style.display = 'none';
+        }
+    }
+
+    if (viewInfoCurrent) {
+        viewInfoCurrent.textContent = (index + 1).toString();
+    }
+
+    if (viewInfoTotal) {
+        viewInfoTotal.textContent = total.toString();
+    }
+
+    viewInfoOverlay.classList.remove('view-info-hidden');
 }
 
 /**
- * Hides the zero info overlay
+ * Hides the view info overlay
  */
-function hideZeroInfo() {
-    if (zeroInfoOverlay) {
-        zeroInfoOverlay.classList.add('zero-info-hidden');
+function hideViewInfo() {
+    if (viewInfoOverlay) {
+        viewInfoOverlay.classList.add('view-info-hidden');
     }
 }
 
@@ -2448,6 +2529,180 @@ export function syncRiemannControls() {
 
 // endregion -----------------------------------------------------------------------------------------------------------
 
+// region > ROSSLER CONTROLS -------------------------------------------------------------------------------------------
+
+/**
+ * Initializes Rossler-specific UI controls
+ */
+function initRosslerControls() {
+    if (!rosslerControls) return;
+
+    // Show the controls
+    rosslerControls.style.display = 'flex';
+
+    // Initialize parameter sliders (a, b, c)
+    if (rosslerASlider) {
+        rosslerASlider.value = fractalApp.params[0];
+        rosslerAValue.textContent = fractalApp.params[0].toFixed(2);
+        rosslerASlider.addEventListener('input', handleRosslerAChange);
+    }
+
+    if (rosslerBSlider) {
+        rosslerBSlider.value = fractalApp.params[1];
+        rosslerBValue.textContent = fractalApp.params[1].toFixed(2);
+        rosslerBSlider.addEventListener('input', handleRosslerBChange);
+    }
+
+    if (rosslerCSlider) {
+        rosslerCSlider.value = fractalApp.params[2];
+        rosslerCValue.textContent = fractalApp.params[2].toFixed(1);
+        rosslerCSlider.addEventListener('input', handleRosslerCChange);
+    }
+
+    // Initialize frequency sliders
+    if (rosslerFreqRSlider) {
+        rosslerFreqRSlider.value = fractalApp.frequency[0];
+        rosslerFreqRValue.textContent = fractalApp.frequency[0].toFixed(2);
+        rosslerFreqRSlider.addEventListener('input', handleRosslerFreqRChange);
+    }
+
+    if (rosslerFreqGSlider) {
+        rosslerFreqGSlider.value = fractalApp.frequency[1];
+        rosslerFreqGValue.textContent = fractalApp.frequency[1].toFixed(2);
+        rosslerFreqGSlider.addEventListener('input', handleRosslerFreqGChange);
+    }
+
+    if (rosslerFreqBSlider) {
+        rosslerFreqBSlider.value = fractalApp.frequency[2];
+        rosslerFreqBValue.textContent = fractalApp.frequency[2].toFixed(2);
+        rosslerFreqBSlider.addEventListener('input', handleRosslerFreqBChange);
+    }
+
+    // Initialize iterations slider
+    if (rosslerIterSlider) {
+        const iters = fractalApp.targetIterations ?? fractalApp.DEFAULT_ITERATIONS ?? 10000;
+        rosslerIterSlider.value = iters;
+        rosslerIterValue.textContent = iters.toString();
+        rosslerIterSlider.addEventListener('input', handleRosslerIterChange);
+    }
+
+    log('Initialized.', 'initRosslerControls');
+}
+
+/**
+ * Destroys Rossler-specific UI controls and hides them
+ */
+function destroyRosslerControls() {
+    if (rosslerControls) {
+        rosslerControls.style.display = 'none';
+    }
+
+    // Remove event listeners
+    if (rosslerASlider) rosslerASlider.removeEventListener('input', handleRosslerAChange);
+    if (rosslerBSlider) rosslerBSlider.removeEventListener('input', handleRosslerBChange);
+    if (rosslerCSlider) rosslerCSlider.removeEventListener('input', handleRosslerCChange);
+    if (rosslerFreqRSlider) rosslerFreqRSlider.removeEventListener('input', handleRosslerFreqRChange);
+    if (rosslerFreqGSlider) rosslerFreqGSlider.removeEventListener('input', handleRosslerFreqGChange);
+    if (rosslerFreqBSlider) rosslerFreqBSlider.removeEventListener('input', handleRosslerFreqBChange);
+    if (rosslerIterSlider) rosslerIterSlider.removeEventListener('input', handleRosslerIterChange);
+
+    log('Destroyed.', 'destroyRosslerControls');
+}
+
+function handleRosslerAChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.params[0] = value;
+    rosslerAValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleRosslerBChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.params[1] = value;
+    rosslerBValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleRosslerCChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.params[2] = value;
+    rosslerCValue.textContent = value.toFixed(1);
+    fractalApp.draw();
+}
+
+function handleRosslerFreqRChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[0] = value;
+    rosslerFreqRValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleRosslerFreqGChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[1] = value;
+    rosslerFreqGValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleRosslerFreqBChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[2] = value;
+    rosslerFreqBValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleRosslerIterChange(e) {
+    const value = parseInt(e.target.value, 10);
+    fractalApp.targetIterations = value;
+    rosslerIterValue.textContent = value.toString();
+    fractalApp.draw();
+}
+
+/**
+ * Syncs Rossler control slider values with renderer state.
+ * Called after reset and palette changes.
+ */
+export function syncRosslerControls() {
+    if (fractalMode !== FRACTAL_TYPE.ROSSLER) return;
+
+    // Sync parameter sliders
+    if (rosslerASlider) {
+        rosslerASlider.value = fractalApp.params[0];
+        rosslerAValue.textContent = fractalApp.params[0].toFixed(2);
+    }
+    if (rosslerBSlider) {
+        rosslerBSlider.value = fractalApp.params[1];
+        rosslerBValue.textContent = fractalApp.params[1].toFixed(2);
+    }
+    if (rosslerCSlider) {
+        rosslerCSlider.value = fractalApp.params[2];
+        rosslerCValue.textContent = fractalApp.params[2].toFixed(1);
+    }
+
+    // Sync frequency sliders
+    if (rosslerFreqRSlider) {
+        rosslerFreqRSlider.value = fractalApp.frequency[0];
+        rosslerFreqRValue.textContent = fractalApp.frequency[0].toFixed(2);
+    }
+    if (rosslerFreqGSlider) {
+        rosslerFreqGSlider.value = fractalApp.frequency[1];
+        rosslerFreqGValue.textContent = fractalApp.frequency[1].toFixed(2);
+    }
+    if (rosslerFreqBSlider) {
+        rosslerFreqBSlider.value = fractalApp.frequency[2];
+        rosslerFreqBValue.textContent = fractalApp.frequency[2].toFixed(2);
+    }
+
+    // Sync iterations slider
+    if (rosslerIterSlider) {
+        const iters = fractalApp.targetIterations ?? fractalApp.DEFAULT_ITERATIONS ?? 10000;
+        rosslerIterSlider.value = iters;
+        rosslerIterValue.textContent = iters.toString();
+    }
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
+
 function bindHTMLElements() {
     // Element binding
     fractalToggle = document.getElementById('fractal-toggle');
@@ -2502,12 +2757,28 @@ function bindHTMLElements() {
     termsSlider = document.getElementById('termsSlider');
     termsValue = document.getElementById('termsValue');
     zeroTourButton = document.getElementById('zeroTour');
-    zeroInfoOverlay = document.getElementById('zeroInfoOverlay');
-    zeroInfoTitle = document.getElementById('zeroInfoTitle');
-    zeroInfoValue = document.getElementById('zeroInfoValue');
-    zeroInfoDescription = document.getElementById('zeroInfoDescription');
-    zeroInfoCurrent = document.getElementById('zeroInfoCurrent');
-    zeroInfoTotal = document.getElementById('zeroInfoTotal');
+    viewInfoOverlay = document.getElementById('viewInfoOverlay');
+    viewInfoTitle = document.getElementById('viewInfoTitle');
+    viewInfoValue = document.getElementById('viewInfoValue');
+    viewInfoDescription = document.getElementById('viewInfoDescription');
+    viewInfoCurrent = document.getElementById('viewInfoCurrent');
+    viewInfoTotal = document.getElementById('viewInfoTotal');
+    // Rossler Controls elements
+    rosslerControls = document.getElementById('rosslerControls');
+    rosslerASlider = document.getElementById('rosslerASlider');
+    rosslerBSlider = document.getElementById('rosslerBSlider');
+    rosslerCSlider = document.getElementById('rosslerCSlider');
+    rosslerAValue = document.getElementById('rosslerAValue');
+    rosslerBValue = document.getElementById('rosslerBValue');
+    rosslerCValue = document.getElementById('rosslerCValue');
+    rosslerFreqRSlider = document.getElementById('rosslerFreqRSlider');
+    rosslerFreqGSlider = document.getElementById('rosslerFreqGSlider');
+    rosslerFreqBSlider = document.getElementById('rosslerFreqBSlider');
+    rosslerFreqRValue = document.getElementById('rosslerFreqRValue');
+    rosslerFreqGValue = document.getElementById('rosslerFreqGValue');
+    rosslerFreqBValue = document.getElementById('rosslerFreqBValue');
+    rosslerIterSlider = document.getElementById('rosslerIterSlider');
+    rosslerIterValue = document.getElementById('rosslerIterValue');
 }
 
 /**
@@ -2533,12 +2804,40 @@ export async function initUI(fractalRenderer) {
         initDiveButtons();
 
         updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
+        updateFractalDropdownState(FRACTAL_TYPE.JULIA);
         // Darker backgrounds for Julia as it renders on white
         header.style.background = 'rgba(20, 20, 20, 0.8)';
         infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
         window.location.hash = '#julia'; // Update URL hash
+    } else if (fractalRenderer instanceof RiemannRenderer) {
+        fractalMode = FRACTAL_TYPE.RIEMANN;
+
+        // Hide dives dropdown, show tour button
+        if (divesDropdown) divesDropdown.style.display = 'none';
+        if (demoButton) demoButton.style.display = 'none';
+        if (zeroTourButton) zeroTourButton.style.display = 'inline-flex';
+        if (persistSwitch) persistSwitch.style.display = 'none';
+
+        initRiemannControls();
+        updateFractalDropdownState(FRACTAL_TYPE.RIEMANN);
+
+        window.location.hash = '#zeta'; // Update URL hash
+    } else if (fractalRenderer instanceof RosslerRenderer) {
+        fractalMode = FRACTAL_TYPE.ROSSLER;
+
+        // Hide dives dropdown
+        if (divesDropdown) divesDropdown.style.display = 'none';
+        if (persistSwitch) persistSwitch.style.display = 'none';
+
+        initRosslerControls();
+        updateFractalDropdownState(FRACTAL_TYPE.ROSSLER);
+
+        window.location.hash = '#ross'; // Update URL hash
     } else {
+        // Mandelbrot mode
+        fractalMode = FRACTAL_TYPE.MANDELBROT;
+        updateFractalDropdownState(FRACTAL_TYPE.MANDELBROT);
         initJuliaPreview();
     }
 

@@ -22,6 +22,7 @@ import {
     switchFractalTypeWithPersistence,
     syncRiemannControls,
     syncRiemannToggleStates,
+    syncRosslerControls,
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
@@ -206,12 +207,14 @@ async function onKeyDown(event) {
                 updatePaletteDropdownState();
                 updatePaletteCycleButtonState();
                 syncRiemannControls();
+                syncRosslerControls();
             } else if (event.shiftKey) {
                 // Shift+T: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
                     // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
                     syncRiemannControls();
+                    syncRosslerControls();
                 } else {
                     // Start cycling
                     fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
@@ -250,11 +253,6 @@ async function onKeyDown(event) {
 
         case 'KeyD': // Start/stop demo
             await toggleDemo();
-            handled = true;
-            break;
-
-        case 'KeyM': // Riemann Mode
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.RIEMANN);
             handled = true;
             break;
 

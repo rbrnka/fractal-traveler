@@ -55,8 +55,14 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
     // Convert to Base64 for compact representation
     const encodedParams = btoa(JSON.stringify(params));
 
-    // Update the URL with a single "params" field
-    const hashPath = mode === FRACTAL_TYPE.JULIA ? '#julia' : '#';
+    // Determine hash path based on mode
+    let hashPath = '#';
+    switch (mode) {
+        case FRACTAL_TYPE.JULIA: hashPath = '#julia'; break;
+        case FRACTAL_TYPE.RIEMANN: hashPath = '#zeta'; break;
+        case FRACTAL_TYPE.ROSSLER: hashPath = '#ross'; break;
+        default: hashPath = '#'; break;
+    }
     window.history.pushState({}, '', `${hashPath}?view=${encodedParams}`);
 
     urlParamsSet = true;
@@ -79,12 +85,24 @@ export function loadFractalParamsFromURL() {
     }
 
     // Split the hash to separate the mode and parameters
-    const [mode, queryString] = hash.slice(1).split('?'); // Remove the '#' and split by '?'
+    const [modeStr, queryString] = hash.slice(1).split('?'); // Remove the '#' and split by '?'
+
+    // Parse mode from hash path
+    const parseMode = (str) => {
+        switch (str?.toLowerCase()) {
+            case 'julia': return FRACTAL_TYPE.JULIA;
+            case 'zeta':
+            case 'riemann': return FRACTAL_TYPE.RIEMANN;
+            case 'ross':
+            case 'rossler': return FRACTAL_TYPE.ROSSLER;
+            default: return FRACTAL_TYPE.MANDELBROT;
+        }
+    };
 
     if (!queryString) {
         if (DEBUG_MODE) console.log(`No query string is found in the URL, returning mode only.`);
         if (DEBUG_MODE) console.groupEnd();
-        return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT};
+        return {mode: parseMode(modeStr)};
     }
 
     // Parse the query parameters
@@ -99,7 +117,7 @@ export function loadFractalParamsFromURL() {
         if (DEBUG_MODE) console.groupEnd();
         // Return the parsed parameters
         return {
-            mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT,
+            mode: parseMode(modeStr),
             px: decodedParams.px != null ? parseFloat(decodedParams.px) : null,
             py: decodedParams.py != null ? parseFloat(decodedParams.py) : null,
             zoom: decodedParams.zoom != null ? parseFloat(decodedParams.zoom) : null,
@@ -112,7 +130,7 @@ export function loadFractalParamsFromURL() {
         console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         urlParamsSet = true;
         if (DEBUG_MODE) console.groupEnd();
-        return {mode: mode === 'julia' ? FRACTAL_TYPE.JULIA : FRACTAL_TYPE.MANDELBROT}; // Return only the mode if no query string is found
+        return {mode: parseMode(modeStr)}; // Return only the mode if decoding failed
     }
 }
 

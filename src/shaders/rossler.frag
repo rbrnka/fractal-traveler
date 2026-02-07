@@ -15,10 +15,12 @@ uniform vec3 u_phase;// Sine wave phase offsets per channel.
 
 // Maximum iterations for the simulation (template-replaced by JS).
 const int MAX_ITERATIONS = __MAX_ITER__;
-// Time step for RK4 integration.
-const float dt = 0.04;
+// Time step for RK4 integration (larger = faster but coarser).
+const float dt = 0.08;
 // Iterations to skip while orbit settles onto attractor.
-const int TRANSIENT = 200;
+const int TRANSIENT = 100;
+// Early exit threshold - stop when density is saturated.
+const float DENSITY_SATURATE = 8.0;
 
 // Rossler system derivative.
 vec3 rosslerDerivative(vec3 p, vec3 params) {
@@ -90,6 +92,8 @@ void main() {
             float w = 1.0 - smoothstep(0.0, threshold, d);
             density += w;
             weightedZ += w * p.z;
+            // Early exit when pixel is saturated
+            if (density > DENSITY_SATURATE) break;
         }
         prevXY = p.xy;
     }
@@ -101,10 +105,16 @@ void main() {
     float avgZ = density > 0.001 ? weightedZ / density : 0.0;
     float zNorm = clamp(avgZ / u_params.z, 0.0, 1.0);
 
+    // Use frequency and phase to modulate color based on z-depth
+    vec3 freqColor = 0.5 + 0.5 * cos(u_frequency * zNorm * 6.2831853 + u_phase);
+
+    // Blend frequency-modulated color with palette
+    vec3 baseColor = u_colorPalette * freqColor;
+
     // 3D depth gradient: darker at the flat spiral, brighter at the spike.
     vec3 col = brightness * mix(
-        u_colorPalette * 0.7,
-        u_colorPalette * 1.4,
+        baseColor * 0.7,
+        baseColor * 1.4,
         sqrt(zNorm)
     );
 

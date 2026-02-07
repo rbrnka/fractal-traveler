@@ -82,19 +82,19 @@
             <p class="tagline">Developed for interactive exploration and learning.</p>
 
             <div class="control-row" id="fractal-switch">
-                <span class="control-label">Fractal:</span>
+                <div class="button-group">
+                </div>
+            </div>
+
+            <div class="control-row" id="presets-dives">
+<!--                <span class="control-label">Settings:</span>-->
                 <div class="button-group">
                     <div id="fractal-dropdown" class="dropdown">
                         <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Mandelbrot &#x25BE;</button>
                         <div id="fractal-modes" class="dropdown-menu"></div>
                     </div>
                     <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings.">&hArr;</button>
-                </div>
-            </div>
 
-            <div class="control-row" id="presets-dives">
-                <span class="control-label">Settings:</span>
-                <div class="button-group">
                     <div id="presets-dropdown" class="dropdown">
                         <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Fractal Locations">View &#x25BE;</button>
                         <div id="presets" class="dropdown-menu"></div>
@@ -107,8 +107,6 @@
                         <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette &#x25BE;</button>
                         <div id="palettes" class="dropdown-menu"></div>
                     </div>
-                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Tour</button>
-                    <button type="button" id="zeroTour" title="Guided tour of significant zeta features">Tour</button>
                 </div>
             </div>
 
@@ -161,9 +159,50 @@
                 </div>
             </div>
 
+            <!-- Rossler Controls -->
+            <div id="rosslerControls">
+                <div class="slider-container">
+                    <label for="rosslerASlider" title="Parameter a - spiral tightness">a:</label>
+                    <input type="range" id="rosslerASlider" class="slider" min="0.1" max="0.5" step="0.01" value="0.2">
+                    <output class="sliderValue" id="rosslerAValue">0.20</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerBSlider" title="Parameter b - z-axis behavior">b:</label>
+                    <input type="range" id="rosslerBSlider" class="slider" min="0.1" max="0.5" step="0.01" value="0.2">
+                    <output class="sliderValue" id="rosslerBValue">0.20</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerCSlider" title="Parameter c - chaos level (most interesting!)">c:</label>
+                    <input type="range" id="rosslerCSlider" class="slider" min="3.0" max="12.0" step="0.1" value="5.7">
+                    <output class="sliderValue" id="rosslerCValue">5.7</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerFreqRSlider" title="Red frequency">R:</label>
+                    <input type="range" id="rosslerFreqRSlider" class="slider" min="0.1" max="10" step="0.1" value="3.14">
+                    <output class="sliderValue" id="rosslerFreqRValue">3.14</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerFreqGSlider" title="Green frequency">G:</label>
+                    <input type="range" id="rosslerFreqGSlider" class="slider" min="0.1" max="10" step="0.1" value="6.28">
+                    <output class="sliderValue" id="rosslerFreqGValue">6.28</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerFreqBSlider" title="Blue frequency">B:</label>
+                    <input type="range" id="rosslerFreqBSlider" class="slider" min="0.1" max="10" step="0.1" value="1.72">
+                    <output class="sliderValue" id="rosslerFreqBValue">1.72</output>
+                </div>
+                <div class="slider-container">
+                    <label for="rosslerIterSlider" title="Iteration count (detail level)">Iter:</label>
+                    <input type="range" id="rosslerIterSlider" class="slider" min="1000" max="15000" step="500" value="5000">
+                    <output class="sliderValue" id="rosslerIterValue">5000</output>
+                </div>
+            </div>
+
             <div class="control-row" id="controlButtons">
-                <span class="control-label">Actions:</span>
+<!--                <span class="control-label">Actions:</span>-->
                 <div class="button-group">
+                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Tour</button>
+                    <button type="button" id="zeroTour" title="Guided tour of significant zeta features">Tour</button>
                     <button type="button" id="screenshot" title="Save Image (Shift+S)">Capture</button>
                     <button type="button" id="saveView" title="Save current view locally (Alt+S)">Save</button>
                     <button type="button" id="reset" title="Reset the view (Shift+R)">Reset</button>
@@ -214,11 +253,11 @@
         <div id="infoText">Initialized successfully!</div>
     </aside>
 
-    <aside id="zeroInfoOverlay" class="zero-info-hidden">
-        <h3 id="zeroInfoTitle">Zero #1</h3>
-        <p id="zeroInfoValue">s = 1/2 + 14.1347i</p>
-        <p id="zeroInfoDescription"></p>
-        <div id="zeroInfoProgress"><span id="zeroInfoCurrent">1</span> / <span id="zeroInfoTotal">10</span></div>
+    <aside id="viewInfoOverlay" class="view-info-hidden">
+        <h3 id="viewInfoTitle"></h3>
+        <p id="viewInfoValue"></p>
+        <p id="viewInfoDescription"></p>
+        <div id="viewInfoProgress"><span id="viewInfoCurrent">1</span> / <span id="viewInfoTotal">10</span></div>
     </aside>
 
     <main>

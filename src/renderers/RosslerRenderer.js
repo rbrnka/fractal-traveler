@@ -16,7 +16,8 @@ export class RosslerRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.MAX_ITER = 10000;
+        this.MAX_ITER = 15000;
+        this.DEFAULT_ITERATIONS = 5000;
 
         // Default view parameters.
         this.DEFAULT_ROTATION = 0;
@@ -39,6 +40,9 @@ export class RosslerRenderer extends FractalRenderer {
 
         // Pre-allocate typed array for params uniform upload (avoids per-frame allocation)
         this._paramsArray = new Float32Array(3);
+
+        // Iteration count controlled by slider
+        this.targetIterations = this.DEFAULT_ITERATIONS;
 
         // Presets and palettes from JSON
         this.PRESETS = presetsData.views || [];
@@ -65,13 +69,16 @@ export class RosslerRenderer extends FractalRenderer {
         this.paramsLoc = this.gl.getUniformLocation(this.program, 'u_params');
         this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
         this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
+        this.iterationsLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
     }
 
     draw() {
         this.gl.useProgram(this.program);
 
-        // Compute dynamic iteration count (base + adaptive quality adjustment)
-        this.iterations = Math.max(500, Math.min(this.MAX_ITER, this.MAX_ITER + this.extraIterations));
+        // Compute dynamic iteration count (base + slider adjustment + adaptive quality)
+        // targetIterations is set by slider (default DEFAULT_ITERATIONS), extraIterations by adaptive quality
+        const baseIter = this.targetIterations ?? this.DEFAULT_ITERATIONS;
+        this.iterations = Math.max(500, Math.min(this.MAX_ITER, baseIter + this.extraIterations));
 
         // Upload Rossler-specific uniforms
         if (this.paramsLoc) {
@@ -82,6 +89,7 @@ export class RosslerRenderer extends FractalRenderer {
         }
         if (this.frequencyLoc) this.gl.uniform3fv(this.frequencyLoc, this.frequency);
         if (this.phaseLoc) this.gl.uniform3fv(this.phaseLoc, this.phase);
+        if (this.iterationsLoc) this.gl.uniform1f(this.iterationsLoc, this.iterations);
 
         // Base class handles: viewport, resolution/pan/zoom/rotation/colorPalette uploads,
         // clear, drawArrays, GPU timing, adaptive quality
@@ -92,6 +100,7 @@ export class RosslerRenderer extends FractalRenderer {
         this.params = this.DEFAULT_PARAMS.slice();
         this.frequency = [...this.DEFAULT_FREQUENCY];
         this.phase = [...this.DEFAULT_PHASE];
+        this.targetIterations = this.DEFAULT_ITERATIONS;
         this.currentPaletteIndex = 0;
         super.reset();
     }
@@ -227,9 +236,10 @@ export class RosslerRenderer extends FractalRenderer {
      * @param {Function} [coloringCallback] - Optional callback for UI color updates
      * @param {Function} [onPresetComplete] - Optional callback when each preset completes
      * @param {Array} [userPresets] - Optional array of user-saved presets
+     * @param {Function} [onPresetReached] - Optional callback(preset, index, total) when preset is reached
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = []) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -267,6 +277,11 @@ export class RosslerRenderer extends FractalRenderer {
             }
 
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
+
+            // Show overlay at the start of animation
+            if (onPresetReached) {
+                onPresetReached(currentPreset, demoIndex, allPresets.length);
+            }
 
             await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
 
