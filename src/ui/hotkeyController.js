@@ -20,6 +20,8 @@ import {
     startJuliaDive,
     switchFractalMode,
     switchFractalTypeWithPersistence,
+    syncRiemannControls,
+    syncRiemannToggleStates,
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
@@ -120,13 +122,15 @@ let fractalApp;
  */
 async function onKeyDown(event) {
 
-    // Do not steal hotkeys from user input fields (search boxes, sliders, etc.)
+    // Do not steal hotkeys from user input fields (search boxes, text inputs, etc.)
+    // But allow hotkeys when range sliders are focused
     const target = /** @type {HTMLElement|null} */ (event.target);
     const tag = target?.tagName?.toLowerCase();
+    const inputType = target?.type?.toLowerCase();
     const isTypingTarget =
         !!target &&
         (
-            tag === 'input' ||
+            (tag === 'input' && inputType !== 'range') ||
             tag === 'textarea' ||
             tag === 'select' ||
             target.isContentEditable
@@ -201,11 +205,13 @@ async function onKeyDown(event) {
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
                 updatePaletteCycleButtonState();
+                syncRiemannControls();
             } else if (event.shiftKey) {
                 // Shift+T: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
                     // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
+                    syncRiemannControls();
                 } else {
                     // Start cycling
                     fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
@@ -257,6 +263,7 @@ async function onKeyDown(event) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
+                syncRiemannToggleStates();
             }
             handled = true;
             break;
@@ -266,6 +273,7 @@ async function onKeyDown(event) {
                 fractalApp.showCriticalLine = !fractalApp.showCriticalLine;
                 log(`Critical line: ${fractalApp.showCriticalLine ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
+                syncRiemannToggleStates();
             }
             handled = true;
             break;

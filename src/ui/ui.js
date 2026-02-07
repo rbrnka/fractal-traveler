@@ -82,8 +82,9 @@ let resizeTimeout;
 // HTML elements
 let header;
 let logo; // H1
-let mandelbrotSwitch;
-let juliaSwitch;
+let fractalToggle;
+let fractalModesMenu;
+let fractalModeButtons = [];
 let persistSwitch;
 let resetButton;
 let saveViewButton;
@@ -121,6 +122,28 @@ let allButtons = [];
 let infoLabel;
 let infoText;
 export let debugPanel;
+
+// Riemann controls
+let riemannControls;
+let criticalLineToggle;
+let analyticExtToggle;
+let freqRSlider;
+let freqGSlider;
+let freqBSlider;
+let freqRValue;
+let freqGValue;
+let freqBValue;
+let contourSlider;
+let contourValue;
+let termsSlider;
+let termsValue;
+let zeroTourButton;
+let zeroInfoOverlay;
+let zeroInfoTitle;
+let zeroInfoValue;
+let zeroInfoDescription;
+let zeroInfoCurrent;
+let zeroInfoTotal;
 
 let lastInfoUpdate = 0; // Tracks the last time the sliders were updated
 const infoUpdateThrottleLimit = 100; // Throttle limit in milliseconds
@@ -262,14 +285,21 @@ export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
  * for Mandelbrot mode.
  */
 export function enableMandelbrotMode() {
-    juliaSwitch.classList.remove('active');
-    mandelbrotSwitch.classList.add('active');
+    updateFractalDropdownState(FRACTAL_TYPE.MANDELBROT);
 
     destroyArrayOfButtons(diveButtons);
     divesDropdown.style.display = 'none';
 
     destroyJuliaSliders();
     destroyJuliaPreview();
+    destroyRiemannControls();
+
+    // Show Demo button and persist switch (may have been hidden in other modes)
+    if (demoButton) demoButton.style.display = 'inline-flex';
+    if (zeroTourButton) zeroTourButton.style.display = 'none';
+    if (persistSwitch && FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
+        persistSwitch.style.display = 'inline-flex';
+    }
 
     fractalApp.destroy();
     fractalApp = new MandelbrotRenderer(canvas);
@@ -291,12 +321,11 @@ export function enableMandelbrotMode() {
 }
 
 export function enableJuliaMode() {
+    updateFractalDropdownState(FRACTAL_TYPE.JULIA);
+
     fractalApp.destroy();
     fractalApp = new JuliaRenderer(canvas);
     fractalMode = FRACTAL_TYPE.JULIA;
-
-    juliaSwitch.classList.add('active');
-    mandelbrotSwitch.classList.remove('active');
 
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
@@ -311,6 +340,15 @@ export function enableJuliaMode() {
     // Update palette dropdown for new renderer
     initPaletteButtonEvents();
 
+    destroyRiemannControls();
+
+    // Show Demo button and persist switch (may have been hidden in other modes)
+    if (demoButton) demoButton.style.display = 'inline-flex';
+    if (zeroTourButton) zeroTourButton.style.display = 'none';
+    if (persistSwitch && FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
+        persistSwitch.style.display = 'inline-flex';
+    }
+
     if (activePresetIndex !== 0) resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
@@ -324,6 +362,8 @@ export function enableJuliaMode() {
 }
 
 export function enableRiemannMode() {
+    updateFractalDropdownState(FRACTAL_TYPE.RIEMANN);
+
     fractalApp.destroy();
     fractalApp = new RiemannRenderer(canvas);
     fractalMode = FRACTAL_TYPE.RIEMANN;
@@ -332,20 +372,43 @@ export function enableRiemannMode() {
     destroyArrayOfButtons(diveButtons);
     divesDropdown.style.display = 'none';
 
+    destroyJuliaSliders();
+    destroyJuliaPreview();
+
     initPresetButtonEvents();
     initPaletteButtonEvents();
+    initRiemannControls();
+
+    // Hide Demo and persist switch, show Zero Tour in Riemann mode
+    if (demoButton) demoButton.style.display = 'none';
+    if (zeroTourButton) zeroTourButton.style.display = 'inline-flex';
+    if (persistSwitch) persistSwitch.style.display = 'none';
 
     window.location.hash = '#zeta'; // Update URL hash
 }
 
 export function enableRosslerMode() {
+    updateFractalDropdownState(FRACTAL_TYPE.ROSSLER);
+
     fractalApp.destroy();
     fractalApp = new RosslerRenderer(canvas);
     fractalMode = FRACTAL_TYPE.ROSSLER;
 
     destroyArrayOfButtons(presetButtons);
+    destroyArrayOfButtons(diveButtons);
+    divesDropdown.style.display = 'none';
+
+    destroyJuliaSliders();
+    destroyJuliaPreview();
+
     initPresetButtonEvents();
     initPaletteButtonEvents();
+    destroyRiemannControls();
+
+    // Show Demo button, hide persist switch (only for Mandelbrot/Julia)
+    if (demoButton) demoButton.style.display = 'inline-flex';
+    if (zeroTourButton) zeroTourButton.style.display = 'none';
+    if (persistSwitch) persistSwitch.style.display = 'none';
 
     window.location.hash = '#ross'; // Update URL hash
 }
@@ -838,6 +901,7 @@ export async function randomizeColors() {
     await fractalApp.applyPaletteByIndex(randomIndex, 250, updateColorTheme);
     updatePaletteDropdownState();
     updatePaletteCycleButtonState();
+    syncRiemannControls();
 }
 
 export function captureScreenshot() {
@@ -876,6 +940,10 @@ export async function reset() {
     } else {
         resetJuliaPreview();
     }
+
+    // Sync Riemann controls if in Riemann mode
+    syncRiemannControls();
+
     resetAppState();
     updatePaletteDropdownState();
     updatePaletteCycleButtonState();
@@ -1563,6 +1631,7 @@ function closePresetsDropdown() {
 function initPresetsDropdown() {
     presetsToggle.addEventListener('click', (e) => {
         e.stopPropagation();
+        closeFractalDropdown();
         closeDivesDropdown();
         closePaletteDropdown();
         togglePresetsDropdown();
@@ -1577,6 +1646,118 @@ function initPresetsDropdown() {
 
     log('Initialized.', 'initPresetsDropdown');
 }
+
+// region > FRACTAL MODE DROPDOWN --------------------------------------------------------------------------------------
+
+/** Fractal mode display names */
+const FRACTAL_MODE_NAMES = {
+    [FRACTAL_TYPE.MANDELBROT]: 'Mandelbrot',
+    [FRACTAL_TYPE.JULIA]: 'Julia',
+    [FRACTAL_TYPE.RIEMANN]: 'Riemann',
+    [FRACTAL_TYPE.ROSSLER]: 'Rossler'
+};
+
+/** Toggles the fractal mode dropdown menu */
+function toggleFractalDropdown() {
+    fractalModesMenu.classList.toggle('show');
+    const isOpen = fractalModesMenu.classList.contains('show');
+    const currentName = FRACTAL_MODE_NAMES[fractalMode] || 'Mandelbrot';
+    fractalToggle.textContent = isOpen ? `${currentName} ▴` : `${currentName} ▾`;
+}
+
+/** Closes the fractal mode dropdown menu */
+function closeFractalDropdown() {
+    fractalModesMenu?.classList.remove('show');
+    if (fractalToggle) {
+        const currentName = FRACTAL_MODE_NAMES[fractalMode] || 'Mandelbrot';
+        fractalToggle.textContent = `${currentName} ▾`;
+    }
+}
+
+/**
+ * Updates the fractal dropdown toggle text and button active states
+ * @param {FRACTAL_TYPE} mode
+ */
+function updateFractalDropdownState(mode) {
+    if (fractalToggle) {
+        const modeName = FRACTAL_MODE_NAMES[mode] || 'Mandelbrot';
+        fractalToggle.textContent = `${modeName} ▾`;
+    }
+
+    // Update button active states
+    fractalModeButtons.forEach((btn, index) => {
+        const btnMode = Object.values(FRACTAL_TYPE)[index];
+        btn.classList.toggle('active', btnMode === mode);
+    });
+}
+
+/**
+ * Initializes the fractal mode dropdown buttons
+ */
+function initFractalModeButtons() {
+    fractalModeButtons = [];
+    fractalModesMenu.innerHTML = ''; // Clear existing
+
+    const modes = [
+        { type: FRACTAL_TYPE.MANDELBROT, name: 'Mandelbrot', title: 'Mandelbrot set explorer' },
+        { type: FRACTAL_TYPE.JULIA, name: 'Julia', title: 'Julia set explorer' },
+        { type: FRACTAL_TYPE.RIEMANN, name: 'Riemann', title: 'Riemann Zeta function visualization' },
+        { type: FRACTAL_TYPE.ROSSLER, name: 'Rossler', title: 'Rossler attractor' }
+    ];
+
+    modes.forEach((mode) => {
+        const btn = document.createElement('button');
+        btn.id = 'fractal-mode-' + mode.name.toLowerCase();
+        btn.className = 'fractal-mode';
+        btn.title = mode.title;
+        btn.textContent = mode.name;
+
+        if (mode.type === fractalMode) {
+            btn.classList.add('active');
+        }
+
+        btn.addEventListener('click', async (e) => {
+            closeFractalDropdown();
+            if (mode.type !== fractalMode) {
+                if (e.ctrlKey && (mode.type === FRACTAL_TYPE.MANDELBROT || mode.type === FRACTAL_TYPE.JULIA)) {
+                    // Ctrl+click for persistent switch between Mandelbrot and Julia
+                    await switchFractalTypeWithPersistence(mode.type);
+                } else {
+                    await switchFractalMode(mode.type);
+                }
+            }
+        });
+
+        fractalModesMenu.appendChild(btn);
+        fractalModeButtons.push(btn);
+    });
+
+    log('Initialized.', 'initFractalModeButtons');
+}
+
+/**
+ * Initializes the fractal mode dropdown
+ */
+function initFractalDropdown() {
+    fractalToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        closePresetsDropdown();
+        closeDivesDropdown();
+        closePaletteDropdown();
+        toggleFractalDropdown();
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!fractalModesMenu.contains(e.target) && e.target !== fractalToggle) {
+            closeFractalDropdown();
+        }
+    });
+
+    log('Initialized.', 'initFractalDropdown');
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
 
 /** Toggles the dives dropdown menu */
 function toggleDivesDropdown() {
@@ -1594,6 +1775,7 @@ function closeDivesDropdown() {
 function initDivesDropdown() {
     divesToggle.addEventListener('click', (e) => {
         e.stopPropagation();
+        closeFractalDropdown();
         closePresetsDropdown();
         closePaletteDropdown();
         toggleDivesDropdown();
@@ -1650,6 +1832,7 @@ function initPaletteButtonEvents() {
     cycleBtn.addEventListener('click', async () => {
         if (fractalApp.paletteCyclingActive) {
             fractalApp.stopCurrentColorAnimations();
+            syncRiemannControls();
         } else {
             closePaletteDropdown();
             await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
@@ -1698,6 +1881,7 @@ function initPaletteButtonEvents() {
             await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
             updatePaletteDropdownState();
             updatePaletteCycleButtonState();
+            syncRiemannControls();
         });
 
         paletteMenu.appendChild(btn);
@@ -1713,6 +1897,7 @@ function initPaletteButtonEvents() {
 function initPaletteDropdown() {
     paletteToggle.addEventListener('click', (e) => {
         e.stopPropagation();
+        closeFractalDropdown();
         closePresetsDropdown();
         closeDivesDropdown();
         togglePaletteDropdown();
@@ -1787,25 +1972,14 @@ function initDiveButtons() {
 }
 
 function initFractalSwitchButtons() {
-    mandelbrotSwitch.addEventListener('click', async (e) => {
-        if (e.ctrlKey) {
-            console.log('mandelbrotSwitch clicked (with persistence).');
-            await switchFractalTypeWithPersistence(FRACTAL_TYPE.MANDELBROT);
-        } else {
-            console.log('mandelbrotSwitch clicked.');
-            await switchFractalMode(FRACTAL_TYPE.MANDELBROT);
-        }
-    });
+    // Initialize the fractal mode dropdown
+    initFractalModeButtons();
+    initFractalDropdown();
 
-    juliaSwitch.addEventListener('click', async (e) => {
-        if (e.ctrlKey) {
-            console.log('juliaSwitch clicked (with persistence).');
-            await switchFractalTypeWithPersistence(FRACTAL_TYPE.JULIA);
-        } else {
-            await switchFractalMode(FRACTAL_TYPE.JULIA);
-        }
-    });
+    // Update the toggle text to reflect current mode (may be Julia from URL hash)
+    updateFractalDropdownState(fractalMode);
 
+    // Initialize persist switch button (for Mandelbrot <-> Julia with persistence)
     if (FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
         persistSwitch.addEventListener('click', async () => {
             console.log('persistSwitch clicked.');
@@ -1893,7 +2067,7 @@ function initInfoText() {
             showEditCoordsDialog();
             longTouchTimer = null;
         }, LONG_TOUCH_DURATION);
-    }, { passive: false });
+    }, {passive: false});
 
     infoText.addEventListener('touchend', () => {
         if (longTouchTimer) {
@@ -1929,10 +2103,323 @@ export function copyInfoToClipboard() {
     });
 }
 
+// region > RIEMANN CONTROLS -------------------------------------------------------------------------------------------
+
+/**
+ * Initializes Riemann-specific UI controls
+ */
+function initRiemannControls() {
+    if (!riemannControls) return;
+
+    // Show the controls
+    riemannControls.style.display = 'flex';
+
+    // Sync toggle states with renderer
+    if (criticalLineToggle) {
+        criticalLineToggle.classList.toggle('active', fractalApp.showCriticalLine);
+        criticalLineToggle.addEventListener('click', handleCriticalLineToggle);
+    }
+
+    if (analyticExtToggle) {
+        analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
+        analyticExtToggle.addEventListener('click', handleAnalyticExtToggle);
+    }
+
+    // Initialize frequency sliders
+    if (freqRSlider) {
+        freqRSlider.value = fractalApp.frequency[0];
+        freqRValue.textContent = fractalApp.frequency[0].toFixed(1);
+        freqRSlider.addEventListener('input', handleFreqRChange);
+    }
+
+    if (freqGSlider) {
+        freqGSlider.value = fractalApp.frequency[1];
+        freqGValue.textContent = fractalApp.frequency[1].toFixed(1);
+        freqGSlider.addEventListener('input', handleFreqGChange);
+    }
+
+    if (freqBSlider) {
+        freqBSlider.value = fractalApp.frequency[2];
+        freqBValue.textContent = fractalApp.frequency[2].toFixed(1);
+        freqBSlider.addEventListener('input', handleFreqBChange);
+    }
+
+    if (contourSlider) {
+        contourSlider.value = fractalApp.contourStrength;
+        contourValue.textContent = fractalApp.contourStrength.toFixed(2);
+        contourSlider.addEventListener('input', handleContourChange);
+    }
+
+    if (termsSlider) {
+        termsSlider.value = fractalApp.seriesTerms;
+        termsValue.textContent = fractalApp.seriesTerms.toString();
+        termsSlider.addEventListener('input', handleTermsChange);
+    }
+
+    // Zero Tour button
+    if (zeroTourButton) {
+        zeroTourButton.addEventListener('click', handleZeroTourClick);
+    }
+
+    log('Initialized.', 'initRiemannControls');
+}
+
+/**
+ * Destroys Riemann-specific UI controls and hides them
+ */
+function destroyRiemannControls() {
+    if (riemannControls) {
+        riemannControls.style.display = 'none';
+    }
+
+    // Hide Zero Tour button, show Demo button
+    if (zeroTourButton) {
+        zeroTourButton.style.display = 'none';
+    }
+    if (demoButton) {
+        demoButton.style.display = 'inline-flex';
+    }
+
+    // Stop any active zero tour
+    stopZeroTour();
+
+    // Remove event listeners
+    if (criticalLineToggle) {
+        criticalLineToggle.removeEventListener('click', handleCriticalLineToggle);
+    }
+    if (analyticExtToggle) {
+        analyticExtToggle.removeEventListener('click', handleAnalyticExtToggle);
+    }
+    if (freqRSlider) {
+        freqRSlider.removeEventListener('input', handleFreqRChange);
+    }
+    if (freqGSlider) {
+        freqGSlider.removeEventListener('input', handleFreqGChange);
+    }
+    if (freqBSlider) {
+        freqBSlider.removeEventListener('input', handleFreqBChange);
+    }
+    if (contourSlider) {
+        contourSlider.removeEventListener('input', handleContourChange);
+    }
+    if (termsSlider) {
+        termsSlider.removeEventListener('input', handleTermsChange);
+    }
+    if (zeroTourButton) {
+        zeroTourButton.removeEventListener('click', handleZeroTourClick);
+    }
+
+    log('Destroyed.', 'destroyRiemannControls');
+}
+
+function handleCriticalLineToggle() {
+    if (fractalApp.showCriticalLine !== undefined) {
+        fractalApp.showCriticalLine = !fractalApp.showCriticalLine;
+        criticalLineToggle.classList.toggle('active', fractalApp.showCriticalLine);
+        log(`Critical line: ${fractalApp.showCriticalLine ? 'ON' : 'OFF'}`);
+        fractalApp.draw();
+    }
+}
+
+function handleAnalyticExtToggle() {
+    if (fractalApp.useAnalyticExtension !== undefined) {
+        fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
+        analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
+        log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
+        fractalApp.draw();
+    }
+}
+
+function handleFreqRChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[0] = value;
+    freqRValue.textContent = value.toFixed(1);
+    fractalApp.draw();
+}
+
+function handleFreqGChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[1] = value;
+    freqGValue.textContent = value.toFixed(1);
+    fractalApp.draw();
+}
+
+function handleFreqBChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.frequency[2] = value;
+    freqBValue.textContent = value.toFixed(1);
+    fractalApp.draw();
+}
+
+function handleContourChange(e) {
+    const value = parseFloat(e.target.value);
+    fractalApp.contourStrength = value;
+    contourValue.textContent = value.toFixed(2);
+    fractalApp.draw();
+}
+
+function handleTermsChange(e) {
+    const value = parseInt(e.target.value, 10);
+    fractalApp.seriesTerms = value;
+    termsValue.textContent = value.toString();
+    fractalApp.draw();
+}
+
+function handleZeroTourClick() {
+    if (fractalApp.zeroTourActive) {
+        stopZeroTour();
+    } else {
+        startZeroTour();
+    }
+}
+
+/**
+ * Starts the Zero Tour animation
+ */
+async function startZeroTour() {
+    if (!fractalApp.ZEROS || fractalApp.ZEROS.length === 0) {
+        log('No zeros data available for tour', 'startZeroTour');
+        return;
+    }
+
+    resetPresetAndDiveButtonStates();
+
+    // Update button state
+    if (zeroTourButton) {
+        zeroTourButton.textContent = 'Stop Tour';
+        zeroTourButton.classList.add('active');
+    }
+
+    // Show total in overlay
+    if (zeroInfoTotal) {
+        zeroInfoTotal.textContent = fractalApp.ZEROS.length.toString();
+    }
+
+    // Start the tour with callback
+    await fractalApp.animateZeroTour((zero, index) => {
+        showZeroInfo(zero, index);
+    }, 4000);
+
+    // Tour ended (either completed or stopped)
+    stopZeroTour();
+}
+
+/**
+ * Stops the Zero Tour animation
+ */
+function stopZeroTour() {
+    if (fractalApp?.zeroTourActive) {
+        fractalApp.stopZeroTour();
+    }
+
+    // Update button state
+    if (zeroTourButton) {
+        zeroTourButton.textContent = 'Zero Tour';
+        zeroTourButton.classList.remove('active');
+    }
+
+    // Hide the overlay
+    hideZeroInfo();
+}
+
+/**
+ * Shows the zero info overlay with information about the current zero
+ * @param {Object} zero - The zero object with id, imaginary, name, description
+ * @param {number} index - The current index (0-based)
+ */
+function showZeroInfo(zero, index) {
+    if (!zeroInfoOverlay) return;
+
+    if (zeroInfoTitle) {
+        zeroInfoTitle.textContent = zero.name || `Zero #${zero.id}`;
+    }
+
+    if (zeroInfoValue) {
+        zeroInfoValue.textContent = `s = 1/2 + ${zero.imaginary}i`;
+    }
+
+    if (zeroInfoDescription) {
+        zeroInfoDescription.textContent = zero.description || '';
+    }
+
+    if (zeroInfoCurrent) {
+        zeroInfoCurrent.textContent = (index + 1).toString();
+    }
+
+    zeroInfoOverlay.classList.remove('zero-info-hidden');
+}
+
+/**
+ * Hides the zero info overlay
+ */
+function hideZeroInfo() {
+    if (zeroInfoOverlay) {
+        zeroInfoOverlay.classList.add('zero-info-hidden');
+    }
+}
+
+/**
+ * Syncs Riemann toggle button states with renderer state.
+ * Called from hotkeyController after hotkey toggles.
+ */
+export function syncRiemannToggleStates() {
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+
+    if (criticalLineToggle && fractalApp.showCriticalLine !== undefined) {
+        criticalLineToggle.classList.toggle('active', fractalApp.showCriticalLine);
+    }
+
+    if (analyticExtToggle && fractalApp.useAnalyticExtension !== undefined) {
+        analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
+    }
+}
+
+/**
+ * Syncs all Riemann UI controls (sliders and toggles) with renderer state.
+ * Called after reset to update UI to match default values.
+ */
+export function syncRiemannControls() {
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+
+    // Sync toggles
+    if (criticalLineToggle) {
+        criticalLineToggle.classList.toggle('active', fractalApp.showCriticalLine);
+    }
+    if (analyticExtToggle) {
+        analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
+    }
+
+    // Sync frequency sliders
+    if (freqRSlider) {
+        freqRSlider.value = fractalApp.frequency[0];
+        freqRValue.textContent = fractalApp.frequency[0].toFixed(1);
+    }
+    if (freqGSlider) {
+        freqGSlider.value = fractalApp.frequency[1];
+        freqGValue.textContent = fractalApp.frequency[1].toFixed(1);
+    }
+    if (freqBSlider) {
+        freqBSlider.value = fractalApp.frequency[2];
+        freqBValue.textContent = fractalApp.frequency[2].toFixed(1);
+    }
+
+    // Sync contour and terms sliders
+    if (contourSlider) {
+        contourSlider.value = fractalApp.contourStrength;
+        contourValue.textContent = fractalApp.contourStrength.toFixed(2);
+    }
+    if (termsSlider) {
+        termsSlider.value = fractalApp.seriesTerms;
+        termsValue.textContent = fractalApp.seriesTerms.toString();
+    }
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
+
 function bindHTMLElements() {
     // Element binding
-    mandelbrotSwitch = document.getElementById('mandelbrotSwitch');
-    juliaSwitch = document.getElementById('juliaSwitch');
+    fractalToggle = document.getElementById('fractal-toggle');
+    fractalModesMenu = document.getElementById('fractal-modes');
     persistSwitch = document.getElementById('persistSwitch');
     header = document.getElementById('headerContainer');
     logo = document.getElementById('logo');
@@ -1968,6 +2455,27 @@ function bindHTMLElements() {
     editCoordsApplyBtn = document.getElementById('editCoordsApply');
     editCoordsCancelBtn = document.getElementById('editCoordsCancel');
     juliaCInputs = document.getElementById('juliaCInputs');
+    // Riemann Controls elements
+    riemannControls = document.getElementById('riemannControls');
+    criticalLineToggle = document.getElementById('criticalLineToggle');
+    analyticExtToggle = document.getElementById('analyticExtToggle');
+    freqRSlider = document.getElementById('freqRSlider');
+    freqGSlider = document.getElementById('freqGSlider');
+    freqBSlider = document.getElementById('freqBSlider');
+    freqRValue = document.getElementById('freqRValue');
+    freqGValue = document.getElementById('freqGValue');
+    freqBValue = document.getElementById('freqBValue');
+    contourSlider = document.getElementById('contourSlider');
+    contourValue = document.getElementById('contourValue');
+    termsSlider = document.getElementById('termsSlider');
+    termsValue = document.getElementById('termsValue');
+    zeroTourButton = document.getElementById('zeroTour');
+    zeroInfoOverlay = document.getElementById('zeroInfoOverlay');
+    zeroInfoTitle = document.getElementById('zeroInfoTitle');
+    zeroInfoValue = document.getElementById('zeroInfoValue');
+    zeroInfoDescription = document.getElementById('zeroInfoDescription');
+    zeroInfoCurrent = document.getElementById('zeroInfoCurrent');
+    zeroInfoTotal = document.getElementById('zeroInfoTotal');
 }
 
 /**
@@ -1987,8 +2495,6 @@ export async function initUI(fractalRenderer) {
 
     if (fractalRenderer instanceof JuliaRenderer) {
         fractalMode = FRACTAL_TYPE.JULIA;
-        juliaSwitch.classList.add('active');
-        mandelbrotSwitch.classList.remove('active');
 
         initJuliaSliders(fractalApp);
         updateJuliaSliders();

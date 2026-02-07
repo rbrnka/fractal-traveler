@@ -23,16 +23,66 @@
     {"id": "Negative Axis", "pan": [-6, 0], "zoom": 20, "rotation": 0, "paletteId": "Arctic"}
   ],
   "zeros": [
-    {"id": 1, "imaginary": 14.1347, "name": "First Zero", "description": "Discovered by Riemann (1859)"},
-    {"id": 2, "imaginary": 21.022, "name": "Second Zero", "description": "~6.9 units above the first"},
-    {"id": 3, "imaginary": 25.0109, "name": "Third Zero", "description": "Part of initial computed zeros"},
-    {"id": 4, "imaginary": 30.4249, "name": "Fourth Zero", "description": "Shows irregular spacing"},
-    {"id": 5, "imaginary": 32.9351, "name": "Fifth Zero", "description": "Close pair with fourth (~2.5 units)"},
-    {"id": 6, "imaginary": 37.5862, "name": "Sixth Zero", "description": "Verified by Hardy (1914)"},
-    {"id": 7, "imaginary": 40.9187, "name": "Seventh Zero", "description": "Historic first 10 zeros"},
-    {"id": 8, "imaginary": 43.3271, "name": "Eighth Zero", "description": "Clustering with seventh"},
-    {"id": 9, "imaginary": 48.0051, "name": "Ninth Zero", "description": "Gap of ~4.7 from eighth"},
-    {"id": 10, "imaginary": 49.7738, "name": "Tenth Zero", "description": "Computed by hand, early 20th century"}
+    {
+      "id": 1,
+      "imaginary": 14.1347,
+      "name": "The Gateway Zero",
+      "description": "Found by Riemann in 1859. It confirms the Zeta function's link to the distribution of primes."
+    },
+    {
+      "id": 2,
+      "imaginary": 21.022,
+      "name": "The Spacing Benchmark",
+      "description": "Its distance from the first zero (~6.89) began the study of 'spectral gaps' in number theory."
+    },
+    {
+      "id": 3,
+      "imaginary": 25.0109,
+      "name": "The Stability Zero",
+      "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2)."
+    },
+    {
+      "id": 4,
+      "imaginary": 30.4249,
+      "name": "The Chaos Indicator",
+      "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
+    },
+    {
+      "id": 5,
+      "imaginary": 32.9351,
+      "name": "The Near Twin",
+      "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
+    },
+    {
+      "id": 6,
+      "imaginary": 37.5862,
+      "name": "Hardy’s Milestone",
+      "description": "Confirmed by G.H. Hardy in 1914, proving infinitely many zeros exist on the critical line."
+    },
+    {
+      "id": 7,
+      "imaginary": 40.9187,
+      "name": "The Pre-Computer Limit",
+      "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation."
+    },
+    {
+      "id": 8,
+      "imaginary": 43.3271,
+      "name": "The Repulsion Effect",
+      "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms."
+    },
+    {
+      "id": 9,
+      "imaginary": 48.0051,
+      "name": "The Prime Regulator",
+      "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem."
+    },
+    {
+      "id": 10,
+      "imaginary": 49.7738,
+      "name": "The Gram Point Link",
+      "description": "Calculated by J.P. Gram (1903), who developed the 'Gram Points' used to predict zero locations."
+    }
   ],
   "palettes": [
     {"id": "Default", "keyColor": "#4FC3F7", "theme": [1, 1, 1]},

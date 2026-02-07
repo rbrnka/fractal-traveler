@@ -84,9 +84,11 @@
             <div class="control-row" id="fractal-switch">
                 <span class="control-label">Fractal:</span>
                 <div class="button-group">
-                    <button type="button" id="mandelbrotSwitch" class="active" title="Mandelbrot mode (CTRL: Persist parameters)">Mandelbrot</button>
-                    <button type="button" id="persistSwitch" title="Switches between the fractals with persistent settings.">&hArr;</button>
-                    <button type="button" id="juliaSwitch" title="Julia mode (CTRL: Persist parameters)">Julia</button>
+                    <div id="fractal-dropdown" class="dropdown">
+                        <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Mandelbrot &#x25BE;</button>
+                        <div id="fractal-modes" class="dropdown-menu"></div>
+                    </div>
+                    <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings.">&hArr;</button>
                 </div>
             </div>
 
@@ -105,7 +107,8 @@
                         <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette &#x25BE;</button>
                         <div id="palettes" class="dropdown-menu"></div>
                     </div>
-                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Demo</button>
+                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Tour</button>
+                    <button type="button" id="zeroTour" title="Tour through Riemann zeros">Zero Tour</button>
                 </div>
             </div>
 
@@ -119,6 +122,42 @@
                     <label for="imagSlider" title="Imaginary part">cy:</label>
                     <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.0001" value="0.1560">
                     <output class="sliderValue" id="imagSliderValue" for="imagSlider">0</output>
+                </div>
+            </div>
+
+            <!-- Riemann Controls -->
+            <div id="riemannControls">
+                <div class="control-row">
+                    <span class="control-label">Display:</span>
+                    <div class="button-group">
+                        <button type="button" id="criticalLineToggle" class="active" title="Critical Line (,)">Critical Line</button>
+                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Extension (N)">Analytic Ext.</button>
+                    </div>
+                </div>
+                <div class="slider-container">
+                    <label for="freqRSlider">R:</label>
+                    <input type="range" id="freqRSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                    <output class="sliderValue" id="freqRValue">1.0</output>
+                </div>
+                <div class="slider-container">
+                    <label for="freqGSlider">G:</label>
+                    <input type="range" id="freqGSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                    <output class="sliderValue" id="freqGValue">1.0</output>
+                </div>
+                <div class="slider-container">
+                    <label for="freqBSlider">B:</label>
+                    <input type="range" id="freqBSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                    <output class="sliderValue" id="freqBValue">1.0</output>
+                </div>
+                <div class="slider-container">
+                    <label for="contourSlider" title="Grid contour visibility">Contour:</label>
+                    <input type="range" id="contourSlider" class="slider" min="0" max="0.5" step="0.01" value="0.15">
+                    <output class="sliderValue" id="contourValue">0.15</output>
+                </div>
+                <div class="slider-container">
+                    <label for="termsSlider" title="Series terms (mathematical precision)">Terms:</label>
+                    <input type="range" id="termsSlider" class="slider" min="20" max="500" step="10" value="100">
+                    <output class="sliderValue" id="termsValue">100</output>
                 </div>
             </div>
 
@@ -173,6 +212,13 @@
 
     <aside id="infoLabel" title="Click to copy, Right click to edit coordinates.">
         <div id="infoText">Initialized successfully!</div>
+    </aside>
+
+    <aside id="zeroInfoOverlay" class="zero-info-hidden">
+        <h3 id="zeroInfoTitle">Zero #1</h3>
+        <p id="zeroInfoValue">s = 1/2 + 14.1347i</p>
+        <p id="zeroInfoDescription"></p>
+        <div id="zeroInfoProgress"><span id="zeroInfoCurrent">1</span> / <span id="zeroInfoTotal">10</span></div>
     </aside>
 
     <main>

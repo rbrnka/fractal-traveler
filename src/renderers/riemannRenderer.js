@@ -26,10 +26,14 @@ class RiemannRenderer extends FractalRenderer {
         this.phase = [...this.DEFAULT_PHASE];
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
+        this.contourStrength = 0.15;
+        this.seriesTerms = 100; // Number of terms in eta/zeta series
 
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
+        this.ZEROS = presetsData.zeros || [];
         this.currentPaletteIndex = 0;
+        this.zeroTourActive = false;
 
         this.init();
     }
@@ -52,19 +56,21 @@ class RiemannRenderer extends FractalRenderer {
         this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
         this.showCriticalLineLoc = this.gl.getUniformLocation(this.program, 'u_showCriticalLine');
         this.useAnalyticExtensionLoc = this.gl.getUniformLocation(this.program, 'u_useAnalyticExtension');
+        this.contourStrengthLoc = this.gl.getUniformLocation(this.program, 'u_contourStrength');
     }
 
     draw() {
         this.gl.useProgram(this.program);
 
-        // Compute dynamic iteration count (base + adaptive quality adjustment)
-        this.iterations = Math.max(50, Math.min(this.MAX_TERMS, this.MAX_TERMS + this.extraIterations));
+        // Compute dynamic iteration count based on seriesTerms + adaptive quality adjustment
+        this.iterations = Math.max(20, Math.min(this.MAX_TERMS, this.seriesTerms + this.extraIterations));
 
         // Upload Riemann-specific uniforms
         if (this.frequencyLoc) this.gl.uniform3fv(this.frequencyLoc, this.frequency);
         if (this.phaseLoc) this.gl.uniform3fv(this.phaseLoc, this.phase);
         if (this.showCriticalLineLoc) this.gl.uniform1i(this.showCriticalLineLoc, this.showCriticalLine ? 1 : 0);
         if (this.useAnalyticExtensionLoc) this.gl.uniform1i(this.useAnalyticExtensionLoc, this.useAnalyticExtension ? 1 : 0);
+        if (this.contourStrengthLoc) this.gl.uniform1f(this.contourStrengthLoc, this.contourStrength);
 
         super.draw();
     }
@@ -75,6 +81,8 @@ class RiemannRenderer extends FractalRenderer {
         this.currentPaletteIndex = 0;
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
+        this.contourStrength = 0.15;
+        this.seriesTerms = 100;
         super.reset();
     }
 
@@ -252,6 +260,59 @@ class RiemannRenderer extends FractalRenderer {
 
         console.log(`Demo interrupted.`);
         console.groupEnd();
+    }
+
+    /**
+     * Animates a tour through all the Riemann zeros sequentially.
+     * @param {Function} [onZeroReached=null] - Callback when each zero is reached (zero, index)
+     * @param {number} [holdDuration=4000] - How long to hold at each zero (ms)
+     * @return {Promise<void>}
+     */
+    async animateZeroTour(onZeroReached = null, holdDuration = 4000) {
+        console.groupCollapsed(`%c ${this.constructor.name}: animateZeroTour`, CONSOLE_GROUP_STYLE);
+
+        this.stopAllNonColorAnimations();
+        this.zeroTourActive = true;
+
+        for (let i = 0; i < this.ZEROS.length && this.zeroTourActive; i++) {
+            const zero = this.ZEROS[i];
+            const preset = {
+                pan: [0.5, zero.imaginary],
+                zoom: 8,
+                rotation: 0,
+                paletteId: 'Twilight'
+            };
+
+            log(`Traveling to zero ${i + 1}/${this.ZEROS.length}: ${zero.name}`);
+
+            await this.animateTravelToPreset(preset, 2000, 1000, 2500);
+
+            if (onZeroReached && this.zeroTourActive) {
+                onZeroReached(zero, i);
+            }
+
+            if (this.zeroTourActive) {
+                await asyncDelay(holdDuration);
+            }
+        }
+
+        // Return to overview if tour completed normally
+        if (this.zeroTourActive && this.PRESETS.length > 0) {
+            log('Tour complete, returning to overview');
+            await this.animateTravelToPreset(this.PRESETS[0], 2000, 1000, 2500);
+        }
+
+        this.zeroTourActive = false;
+        console.groupEnd();
+    }
+
+    /**
+     * Stops an active zero tour.
+     */
+    stopZeroTour() {
+        this.zeroTourActive = false;
+        this.stopAllNonColorAnimations();
+        log('Zero tour stopped', 'stopZeroTour');
     }
 
     // endregion

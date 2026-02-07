@@ -10,6 +10,7 @@ uniform vec3 u_frequency;
 uniform vec3 u_phase;
 uniform bool u_showCriticalLine;
 uniform bool u_useAnalyticExtension;
+uniform float u_contourStrength;
 
 const float PI = 3.14159265359;
 const int MAX_TERMS = __MAX_TERMS__;
@@ -206,8 +207,7 @@ void main() {
     float phaseContour = 0.5 + 0.5 * cos(phase * 6.0);
 
     // Combine contours for grid-like effect
-    float contourStrength = 0.15;
-    float contours = 1.0 - contourStrength * (1.0 - magContour) - contourStrength * (1.0 - phaseContour);
+    float contours = 1.0 - u_contourStrength * (1.0 - magContour) - u_contourStrength * (1.0 - phaseContour);
 
     // Base saturation - high for vivid colors
     float saturation = 0.0;
@@ -227,8 +227,14 @@ void main() {
     // HSL base color
     vec3 baseColor = hsl2rgb(vec3(hue, saturation, lightness));
 
-    // Apply palette modulation
-    vec3 col = baseColor * u_colorPalette;
+    // Apply frequency-based color modulation
+    vec3 freqMod;
+    freqMod.r = 0.5 + 0.5 * cos(logMag * u_frequency.r + u_phase.r + phase * 2.0);
+    freqMod.g = 0.5 + 0.5 * cos(logMag * u_frequency.g + u_phase.g + phase * 2.0);
+    freqMod.b = 0.5 + 0.5 * cos(logMag * u_frequency.b + u_phase.b + phase * 2.0);
+
+    // Apply palette modulation combined with frequency
+    vec3 col = baseColor * u_colorPalette * freqMod;
 
     // Critical line overlay at Re(s) = 0.5
     if (u_showCriticalLine) {

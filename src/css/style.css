@@ -361,6 +361,30 @@ button:focus {
     color: var(--accent-color);
 }
 
+/* Fractal mode dropdown */
+#fractal-dropdown .dropdown-menu {
+    min-width: 100px;
+    max-width: 160px;
+}
+
+#fractal-dropdown .dropdown-menu button.fractal-mode {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
+#fractal-dropdown .dropdown-menu button.fractal-mode.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #444);
+}
+
+#fractal-toggle {
+    min-width: 100px;
+}
+
 /* ========================================
    Dive Buttons
    ======================================== */
@@ -400,6 +424,23 @@ button.dive.has-palette.active {
     align-items: center;
     gap: 5px;
     margin: 5px 0 10px;
+    display: none;
+}
+
+/* Riemann Controls */
+#riemannControls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0 10px;
+}
+
+#riemannControls .slider-container {
+    min-width: 280px;
+}
+
+#zeroTour {
     display: none;
 }
 
@@ -640,6 +681,54 @@ main {
 
 #infoText:focus {
     outline: none !important;
+}
+
+/* Zero Tour Info Overlay */
+#zeroInfoOverlay {
+    position: fixed;
+    bottom: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(127, 127, 127, 0.3);
+    border-radius: 12px;
+    padding: 16px 24px;
+    z-index: 9998;
+    text-align: center;
+    max-width: 380px;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+#zeroInfoOverlay.zero-info-hidden {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(-50%) translateY(20px);
+}
+
+#zeroInfoTitle {
+    margin: 0 0 8px;
+    font-size: 16px;
+    color: var(--accent-color);
+}
+
+#zeroInfoValue {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #ccc;
+    font-family: monospace;
+}
+
+#zeroInfoDescription {
+    margin: 0;
+    font-size: 12px;
+    color: #999;
+}
+
+#zeroInfoProgress {
+    margin-top: 12px;
+    font-size: 11px;
+    color: #666;
 }
 
 /* ========================================
