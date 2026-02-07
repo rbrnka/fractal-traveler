@@ -66,9 +66,15 @@
       "paletteId": "Arctic"
     },
     {
-      "id": 9, "type": "saddle", "name": "First Saddle Point",
-      "pan": [0.5, 6.29], "zoom": 12,
-      "description": "Where ζ'(s) = 0. Saddle points reveal the topology of the zeta landscape.",
+      "id": 9, "type": "saddle", "name": "Saddle Point (Right)",
+      "pan": [1, 9.0858], "zoom": 10,
+      "description": "Where ζ'(s) = 0. Saddle points come in symmetric pairs across the critical line.",
+      "paletteId": "Monochrome"
+    },
+    {
+      "id": 9.5, "type": "saddle", "name": "Saddle Point (Left)",
+      "pan": [0, 9.0858], "zoom": 10,
+      "description": "The mirror image saddle point at Re(s) = 0, symmetric with its partner at Re(s) = 1.",
       "paletteId": "Monochrome"
     },
     {
