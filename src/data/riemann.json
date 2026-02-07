@@ -8,7 +8,31 @@
     {"id": "Critical Strip", "pan": [0.5, 0], "zoom": 15, "rotation": 0, "paletteId": "Default"},
     {"id": "Trivial Zeros", "pan": [-4, 0], "zoom": 20, "rotation": 0, "paletteId": "Arctic"},
     {"id": "Second Zero", "pan": [0.5, 21.022], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
-    {"id": "Deep Zeros", "pan": [0.5, 49.77], "zoom": 6, "rotation": 0, "paletteId": "Monochrome"}
+    {"id": "Deep Zeros", "pan": [0.5, 49.77], "zoom": 6, "rotation": 0, "paletteId": "Monochrome"},
+    {"id": "Third Zero", "pan": [0.5, 25.0109], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Fourth Zero", "pan": [0.5, 30.4249], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Fifth Zero", "pan": [0.5, 32.9351], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Sixth Zero", "pan": [0.5, 37.5862], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Seventh Zero", "pan": [0.5, 40.9187], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Eighth Zero", "pan": [0.5, 43.3271], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Ninth Zero", "pan": [0.5, 48.0051], "zoom": 8, "rotation": 0, "paletteId": "Twilight"},
+    {"id": "Tenth Zero", "pan": [0.5, 49.7738], "zoom": 6, "rotation": 0, "paletteId": "Monochrome"},
+    {"id": "Gram Point g1", "pan": [0.5, 17.85], "zoom": 10, "rotation": 0, "paletteId": "Arctic"},
+    {"id": "Gram Point g2", "pan": [0.5, 23.17], "zoom": 10, "rotation": 0, "paletteId": "Arctic"},
+    {"id": "Zero Cluster", "pan": [0.5, 40], "zoom": 3, "rotation": 0, "paletteId": "Default"},
+    {"id": "Negative Axis", "pan": [-6, 0], "zoom": 20, "rotation": 0, "paletteId": "Arctic"}
+  ],
+  "zeros": [
+    {"id": 1, "imaginary": 14.1347, "name": "First Zero", "description": "Discovered by Riemann (1859)"},
+    {"id": 2, "imaginary": 21.022, "name": "Second Zero", "description": "~6.9 units above the first"},
+    {"id": 3, "imaginary": 25.0109, "name": "Third Zero", "description": "Part of initial computed zeros"},
+    {"id": 4, "imaginary": 30.4249, "name": "Fourth Zero", "description": "Shows irregular spacing"},
+    {"id": 5, "imaginary": 32.9351, "name": "Fifth Zero", "description": "Close pair with fourth (~2.5 units)"},
+    {"id": 6, "imaginary": 37.5862, "name": "Sixth Zero", "description": "Verified by Hardy (1914)"},
+    {"id": 7, "imaginary": 40.9187, "name": "Seventh Zero", "description": "Historic first 10 zeros"},
+    {"id": 8, "imaginary": 43.3271, "name": "Eighth Zero", "description": "Clustering with seventh"},
+    {"id": 9, "imaginary": 48.0051, "name": "Ninth Zero", "description": "Gap of ~4.7 from eighth"},
+    {"id": 10, "imaginary": 49.7738, "name": "Tenth Zero", "description": "Computed by hand, early 20th century"}
   ],
   "palettes": [
     {"id": "Default", "keyColor": "#4FC3F7", "theme": [1, 1, 1]},
