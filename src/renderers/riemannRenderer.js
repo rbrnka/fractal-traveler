@@ -254,7 +254,7 @@ class RiemannRenderer extends FractalRenderer {
 
             await this.animateTravelToPreset(currentPreset, 1000, 1000, 1000, coloringCallback);
 
-            // Show overlay at the start of animation
+            // Show overlay at the end of animation
             if (onPresetReached) {
                 onPresetReached(currentPreset, demoIndex, allPresets.length);
             }
@@ -292,12 +292,12 @@ class RiemannRenderer extends FractalRenderer {
 
             log(`Traveling to ${point.type}: ${i + 1}/${this.TOUR.length}: ${point.name}`);
 
-            // Show overlay at the start of animation
+            await this.animateTravelToPreset(preset, 2000, 1000, 2500);
+
+            // Show overlay at the end of animation
             if (onPointReached && this.zeroTourActive) {
                 onPointReached(point, i);
             }
-
-            await this.animateTravelToPreset(preset, 2000, 1000, 2500);
 
             if (this.zeroTourActive) {
                 await asyncDelay(holdDuration);
@@ -338,7 +338,7 @@ class RiemannRenderer extends FractalRenderer {
         this.currentPaletteIndex = index;
 
         if (index >= 0 && index < this.PALETTES.length) {
-            const palette = this.PALETTES[index];
+            const palette = this.PALEaTTES[index];
             const wrappedCallback = coloringCallback && palette.keyColor
                 ? () => coloringCallback(hexToRGBArray(palette.keyColor, 255))
                 : coloringCallback;

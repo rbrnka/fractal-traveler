@@ -149,7 +149,7 @@ h1 {
 }
 
 .tagline {
-    margin: 2px 0 4px;
+    margin: 2px 0 0;
     color: #ccc;
     font-size: 12px;
     line-height: 14px;
@@ -234,12 +234,6 @@ button.active {
 button:focus {
     background-image: linear-gradient(#222, #666);
     text-shadow: 0 0 4px var(--accent-color);
-}
-
-/* Fractal Switch Buttons */
-#fractal-switch .button-group button {
-    height: 30px;
-    min-width: 80px;
 }
 
 #persistSwitch {
@@ -747,29 +741,27 @@ main {
    Center Guidelines
    ======================================== */
 
-.centerLine {
+#verticalLine, #horizontalLine {
     position: absolute;
     pointer-events: none;
     z-index: 1000;
     display: none;
 }
 
-.verticalLine {
+#verticalLine {
     height: 100vh;
     left: 50%;
     top: 0;
     transform: translateX(-50%);
     border-left: 2px dashed #666;
-    background: transparent;
 }
 
-.horizontalLine {
+#horizontalLine {
     width: 100vw;
     top: 50%;
     left: 0;
     transform: translateY(-50%);
     border-top: 2px dashed #666;
-    background: transparent;
 }
 
 /* ========================================
@@ -892,6 +884,10 @@ dialog.dialog-overlay::backdrop {
     gap: 8px 12px;
     align-items: center;
     margin-bottom: 16px;
+}
+
+#juliaCInputs {
+    display: contents;
 }
 
 .coord-input-grid label {

@@ -81,13 +81,7 @@
         <nav id="controlArea" aria-label="Fractal controls">
             <p class="tagline">Developed for interactive exploration and learning.</p>
 
-            <div class="control-row" id="fractal-switch">
-                <div class="button-group">
-                </div>
-            </div>
-
             <div class="control-row" id="presets-dives">
-<!--                <span class="control-label">Settings:</span>-->
                 <div class="button-group">
                     <div id="fractal-dropdown" class="dropdown">
                         <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Mandelbrot &#x25BE;</button>
@@ -114,12 +108,12 @@
                 <div class="slider-container">
                     <label for="realSlider" title="Real part">cx:</label>
                     <input type="range" id="realSlider" class="slider" min="-2" max="2" step="0.0001" value="-0.8000">
-                    <output class="sliderValue" id="realSliderValue" for="realSlider">0</output>
+                    <output class="sliderValue" id="realSliderValue">0</output>
                 </div>
                 <div class="slider-container">
                     <label for="imagSlider" title="Imaginary part">cy:</label>
                     <input type="range" id="imagSlider" class="slider" min="-2" max="2" step="0.0001" value="0.1560">
-                    <output class="sliderValue" id="imagSliderValue" for="imagSlider">0</output>
+                    <output class="sliderValue" id="imagSliderValue">0</output>
                 </div>
             </div>
 
@@ -199,7 +193,6 @@
             </div>
 
             <div class="control-row" id="controlButtons">
-<!--                <span class="control-label">Actions:</span>-->
                 <div class="button-group">
                     <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Tour</button>
                     <button type="button" id="zeroTour" title="Guided tour of significant zeta features">Tour</button>
@@ -280,8 +273,8 @@
         <p>Fractal Traveler is free and open-source under the MIT license. Visit the <a href="https://fractal.brnka.com/gallery/">fractal gallery</a> for curated screenshots, read the <a href="https://fractal.brnka.com/docs/">documentation</a>, or explore the source code on <a href="https://github.com/rbrnka/fractal-traveler">GitHub</a>.</p>
     </section>
 
-    <div id="verticalLine" class="centerLine verticalLine"></div>
-    <div id="horizontalLine" class="centerLine horizontalLine"></div>
+    <div id="verticalLine"></div>
+    <div id="horizontalLine"></div>
 
     <dialog id="saveViewDialog" class="dialog-overlay">
         <div class="dialog-box">
@@ -310,7 +303,7 @@
                 <label for="editRotation">Rotation (°):</label>
                 <input type="text" inputmode="decimal" id="editRotation" class="coord-input" placeholder="0">
 
-                <div id="juliaCInputs" style="display: contents;">
+                <div id="juliaCInputs">
                     <label for="editCx">C Real:</label>
                     <input type="text" inputmode="decimal" id="editCx" class="coord-input" placeholder="0.0">
 
