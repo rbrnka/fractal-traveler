@@ -2282,6 +2282,16 @@ async function startZeroTour() {
         return;
     }
 
+    // Enable critical line and analytic extension for the tour
+    if (fractalApp.showCriticalLine !== undefined) {
+        fractalApp.showCriticalLine = true;
+    }
+    if (fractalApp.useAnalyticExtension !== undefined) {
+        fractalApp.useAnalyticExtension = true;
+    }
+    syncRiemannToggleStates();
+    fractalApp.draw();
+
     resetPresetAndDiveButtonStates();
 
     // Update button state
