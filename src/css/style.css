@@ -1134,6 +1134,41 @@ button.preset.user-preset::before {
    Responsive: Scale header on narrow screens
    ======================================== */
 
+@media screen and (max-width: 600px) {
+    #viewInfoOverlay {
+        bottom: 24px;
+        left: 8px;
+        right: 8px;
+        transform: none;
+        max-width: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+
+    #viewInfoOverlay.view-info-hidden {
+        transform: translateY(20px);
+    }
+
+    #viewInfoTitle {
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    #viewInfoValue {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+
+    #viewInfoDescription {
+        font-size: 10px;
+    }
+
+    #viewInfoProgress {
+        margin-top: 6px;
+        font-size: 9px;
+    }
+}
+
 @media screen and (max-width: 440px) {
     #headerContainer {
         transform: translateX(-50%) scale(0.9);

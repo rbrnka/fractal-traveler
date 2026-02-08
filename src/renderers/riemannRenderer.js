@@ -281,11 +281,19 @@ class RiemannRenderer extends FractalRenderer {
         this.stopAllNonColorAnimations();
         this.zeroTourActive = true;
 
+        // On mobile portrait, offset pan to center point in visible area
+        const isMobile = window.innerWidth <= 600;
+
         for (let i = 0; i < this.TOUR.length && this.zeroTourActive; i++) {
             const point = this.TOUR[i];
+            const zoom = point.zoom || 8;
+            // Apply offset scaled by zoom to shift point up on screen
+            const offsetPan = isMobile
+                ? [point.pan[0], point.pan[1] - 0.12 * zoom]
+                : point.pan;
             const preset = {
-                pan: point.pan,
-                zoom: point.zoom || 8,
+                pan: offsetPan,
+                zoom: zoom,
                 rotation: 0,
                 paletteId: point.paletteId || 'Default'
             };
