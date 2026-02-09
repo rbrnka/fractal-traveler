@@ -10,6 +10,7 @@
 import {
     captureScreenshot,
     copyInfoToClipboard,
+    hideViewInfo,
     isAnimationActive,
     isJuliaMode,
     isRiemannMode,
@@ -171,6 +172,8 @@ async function onKeyDown(event) {
                 fractalApp.stopCurrentRotationAnimation();
                 rotationActive = false;
             } else {
+                // Hide preset overlay on interaction (no longer accurate)
+                hideViewInfo();
                 rotationActive = true;
                 await fractalApp.animateInfiniteRotation(rotationDirection, rotationSpeed);
             }
@@ -343,6 +346,9 @@ async function onKeyDown(event) {
             break;
 
         case "Space":
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
+
             const increment = event.shiftKey ? ZOOM_ANIMATION_SMOOTH_STEP : ZOOM_ANIMATION_STEP;
             const zoomFactor = (event.ctrlKey || altKey) ? (1 + increment) : (1 - increment);
 
@@ -377,6 +383,8 @@ async function onKeyDown(event) {
 
     // Handling pan changes
     if (deltaPanX || deltaPanY) {
+        // Hide preset overlay on interaction (no longer accurate)
+        hideViewInfo();
         let r = fractalApp.rotation;
 
         // Reflect the zoom factor for consistent pan speed at different zoom levels
@@ -391,6 +399,9 @@ async function onKeyDown(event) {
 
     // Handling C changes
     if ((deltaCx || deltaCy) && isJuliaMode()) {
+        // Hide preset overlay on interaction (no longer accurate)
+        hideViewInfo();
+
         const effectiveDeltaCx = deltaCx * fractalApp.zoom;
         const effectiveDeltaCy = deltaCy * fractalApp.zoom;
 

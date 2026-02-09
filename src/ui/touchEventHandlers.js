@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, hideViewInfo, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 import {clampPanDelta} from "./mouseEventHandlers";
 
@@ -135,6 +135,9 @@ export function unregisterTouchEventHandlers() {
 function startLongPressZoomIn() {
     if (longPressZoomActive) return;
     longPressZoomActive = true;
+
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
 
     function zoomLoop() {
         if (!longPressZoomActive || !fractalApp) return;
@@ -291,6 +294,8 @@ function handleTouchMove(event) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
         if (isTouchDragging) {
@@ -335,6 +340,11 @@ function handleTouchMove(event) {
     // Two-finger pinch: pan + zoom + rotation around midpoint
     if (event.touches.length === 2) {
         event.preventDefault();
+
+        // Hide preset overlay on first pinch (no longer accurate)
+        if (!isPinching) {
+            hideViewInfo();
+        }
         isPinching = true;
 
         const touch0 = event.touches[0];

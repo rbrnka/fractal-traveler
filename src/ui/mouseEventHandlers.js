@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, hideViewInfo, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
@@ -190,6 +190,9 @@ function startLongPressZoomIn() {
     longPressZoomActive = true;
     canvas.style.cursor = 'zoom-in';
 
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
+
     function zoomLoop() {
         if (!longPressZoomActive || !fractalApp) return;
 
@@ -240,6 +243,9 @@ function startLongPressZoomOut() {
     if (rightLongPressZoomActive) return;
     rightLongPressZoomActive = true;
     canvas.style.cursor = 'zoom-out';
+
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
 
     function zoomLoop() {
         if (!rightLongPressZoomActive || !fractalApp) return;
@@ -319,6 +325,9 @@ function flushWheelZoom() {
 
 function handleWheel(event) {
     event.preventDefault();
+
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
 
     // Cache rect on first wheel event of a gesture to avoid sub-pixel jitter
     if (!hasWheelRect) {
@@ -428,6 +437,8 @@ function handleMouseMove(event) {
                 clearTimeout(longPressTimeout);
                 longPressTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
         if (isDragging) {
@@ -492,6 +503,8 @@ function handleMouseMove(event) {
                 clearTimeout(rightLongPressTimeout);
                 rightLongPressTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
         // Disable rotation in Riemann mode (breaks axes alignment)

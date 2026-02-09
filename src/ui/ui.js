@@ -908,6 +908,9 @@ export async function travelToPreset(presets, index) {
 
     console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
+    // Hide any existing overlay/markers before travel starts
+    hideViewInfo();
+
     resetPresetAndDiveButtonStates();
     initAnimationMode();
 
@@ -2710,9 +2713,10 @@ function hideAllMarkers() {
 }
 
 /**
- * Hides the view info overlay
+ * Hides the view info overlay and all markers.
+ * Called when user interacts with the view (pan/zoom/etc) making preset info inaccurate.
  */
-function hideViewInfo() {
+export function hideViewInfo() {
     if (viewInfoOverlay) {
         viewInfoOverlay.classList.add('view-info-hidden');
     }
