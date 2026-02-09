@@ -946,7 +946,7 @@ export class JuliaRenderer extends FractalRenderer {
 
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
-            await this.animateTravelToPreset(currentPreset, 4000, coloringCallback);
+            await this.animateTravelToPreset(currentPreset, 5000, coloringCallback);
 
             // Show overlay at the end of animation
             if (onPresetReached) {
@@ -958,7 +958,7 @@ export class JuliaRenderer extends FractalRenderer {
                 onPresetComplete();
             }
 
-            await asyncDelay(500);
+            await asyncDelay(2000);
         }
 
         console.log(`Demo interrupted.`);

@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
@@ -494,7 +494,8 @@ function handleMouseMove(event) {
             }
         }
 
-        if (isRightDragging) {
+        // Disable rotation in Riemann mode (breaks axes alignment)
+        if (isRightDragging && !isRiemannMode()) {
             event.preventDefault();
             const deltaX = event.clientX - startX;
 

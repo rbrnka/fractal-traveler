@@ -446,10 +446,6 @@ button.dive.has-palette.active {
     min-width: 280px;
 }
 
-#zeroTour {
-    display: none;
-}
-
 .slider-container {
     display: flex;
     flex-direction: row;
@@ -735,6 +731,205 @@ main {
     margin-top: 12px;
     font-size: 11px;
     color: #666;
+}
+
+/* ========================================
+   Point Marker (Tour Visual Aid)
+   ======================================== */
+
+#pointMarker {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#pointMarker.point-marker-hidden {
+    opacity: 0;
+}
+
+.point-marker-ring {
+    width: 60px;
+    height: 60px;
+    border: 2px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pointMarkerPulse 2s ease-in-out infinite;
+    box-shadow: 0 0 15px var(--accent-color, #fff);
+}
+
+.point-marker-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent-color, #fff);
+}
+
+@keyframes pointMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 0.8;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.3);
+        opacity: 0.3;
+    }
+}
+
+/* ========================================
+   Line Marker (Symmetry/Axis Views)
+   ======================================== */
+
+#lineMarker {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#lineMarker.line-marker-hidden {
+    opacity: 0;
+}
+
+.line-marker-line {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--accent-color, #fff) 15%,
+        var(--accent-color, #fff) 85%,
+        transparent 100%
+    );
+    box-shadow: 0 0 15px var(--accent-color, #fff),
+                0 0 30px var(--accent-color, #fff);
+    animation: lineMarkerPulse 2s ease-in-out infinite;
+}
+
+.line-marker-label {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%) translateX(15px);
+    font-size: 12px;
+    color: var(--accent-color, #fff);
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+@keyframes lineMarkerPulse {
+    0%, 100% {
+        opacity: 0.8;
+    }
+    50% {
+        opacity: 0.4;
+    }
+}
+
+/* ========================================
+   Region Marker (Overview Views)
+   ======================================== */
+
+#regionMarker {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 60%;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#regionMarker.region-marker-hidden {
+    opacity: 0;
+}
+
+.region-marker-corner {
+    position: absolute;
+    width: 30px;
+    height: 30px;
+    border-color: var(--accent-color, #fff);
+    border-style: solid;
+    border-width: 0;
+    box-shadow: 0 0 10px var(--accent-color, #fff);
+    animation: regionMarkerPulse 2s ease-in-out infinite;
+}
+
+.region-marker-tl {
+    top: 0;
+    left: 0;
+    border-top-width: 2px;
+    border-left-width: 2px;
+}
+
+.region-marker-tr {
+    top: 0;
+    right: 0;
+    border-top-width: 2px;
+    border-right-width: 2px;
+}
+
+.region-marker-bl {
+    bottom: 0;
+    left: 0;
+    border-bottom-width: 2px;
+    border-left-width: 2px;
+}
+
+.region-marker-br {
+    bottom: 0;
+    right: 0;
+    border-bottom-width: 2px;
+    border-right-width: 2px;
+}
+
+@keyframes regionMarkerPulse {
+    0%, 100% {
+        opacity: 0.7;
+    }
+    50% {
+        opacity: 0.3;
+    }
+}
+
+/* ========================================
+   Axes Overlay (Riemann)
+   ======================================== */
+
+#axesCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 5;
+    will-change: transform;
+    color: #0f0;
+}
+
+#axesCanvas.axes-hidden {
+    opacity: 0;
+    transition: opacity 0.2s ease;
 }
 
 /* ========================================

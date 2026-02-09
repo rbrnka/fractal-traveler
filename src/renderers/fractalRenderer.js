@@ -94,6 +94,9 @@ class FractalRenderer extends Renderer {
         this.interactionActive = false;
         this.interactionTimer = null;
 
+        /** Optional callback called after every draw() - used for axes overlay sync */
+        this.onDrawCallback = null;
+
         /** @type {number} */
         this.iterations = 0;
         this.extraIterations = 0;
@@ -480,6 +483,9 @@ class FractalRenderer extends Renderer {
         this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
         debugPanel?.endGpuTimer();
         this.adjustAdaptiveQuality();
+
+        // Invoke draw callback if set (used for axes overlay sync)
+        if (this.onDrawCallback) this.onDrawCallback();
     }
 
     /**

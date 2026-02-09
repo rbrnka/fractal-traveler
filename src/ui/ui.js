@@ -43,7 +43,7 @@ import {
 import {DebugPanel} from "./debugPanel";
 import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPreview} from "./juliaPreview";
 import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
-import {RosslerRenderer} from "../renderers/RosslerRenderer";
+import {RosslerRenderer} from "../renderers/rosslerRenderer";
 
 /**
  * @module UI
@@ -129,6 +129,10 @@ export let debugPanel;
 let riemannControls;
 let criticalLineToggle;
 let analyticExtToggle;
+let axesToggle;
+let axesCanvas;
+let axesCtx;
+let axesVisible = false;
 let freqRSlider;
 let freqGSlider;
 let freqBSlider;
@@ -139,13 +143,16 @@ let contourSlider;
 let contourValue;
 let termsSlider;
 let termsValue;
-let zeroTourButton;
 let viewInfoOverlay;
 let viewInfoTitle;
 let viewInfoValue;
 let viewInfoDescription;
 let viewInfoCurrent;
 let viewInfoTotal;
+let pointMarker;
+let lineMarker;
+let lineMarkerLabel;
+let regionMarker;
 
 // Rossler controls
 let rosslerControls;
@@ -298,6 +305,7 @@ export async function switchFractalTypeWithPersistence(targetType) {
 }
 
 export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
+export const isRiemannMode = () => fractalMode === FRACTAL_TYPE.RIEMANN;
 
 /**
  * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
@@ -316,7 +324,6 @@ export function enableMandelbrotMode() {
 
     // Show Demo button and persist switch (may have been hidden in other modes)
     if (demoButton) demoButton.style.display = 'inline-flex';
-    if (zeroTourButton) zeroTourButton.style.display = 'none';
     if (persistSwitch && FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
         persistSwitch.style.display = 'inline-flex';
     }
@@ -365,7 +372,6 @@ export function enableJuliaMode() {
 
     // Show Demo button and persist switch (may have been hidden in other modes)
     if (demoButton) demoButton.style.display = 'inline-flex';
-    if (zeroTourButton) zeroTourButton.style.display = 'none';
     if (persistSwitch && FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED) {
         persistSwitch.style.display = 'inline-flex';
     }
@@ -401,9 +407,8 @@ export function enableRiemannMode() {
     initPaletteButtonEvents();
     initRiemannControls();
 
-    // Hide Demo and persist switch, show Zero Tour in Riemann mode
-    if (demoButton) demoButton.style.display = 'none';
-    if (zeroTourButton) zeroTourButton.style.display = 'inline-flex';
+    // Show Demo button, hide persist switch in Riemann mode
+    if (demoButton) demoButton.style.display = 'inline-flex';
     if (persistSwitch) persistSwitch.style.display = 'none';
 
     window.location.hash = '#zeta'; // Update URL hash
@@ -430,7 +435,6 @@ export function enableRosslerMode() {
 
     // Show Demo button, hide persist switch (only for Mandelbrot/Julia)
     if (demoButton) demoButton.style.display = 'inline-flex';
-    if (zeroTourButton) zeroTourButton.style.display = 'none';
     if (persistSwitch) persistSwitch.style.display = 'none';
 
     window.location.hash = '#ross'; // Update URL hash
@@ -503,6 +507,7 @@ export function resetAppState() {
     resetPresetAndDiveButtonStates();
     resetActivePresetIndex();
     clearURLParams();
+    updateAxes();
 }
 
 /**
@@ -600,6 +605,9 @@ function exitAnimationMode() {
     animationActive = false;
     infoText?.classList.remove('animation');
 
+    // Stop any active demos or tours
+    fractalApp?.stopDemo?.();
+    fractalApp?.stopZeroTour?.();
     fractalApp?.stopAllNonColorAnimations();
     // Note: Don't stop color animations here - palette cycling should be independent
 
@@ -611,7 +619,7 @@ function exitAnimationMode() {
         demoButton.classList.remove('active');
     }
 
-    if (presetsToggle) presetsToggle.disabled = false;
+    // Re-enable dives dropdown (only one disabled during animations)
     if (divesToggle) divesToggle.disabled = false;
 
     if (isTouchDevice()) {
@@ -649,8 +657,9 @@ function initAnimationMode() {
         demoButton.classList.add('active');
     }
 
+    // Close dropdowns but keep most enabled - clicking them will stop the demo
+    // Only disable dives dropdown during animation
     closePresetsDropdown();
-    if (presetsToggle) presetsToggle.disabled = true;
     closeDivesDropdown();
     if (divesToggle) divesToggle.disabled = true;
 
@@ -680,7 +689,8 @@ export async function toggleDemo() {
     if (animationActive) {
         resetPresetAndDiveButtonStates();
         activeJuliaDiveIndex = -1;
-        fractalApp.stopDemo();
+        fractalApp.stopDemo?.();
+        fractalApp.stopZeroTour?.();
         hideViewInfo();
         exitAnimationMode();
         console.groupEnd();
@@ -708,11 +718,12 @@ export async function toggleDemo() {
 
         default:
             console.warn(`No demo defined for mode ${fractalMode}`);
-            exitAnimationMode();
             break;
         // @formatter:on
     }
 
+    // Demo/tour ended naturally - clean up
+    exitAnimationMode();
     console.groupEnd();
 }
 
@@ -739,15 +750,43 @@ async function startMandelbrotDemo() {
     console.groupEnd();
 }
 
-/** Starts the Riemann demo */
+/** Starts the Riemann tour (zero tour through significant points) */
 async function startRiemannDemo() {
     console.groupCollapsed(`%c startRiemannDemo`, CONSOLE_GROUP_STYLE);
 
-    await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
-        (preset, index, total) => onDemoPresetReached(preset, index, total, true));
+    if (!fractalApp.PRESETS || fractalApp.PRESETS.length === 0) {
+        log('No presets data available for tour', 'startRiemannDemo');
+        console.groupEnd();
+        return;
+    }
+
+    // Enable critical line and analytic extension for the tour
+    if (fractalApp.showCriticalLine !== undefined) {
+        fractalApp.showCriticalLine = true;
+    }
+    if (fractalApp.useAnalyticExtension !== undefined) {
+        fractalApp.useAnalyticExtension = true;
+    }
+    syncRiemannToggleStates();
+
+    // Turn on axes for tour if not already on
+    if (!axesVisible) {
+        axesVisible = true;
+        if (axesToggle) axesToggle.classList.add('active');
+        showAxes();
+    }
+
+    fractalApp.draw();
+
+    const totalPoints = fractalApp.PRESETS.length;
+
+    // Start the zero tour with callback
+    await fractalApp.animateZeroTour((point, index) => {
+        showViewInfo(point, index, totalPoints, true);
+    }, 7000);
 
     hideViewInfo();
-    console.log("Demo ended");
+    console.log("Riemann tour ended");
     console.groupEnd();
 }
 
@@ -874,12 +913,15 @@ export async function travelToPreset(presets, index) {
 
     presetButtons[index]?.classList.add('active');
 
+    const preset = presets[index];
+    const isRiemann = fractalMode === FRACTAL_TYPE.RIEMANN;
+
     if (isJuliaMode()) {
         fractalApp.demoTime = 0;
-        await fractalApp.animateTravelToPreset(presets[index], 1500, updateColorTheme);
+        await fractalApp.animateTravelToPreset(preset, 1500, updateColorTheme);
     } else {
         // Cinematic animation with zoom-out, pan, zoom-in with rotation
-        await fractalApp.animateTravelToPreset(presets[index], 2000, 500, 1500, updateColorTheme);
+        await fractalApp.animateTravelToPreset(preset, 2000, 500, 1500, updateColorTheme);
     }
 
     // Sync button state after travel (in case preset had paletteId that stopped cycling)
@@ -892,6 +934,17 @@ export async function travelToPreset(presets, index) {
 
     exitAnimationMode();
     updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
+
+    // Show overlay after travel completes (showViewInfo handles marker display based on view type)
+    showViewInfo(preset, index, presets.length, isRiemann);
+
+    // Auto-hide overlay and markers after delay
+    const hideDelay = isRiemann ? 10000 : 5000;
+    setTimeout(() => {
+        if (!animationActive) {
+            hideViewInfo();
+        }
+    }, hideDelay);
 }
 
 /** Inits debug bar with various information permanently shown on the screen */
@@ -977,9 +1030,6 @@ export async function reset() {
     console.groupCollapsed(`%c reset`, CONSOLE_GROUP_STYLE);
 
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
-
-    // Stop zero tour if active
-    stopZeroTour();
 
     exitAnimationMode();
 
@@ -1758,7 +1808,7 @@ function initFractalModeButtons() {
         { type: FRACTAL_TYPE.MANDELBROT, name: 'Mandelbrot', title: 'Mandelbrot set explorer' },
         { type: FRACTAL_TYPE.JULIA, name: 'Julia', title: 'Julia set explorer' },
         { type: FRACTAL_TYPE.RIEMANN, name: 'Riemann', title: 'Riemann Zeta function visualization' },
-        { type: FRACTAL_TYPE.ROSSLER, name: 'Rossler', title: 'Rossler attractor' }
+        // { type: FRACTAL_TYPE.ROSSLER, name: 'Rosslerᴮᴱᵀᴬ', title: 'Rossler attractor' }
     ];
 
     modes.forEach((mode) => {
@@ -2048,7 +2098,10 @@ function initFractalSwitchButtons() {
             }
         });
 
-        persistSwitch.style.display = 'inline-flex';
+        // Only show persist switch in Mandelbrot/Julia modes
+        if (fractalMode === FRACTAL_TYPE.MANDELBROT || fractalMode === FRACTAL_TYPE.JULIA) {
+            persistSwitch.style.display = 'inline-flex';
+        }
     }
 
     log('Initialized.', 'initFractalSwitchButtons');
@@ -2060,6 +2113,12 @@ function initWindowEvents() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             fractalApp.resizeCanvas(); // Adjust canvas dimensions
+            // Resize and redraw axes overlay if visible
+            if (axesVisible && axesCanvas) {
+                axesCanvas.width = window.innerWidth;
+                axesCanvas.height = window.innerHeight;
+                drawAxesFull();
+            }
         }, 200); // Adjust delay as needed
     });
 
@@ -2171,6 +2230,9 @@ function initRiemannControls() {
     // Show the controls
     riemannControls.style.display = 'flex';
 
+    // Set up axes sync callback - called on every draw() for smooth axes movement
+    fractalApp.onDrawCallback = updateAxes;
+
     // Sync toggle states with renderer
     if (criticalLineToggle) {
         criticalLineToggle.classList.toggle('active', fractalApp.showCriticalLine);
@@ -2180,6 +2242,11 @@ function initRiemannControls() {
     if (analyticExtToggle) {
         analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
         analyticExtToggle.addEventListener('click', handleAnalyticExtToggle);
+    }
+
+    if (axesToggle) {
+        axesToggle.classList.toggle('active', axesVisible);
+        axesToggle.addEventListener('click', handleAxesToggle);
     }
 
     // Initialize frequency sliders
@@ -2213,9 +2280,11 @@ function initRiemannControls() {
         termsSlider.addEventListener('input', handleTermsChange);
     }
 
-    // Zero Tour button
-    if (zeroTourButton) {
-        zeroTourButton.addEventListener('click', handleZeroTourClick);
+    // Turn axes on by default in Riemann mode
+    if (!axesVisible) {
+        axesVisible = true;
+        if (axesToggle) axesToggle.classList.add('active');
+        showAxes();
     }
 
     log('Initialized.', 'initRiemannControls');
@@ -2229,16 +2298,10 @@ function destroyRiemannControls() {
         riemannControls.style.display = 'none';
     }
 
-    // Hide Zero Tour button, show Demo button
-    if (zeroTourButton) {
-        zeroTourButton.style.display = 'none';
+    // Clear draw callback
+    if (fractalApp) {
+        fractalApp.onDrawCallback = null;
     }
-    if (demoButton) {
-        demoButton.style.display = 'inline-flex';
-    }
-
-    // Stop any active zero tour
-    stopZeroTour();
 
     // Remove event listeners
     if (criticalLineToggle) {
@@ -2247,6 +2310,11 @@ function destroyRiemannControls() {
     if (analyticExtToggle) {
         analyticExtToggle.removeEventListener('click', handleAnalyticExtToggle);
     }
+    if (axesToggle) {
+        axesToggle.removeEventListener('click', handleAxesToggle);
+    }
+    // Hide axes when leaving Riemann mode
+    hideAxes();
     if (freqRSlider) {
         freqRSlider.removeEventListener('input', handleFreqRChange);
     }
@@ -2261,9 +2329,6 @@ function destroyRiemannControls() {
     }
     if (termsSlider) {
         termsSlider.removeEventListener('input', handleTermsChange);
-    }
-    if (zeroTourButton) {
-        zeroTourButton.removeEventListener('click', handleZeroTourClick);
     }
 
     log('Destroyed.', 'destroyRiemannControls');
@@ -2285,6 +2350,197 @@ function handleAnalyticExtToggle() {
         log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
         fractalApp.draw();
     }
+}
+
+function handleAxesToggle() {
+    toggleAxes();
+}
+
+/**
+ * Toggles the axes overlay on/off
+ */
+export function toggleAxes() {
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+
+    axesVisible = !axesVisible;
+    if (axesToggle) {
+        axesToggle.classList.toggle('active', axesVisible);
+    }
+    if (axesVisible) {
+        showAxes();
+    } else {
+        hideAxes();
+    }
+    log(`Axes: ${axesVisible ? 'ON' : 'OFF'}`);
+}
+
+/**
+ * Shows the axes overlay and draws coordinate grid
+ */
+function showAxes() {
+    if (!axesCanvas || !axesCtx) return;
+
+    axesCanvas.width = window.innerWidth;
+    axesCanvas.height = window.innerHeight;
+    axesCanvas.classList.remove('axes-hidden');
+
+    drawAxesFull();
+}
+
+/**
+ * Hides the axes overlay
+ */
+function hideAxes() {
+    if (axesCanvas) {
+        axesCanvas.classList.add('axes-hidden');
+    }
+    axesVisible = false;
+    if (axesToggle) {
+        axesToggle.classList.remove('active');
+    }
+}
+
+/**
+ * Draws the coordinate axes with numbers
+ */
+function drawAxesFull() {
+    if (!axesCtx || !axesCanvas || !fractalApp) return;
+
+    const width = axesCanvas.width;
+    const height = axesCanvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Clear canvas
+    axesCtx.clearRect(0, 0, width, height);
+
+    // Get current view parameters
+    const pan = fractalApp.pan;
+    const zoom = fractalApp.zoom;
+
+    // Calculate visible range (matching shader: uv = (fragCoord - 0.5*res) / res.y)
+    const aspect = width / height;
+    const halfWidth = zoom * aspect / 2;
+    const halfHeight = zoom / 2;
+    const left = pan[0] - halfWidth;
+    const right = pan[0] + halfWidth;
+    const top = pan[1] + halfHeight;
+    const bottom = pan[1] - halfHeight;
+
+    // Determine good tick spacing based on zoom
+    const tickSpacing = getTickSpacing(zoom);
+
+    // Pixels per fractal unit (matching shader coordinate system)
+    const scale = height / zoom;
+
+    // Calculate main axis positions first (needed for label placement)
+    const realAxisY = centerY - (0 - pan[1]) * scale;  // Im=0 line (horizontal)
+    const imagAxisX = centerX + (0 - pan[0]) * scale;  // Re=0 line (vertical)
+
+    // Clamp label positions to stay on screen with padding
+    const labelPadding = 20;
+    const realAxisLabelY = Math.max(labelPadding, Math.min(height - labelPadding, realAxisY));
+    const imagAxisLabelX = Math.max(labelPadding + 30, Math.min(width - labelPadding - 30, imagAxisX));
+
+    // Style for grid lines (subtle)
+    axesCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+    axesCtx.lineWidth = 1;
+    axesCtx.font = '14px monospace';
+    axesCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+
+    // Draw vertical grid lines (real axis values) with labels along real axis
+    axesCtx.textAlign = 'center';
+    axesCtx.textBaseline = 'top';
+    const startX = Math.ceil(left / tickSpacing) * tickSpacing;
+    for (let x = startX; x <= right; x += tickSpacing) {
+        const screenX = centerX + (x - pan[0]) * scale;
+        // Draw tick line
+        axesCtx.beginPath();
+        axesCtx.moveTo(screenX, 0);
+        axesCtx.lineTo(screenX, height);
+        axesCtx.stroke();
+
+        // Draw label along the real axis (Im=0), skip zero
+        if (Math.abs(x) > tickSpacing * 0.1) {
+            const label = formatAxisNumber(x);
+            axesCtx.fillText(label, screenX, realAxisLabelY + 5);
+        }
+    }
+
+    // Draw horizontal grid lines (imaginary axis values) with labels along imaginary axis
+    axesCtx.textAlign = 'left';
+    axesCtx.textBaseline = 'middle';
+    const startY = Math.ceil(bottom / tickSpacing) * tickSpacing;
+    for (let y = startY; y <= top; y += tickSpacing) {
+        const screenY = centerY - (y - pan[1]) * scale;
+        // Draw tick line
+        axesCtx.beginPath();
+        axesCtx.moveTo(0, screenY);
+        axesCtx.lineTo(width, screenY);
+        axesCtx.stroke();
+
+        // Draw label along the imaginary axis (Re=0), skip zero
+        if (Math.abs(y) > tickSpacing * 0.1) {
+            const label = formatAxisNumber(y) + 'i';
+            axesCtx.fillText(label, imagAxisLabelX + 5, screenY);
+        }
+    }
+
+    // Draw main axes (thicker, more visible)
+    axesCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+    axesCtx.lineWidth = 2;
+
+    // Real axis (horizontal through Im=0)
+    axesCtx.beginPath();
+    axesCtx.moveTo(0, realAxisY);
+    axesCtx.lineTo(width, realAxisY);
+    axesCtx.stroke();
+
+    // Imaginary axis (vertical through Re=0)
+    axesCtx.beginPath();
+    axesCtx.moveTo(imagAxisX, 0);
+    axesCtx.lineTo(imagAxisX, height);
+    axesCtx.stroke();
+
+    // Draw origin label
+    axesCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    axesCtx.textAlign = 'left';
+    axesCtx.textBaseline = 'top';
+    axesCtx.fillText('0', imagAxisX + 5, realAxisY + 5);
+}
+
+/**
+ * Calculates appropriate tick spacing based on zoom level
+ */
+function getTickSpacing(zoom) {
+    const idealTicks = 8;
+    const rawSpacing = zoom / idealTicks;
+    const magnitude = Math.pow(10, Math.floor(Math.log10(rawSpacing)));
+    const normalized = rawSpacing / magnitude;
+
+    if (normalized < 1.5) return magnitude;
+    if (normalized < 3.5) return 2 * magnitude;
+    if (normalized < 7.5) return 5 * magnitude;
+    return 10 * magnitude;
+}
+
+/**
+ * Formats axis number for display
+ */
+function formatAxisNumber(n) {
+    if (Number.isInteger(n)) return n.toString();
+    if (Math.abs(n) < 0.01 || Math.abs(n) >= 1000) {
+        return n.toExponential(1);
+    }
+    return n.toFixed(2).replace(/\.?0+$/, '');
+}
+
+/**
+ * Updates axes when view changes
+ */
+export function updateAxes() {
+    if (!axesVisible || fractalMode !== FRACTAL_TYPE.RIEMANN || !fractalApp) return;
+    drawAxesFull();
 }
 
 function handleFreqRChange(e) {
@@ -2320,70 +2576,6 @@ function handleTermsChange(e) {
     fractalApp.seriesTerms = value;
     termsValue.textContent = value.toString();
     fractalApp.draw();
-}
-
-function handleZeroTourClick() {
-    if (fractalApp.zeroTourActive) {
-        stopZeroTour();
-    } else {
-        startZeroTour();
-    }
-}
-
-/**
- * Starts the Zeta Tour animation through all significant points
- */
-async function startZeroTour() {
-    if (!fractalApp.TOUR || fractalApp.TOUR.length === 0) {
-        log('No tour data available', 'startZeroTour');
-        return;
-    }
-
-    // Enable critical line and analytic extension for the tour
-    if (fractalApp.showCriticalLine !== undefined) {
-        fractalApp.showCriticalLine = true;
-    }
-    if (fractalApp.useAnalyticExtension !== undefined) {
-        fractalApp.useAnalyticExtension = true;
-    }
-    syncRiemannToggleStates();
-    fractalApp.draw();
-
-    resetPresetAndDiveButtonStates();
-
-    // Update button state
-    if (zeroTourButton) {
-        zeroTourButton.textContent = 'Stop Tour';
-        zeroTourButton.classList.add('active');
-    }
-
-    const totalPoints = fractalApp.TOUR.length;
-
-    // Start the tour with callback
-    await fractalApp.animateZeroTour((point, index) => {
-        showViewInfo(point, index, totalPoints, true);
-    }, 7000);
-
-    // Tour ended (either completed or stopped)
-    stopZeroTour();
-}
-
-/**
- * Stops the Zeta Tour animation
- */
-function stopZeroTour() {
-    if (fractalApp?.zeroTourActive) {
-        fractalApp.stopZeroTour();
-    }
-
-    // Update button state
-    if (zeroTourButton) {
-        zeroTourButton.textContent = 'Tour';
-        zeroTourButton.classList.remove('active');
-    }
-
-    // Hide the overlay
-    hideViewInfo();
 }
 
 /**
@@ -2431,7 +2623,7 @@ function showViewInfo(preset, index, total, isRiemann = false) {
             if (im === 0) {
                 viewInfoValue.textContent = `s = ${re}`;
             } else if (re === 0.5) {
-                viewInfoValue.textContent = `s = ½ + ${im}i`;
+                viewInfoValue.textContent = `s = 1/2 + ${im}i`;
             } else {
                 viewInfoValue.textContent = `s = ${re} + ${im}i`;
             }
@@ -2460,6 +2652,61 @@ function showViewInfo(preset, index, total, isRiemann = false) {
     }
 
     viewInfoOverlay.classList.remove('view-info-hidden');
+
+    // Show appropriate marker based on view type (Riemann only)
+    if (isRiemann) {
+        // Hide all markers first
+        hideAllMarkers();
+
+        const viewType = preset.type || '';
+
+        // Apply accent color to all marker types
+        const setMarkerColor = (element) => {
+            if (accentColor) {
+                element.style.setProperty('--accent-color', accentColor);
+            } else {
+                element.style.removeProperty('--accent-color');
+            }
+        };
+
+        if (viewType === 'symmetry') {
+            // Vertical line marker for symmetry/critical line views
+            if (lineMarker) {
+                setMarkerColor(lineMarker);
+                if (lineMarkerLabel) {
+                    lineMarkerLabel.textContent = 'Re(s) = ½';
+                }
+                lineMarker.classList.remove('line-marker-hidden');
+            }
+        } else if (viewType === 'overview') {
+            // Region bracket marker for overview views
+            if (regionMarker) {
+                setMarkerColor(regionMarker);
+                regionMarker.classList.remove('region-marker-hidden');
+            }
+        } else {
+            // Point marker for all specific point types (nontrivial, trivial, special, pole, gram, saddle)
+            if (pointMarker) {
+                setMarkerColor(pointMarker);
+                pointMarker.classList.remove('point-marker-hidden');
+            }
+        }
+    }
+}
+
+/**
+ * Hides all marker types (point, line, region)
+ */
+function hideAllMarkers() {
+    if (pointMarker) {
+        pointMarker.classList.add('point-marker-hidden');
+    }
+    if (lineMarker) {
+        lineMarker.classList.add('line-marker-hidden');
+    }
+    if (regionMarker) {
+        regionMarker.classList.add('region-marker-hidden');
+    }
 }
 
 /**
@@ -2469,6 +2716,7 @@ function hideViewInfo() {
     if (viewInfoOverlay) {
         viewInfoOverlay.classList.add('view-info-hidden');
     }
+    hideAllMarkers();
 }
 
 /**
@@ -2746,6 +2994,11 @@ function bindHTMLElements() {
     riemannControls = document.getElementById('riemannControls');
     criticalLineToggle = document.getElementById('criticalLineToggle');
     analyticExtToggle = document.getElementById('analyticExtToggle');
+    axesToggle = document.getElementById('axesToggle');
+    axesCanvas = document.getElementById('axesCanvas');
+    if (axesCanvas) {
+        axesCtx = axesCanvas.getContext('2d');
+    }
     freqRSlider = document.getElementById('freqRSlider');
     freqGSlider = document.getElementById('freqGSlider');
     freqBSlider = document.getElementById('freqBSlider');
@@ -2756,13 +3009,16 @@ function bindHTMLElements() {
     contourValue = document.getElementById('contourValue');
     termsSlider = document.getElementById('termsSlider');
     termsValue = document.getElementById('termsValue');
-    zeroTourButton = document.getElementById('zeroTour');
     viewInfoOverlay = document.getElementById('viewInfoOverlay');
     viewInfoTitle = document.getElementById('viewInfoTitle');
     viewInfoValue = document.getElementById('viewInfoValue');
     viewInfoDescription = document.getElementById('viewInfoDescription');
     viewInfoCurrent = document.getElementById('viewInfoCurrent');
     viewInfoTotal = document.getElementById('viewInfoTotal');
+    pointMarker = document.getElementById('pointMarker');
+    lineMarker = document.getElementById('lineMarker');
+    lineMarkerLabel = lineMarker?.querySelector('.line-marker-label');
+    regionMarker = document.getElementById('regionMarker');
     // Rossler Controls elements
     rosslerControls = document.getElementById('rosslerControls');
     rosslerASlider = document.getElementById('rosslerASlider');
@@ -2813,10 +3069,9 @@ export async function initUI(fractalRenderer) {
     } else if (fractalRenderer instanceof RiemannRenderer) {
         fractalMode = FRACTAL_TYPE.RIEMANN;
 
-        // Hide dives dropdown, show tour button
+        // Hide dives dropdown in Riemann mode
         if (divesDropdown) divesDropdown.style.display = 'none';
-        if (demoButton) demoButton.style.display = 'none';
-        if (zeroTourButton) zeroTourButton.style.display = 'inline-flex';
+        if (demoButton) demoButton.style.display = 'inline-flex';
         if (persistSwitch) persistSwitch.style.display = 'none';
 
         initRiemannControls();

@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 import {clampPanDelta} from "./mouseEventHandlers";
 
@@ -399,10 +399,12 @@ function handleTouchMove(event) {
         // Apply zoom (without anchor adjustment since we handled pan separately)
         fractalApp.zoom = targetZoom;
 
-        // Rotation (incremental, like mouse right-drag)
-        const angleDifference = currentAngle - pinchStartAngle;
-        if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
-            fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
+        // Rotation (incremental, like mouse right-drag) - disabled in Riemann mode
+        if (!isRiemannMode()) {
+            const angleDifference = currentAngle - pinchStartAngle;
+            if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
+                fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
+            }
         }
 
         // Update baselines for next frame

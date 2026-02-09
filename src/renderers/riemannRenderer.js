@@ -12,7 +12,7 @@ class RiemannRenderer extends FractalRenderer {
         super(canvas);
 
         this.MAX_TERMS = 500;
-        this.DEFAULT_ZOOM = 50;
+        this.DEFAULT_ZOOM = 2e1;
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
@@ -31,7 +31,6 @@ class RiemannRenderer extends FractalRenderer {
 
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
-        this.TOUR = presetsData.tour || [];
         this.currentPaletteIndex = 0;
         this.zeroTourActive = false;
 
@@ -284,8 +283,8 @@ class RiemannRenderer extends FractalRenderer {
         // On mobile portrait, offset pan to center point in visible area
         const isMobile = window.innerWidth <= 600;
 
-        for (let i = 0; i < this.TOUR.length && this.zeroTourActive; i++) {
-            const point = this.TOUR[i];
+        for (let i = 0; i < this.PRESETS.length && this.zeroTourActive; i++) {
+            const point = this.PRESETS[i];
             const zoom = point.zoom || 8;
             // Apply offset scaled by zoom to shift point up on screen
             const offsetPan = isMobile
@@ -298,7 +297,7 @@ class RiemannRenderer extends FractalRenderer {
                 paletteId: point.paletteId || 'Default'
             };
 
-            log(`Traveling to ${point.type}: ${i + 1}/${this.TOUR.length}: ${point.name}`);
+            log(`Traveling to ${point.type}: ${i + 1}/${this.PRESETS.length}: ${point.id}`);
 
             await this.animateTravelToPreset(preset, 2000, 1000, 2500);
 
@@ -346,7 +345,7 @@ class RiemannRenderer extends FractalRenderer {
         this.currentPaletteIndex = index;
 
         if (index >= 0 && index < this.PALETTES.length) {
-            const palette = this.PALEaTTES[index];
+            const palette = this.PALETTES[index];
             const wrappedCallback = coloringCallback && palette.keyColor
                 ? () => coloringCallback(hexToRGBArray(palette.keyColor, 255))
                 : coloringCallback;

@@ -123,7 +123,8 @@
                     <span class="control-label">Display:</span>
                     <div class="button-group">
                         <button type="button" id="criticalLineToggle" class="active" title="Critical Line (,)">Critical Line</button>
-                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Extension (N)">Analytic Ext.</button>
+                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Continuation (M)">Analytic Cont.</button>
+                        <button type="button" id="axesToggle" title="Show/Hide Axes (N)">Axes</button>
                     </div>
                 </div>
                 <div class="slider-container">
@@ -194,8 +195,7 @@
 
             <div class="control-row" id="controlButtons">
                 <div class="button-group">
-                    <button type="button" id="demo" title="Start/Stop Animation or Infinite Loop (D)">Tour</button>
-                    <button type="button" id="zeroTour" title="Guided tour of significant zeta features">Tour</button>
+                    <button type="button" id="demo" title="Start/Stop Tour (D)">Tour</button>
                     <button type="button" id="screenshot" title="Save Image (Shift+S)">Capture</button>
                     <button type="button" id="saveView" title="Save current view locally (Alt+S)">Save</button>
                     <button type="button" id="reset" title="Reset the view (Shift+R)">Reset</button>
@@ -252,6 +252,27 @@
         <p id="viewInfoDescription"></p>
         <div id="viewInfoProgress"><span id="viewInfoCurrent">1</span> / <span id="viewInfoTotal">10</span></div>
     </aside>
+
+    <div id="pointMarker" class="point-marker-hidden">
+        <div class="point-marker-ring"></div>
+        <div class="point-marker-dot"></div>
+    </div>
+
+    <!-- Vertical line marker for symmetry/axis views -->
+    <div id="lineMarker" class="line-marker-hidden">
+        <div class="line-marker-line"></div>
+        <div class="line-marker-label"></div>
+    </div>
+
+    <!-- Region bracket marker for overview views -->
+    <div id="regionMarker" class="region-marker-hidden">
+        <div class="region-marker-corner region-marker-tl"></div>
+        <div class="region-marker-corner region-marker-tr"></div>
+        <div class="region-marker-corner region-marker-bl"></div>
+        <div class="region-marker-corner region-marker-br"></div>
+    </div>
+
+    <canvas id="axesCanvas" class="axes-hidden"></canvas>
 
     <main>
         <canvas id="fractalCanvas" role="img" aria-label="Interactive fractal rendering canvas"></canvas>

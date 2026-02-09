@@ -240,7 +240,7 @@ void main() {
     if (u_showCriticalLine) {
         float critDist = abs(coord.x - 0.5);
         float critLine = 1.0 - smoothstep(0.0, 0.003 * u_zoom, critDist);
-        col = mix(col, vec3(1.0), critLine * 0.3);
+        col = mix(col, vec3(0.0), critLine * 0.3);
     }
 
     gl_FragColor = vec4(col, 1.0);

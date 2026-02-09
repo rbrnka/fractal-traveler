@@ -12,6 +12,7 @@ import {
     copyInfoToClipboard,
     isAnimationActive,
     isJuliaMode,
+    isRiemannMode,
     randomizeColors,
     reset,
     resetAppState,
@@ -23,6 +24,7 @@ import {
     syncRiemannControls,
     syncRiemannToggleStates,
     syncRosslerControls,
+    toggleAxes,
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
@@ -163,6 +165,8 @@ async function onKeyDown(event) {
         case 'KeyQ': // Rotation counter-clockwise
             rotationDirection = ROTATION_DIRECTION.CCW;
         case 'KeyW': // Rotation clockwise
+            // Disable rotation in Riemann mode (breaks axes alignment)
+            if (isRiemannMode()) break;
             if (rotationActive) {
                 fractalApp.stopCurrentRotationAnimation();
                 rotationActive = false;
@@ -256,7 +260,7 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyN':
+        case 'KeyM':
             if (fractalApp.useAnalyticExtension !== undefined) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
@@ -276,7 +280,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyV': // Rossler Mode
+        case 'KeyN': // Toggle axes (Riemann mode)
+            toggleAxes();
+            handled = true;
+            break;
+
+        case 'KeyV': // Rossler (temporarily)
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
             handled = true;
             break;
