@@ -41,21 +41,24 @@ class RiemannRenderer extends FractalRenderer {
         return fragmentShaderRaw.replace('__MAX_TERMS__', this.MAX_TERMS).toString();
     }
 
+    /**
+     * Called after GL program is created.
+     * Caches Riemann-specific uniform locations.
+     * @override
+     */
     onProgramCreated() {
-        // No additional resources needed
-    }
+        super.onProgramCreated();
 
-    needsRebase() {
-        return false;
-    }
-
-    updateUniforms() {
-        super.updateUniforms();
+        // Riemann-specific uniform locations
         this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
         this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
         this.showCriticalLineLoc = this.gl.getUniformLocation(this.program, 'u_showCriticalLine');
         this.useAnalyticExtensionLoc = this.gl.getUniformLocation(this.program, 'u_useAnalyticExtension');
         this.contourStrengthLoc = this.gl.getUniformLocation(this.program, 'u_contourStrength');
+    }
+
+    needsRebase() {
+        return false;
     }
 
     draw() {

@@ -66,11 +66,36 @@ class MandelbrotRenderer extends FractalRenderer {
 
     markOrbitDirty = () => this.orbitDirty = true;
 
+    createFragmentShaderSource() {
+        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
+    }
+
     /**
-     * Called by FractalRenderer.initGLProgram() after program creation + common uniform cache.
-     * Creates float texture, allocates orbit buffer, and binds texture unit.
+     * Called after GL program is created.
+     * Caches Mandelbrot-specific uniform locations and sets up orbit texture.
+     * @override
      */
     onProgramCreated() {
+        super.onProgramCreated();
+
+        // Mandelbrot-specific uniform locations
+        // delta pan hi/lo (viewPan - refPan, computed on JS side for precision)
+        this.deltaPanHLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_h');
+        this.deltaPanLLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_l');
+
+        // zoom hi/lo
+        this.zoomHLoc = this.gl.getUniformLocation(this.program, 'u_zoom_h');
+        this.zoomLLoc = this.gl.getUniformLocation(this.program, 'u_zoom_l');
+
+        // orbit texture uniforms
+        this.orbitTexLoc = this.gl.getUniformLocation(this.program, 'u_orbitTex');
+        this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
+
+        // color parameters
+        this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
+        this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
+
+        // Set up orbit texture
         this.floatTexExt = this.gl.getExtension("OES_texture_float");
         if (!this.floatTexExt) {
             console.error('Missing OES_texture_float. Perturbation orbit texture upload requires it.');
@@ -93,30 +118,6 @@ class MandelbrotRenderer extends FractalRenderer {
         if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
 
         this.orbitDirty = true;
-    }
-
-    createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
-    }
-
-    updateUniforms() {
-        super.updateUniforms();
-
-        // delta pan hi/lo (viewPan - refPan, computed on JS side for precision)
-        this.deltaPanHLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_h');
-        this.deltaPanLLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_l');
-
-        // zoom hi/lo
-        this.zoomHLoc = this.gl.getUniformLocation(this.program, 'u_zoom_h');
-        this.zoomLLoc = this.gl.getUniformLocation(this.program, 'u_zoom_l');
-
-        // orbit texture uniforms
-        this.orbitTexLoc = this.gl.getUniformLocation(this.program, 'u_orbitTex');
-        this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
-
-        // color parameters
-        this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
-        this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
     }
 
     /** Reference picking + orbit build */

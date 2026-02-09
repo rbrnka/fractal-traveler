@@ -132,7 +132,34 @@ export class JuliaRenderer extends FractalRenderer {
 
     markOrbitDirty = () => this.orbitDirty = true;
 
+    createFragmentShaderSource() {
+        return (JuliaRenderer.FF_LEGACY_JULIA_RENDERER
+            ? fragmentShaderRawLegacy
+            : fragmentShaderRaw).replace('__MAX_ITER__', this.MAX_ITER).toString();
+    }
+
+    /**
+     * Called after GL program is created.
+     * Caches Julia-specific uniform locations and sets up orbit texture.
+     * @override
+     */
     onProgramCreated() {
+        super.onProgramCreated();
+
+        // Julia-specific uniform locations
+        this.cLoc = this.gl.getUniformLocation(this.program, "u_c");
+        this.innerStopsLoc = this.gl.getUniformLocation(this.program, "u_innerStops");
+
+        // delta z0 (pan - refZ0) computed on JS side for float64 precision
+        this.deltaZ0HLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_h");
+        this.deltaZ0LLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_l");
+        this.zoomHLoc = this.gl.getUniformLocation(this.program, "u_zoom_h");
+        this.zoomLLoc = this.gl.getUniformLocation(this.program, "u_zoom_l");
+
+        this.orbitTexLoc = this.gl.getUniformLocation(this.program, "u_orbitTex");
+        this.orbitWLoc = this.gl.getUniformLocation(this.program, "u_orbitW");
+
+        // Set up orbit texture
         this.floatTexExt = this.gl.getExtension("OES_texture_float");
         if (!this.floatTexExt) {
             console.error("Missing OES_texture_float. Julia deep zoom perturbation requires it.");
@@ -154,32 +181,6 @@ export class JuliaRenderer extends FractalRenderer {
         if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
 
         this.orbitDirty = true;
-    }
-
-    createFragmentShaderSource() {
-        return (JuliaRenderer.FF_LEGACY_JULIA_RENDERER
-            ? fragmentShaderRawLegacy
-            : fragmentShaderRaw).replace('__MAX_ITER__', this.MAX_ITER).toString();
-    }
-
-    /**
-     * @inheritDoc
-     * @override
-     */
-    updateUniforms() {
-        super.updateUniforms();
-
-        this.cLoc = this.gl.getUniformLocation(this.program, "u_c");
-        this.innerStopsLoc = this.gl.getUniformLocation(this.program, "u_innerStops");
-
-        // delta z0 (pan - refZ0) computed on JS side for float64 precision
-        this.deltaZ0HLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_h");
-        this.deltaZ0LLoc = this.gl.getUniformLocation(this.program, "u_delta_z0_l");
-        this.zoomHLoc = this.gl.getUniformLocation(this.program, "u_zoom_h");
-        this.zoomLLoc = this.gl.getUniformLocation(this.program, "u_zoom_l");
-
-        this.orbitTexLoc = this.gl.getUniformLocation(this.program, "u_orbitTex");
-        this.orbitWLoc = this.gl.getUniformLocation(this.program, "u_orbitW");
     }
 
     // --- Reference orbit building ---

@@ -19,14 +19,12 @@ import {
     ADAPTIVE_QUALITY_THRESHOLD_LOW,
     CONSOLE_GROUP_STYLE,
     CONSOLE_MESSAGE_STYLE,
-    DEBUG_MODE,
     EASE_TYPE,
     FF_ADAPTIVE_QUALITY,
     FF_DEMO_ALWAYS_RESETS,
     log,
     PI
 } from "../global/constants";
-import vertexFragmentShaderRaw from '../shaders/vertexShaderInit.vert';
 import Renderer from "./renderer";
 
 /**
@@ -127,8 +125,13 @@ class FractalRenderer extends Renderer {
             color2: NaN,
         };
 
-        /** Vertex shader */
-        this.vertexShaderSource = vertexFragmentShaderRaw;
+        // Common uniform locations (cached in onProgramCreated)
+        this.panLoc = null;
+        this.zoomLoc = null;
+        this.iterLoc = null;
+        this.colorLoc = null;
+        this.rotationLoc = null;
+        this.resolutionLoc = null;
     }
 
     /**
@@ -254,25 +257,12 @@ class FractalRenderer extends Renderer {
             this.canvas.removeEventListener('webglcontextlost', this.onWebGLContextLost);
         }
 
-        // Free WebGL resources.
-        if (this.program) {
-            this.gl.deleteProgram(this.program);
-            this.program = null;
-        }
-        if (this.vertexShader) {
-            this.gl.deleteShader(this.vertexShader);
-            this.vertexShader = null;
-        }
-        if (this.fragmentShader) {
-            this.gl.deleteShader(this.fragmentShader);
-            this.fragmentShader = null;
-        }
-
         if (this.interactionTimer) {
             clearTimeout(this.interactionTimer);
             this.interactionTimer = null;
         }
 
+        // Parent handles shader/program cleanup
         super.destroy();
 
         console.groupEnd();
@@ -288,7 +278,7 @@ class FractalRenderer extends Renderer {
 
     init() {
         this.generatePresetIDs();
-        this.initGLProgram();
+        super.initGLProgram();
         this.draw();
     }
 
@@ -321,91 +311,6 @@ class FractalRenderer extends Renderer {
 
 
     /**
-     * Defines the shader code for rendering the fractal shape
-     *
-     * @abstract
-     * @returns {string}
-     */
-    createFragmentShaderSource() {
-        throw new Error('The draw method must be implemented in child classes');
-    }
-
-    /**
-     * Compiles shader code
-     * @param {string} source
-     * @param {GLenum} type
-     * @return {WebGLShader|null}
-     */
-    compileShader(source, type) {
-        if (DEBUG_MODE) {
-            console.groupCollapsed(`%c ${this.constructor.name}: %c compileShader`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-            console.log(`Shader GLenum type: ${type}\nShader code: ${source}`);
-        }
-
-        const shader = this.gl.createShader(type);
-        this.gl.shaderSource(shader, source);
-        this.gl.compileShader(shader);
-
-        if (!this.gl.getShaderParameter(shader, this.gl.COMPILE_STATUS)) {
-            console.error(this.gl.getShaderInfoLog(shader));
-            this.gl.deleteShader(shader);
-            if (DEBUG_MODE) console.groupEnd();
-            return null;
-        }
-        if (DEBUG_MODE) console.groupEnd();
-
-        return shader;
-    }
-
-    /**
-     * Initializes WebGL program, shaders, quad, and uniform caches.
-     */
-    initGLProgram() {
-        if (DEBUG_MODE) console.groupCollapsed(`%c ${this.constructor.name}:%c initGLProgram`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
-
-        if (this.program) this.gl.deleteProgram(this.program);
-        if (this.fragmentShader) this.gl.deleteShader(this.fragmentShader);
-
-        if (!this.vertexShader) {
-            this.vertexShader = this.compileShader(this.vertexShaderSource, this.gl.VERTEX_SHADER);
-        }
-        this.fragmentShader = this.compileShader(this.createFragmentShaderSource(), this.gl.FRAGMENT_SHADER);
-
-        this.program = this.gl.createProgram();
-        this.gl.attachShader(this.program, this.vertexShader);
-        this.gl.attachShader(this.program, this.fragmentShader);
-        this.gl.linkProgram(this.program);
-
-        if (!this.gl.getProgramParameter(this.program, this.gl.LINK_STATUS)) {
-            console.error(this.gl.getProgramInfoLog(this.program));
-        }
-        this.gl.useProgram(this.program);
-
-        // Full-screen quad
-        const positionBuffer = this.gl.createBuffer();
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, positionBuffer);
-        const positions = new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, positions, this.gl.STATIC_DRAW);
-        const positionLoc = this.gl.getAttribLocation(this.program, "a_position");
-        this.gl.enableVertexAttribArray(positionLoc);
-        this.gl.vertexAttribPointer(positionLoc, 2, this.gl.FLOAT, false, 0, 0);
-
-        this.updateUniforms();
-        this.invalidateUniformCache();
-
-        if (typeof this.onProgramCreated === "function") {
-            this.onProgramCreated();
-        }
-
-        if (DEBUG_MODE) console.groupEnd();
-    }
-
-    /** @abstract */
-    onProgramCreated() {
-        throw new Error("The onProgramCreated method must be implemented in child classes");
-    }
-
-    /**
      * kept for compatibility; perturbation renderers may ignore
      * @abstract
      */
@@ -414,9 +319,12 @@ class FractalRenderer extends Renderer {
     }
 
     /**
-     * Cache common uniforms used by all renderers
+     * Called after GL program is created.
+     * Caches common uniform locations used by all fractal renderers.
+     * Subclasses should call super.onProgramCreated() first, then cache their specific uniforms.
+     * @override
      */
-    updateUniforms() {
+    onProgramCreated() {
         this.gl.useProgram(this.program);
         this.panLoc = this.gl.getUniformLocation(this.program, "u_pan");
         this.zoomLoc = this.gl.getUniformLocation(this.program, "u_zoom");
@@ -424,21 +332,18 @@ class FractalRenderer extends Renderer {
         this.colorLoc = this.gl.getUniformLocation(this.program, "u_colorPalette");
         this.rotationLoc = this.gl.getUniformLocation(this.program, "u_rotation");
         this.resolutionLoc = this.gl.getUniformLocation(this.program, "u_resolution");
+
+        this.invalidateUniformCache();
     }
 
     /**
-     * Draws the fractal and sets basic uniforms.
-     * Subclasses can override draw() but must call super.draw() for viewport+common uniforms+draw call.
-     * Uses dirty checking to avoid redundant uniform uploads.
+     * Uploads common uniforms with dirty checking to avoid redundant uploads.
+     * Called by draw() before the base draw operation.
      */
-    draw() {
-        this.gl.useProgram(this.program);
-
+    uploadCommonUniforms() {
         const w = this.canvas.width;
         const h = this.canvas.height;
         const uc = this._uniformCache;
-
-        this.gl.viewport(0, 0, w, h);
 
         // Only upload uniforms that have changed
         if (this.resolutionLoc && (uc.resW !== w || uc.resH !== h)) {
@@ -476,12 +381,22 @@ class FractalRenderer extends Renderer {
             uc.color1 = this.colorPalette[1];
             uc.color2 = this.colorPalette[2];
         }
+    }
 
-        this.gl.clearColor(0, 0, 0, 1);
-        this.gl.clear(this.gl.COLOR_BUFFER_BIT);
+    /**
+     * Draws the fractal and sets basic uniforms.
+     * Subclasses can override draw() but must call super.draw() for common uniforms + draw call.
+     * Uses dirty checking to avoid redundant uniform uploads.
+     */
+    draw() {
+        this.gl.useProgram(this.program);
+
+        this.uploadCommonUniforms();
+
         debugPanel?.beginGpuTimer();
-        this.gl.drawArrays(this.gl.TRIANGLE_STRIP, 0, 4);
+        super.baseDraw();
         debugPanel?.endGpuTimer();
+
         this.adjustAdaptiveQuality();
 
         // Invoke draw callback if set (used for axes overlay sync)
