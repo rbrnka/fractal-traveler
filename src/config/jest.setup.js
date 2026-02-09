@@ -208,6 +208,7 @@ global.createMockUI = () => {
         switchFractalMode: jest.fn(() => Promise.resolve()),
         switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
         isJuliaMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.JULIA),
+        isRiemannMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.RIEMANN),
         enableJuliaMode: jest.fn(() => {
             mockUI.fractalMode = FRACTAL_TYPE.JULIA;
         }),
@@ -239,6 +240,15 @@ global.createMockUI = () => {
         toggleDebugMode: jest.fn(),
         toggleCenterLines: jest.fn(),
         toggleHeader: jest.fn(),
+        toggleAxes: jest.fn(),
+
+        // Riemann/Rossler sync
+        syncRiemannControls: jest.fn(),
+        syncRiemannToggleStates: jest.fn(),
+        syncRosslerControls: jest.fn(),
+
+        // View info overlay
+        hideViewInfo: jest.fn(),
 
         // Screenshots and dialogs
         captureScreenshot: jest.fn(),
