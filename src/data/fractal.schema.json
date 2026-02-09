@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Fractal Configuration Schema",
-  "description": "Schema for Mandelbrot and Julia fractal configurations including presets, palettes, and animated dives.",
+  "description": "Schema for Mandelbrot, Julia, Riemann, and Rossler fractal configurations including presets, palettes, and animated dives.",
   "type": "object",
   "required": ["type", "views", "palettes"],
   "properties": {
@@ -62,6 +62,42 @@
           "removed": {
             "type": "array",
             "items": { "$ref": "#/definitions/JuliaPreset" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "RIEMANN" } }
+      },
+      "then": {
+        "properties": {
+          "views": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/RiemannView" },
+            "description": "Tour points for the Riemann zeta function visualization."
+          },
+          "palettes": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/RiemannPalette" }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "type": { "const": "ROSSLER" } }
+      },
+      "then": {
+        "properties": {
+          "views": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/RosslerView" },
+            "description": "Preset views for the Rossler attractor."
+          },
+          "palettes": {
+            "type": "array",
+            "items": { "$ref": "#/definitions/RosslerPalette" }
           }
         }
       }
@@ -156,6 +192,118 @@
         "paletteId": {
           "type": "string",
           "description": "Palette id to determine the preset color theme."
+        }
+      }
+    },
+    "RiemannView": {
+      "type": "object",
+      "required": ["id", "type", "pan", "zoom"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Display name of the view/tour point."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["axis", "symmetry", "overview", "pole", "special", "trivial", "nontrivial", "saddle", "gram"],
+          "description": "View type determining the marker style: 'axis' (horizontal line), 'symmetry' (vertical line/critical line), 'overview' (region rectangle), others (point marker)."
+        },
+        "pan": {
+          "$ref": "#/definitions/Complex",
+          "description": "Center coordinates [Re(s), Im(s)] in the complex plane."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Zoom level (larger = more zoomed out)."
+        },
+        "paletteId": {
+          "type": "string",
+          "description": "Palette id to determine the view color theme."
+        },
+        "description": {
+          "type": "string",
+          "description": "Educational description shown in the tour overlay."
+        }
+      }
+    },
+    "RiemannPalette": {
+      "type": "object",
+      "required": ["id", "keyColor", "theme"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier/name for the palette."
+        },
+        "keyColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Representative hex color for UI display."
+        },
+        "theme": {
+          "$ref": "#/definitions/RGB3",
+          "description": "RGB multipliers for domain coloring."
+        }
+      }
+    },
+    "RosslerView": {
+      "type": "object",
+      "required": ["id", "params", "zoom", "pan"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Display name of the Rossler attractor view."
+        },
+        "params": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Rossler system parameters [a, b, c]."
+        },
+        "zoom": {
+          "type": "number",
+          "description": "Zoom level for the view."
+        },
+        "rotation": {
+          "type": "number",
+          "default": 0,
+          "description": "Rotation angle in radians."
+        },
+        "pan": {
+          "$ref": "#/definitions/Complex",
+          "description": "Center offset [x, y]."
+        },
+        "paletteId": {
+          "type": "string",
+          "description": "Palette id to determine the view color theme."
+        }
+      }
+    },
+    "RosslerPalette": {
+      "type": "object",
+      "required": ["id", "keyColor", "theme"],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier/name for the palette."
+        },
+        "keyColor": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "description": "Representative hex color for UI display."
+        },
+        "theme": {
+          "$ref": "#/definitions/RGB3",
+          "description": "RGB multipliers for coloring."
+        },
+        "frequency": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave frequencies for each RGB channel."
+        },
+        "phase": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave phase offsets for each RGB channel."
         }
       }
     },
