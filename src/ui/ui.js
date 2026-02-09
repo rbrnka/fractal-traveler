@@ -152,6 +152,8 @@ let viewInfoTotal;
 let pointMarker;
 let lineMarker;
 let lineMarkerLabel;
+let hLineMarker;
+let hLineMarkerLabel;
 let regionMarker;
 
 // Rossler controls
@@ -783,7 +785,7 @@ async function startRiemannDemo() {
     // Start the zero tour with callback
     await fractalApp.animateZeroTour((point, index) => {
         showViewInfo(point, index, totalPoints, true);
-    }, 7000);
+    }, 7000, hideViewInfo);
 
     hideViewInfo();
     console.log("Riemann tour ended");
@@ -2681,6 +2683,15 @@ function showViewInfo(preset, index, total, isRiemann = false) {
                 }
                 lineMarker.classList.remove('line-marker-hidden');
             }
+        } else if (viewType === 'axis') {
+            // Horizontal line marker for real axis views
+            if (hLineMarker) {
+                setMarkerColor(hLineMarker);
+                if (hLineMarkerLabel) {
+                    hLineMarkerLabel.textContent = 'Re(s) < 0';
+                }
+                hLineMarker.classList.remove('hline-marker-hidden');
+            }
         } else if (viewType === 'overview') {
             // Region bracket marker for overview views
             if (regionMarker) {
@@ -2706,6 +2717,9 @@ function hideAllMarkers() {
     }
     if (lineMarker) {
         lineMarker.classList.add('line-marker-hidden');
+    }
+    if (hLineMarker) {
+        hLineMarker.classList.add('hline-marker-hidden');
     }
     if (regionMarker) {
         regionMarker.classList.add('region-marker-hidden');
@@ -3022,6 +3036,8 @@ function bindHTMLElements() {
     pointMarker = document.getElementById('pointMarker');
     lineMarker = document.getElementById('lineMarker');
     lineMarkerLabel = lineMarker?.querySelector('.line-marker-label');
+    hLineMarker = document.getElementById('hLineMarker');
+    hLineMarkerLabel = hLineMarker?.querySelector('.hline-marker-label');
     regionMarker = document.getElementById('regionMarker');
     // Rossler Controls elements
     rosslerControls = document.getElementById('rosslerControls');

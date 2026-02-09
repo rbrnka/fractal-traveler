@@ -3,6 +3,14 @@
   "type": "RIEMANN",
   "views": [
     {
+      "id": "Negative Axis",
+      "type": "axis",
+      "pan": [0, 0],
+      "zoom": 20,
+      "paletteId": "Default",
+      "description": "The negative real axis showing trivial zeros at -2, -4, -6, ... and special values."
+    },
+    {
       "id": "The Critical Strip",
       "type": "symmetry",
       "pan": [0.5, 20],
@@ -15,7 +23,7 @@
       "type": "pole",
       "pan": [1.0, 0],
       "zoom": 5,
-      "paletteId": "Thermal",
+      "paletteId": "Default",
       "description": "The only singularity of ζ(s). A simple pole with residue 1, where the function explodes to infinity."
     },
     {
@@ -23,7 +31,7 @@
       "type": "special",
       "pan": [0, 0],
       "zoom": 8,
-      "paletteId": "Arctic",
+      "paletteId": "Default",
       "description": "ζ(0) = -1/2. This mysterious value connects to the sum of a divergent series 1+1+1+... via analytic continuation."
     },
     {
@@ -31,7 +39,7 @@
       "type": "special",
       "pan": [-1, 0],
       "zoom": 10,
-      "paletteId": "Thermal",
+      "paletteId": "Default",
       "description": "ζ(−1) = −1/12. This staggering result suggests the sum of all natural numbers is −1/12. It is a cornerstone of String Theory and the Casimir Effect."
     },
     {
@@ -55,7 +63,7 @@
       "type": "trivial",
       "pan": [-2, 0],
       "zoom": 12,
-      "paletteId": "Arctic",
+      "paletteId": "Default",
       "description": "ζ(−2) = 0. Trivial zeros arise from sin(πs/2) in the functional equation. 'Trivial' because their existence is easily proven."
     },
     {
@@ -63,7 +71,7 @@
       "type": "trivial",
       "pan": [-4, 0],
       "zoom": 12,
-      "paletteId": "Arctic",
+      "paletteId": "Default",
       "description": "ζ(−4) = 0. All negative even integers are zeros—infinitely many."
     },
     {
@@ -71,7 +79,7 @@
       "type": "saddle",
       "pan": [1, 9.0858],
       "zoom": 10,
-      "paletteId": "Monochrome",
+      "paletteId": "Default",
       "description": "Where ζ'(s) = 0. Unlike zeros, saddle points are not perfectly symmetric around the critical line."
     },
     {
@@ -79,7 +87,7 @@
       "type": "saddle",
       "pan": [0, 9.0858],
       "zoom": 10,
-      "paletteId": "Monochrome",
+      "paletteId": "Default",
       "description": "The left-hand counterpart to the first saddle point."
     },
     {
@@ -87,7 +95,7 @@
       "type": "nontrivial",
       "pan": [0.5, 14.1347],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "The first non-trivial zero, found by Riemann in 1859. It confirms the Zeta function's link to the distribution of primes."
     },
     {
@@ -95,7 +103,7 @@
       "type": "gram",
       "pan": [0.5, 17.85],
       "zoom": 10,
-      "paletteId": "Arctic",
+      "paletteId": "Default",
       "description": "Where Im(ζ(1/2+it)) = 0. Gram points bracket some zeros and help locate them."
     },
     {
@@ -103,7 +111,7 @@
       "type": "nontrivial",
       "pan": [0.5, 21.022],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Its distance from the first zero (~6.89) began the study of 'spectral gaps' in number theory."
     },
     {
@@ -111,7 +119,7 @@
       "type": "gram",
       "pan": [0.5, 23.17],
       "zoom": 10,
-      "paletteId": "Arctic",
+      "paletteId": "Default",
       "description": "The second Gram point, used in computational verification of zeros."
     },
     {
@@ -119,7 +127,7 @@
       "type": "nontrivial",
       "pan": [0.5, 25.0109],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2)."
     },
     {
@@ -127,7 +135,7 @@
       "type": "nontrivial",
       "pan": [0.5, 30.4249],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
     },
     {
@@ -135,7 +143,7 @@
       "type": "nontrivial",
       "pan": [0.5, 32.9351],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
     },
     {
@@ -143,31 +151,32 @@
       "type": "nontrivial",
       "pan": [0.5, 37.5862],
       "zoom": 8,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Confirmed by G.H. Hardy in 1914, proving infinitely many zeros exist on the critical line."
     },
-    {
-      "id": "Zero Cluster",
-      "type": "overview",
-      "pan": [0.5, 40],
-      "zoom": 3,
-      "paletteId": "Default",
-      "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
-    },
+
     {
       "id": "The Pre-Computer Limit",
       "type": "nontrivial",
       "pan": [0.5, 40.9187],
       "zoom": 4,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation."
+    },
+    {
+      "id": "Zero Cluster",
+      "type": "overview",
+      "pan": [0.5, 42],
+      "zoom": 18,
+      "paletteId": "Default",
+      "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
     },
     {
       "id": "The Repulsion Effect",
       "type": "nontrivial",
       "pan": [0.5, 43.3271],
       "zoom": 4,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms."
     },
     {
@@ -175,7 +184,7 @@
       "type": "nontrivial",
       "pan": [0.5, 48.0051],
       "zoom": 4,
-      "paletteId": "Twilight",
+      "paletteId": "Default",
       "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem."
     },
     {
@@ -183,7 +192,7 @@
       "type": "nontrivial",
       "pan": [0.5, 49.7738],
       "zoom": 6,
-      "paletteId": "Monochrome",
+      "paletteId": "Default",
       "description": "Calculated by J.P. Gram (1903), who developed methods to predict zero locations."
     },
     {
@@ -193,14 +202,6 @@
       "zoom": 20,
       "paletteId": "Default",
       "description": "The symmetry ζ(s) ↔ ζ(1−s) reflects the function across the critical line."
-    },
-    {
-      "id": "Negative Axis",
-      "type": "overview",
-      "pan": [-6, 0],
-      "zoom": 20,
-      "paletteId": "Arctic",
-      "description": "The negative real axis showing trivial zeros at -2, -4, -6, ... and special values."
     }
   ],
   "palettes": [

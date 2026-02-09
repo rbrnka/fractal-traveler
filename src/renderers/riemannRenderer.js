@@ -275,9 +275,10 @@ class RiemannRenderer extends FractalRenderer {
      * Includes the pole, trivial zeros, special values, saddle points, gram points, and non-trivial zeros.
      * @param {Function} [onPointReached=null] - Callback when each point is reached (point, index)
      * @param {number} [holdDuration=4000] - How long to hold at each point (ms)
+     * @param {Function} [onBeforeTravel=null] - Callback before traveling to next point (to hide overlay)
      * @return {Promise<void>}
      */
-    async animateZeroTour(onPointReached = null, holdDuration = 4000) {
+    async animateZeroTour(onPointReached = null, holdDuration = 4000, onBeforeTravel = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateZeroTour`, CONSOLE_GROUP_STYLE);
 
         this.stopAllNonColorAnimations();
@@ -301,6 +302,11 @@ class RiemannRenderer extends FractalRenderer {
             };
 
             log(`Traveling to ${point.type}: ${i + 1}/${this.PRESETS.length}: ${point.id}`);
+
+            // Hide overlay/markers before starting travel
+            if (onBeforeTravel) {
+                onBeforeTravel();
+            }
 
             await this.animateTravelToPreset(preset, 2000, 1000, 2500);
 
