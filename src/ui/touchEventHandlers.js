@@ -319,8 +319,11 @@ function handleTouchMove(event) {
             const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent dragging out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
 
                 fractalApp.addPan(deltaX, deltaY);
                 markOrbitDirtySafe();
@@ -387,8 +390,12 @@ function handleTouchMove(event) {
             const [vNowX, vNowY] = fractalApp.screenToViewVector(centerX, centerY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent pinch-panning out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
+
                 fractalApp.addPan(deltaX, deltaY);
             }
         }

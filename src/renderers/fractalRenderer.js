@@ -54,6 +54,8 @@ class FractalRenderer extends Renderer {
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.MAX_ZOOM = 1e-80;
         this.MIN_ZOOM = 40;
+        /** Maximum distance from origin for pan (prevents panning off-screen) */
+        this.MAX_PAN_DISTANCE = 3.5;
 
         /**
          * Interesting points / details / zooms / views
@@ -214,7 +216,21 @@ class FractalRenderer extends Renderer {
         const [vx, vy] = this.screenToViewVector(anchorX, anchorY);
         const deltaZoom = this.zoom - targetZoom;
 
-        this.addPan(vx * deltaZoom, vy * deltaZoom);
+        let deltaX = vx * deltaZoom;
+        let deltaY = vy * deltaZoom;
+
+        // Clamp to prevent zooming-while-panning out of view
+        const newPanX = this.pan[0] + deltaX;
+        const newPanY = this.pan[1] + deltaY;
+        const distance = Math.sqrt(newPanX * newPanX + newPanY * newPanY);
+
+        if (distance > this.MAX_PAN_DISTANCE) {
+            const scale = this.MAX_PAN_DISTANCE / distance;
+            deltaX = newPanX * scale - this.pan[0];
+            deltaY = newPanY * scale - this.pan[1];
+        }
+
+        this.addPan(deltaX, deltaY);
         this.zoom = targetZoom;
     }
 

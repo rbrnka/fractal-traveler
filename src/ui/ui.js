@@ -44,6 +44,7 @@ import {DebugPanel} from "./debugPanel";
 import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPreview} from "./juliaPreview";
 import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
 import {RosslerRenderer} from "../renderers/rosslerRenderer";
+import {initTourAudio, startTourMusic, stopTourMusic} from "../global/audioManager";
 
 /**
  * @module UI
@@ -409,6 +410,9 @@ export function enableRiemannMode() {
     initPaletteButtonEvents();
     initRiemannControls();
 
+    // Initialize tour background music
+    initTourAudio('./audio/riemann-tour.mp3');
+
     // Show Demo button, hide persist switch in Riemann mode
     if (demoButton) demoButton.style.display = 'inline-flex';
     if (persistSwitch) persistSwitch.style.display = 'none';
@@ -613,6 +617,9 @@ function exitAnimationMode() {
     fractalApp?.stopAllNonColorAnimations();
     // Note: Don't stop color animations here - palette cycling should be independent
 
+    // Stop tour music if playing
+    stopTourMusic();
+
     // Hide view info overlay when exiting animation mode
     hideViewInfo();
 
@@ -780,12 +787,18 @@ async function startRiemannDemo() {
 
     fractalApp.draw();
 
+    // Start atmospheric background music
+    await startTourMusic();
+
     const totalPoints = fractalApp.PRESETS.length;
 
     // Start the zero tour with callback
     await fractalApp.animateZeroTour((point, index) => {
         showViewInfo(point, index, totalPoints, true);
     }, 7000, hideViewInfo);
+
+    // Stop music when tour ends
+    await stopTourMusic();
 
     hideViewInfo();
     console.log("Riemann tour ended");
@@ -1035,6 +1048,9 @@ export async function reset() {
     console.groupCollapsed(`%c reset`, CONSOLE_GROUP_STYLE);
 
     updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
+
+    // Always stop tour music on reset (exitAnimationMode might skip this if !animationActive)
+    stopTourMusic();
 
     exitAnimationMode();
 
@@ -2679,7 +2695,7 @@ function showViewInfo(preset, index, total, isRiemann = false) {
             if (lineMarker) {
                 setMarkerColor(lineMarker);
                 if (lineMarkerLabel) {
-                    lineMarkerLabel.textContent = 'Re(s) = ½';
+                    lineMarkerLabel.textContent = 'Re(s) = 1/2';
                 }
                 lineMarker.classList.remove('line-marker-hidden');
             }
@@ -3096,6 +3112,9 @@ export async function initUI(fractalRenderer) {
 
         initRiemannControls();
         updateFractalDropdownState(FRACTAL_TYPE.RIEMANN);
+
+        // Initialize tour background music
+        initTourAudio('./audio/riemann-tour.mp3');
 
         window.location.hash = '#zeta'; // Update URL hash
     } else if (fractalRenderer instanceof RosslerRenderer) {

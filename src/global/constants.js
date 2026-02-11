@@ -82,6 +82,13 @@ export const FF_DEMO_ALWAYS_RESETS = false;
 export const FF_ADAPTIVE_QUALITY = false;
 
 /**
+ * Enables atmospheric background music during the Riemann zeta tour.
+ * Requires an audio file at src/audio/riemann-tour.mp3
+ * @type {boolean}
+ */
+export const FF_RIEMANN_TOUR_MUSIC = true;
+
+/**
  * GPU time threshold in ms above which quality will be reduced.
  * @default 40 ms (~25 FPS).
  * @type {number}

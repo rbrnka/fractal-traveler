@@ -17,7 +17,7 @@ const DOUBLE_CLICK_THRESHOLD = 300;
 const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // double-click zoom in/out
 const ROTATION_SENSITIVITY = 0.01;
-/** Maximum distance from origin to prevent panning out of view */
+/** Default maximum distance from origin to prevent panning out of view */
 export const MAX_PAN_DISTANCE = 3.5; // Fractals are contained within ~radius 2, allow some margin
 
 /** Long press zoom configuration */
@@ -84,13 +84,16 @@ export function clampPanDelta(currentPan, deltaPan) {
     const newPanY = currentPan[1] + deltaPan[1];
     const distance = Math.sqrt(newPanX * newPanX + newPanY * newPanY);
 
+    // Use renderer's MAX_PAN_DISTANCE if available, otherwise use default
+    const maxPan = fractalApp?.MAX_PAN_DISTANCE ?? MAX_PAN_DISTANCE;
+
     // If within bounds, return unchanged
-    if (distance <= MAX_PAN_DISTANCE) {
+    if (distance <= maxPan) {
         return deltaPan;
     }
 
     // Clamp to max distance by scaling back the new position
-    const scale = MAX_PAN_DISTANCE / distance;
+    const scale = maxPan / distance;
     const clampedPanX = newPanX * scale;
     const clampedPanY = newPanY * scale;
 
@@ -98,7 +101,7 @@ export function clampPanDelta(currentPan, deltaPan) {
     const clampedDeltaX = clampedPanX - currentPan[0];
     const clampedDeltaY = clampedPanY - currentPan[1];
 
-    console.log(`%c clampPanDelta: %c Pan would exceed bounds (distance: ${distance.toFixed(2)} > ${MAX_PAN_DISTANCE}). Clamping to [${clampedDeltaX.toFixed(4)}, ${clampedDeltaY.toFixed(4)}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+    console.log(`%c clampPanDelta: %c Pan would exceed bounds (distance: ${distance.toFixed(2)} > ${maxPan}). Clamping to [${clampedDeltaX.toFixed(4)}, ${clampedDeltaY.toFixed(4)}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     return [clampedDeltaX, clampedDeltaY];
 }
@@ -468,8 +471,11 @@ function handleMouseMove(event) {
             const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent dragging out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
 
                 fractalApp.addPan(deltaX, deltaY);
                 // Mark orbit dirty (deferred rebuild)

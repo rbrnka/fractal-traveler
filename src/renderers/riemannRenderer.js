@@ -18,6 +18,8 @@ class RiemannRenderer extends FractalRenderer {
         this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
         this.DEFAULT_PHASE = [0, 0, 0];
         this.MIN_ZOOM = 4000;
+        // Riemann needs larger pan range to reach zeros at high imaginary values
+        this.MAX_PAN_DISTANCE = 60;
 
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
@@ -284,18 +286,11 @@ class RiemannRenderer extends FractalRenderer {
         this.stopAllNonColorAnimations();
         this.zeroTourActive = true;
 
-        // On mobile portrait, offset pan to center point in visible area
-        const isMobile = window.innerWidth <= 600;
-
         for (let i = 0; i < this.PRESETS.length && this.zeroTourActive; i++) {
             const point = this.PRESETS[i];
             const zoom = point.zoom || 8;
-            // Apply offset scaled by zoom to shift point up on screen
-            const offsetPan = isMobile
-                ? [point.pan[0], point.pan[1] - 0.12 * zoom]
-                : point.pan;
             const preset = {
-                pan: offsetPan,
+                pan: point.pan,
                 zoom: zoom,
                 rotation: 0,
                 paletteId: point.paletteId || 'Default'
