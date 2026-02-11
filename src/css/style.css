@@ -149,7 +149,7 @@ h1 {
 }
 
 .tagline {
-    margin: 2px 0 0;
+    margin: 2px 0 2px 0;
     color: #ccc;
     font-size: 12px;
     line-height: 14px;
@@ -231,7 +231,7 @@ button.active {
     text-shadow: 0 0 4px var(--accent-color);
 }
 
-button:focus {
+button:focus-visible {
     background-image: linear-gradient(#222, #666);
     text-shadow: 0 0 4px var(--accent-color);
 }
@@ -242,7 +242,7 @@ button:focus {
     display: none;
 }
 
-#persistSwitch:focus {
+#persistSwitch:focus-visible {
     background-image: linear-gradient(#000, #222);
 }
 
