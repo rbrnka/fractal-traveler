@@ -101,6 +101,15 @@
                         <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette &#x25BE;</button>
                         <div id="palettes" class="dropdown-menu"></div>
                     </div>
+                    <div id="riemann-display-dropdown" class="dropdown">
+                        <button type="button" id="riemann-display-toggle" class="dropdown-toggle" title="Display Options">Display &#x25BE;</button>
+                        <div id="riemann-display-menu" class="dropdown-menu">
+                            <button type="button" id="criticalLineToggle" class="riemann-option active" title="Critical Line (,)">Critical Line</button>
+                            <button type="button" id="analyticExtToggle" class="riemann-option active" title="Analytic Continuation (M)">Analytic Cont.</button>
+                            <button type="button" id="axesToggle" class="riemann-option" title="Show/Hide Axes (N)">Axes</button>
+                            <button type="button" id="zetaPathToggle" class="riemann-option" title="Show ζ(½+it) spiral (Z)">ζ-Path</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -119,15 +128,6 @@
 
             <!-- Riemann Controls -->
             <div id="riemannControls">
-                <div class="control-row">
-                    <span class="control-label">Display:</span>
-                    <div class="button-group">
-                        <button type="button" id="criticalLineToggle" class="active" title="Critical Line (,)">Crit. Line</button>
-                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Continuation (M)">Analytic</button>
-                        <button type="button" id="axesToggle" title="Show/Hide Axes (N)">Axes</button>
-                        <button type="button" id="zetaPathToggle" title="Show ζ(½+it) spiral (Z)">ζ</button>
-                    </div>
-                </div>
                 <div class="slider-container">
                     <label for="freqRSlider">R:</label>
                     <input type="range" id="freqRSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">

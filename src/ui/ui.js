@@ -129,6 +129,9 @@ export let debugPanel;
 
 // Riemann controls
 let riemannControls;
+let riemannDisplayDropdown;
+let riemannDisplayToggle;
+let riemannDisplayMenu;
 let criticalLineToggle;
 let analyticExtToggle;
 let axesToggle;
@@ -1818,6 +1821,7 @@ function initPresetsDropdown() {
         closeFractalDropdown();
         closeDivesDropdown();
         closePaletteDropdown();
+        closeRiemannDisplayDropdown();
         togglePresetsDropdown();
     });
 
@@ -1928,6 +1932,7 @@ function initFractalDropdown() {
         closePresetsDropdown();
         closeDivesDropdown();
         closePaletteDropdown();
+        closeRiemannDisplayDropdown();
         toggleFractalDropdown();
     });
 
@@ -1962,6 +1967,7 @@ function initDivesDropdown() {
         closeFractalDropdown();
         closePresetsDropdown();
         closePaletteDropdown();
+        closeRiemannDisplayDropdown();
         toggleDivesDropdown();
     });
 
@@ -2085,6 +2091,7 @@ function initPaletteDropdown() {
         closeFractalDropdown();
         closePresetsDropdown();
         closeDivesDropdown();
+        closeRiemannDisplayDropdown();
         togglePaletteDropdown();
     });
 
@@ -2096,6 +2103,26 @@ function initPaletteDropdown() {
     });
 
     log('Initialized.', 'initPaletteDropdown');
+}
+
+/** Toggles the Riemann display dropdown menu */
+function toggleRiemannDisplayDropdown() {
+    if (!riemannDisplayMenu) return;
+    riemannDisplayMenu.classList.toggle('show');
+    const isOpen = riemannDisplayMenu.classList.contains('show');
+    if (riemannDisplayToggle) {
+        riemannDisplayToggle.textContent = isOpen ? 'Display ▴' : 'Display ▾';
+    }
+}
+
+/** Closes the Riemann display dropdown menu */
+function closeRiemannDisplayDropdown() {
+    if (riemannDisplayMenu) {
+        riemannDisplayMenu.classList.remove('show');
+    }
+    if (riemannDisplayToggle) {
+        riemannDisplayToggle.textContent = 'Display ▾';
+    }
 }
 
 /**
@@ -2313,6 +2340,11 @@ function initRiemannControls() {
     // Show the controls
     riemannControls.style.display = 'flex';
 
+    // Show the display dropdown in the main toolbar
+    if (riemannDisplayDropdown) {
+        riemannDisplayDropdown.classList.add('visible');
+    }
+
     // Set up overlay sync callback - called on every draw() for smooth movement
     fractalApp.onDrawCallback = () => {
         updateAxes();
@@ -2338,6 +2370,25 @@ function initRiemannControls() {
     if (zetaPathToggle) {
         zetaPathToggle.classList.toggle('active', zetaPathVisible);
         zetaPathToggle.addEventListener('click', handleZetaPathToggle);
+    }
+
+    // Initialize Riemann display dropdown
+    if (riemannDisplayToggle && riemannDisplayMenu) {
+        riemannDisplayToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            closeFractalDropdown();
+            closePresetsDropdown();
+            closeDivesDropdown();
+            closePaletteDropdown();
+            toggleRiemannDisplayDropdown();
+        });
+
+        // Close dropdown when clicking outside (but not on toggle buttons inside)
+        document.addEventListener('click', (e) => {
+            if (!riemannDisplayDropdown?.contains(e.target)) {
+                closeRiemannDisplayDropdown();
+            }
+        });
     }
 
     // Initialize frequency sliders
@@ -2389,6 +2440,11 @@ function destroyRiemannControls() {
         riemannControls.style.display = 'none';
     }
 
+    // Hide the display dropdown in the main toolbar
+    if (riemannDisplayDropdown) {
+        riemannDisplayDropdown.classList.remove('visible');
+    }
+
     // Clear draw callback
     if (fractalApp) {
         fractalApp.onDrawCallback = null;
@@ -2407,7 +2463,8 @@ function destroyRiemannControls() {
     if (zetaPathToggle) {
         zetaPathToggle.removeEventListener('click', handleZetaPathToggle);
     }
-    // Hide overlays when leaving Riemann mode
+    // Close dropdown and hide overlays when leaving Riemann mode
+    closeRiemannDisplayDropdown();
     hideAxes();
     hideZetaPath();
     if (freqRSlider) {
@@ -3537,6 +3594,9 @@ function bindHTMLElements() {
     juliaCInputs = document.getElementById('juliaCInputs');
     // Riemann Controls elements
     riemannControls = document.getElementById('riemannControls');
+    riemannDisplayDropdown = document.getElementById('riemann-display-dropdown');
+    riemannDisplayToggle = document.getElementById('riemann-display-toggle');
+    riemannDisplayMenu = document.getElementById('riemann-display-menu');
     criticalLineToggle = document.getElementById('criticalLineToggle');
     analyticExtToggle = document.getElementById('analyticExtToggle');
     axesToggle = document.getElementById('axesToggle');

@@ -379,6 +379,34 @@ button:focus-visible {
     min-width: 100px;
 }
 
+/* Riemann display dropdown */
+#riemann-display-dropdown {
+    display: none;
+}
+
+#riemann-display-dropdown.visible {
+    display: inline-flex;
+}
+
+#riemann-display-dropdown .dropdown-menu {
+    min-width: 120px;
+    max-width: 160px;
+}
+
+#riemann-display-dropdown .dropdown-menu button.riemann-option {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
+#riemann-display-dropdown .dropdown-menu button.riemann-option.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #444);
+}
+
 /* ========================================
    Dive Buttons
    ======================================== */
