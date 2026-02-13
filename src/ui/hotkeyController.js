@@ -10,6 +10,8 @@
 import {
     captureScreenshot,
     copyInfoToClipboard,
+    cycleToNextPreset,
+    cycleToPreviousPreset,
     hideViewInfo,
     isAnimationActive,
     isJuliaMode,
@@ -30,6 +32,7 @@ import {
     toggleDebugMode,
     toggleDemo,
     toggleHeader,
+    toggleZetaPath,
     travelToPreset,
     updateColorTheme,
     updatePaletteCycleButtonState,
@@ -364,6 +367,16 @@ async function onKeyDown(event) {
 
         case "Enter":
             toggleHeader();
+            handled = true;
+            break;
+
+        case "PageDown": // Next preset
+            await cycleToNextPreset();
+            handled = true;
+            break;
+
+        case "PageUp": // Previous preset
+            await cycleToPreviousPreset();
             handled = true;
             break;
 

@@ -80,6 +80,7 @@ let headerVisible = true;
 let animationActive = false;
 let activeJuliaDiveIndex = -1;
 let activePresetIndex = 0;
+let travelingToPresetIndex = -1; // Track target during travel for instant cycling
 let resizeTimeout;
 
 // HTML elements
@@ -911,17 +912,22 @@ async function startJuliaDemo() {
  * @return {Promise<void>}
  */
 export async function travelToPreset(presets, index) {
+    // Interrupt any active animation immediately
     if (animationActive) {
-        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, active animation in progress, interrupting...`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+        console.log(`%c travelToPreset: %c Travel to preset ${index} requested, interrupting current animation...`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         exitAnimationMode();
     }
 
-    if (index === activePresetIndex) {
+    // Skip if already at this preset AND not currently traveling
+    if (index === activePresetIndex && travelingToPresetIndex < 0) {
         console.log(`%c travelToPreset: %c Already on preset ${index}, skipping.`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
         return;
     }
 
     console.log(`%c travelToPreset: %c Executing travel to preset ${index}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+
+    // Track target for instant cycling with PageUp/PageDown
+    travelingToPresetIndex = index;
 
     // Hide any existing overlay/markers before travel starts
     hideViewInfo();
@@ -942,10 +948,17 @@ export async function travelToPreset(presets, index) {
         await fractalApp.animateTravelToPreset(preset, 2000, 500, 1500, updateColorTheme);
     }
 
+    // Check if we were interrupted (travelingToPresetIndex changed)
+    if (travelingToPresetIndex !== index) {
+        console.log(`%c travelToPreset: %c Travel to preset ${index} was interrupted`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+        return;
+    }
+
     // Sync button state after travel (in case preset had paletteId that stopped cycling)
     updatePaletteCycleButtonState();
 
     activePresetIndex = index;
+    travelingToPresetIndex = -1; // Clear traveling target
 
     // Update palette button state if preset changed the palette
     updatePaletteDropdownState();
@@ -999,6 +1012,44 @@ export function resetPresetAndDiveButtonStates() {
  */
 export function resetActivePresetIndex() {
     activePresetIndex = -1;
+}
+
+/**
+ * Gets the current active preset index
+ * @returns {number}
+ */
+export function getActivePresetIndex() {
+    return activePresetIndex;
+}
+
+/**
+ * Cycles to the next preset (wraps around).
+ * Uses travelingToPresetIndex if mid-travel for instant consecutive cycling.
+ */
+export async function cycleToNextPreset() {
+    const presets = fractalApp?.PRESETS || [];
+    if (presets.length === 0) return;
+
+    // Use traveling target if mid-travel, otherwise use active index
+    const currentIndex = travelingToPresetIndex >= 0 ? travelingToPresetIndex : activePresetIndex;
+    const nextIndex = (currentIndex + 1) % presets.length;
+    await travelToPreset(presets, nextIndex);
+}
+
+/**
+ * Cycles to the previous preset (wraps around).
+ * Uses travelingToPresetIndex if mid-travel for instant consecutive cycling.
+ */
+export async function cycleToPreviousPreset() {
+    const presets = fractalApp?.PRESETS || [];
+    if (presets.length === 0) return;
+
+    // Use traveling target if mid-travel, otherwise use active index
+    const currentIndex = travelingToPresetIndex >= 0 ? travelingToPresetIndex : activePresetIndex;
+    const prevIndex = currentIndex <= 0
+        ? presets.length - 1
+        : currentIndex - 1;
+    await travelToPreset(presets, prevIndex);
 }
 
 export async function randomizeColors() {
