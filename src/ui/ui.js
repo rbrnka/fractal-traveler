@@ -45,6 +45,7 @@ import {destroyJuliaPreview, initJuliaPreview, recolorJuliaPreview, resetJuliaPr
 import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
 import {RosslerRenderer} from "../renderers/rosslerRenderer";
 import {initTourAudio, startTourMusic, stopTourMusic} from "../global/audioManager";
+import * as zetaPathOverlay from "./zetaPathOverlay";
 
 /**
  * @module UI
@@ -140,8 +141,6 @@ let axesCtx;
 let axesVisible = false;
 let zetaPathToggle;
 let zetaPathCanvas;
-let zetaPathCtx;
-let zetaPathVisible = false;
 let freqRSlider;
 let freqGSlider;
 let freqBSlider;
@@ -2224,11 +2223,7 @@ function initWindowEvents() {
                 axesCanvas.height = window.innerHeight;
                 drawAxesFull();
             }
-            if (zetaPathVisible && zetaPathCanvas) {
-                zetaPathCanvas.width = window.innerWidth;
-                zetaPathCanvas.height = window.innerHeight;
-                drawZetaPath();
-            }
+            zetaPathOverlay.resize();
         }, 200); // Adjust delay as needed
     });
 
@@ -2368,9 +2363,12 @@ function initRiemannControls() {
     }
 
     if (zetaPathToggle) {
-        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+        zetaPathToggle.classList.toggle('active', zetaPathOverlay.isVisible());
         zetaPathToggle.addEventListener('click', handleZetaPathToggle);
     }
+
+    // Initialize zeta path overlay with canvas and renderer
+    zetaPathOverlay.init(zetaPathCanvas, fractalApp);
 
     // Initialize Riemann display dropdown
     if (riemannDisplayToggle && riemannDisplayMenu) {
@@ -2466,7 +2464,10 @@ function destroyRiemannControls() {
     // Close dropdown and hide overlays when leaving Riemann mode
     closeRiemannDisplayDropdown();
     hideAxes();
-    hideZetaPath();
+    zetaPathOverlay.hide();
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.remove('active');
+    }
     if (freqRSlider) {
         freqRSlider.removeEventListener('input', handleFreqRChange);
     }
@@ -2562,228 +2563,18 @@ function handleZetaPathToggle() {
 export function toggleZetaPath() {
     if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
 
-    zetaPathVisible = !zetaPathVisible;
+    const visible = zetaPathOverlay.toggle();
     if (zetaPathToggle) {
-        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+        zetaPathToggle.classList.toggle('active', visible);
     }
-    if (zetaPathVisible) {
-        showZetaPath();
-    } else {
-        hideZetaPath();
-    }
-    log(`Zeta Path: ${zetaPathVisible ? 'ON' : 'OFF'}`);
-}
-
-/**
- * Shows the zeta path overlay
- */
-function showZetaPath() {
-    if (!zetaPathCanvas || !zetaPathCtx) return;
-
-    zetaPathCanvas.width = window.innerWidth;
-    zetaPathCanvas.height = window.innerHeight;
-    zetaPathCanvas.classList.remove('zeta-path-hidden');
-
-    drawZetaPath();
-}
-
-/**
- * Hides the zeta path overlay
- */
-function hideZetaPath() {
-    if (zetaPathCanvas) {
-        zetaPathCanvas.classList.add('zeta-path-hidden');
-    }
-    zetaPathVisible = false;
-    if (zetaPathToggle) {
-        zetaPathToggle.classList.remove('active');
-    }
-}
-
-/**
- * Complex number operations for zeta computation
- */
-function cMul(a, b) {
-    return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
-}
-
-function cDiv(a, b) {
-    const denom = b[0] * b[0] + b[1] * b[1];
-    return [(a[0] * b[0] + a[1] * b[1]) / denom, (a[1] * b[0] - a[0] * b[1]) / denom];
-}
-
-function cExp(z) {
-    const ea = Math.exp(z[0]);
-    return [ea * Math.cos(z[1]), ea * Math.sin(z[1])];
-}
-
-/**
- * Computes the Dirichlet eta function (alternating zeta)
- * @param {number[]} s - Complex number [re, im]
- * @param {number} terms - Number of terms to use
- * @returns {number[]} - Complex result [re, im]
- */
-function eta(s, terms = 100) {
-    let sum = [0, 0];
-    for (let n = 1; n <= terms; n++) {
-        const sign = (n % 2 === 0) ? -1 : 1;
-        const scale = 1 / Math.pow(n, s[0]);
-        const angle = -s[1] * Math.log(n);
-        const term = [sign * scale * Math.cos(angle), sign * scale * Math.sin(angle)];
-        sum[0] += term[0];
-        sum[1] += term[1];
-    }
-    return sum;
-}
-
-/**
- * Computes zeta via eta: zeta(s) = eta(s) / (1 - 2^(1-s))
- * @param {number[]} s - Complex number [re, im]
- * @param {number} terms - Number of terms
- * @returns {number[]} - Complex result [re, im]
- */
-function zetaViaEta(s, terms = 100) {
-    const etaVal = eta(s, terms);
-    const log2 = 0.69314718;
-    const expReal = Math.exp((1 - s[0]) * log2);
-    const expImag = -s[1] * log2;
-    const twoPow = [expReal * Math.cos(expImag), expReal * Math.sin(expImag)];
-    const denom = [1 - twoPow[0], -twoPow[1]];
-    return cDiv(etaVal, denom);
-}
-
-/**
- * Draws the zeta path curve w = ζ(1/2 + it) in the w-plane
- */
-function drawZetaPath() {
-    if (!zetaPathCtx || !zetaPathCanvas || !fractalApp) return;
-
-    const width = zetaPathCanvas.width;
-    const height = zetaPathCanvas.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    // Clear canvas
-    zetaPathCtx.clearRect(0, 0, width, height);
-
-    // Get current view parameters (viewing the w-plane)
-    const pan = fractalApp.pan;
-    const zoom = fractalApp.zoom;
-    const scale = height / zoom;
-
-    // Determine t range based on current view
-    // We want to draw ζ(1/2 + it) for t values that produce w values in view
-    const aspect = width / height;
-    const halfWidth = zoom * aspect / 2;
-    const halfHeight = zoom / 2;
-
-    // Estimate t range needed - the spiral grows slowly, use pan[1] as hint
-    const tCenter = Math.max(0, pan[1]);
-    const tRange = Math.max(50, zoom * 2);
-    const tMin = Math.max(0, tCenter - tRange);
-    const tMax = tCenter + tRange;
-
-    // Adaptive step size based on zoom
-    const numPoints = Math.min(5000, Math.max(500, Math.floor(tRange * 20)));
-    const dt = (tMax - tMin) / numPoints;
-
-    // Use terms based on current renderer setting
-    const terms = fractalApp.seriesTerms || 100;
-
-    // Draw the spiral path
-    zetaPathCtx.strokeStyle = 'rgba(0, 255, 200, 0.8)';
-    zetaPathCtx.lineWidth = 1.5;
-    zetaPathCtx.beginPath();
-
-    let firstPoint = true;
-    let prevW = null;
-
-    for (let t = tMin; t <= tMax; t += dt) {
-        const s = [0.5, t];
-        const w = zetaViaEta(s, terms);
-
-        // Transform w to screen coordinates
-        // w-plane: Re(w) is horizontal, Im(w) is vertical
-        const screenX = centerX + (w[0] - pan[0]) * scale;
-        const screenY = centerY - (w[1] - pan[1]) * scale;
-
-        // Skip if too far from view or NaN
-        if (isNaN(screenX) || isNaN(screenY)) continue;
-        if (screenX < -width || screenX > 2 * width || screenY < -height || screenY > 2 * height) {
-            firstPoint = true;
-            continue;
-        }
-
-        // Detect discontinuities (large jumps)
-        if (prevW) {
-            const jump = Math.hypot(w[0] - prevW[0], w[1] - prevW[1]);
-            if (jump > zoom * 0.5) {
-                firstPoint = true;
-            }
-        }
-
-        if (firstPoint) {
-            zetaPathCtx.moveTo(screenX, screenY);
-            firstPoint = false;
-        } else {
-            zetaPathCtx.lineTo(screenX, screenY);
-        }
-        prevW = w;
-    }
-    zetaPathCtx.stroke();
-
-    // Mark zeros - where the spiral passes through origin
-    // Draw origin marker if visible
-    const originX = centerX + (0 - pan[0]) * scale;
-    const originY = centerY - (0 - pan[1]) * scale;
-
-    if (originX > -20 && originX < width + 20 && originY > -20 && originY < height + 20) {
-        zetaPathCtx.beginPath();
-        zetaPathCtx.arc(originX, originY, 6, 0, 2 * Math.PI);
-        zetaPathCtx.strokeStyle = 'rgba(255, 100, 100, 0.9)';
-        zetaPathCtx.lineWidth = 2;
-        zetaPathCtx.stroke();
-
-        // Cross at origin
-        zetaPathCtx.beginPath();
-        zetaPathCtx.moveTo(originX - 8, originY);
-        zetaPathCtx.lineTo(originX + 8, originY);
-        zetaPathCtx.moveTo(originX, originY - 8);
-        zetaPathCtx.lineTo(originX, originY + 8);
-        zetaPathCtx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
-        zetaPathCtx.lineWidth = 1;
-        zetaPathCtx.stroke();
-    }
-
-    // Draw t-value labels at regular intervals
-    zetaPathCtx.font = '11px monospace';
-    zetaPathCtx.fillStyle = 'rgba(0, 255, 200, 0.7)';
-    const labelInterval = Math.max(1, Math.ceil(tRange / 20));
-    for (let t = Math.ceil(tMin / labelInterval) * labelInterval; t <= tMax; t += labelInterval) {
-        if (t < 0.1) continue;
-        const s = [0.5, t];
-        const w = zetaViaEta(s, terms);
-        const screenX = centerX + (w[0] - pan[0]) * scale;
-        const screenY = centerY - (w[1] - pan[1]) * scale;
-        if (screenX > 30 && screenX < width - 30 && screenY > 20 && screenY < height - 20) {
-            zetaPathCtx.fillText(`t=${t}`, screenX + 5, screenY - 5);
-        }
-    }
-
-    // Draw legend
-    zetaPathCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    zetaPathCtx.font = '12px monospace';
-    zetaPathCtx.fillText('ζ(½ + it) spiral', 10, height - 30);
-    zetaPathCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
-    zetaPathCtx.fillText('Zeros = origin crossings', 10, height - 15);
 }
 
 /**
  * Updates zeta path when view changes
  */
 export function updateZetaPath() {
-    if (!zetaPathVisible || fractalMode !== FRACTAL_TYPE.RIEMANN || !fractalApp) return;
-    drawZetaPath();
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+    zetaPathOverlay.update();
 }
 
 /**
@@ -3330,7 +3121,7 @@ export function syncRiemannToggleStates() {
     }
 
     if (zetaPathToggle) {
-        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+        zetaPathToggle.classList.toggle('active', zetaPathOverlay.isVisible());
     }
 }
 
@@ -3349,7 +3140,7 @@ export function syncRiemannControls() {
         analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
     }
     if (zetaPathToggle) {
-        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+        zetaPathToggle.classList.toggle('active', zetaPathOverlay.isVisible());
     }
 
     // Sync frequency sliders
@@ -3606,9 +3397,6 @@ function bindHTMLElements() {
     }
     zetaPathToggle = document.getElementById('zetaPathToggle');
     zetaPathCanvas = document.getElementById('zetaPathCanvas');
-    if (zetaPathCanvas) {
-        zetaPathCtx = zetaPathCanvas.getContext('2d');
-    }
     freqRSlider = document.getElementById('freqRSlider');
     freqGSlider = document.getElementById('freqGSlider');
     freqBSlider = document.getElementById('freqBSlider');
