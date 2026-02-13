@@ -135,6 +135,10 @@ let axesToggle;
 let axesCanvas;
 let axesCtx;
 let axesVisible = false;
+let zetaPathToggle;
+let zetaPathCanvas;
+let zetaPathCtx;
+let zetaPathVisible = false;
 let freqRSlider;
 let freqGSlider;
 let freqBSlider;
@@ -157,6 +161,8 @@ let lineMarkerLabel;
 let hLineMarker;
 let hLineMarkerLabel;
 let regionMarker;
+let segmentMarker;
+let pairMarker;
 
 // Rossler controls
 let rosslerControls;
@@ -2185,11 +2191,16 @@ function initWindowEvents() {
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
             fractalApp.resizeCanvas(); // Adjust canvas dimensions
-            // Resize and redraw axes overlay if visible
+            // Resize and redraw overlays if visible
             if (axesVisible && axesCanvas) {
                 axesCanvas.width = window.innerWidth;
                 axesCanvas.height = window.innerHeight;
                 drawAxesFull();
+            }
+            if (zetaPathVisible && zetaPathCanvas) {
+                zetaPathCanvas.width = window.innerWidth;
+                zetaPathCanvas.height = window.innerHeight;
+                drawZetaPath();
             }
         }, 200); // Adjust delay as needed
     });
@@ -2302,8 +2313,11 @@ function initRiemannControls() {
     // Show the controls
     riemannControls.style.display = 'flex';
 
-    // Set up axes sync callback - called on every draw() for smooth axes movement
-    fractalApp.onDrawCallback = updateAxes;
+    // Set up overlay sync callback - called on every draw() for smooth movement
+    fractalApp.onDrawCallback = () => {
+        updateAxes();
+        updateZetaPath();
+    };
 
     // Sync toggle states with renderer
     if (criticalLineToggle) {
@@ -2319,6 +2333,11 @@ function initRiemannControls() {
     if (axesToggle) {
         axesToggle.classList.toggle('active', axesVisible);
         axesToggle.addEventListener('click', handleAxesToggle);
+    }
+
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+        zetaPathToggle.addEventListener('click', handleZetaPathToggle);
     }
 
     // Initialize frequency sliders
@@ -2385,8 +2404,12 @@ function destroyRiemannControls() {
     if (axesToggle) {
         axesToggle.removeEventListener('click', handleAxesToggle);
     }
-    // Hide axes when leaving Riemann mode
+    if (zetaPathToggle) {
+        zetaPathToggle.removeEventListener('click', handleZetaPathToggle);
+    }
+    // Hide overlays when leaving Riemann mode
     hideAxes();
+    hideZetaPath();
     if (freqRSlider) {
         freqRSlider.removeEventListener('input', handleFreqRChange);
     }
@@ -2470,6 +2493,240 @@ function hideAxes() {
     if (axesToggle) {
         axesToggle.classList.remove('active');
     }
+}
+
+function handleZetaPathToggle() {
+    toggleZetaPath();
+}
+
+/**
+ * Toggles the zeta path overlay on/off
+ */
+export function toggleZetaPath() {
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+
+    zetaPathVisible = !zetaPathVisible;
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+    }
+    if (zetaPathVisible) {
+        showZetaPath();
+    } else {
+        hideZetaPath();
+    }
+    log(`Zeta Path: ${zetaPathVisible ? 'ON' : 'OFF'}`);
+}
+
+/**
+ * Shows the zeta path overlay
+ */
+function showZetaPath() {
+    if (!zetaPathCanvas || !zetaPathCtx) return;
+
+    zetaPathCanvas.width = window.innerWidth;
+    zetaPathCanvas.height = window.innerHeight;
+    zetaPathCanvas.classList.remove('zeta-path-hidden');
+
+    drawZetaPath();
+}
+
+/**
+ * Hides the zeta path overlay
+ */
+function hideZetaPath() {
+    if (zetaPathCanvas) {
+        zetaPathCanvas.classList.add('zeta-path-hidden');
+    }
+    zetaPathVisible = false;
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.remove('active');
+    }
+}
+
+/**
+ * Complex number operations for zeta computation
+ */
+function cMul(a, b) {
+    return [a[0] * b[0] - a[1] * b[1], a[0] * b[1] + a[1] * b[0]];
+}
+
+function cDiv(a, b) {
+    const denom = b[0] * b[0] + b[1] * b[1];
+    return [(a[0] * b[0] + a[1] * b[1]) / denom, (a[1] * b[0] - a[0] * b[1]) / denom];
+}
+
+function cExp(z) {
+    const ea = Math.exp(z[0]);
+    return [ea * Math.cos(z[1]), ea * Math.sin(z[1])];
+}
+
+/**
+ * Computes the Dirichlet eta function (alternating zeta)
+ * @param {number[]} s - Complex number [re, im]
+ * @param {number} terms - Number of terms to use
+ * @returns {number[]} - Complex result [re, im]
+ */
+function eta(s, terms = 100) {
+    let sum = [0, 0];
+    for (let n = 1; n <= terms; n++) {
+        const sign = (n % 2 === 0) ? -1 : 1;
+        const scale = 1 / Math.pow(n, s[0]);
+        const angle = -s[1] * Math.log(n);
+        const term = [sign * scale * Math.cos(angle), sign * scale * Math.sin(angle)];
+        sum[0] += term[0];
+        sum[1] += term[1];
+    }
+    return sum;
+}
+
+/**
+ * Computes zeta via eta: zeta(s) = eta(s) / (1 - 2^(1-s))
+ * @param {number[]} s - Complex number [re, im]
+ * @param {number} terms - Number of terms
+ * @returns {number[]} - Complex result [re, im]
+ */
+function zetaViaEta(s, terms = 100) {
+    const etaVal = eta(s, terms);
+    const log2 = 0.69314718;
+    const expReal = Math.exp((1 - s[0]) * log2);
+    const expImag = -s[1] * log2;
+    const twoPow = [expReal * Math.cos(expImag), expReal * Math.sin(expImag)];
+    const denom = [1 - twoPow[0], -twoPow[1]];
+    return cDiv(etaVal, denom);
+}
+
+/**
+ * Draws the zeta path curve w = ζ(1/2 + it) in the w-plane
+ */
+function drawZetaPath() {
+    if (!zetaPathCtx || !zetaPathCanvas || !fractalApp) return;
+
+    const width = zetaPathCanvas.width;
+    const height = zetaPathCanvas.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+
+    // Clear canvas
+    zetaPathCtx.clearRect(0, 0, width, height);
+
+    // Get current view parameters (viewing the w-plane)
+    const pan = fractalApp.pan;
+    const zoom = fractalApp.zoom;
+    const scale = height / zoom;
+
+    // Determine t range based on current view
+    // We want to draw ζ(1/2 + it) for t values that produce w values in view
+    const aspect = width / height;
+    const halfWidth = zoom * aspect / 2;
+    const halfHeight = zoom / 2;
+
+    // Estimate t range needed - the spiral grows slowly, use pan[1] as hint
+    const tCenter = Math.max(0, pan[1]);
+    const tRange = Math.max(50, zoom * 2);
+    const tMin = Math.max(0, tCenter - tRange);
+    const tMax = tCenter + tRange;
+
+    // Adaptive step size based on zoom
+    const numPoints = Math.min(5000, Math.max(500, Math.floor(tRange * 20)));
+    const dt = (tMax - tMin) / numPoints;
+
+    // Use terms based on current renderer setting
+    const terms = fractalApp.seriesTerms || 100;
+
+    // Draw the spiral path
+    zetaPathCtx.strokeStyle = 'rgba(0, 255, 200, 0.8)';
+    zetaPathCtx.lineWidth = 1.5;
+    zetaPathCtx.beginPath();
+
+    let firstPoint = true;
+    let prevW = null;
+
+    for (let t = tMin; t <= tMax; t += dt) {
+        const s = [0.5, t];
+        const w = zetaViaEta(s, terms);
+
+        // Transform w to screen coordinates
+        // w-plane: Re(w) is horizontal, Im(w) is vertical
+        const screenX = centerX + (w[0] - pan[0]) * scale;
+        const screenY = centerY - (w[1] - pan[1]) * scale;
+
+        // Skip if too far from view or NaN
+        if (isNaN(screenX) || isNaN(screenY)) continue;
+        if (screenX < -width || screenX > 2 * width || screenY < -height || screenY > 2 * height) {
+            firstPoint = true;
+            continue;
+        }
+
+        // Detect discontinuities (large jumps)
+        if (prevW) {
+            const jump = Math.hypot(w[0] - prevW[0], w[1] - prevW[1]);
+            if (jump > zoom * 0.5) {
+                firstPoint = true;
+            }
+        }
+
+        if (firstPoint) {
+            zetaPathCtx.moveTo(screenX, screenY);
+            firstPoint = false;
+        } else {
+            zetaPathCtx.lineTo(screenX, screenY);
+        }
+        prevW = w;
+    }
+    zetaPathCtx.stroke();
+
+    // Mark zeros - where the spiral passes through origin
+    // Draw origin marker if visible
+    const originX = centerX + (0 - pan[0]) * scale;
+    const originY = centerY - (0 - pan[1]) * scale;
+
+    if (originX > -20 && originX < width + 20 && originY > -20 && originY < height + 20) {
+        zetaPathCtx.beginPath();
+        zetaPathCtx.arc(originX, originY, 6, 0, 2 * Math.PI);
+        zetaPathCtx.strokeStyle = 'rgba(255, 100, 100, 0.9)';
+        zetaPathCtx.lineWidth = 2;
+        zetaPathCtx.stroke();
+
+        // Cross at origin
+        zetaPathCtx.beginPath();
+        zetaPathCtx.moveTo(originX - 8, originY);
+        zetaPathCtx.lineTo(originX + 8, originY);
+        zetaPathCtx.moveTo(originX, originY - 8);
+        zetaPathCtx.lineTo(originX, originY + 8);
+        zetaPathCtx.strokeStyle = 'rgba(255, 100, 100, 0.6)';
+        zetaPathCtx.lineWidth = 1;
+        zetaPathCtx.stroke();
+    }
+
+    // Draw t-value labels at regular intervals
+    zetaPathCtx.font = '11px monospace';
+    zetaPathCtx.fillStyle = 'rgba(0, 255, 200, 0.7)';
+    const labelInterval = Math.max(1, Math.ceil(tRange / 20));
+    for (let t = Math.ceil(tMin / labelInterval) * labelInterval; t <= tMax; t += labelInterval) {
+        if (t < 0.1) continue;
+        const s = [0.5, t];
+        const w = zetaViaEta(s, terms);
+        const screenX = centerX + (w[0] - pan[0]) * scale;
+        const screenY = centerY - (w[1] - pan[1]) * scale;
+        if (screenX > 30 && screenX < width - 30 && screenY > 20 && screenY < height - 20) {
+            zetaPathCtx.fillText(`t=${t}`, screenX + 5, screenY - 5);
+        }
+    }
+
+    // Draw legend
+    zetaPathCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    zetaPathCtx.font = '12px monospace';
+    zetaPathCtx.fillText('ζ(½ + it) spiral', 10, height - 30);
+    zetaPathCtx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    zetaPathCtx.fillText('Zeros = origin crossings', 10, height - 15);
+}
+
+/**
+ * Updates zeta path when view changes
+ */
+export function updateZetaPath() {
+    if (!zetaPathVisible || fractalMode !== FRACTAL_TYPE.RIEMANN || !fractalApp) return;
+    drawZetaPath();
 }
 
 /**
@@ -2688,7 +2945,10 @@ function showViewInfo(preset, index, total, isRiemann = false) {
     }
 
     if (viewInfoValue) {
-        if (isRiemann && preset.pan) {
+        const viewType = preset.type || '';
+        // Only show "s = ..." for single point types (nontrivial, special, pole, gram)
+        const singlePointTypes = ['nontrivial', 'special', 'pole', 'gram'];
+        if (isRiemann && preset.pan && singlePointTypes.includes(viewType)) {
             // Format Riemann coordinates
             const re = preset.pan[0];
             const im = preset.pan[1];
@@ -2701,7 +2961,7 @@ function showViewInfo(preset, index, total, isRiemann = false) {
             }
             viewInfoValue.style.display = '';
         } else {
-            // Hide value for non-Riemann modes
+            // Hide value for non-single-point views and non-Riemann modes
             viewInfoValue.style.display = 'none';
         }
     }
@@ -2751,22 +3011,38 @@ function showViewInfo(preset, index, total, isRiemann = false) {
                 lineMarker.classList.remove('line-marker-hidden');
             }
         } else if (viewType === 'axis') {
-            // Horizontal line marker for real axis views
+            // Horizontal line marker for the real axis (Im(s) = 0)
             if (hLineMarker) {
                 setMarkerColor(hLineMarker);
                 if (hLineMarkerLabel) {
-                    hLineMarkerLabel.textContent = 'Re(s) < 0';
+                    hLineMarkerLabel.textContent = 'Im(s) = 0';
                 }
+                updateHLineMarkerPosition();
                 hLineMarker.classList.remove('hline-marker-hidden');
             }
         } else if (viewType === 'overview') {
-            // Region bracket marker for overview views
+            // Region marker for overview views - wraps the critical strip (0 < Re(s) < 1)
             if (regionMarker) {
                 setMarkerColor(regionMarker);
+                updateRegionMarkerPosition();
                 regionMarker.classList.remove('region-marker-hidden');
             }
+        } else if (viewType === 'trivial') {
+            // Segment marker for trivial zeros - multiple points at -2, -4, -6, etc.
+            if (segmentMarker) {
+                setMarkerColor(segmentMarker);
+                updateSegmentMarkerPosition(accentColor);
+                segmentMarker.classList.remove('segment-marker-hidden');
+            }
+        } else if (viewType === 'saddle') {
+            // Pair marker for saddle points - two individual points
+            if (pairMarker) {
+                setMarkerColor(pairMarker);
+                updatePairMarkerPosition(preset);
+                pairMarker.classList.remove('pair-marker-hidden');
+            }
         } else {
-            // Point marker for all specific point types (nontrivial, trivial, special, pole, gram, saddle)
+            // Point marker for all specific point types (nontrivial, special, pole, gram)
             if (pointMarker) {
                 setMarkerColor(pointMarker);
                 pointMarker.classList.remove('point-marker-hidden');
@@ -2776,7 +3052,178 @@ function showViewInfo(preset, index, total, isRiemann = false) {
 }
 
 /**
- * Hides all marker types (point, line, region)
+ * Updates the horizontal line marker position to show the real axis (Im(s) = 0).
+ * The line spans the entire viewport width at the y-coordinate of the real axis.
+ */
+function updateHLineMarkerPosition() {
+    if (!hLineMarker || !fractalApp) return;
+
+    const canvas = fractalApp.canvas;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+
+    // Line spans full width
+    hLineMarker.style.width = `${width}px`;
+    hLineMarker.style.left = '0';
+
+    // Position vertically at Im(s) = 0
+    const fractalY = 0;
+    const normalizedY = (fractalY - fractalApp.pan[1]) / fractalApp.zoom;
+    const screenY = (0.5 - normalizedY) * height;
+    hLineMarker.style.top = `${screenY}px`;
+}
+
+/**
+ * Updates the region marker position to wrap the critical strip (0 < Re(s) < 1).
+ * The marker spans from x=0 to x=1 in fractal coordinates, full height of viewport.
+ */
+function updateRegionMarkerPosition() {
+    if (!regionMarker || !fractalApp) return;
+
+    const canvas = fractalApp.canvas;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const aspect = width / height;
+
+    // Calculate screen X positions for fractal x=0 and x=1
+    // Formula: screenX = ((fractalX - pan[0]) / zoom / aspect + 0.5) * width
+    const screenX0 = ((0 - fractalApp.pan[0]) / fractalApp.zoom / aspect + 0.5) * width;
+    const screenX1 = ((1 - fractalApp.pan[0]) / fractalApp.zoom / aspect + 0.5) * width;
+
+    // Calculate left position and width
+    const left = Math.max(0, screenX0);
+    const right = Math.min(width, screenX1);
+    const markerWidth = right - left;
+
+    // If strip is off-screen, hide marker
+    if (markerWidth <= 0 || right <= 0 || left >= width) {
+        regionMarker.style.width = '0';
+        return;
+    }
+
+    // Position the marker
+    regionMarker.style.left = `${left}px`;
+    regionMarker.style.width = `${markerWidth}px`;
+    regionMarker.style.top = '0';
+    regionMarker.style.height = '100vh';
+    regionMarker.style.transform = 'none';
+}
+
+/**
+ * Updates the segment marker to show trivial zeros at -2, -4, -6, etc.
+ * Creates/updates multiple point markers along the negative real axis.
+ * @param {string} accentColor - The accent color for the markers
+ */
+function updateSegmentMarkerPosition(accentColor) {
+    if (!segmentMarker || !fractalApp) return;
+
+    const canvas = fractalApp.canvas;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const aspect = width / height;
+
+    // Clear existing points
+    segmentMarker.innerHTML = '';
+
+    // Trivial zeros are at -2, -4, -6, -8, ... (negative even integers)
+    // Show zeros that are visible in the current viewport
+    const trivialZeros = [-2, -4, -6, -8, -10, -12, -14, -16, -18, -20];
+
+    for (const zeroX of trivialZeros) {
+        // Convert fractal coordinates to screen coordinates
+        const normalizedX = (zeroX - fractalApp.pan[0]) / fractalApp.zoom;
+        const screenX = (normalizedX / aspect + 0.5) * width;
+
+        // Y coordinate is always 0 for trivial zeros (on real axis)
+        const normalizedY = (0 - fractalApp.pan[1]) / fractalApp.zoom;
+        const screenY = (0.5 - normalizedY) * height;
+
+        // Only show if within viewport (with some margin)
+        if (screenX >= -50 && screenX <= width + 50 && screenY >= -50 && screenY <= height + 50) {
+            const point = document.createElement('div');
+            point.className = 'segment-marker-point';
+            point.style.left = `${screenX}px`;
+            point.style.top = `${screenY}px`;
+            if (accentColor) {
+                point.style.setProperty('--accent-color', accentColor);
+            }
+
+            const ring = document.createElement('div');
+            ring.className = 'segment-marker-ring';
+
+            const dot = document.createElement('div');
+            dot.className = 'segment-marker-dot';
+
+            // No labels - axis already shows the values
+            point.appendChild(ring);
+            point.appendChild(dot);
+            segmentMarker.appendChild(point);
+        }
+    }
+}
+
+/**
+ * Updates the pair marker to show two saddle points.
+ * Saddle points (zeros of ζ'(s)) come in pairs.
+ * @param {Object} preset - The current preset containing pan coordinates and optional saddle point data
+ */
+function updatePairMarkerPosition(preset) {
+    if (!pairMarker || !fractalApp) return;
+
+    const canvas = fractalApp.canvas;
+    if (!canvas) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const aspect = width / height;
+
+    // Get the two point elements
+    const point1 = pairMarker.querySelector('.pair-marker-point-1');
+    const point2 = pairMarker.querySelector('.pair-marker-point-2');
+
+    if (!point1 || !point2) return;
+
+    // Use preset.points if available, otherwise use default saddle point pair
+    // First pair of non-real saddle points: approximately at Re ≈ 0.5 and Re ≈ 2.46 with Im ≈ 6.29
+    // View centered at [1, 9.0858] with zoom 10 - use positions from preset or calculate
+    const points = preset.points || [
+        { re: 0.5, im: 9.0858 },
+        { re: 2.0, im: 9.0858 }
+    ];
+    const saddle1 = points[0] || { re: 0.5, im: 9.0858 };
+    const saddle2 = points[1] || { re: 2.0, im: 9.0858 };
+
+    // Convert fractal coordinates to screen coordinates for point 1
+    const normalizedX1 = (saddle1.re - fractalApp.pan[0]) / fractalApp.zoom;
+    const screenX1 = (normalizedX1 / aspect + 0.5) * width;
+    const normalizedY1 = (saddle1.im - fractalApp.pan[1]) / fractalApp.zoom;
+    const screenY1 = (0.5 - normalizedY1) * height;
+
+    point1.style.left = `${screenX1}px`;
+    point1.style.top = `${screenY1}px`;
+
+    // Convert fractal coordinates to screen coordinates for point 2
+    const normalizedX2 = (saddle2.re - fractalApp.pan[0]) / fractalApp.zoom;
+    const screenX2 = (normalizedX2 / aspect + 0.5) * width;
+    const normalizedY2 = (saddle2.im - fractalApp.pan[1]) / fractalApp.zoom;
+    const screenY2 = (0.5 - normalizedY2) * height;
+
+    point2.style.left = `${screenX2}px`;
+    point2.style.top = `${screenY2}px`;
+}
+
+/**
+ * Hides all marker types (point, line, region, segment, pair)
  */
 function hideAllMarkers() {
     if (pointMarker) {
@@ -2790,6 +3237,12 @@ function hideAllMarkers() {
     }
     if (regionMarker) {
         regionMarker.classList.add('region-marker-hidden');
+    }
+    if (segmentMarker) {
+        segmentMarker.classList.add('segment-marker-hidden');
+    }
+    if (pairMarker) {
+        pairMarker.classList.add('pair-marker-hidden');
     }
 }
 
@@ -2818,6 +3271,10 @@ export function syncRiemannToggleStates() {
     if (analyticExtToggle && fractalApp.useAnalyticExtension !== undefined) {
         analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
     }
+
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.toggle('active', zetaPathVisible);
+    }
 }
 
 /**
@@ -2833,6 +3290,9 @@ export function syncRiemannControls() {
     }
     if (analyticExtToggle) {
         analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
+    }
+    if (zetaPathToggle) {
+        zetaPathToggle.classList.toggle('active', zetaPathVisible);
     }
 
     // Sync frequency sliders
@@ -3084,6 +3544,11 @@ function bindHTMLElements() {
     if (axesCanvas) {
         axesCtx = axesCanvas.getContext('2d');
     }
+    zetaPathToggle = document.getElementById('zetaPathToggle');
+    zetaPathCanvas = document.getElementById('zetaPathCanvas');
+    if (zetaPathCanvas) {
+        zetaPathCtx = zetaPathCanvas.getContext('2d');
+    }
     freqRSlider = document.getElementById('freqRSlider');
     freqGSlider = document.getElementById('freqGSlider');
     freqBSlider = document.getElementById('freqBSlider');
@@ -3106,6 +3571,8 @@ function bindHTMLElements() {
     hLineMarker = document.getElementById('hLineMarker');
     hLineMarkerLabel = hLineMarker?.querySelector('.hline-marker-label');
     regionMarker = document.getElementById('regionMarker');
+    segmentMarker = document.getElementById('segmentMarker');
+    pairMarker = document.getElementById('pairMarker');
     // Rossler Controls elements
     rosslerControls = document.getElementById('rosslerControls');
     rosslerASlider = document.getElementById('rosslerASlider');

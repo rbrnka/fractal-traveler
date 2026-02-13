@@ -88,7 +88,33 @@ vec2 c_exp(vec2 z) {
 }
 
 // Complex sine: sin(z) = (e^(iz) - e^(-iz)) / 2i
+// For large |Im(z)|, use asymptotic form to avoid overflow
 vec2 c_sin(vec2 z) {
+    // For large positive Im(z), sin(z) ≈ i * e^(iz) / 2
+    // For large negative Im(z), sin(z) ≈ -i * e^(-iz) / 2
+    float absImag = abs(z.y);
+    if (absImag > 20.0) {
+        // Use asymptotic approximation to avoid exp overflow
+        // sin(x + iy) ≈ sign(y) * i * exp(-|y|) * exp(ix) / 2 for large |y|
+        // But actually for large |y|: sin(z) ≈ (sign(y) * i / 2) * exp(|y| - i*sign(y)*x)
+        // More precisely: sin(z) = (e^(iz) - e^(-iz))/2i
+        // When y >> 0: e^(iz) = e^(-y+ix) is tiny, e^(-iz) = e^(y-ix) dominates
+        // sin(z) ≈ -e^(-iz)/2i = -e^(y-ix)/2i = (i/2)*e^(y)*e^(-ix)
+        float dominant = z.y > 0.0 ? -z.y : z.y; // -|y| for the non-overflowing term
+        float phase = z.y > 0.0 ? z.x : -z.x;
+        float mag = exp(dominant) * 0.5;
+        // Multiply by i if y > 0, by -i if y < 0
+        vec2 expTerm = vec2(mag * cos(phase), mag * sin(phase));
+        if (z.y > 0.0) {
+            // multiply by i: (a+bi)*i = -b + ai
+            return vec2(-expTerm.y, expTerm.x);
+        } else {
+            // multiply by -i: (a+bi)*(-i) = b - ai
+            return vec2(expTerm.y, -expTerm.x);
+        }
+    }
+
+    // Standard formula for moderate values
     vec2 iz = vec2(-z.y, z.x);
     vec2 eiz = c_exp(iz);
     vec2 emiz = c_exp(vec2(z.y, -z.x));
@@ -136,41 +162,83 @@ vec2 etaZeta(vec2 s) {
     return c_div(etaVal, denom);
 }
 
+// Complex logarithm: log(z) = log|z| + i*arg(z)
+vec2 c_log(vec2 z) {
+    return vec2(log(length(z)), atan(z.y, z.x));
+}
+
+// Log of complex sine for large imaginary parts (avoids overflow)
+// For |Im(z)| > threshold: log(sin(z)) ≈ |Im(z)| - log(2) + i*(...)
+vec2 c_logsin(vec2 z) {
+    float absImag = abs(z.y);
+    if (absImag > 20.0) {
+        // sin(z) ≈ ±i * exp(|y|) * exp(∓ix) / 2 for large |y|
+        // log(sin(z)) ≈ |y| - log(2) + log(±i * exp(∓ix))
+        //             = |y| - log(2) + (∓x + π/2 * sign(y)) * i
+        float logMag = absImag - 0.693147; // |y| - log(2)
+        float phase;
+        if (z.y > 0.0) {
+            phase = -z.x + PI * 0.5;
+        } else {
+            phase = z.x - PI * 0.5;
+        }
+        // Normalize phase to [-π, π]
+        phase = mod(phase + PI, 2.0 * PI) - PI;
+        return vec2(logMag, phase);
+    }
+    // For moderate values, compute directly
+    return c_log(c_sin(z));
+}
+
 // Full analytic continuation using functional equation for Re(s) < 0.5
 // zeta(s) = 2^s * pi^(s-1) * sin(pi*s/2) * Gamma(1-s) * zeta(1-s)
+// Computed in log space to avoid overflow for large Im(s)
 vec2 analyticZeta(vec2 s) {
     // For Re(s) >= 0.5, use eta method directly
     if (s.x >= 0.5) {
         return etaZeta(s);
     }
 
-    // For Re(s) < 0.5, use functional equation to reflect to Re(1-s) > 0.5
+    // For Re(s) > 0 but < 0.5, eta still works reasonably well
+    // Only use functional equation for Re(s) <= 0 to minimize numerical issues
+    if (s.x > 0.0) {
+        return etaZeta(s);
+    }
+
+    // For Re(s) <= 0, use functional equation computed in log space
     vec2 s1 = vec2(1.0 - s.x, -s.y); // 1 - s
     vec2 zeta1s = etaZeta(s1);
 
-    // 2^s
+    // Check for zero result (shouldn't happen for Re(s1) > 1, but safety check)
+    if (length(zeta1s) < 1e-30) {
+        return vec2(0.0);
+    }
+
+    // Compute in log space: log(result) = s*log(2) + (s-1)*log(pi) + log(sin(pi*s/2)) + log(Gamma(1-s)) + log(zeta(1-s))
     float log2 = 0.69314718;
-    vec2 twoS = c_exp(vec2(s.x * log2, s.y * log2));
+    float logpi = 1.1447298;
 
-    // pi^(s-1)
-    float logpi = 1.1447298; // log(pi)
-    vec2 sm1 = vec2(s.x - 1.0, s.y);
-    vec2 piSm1 = c_exp(vec2(sm1.x * logpi, sm1.y * logpi));
+    // log(2^s) = s * log(2)
+    vec2 logTwoS = vec2(s.x * log2, s.y * log2);
 
-    // sin(pi*s/2)
+    // log(pi^(s-1)) = (s-1) * log(pi)
+    vec2 logPiSm1 = vec2((s.x - 1.0) * logpi, s.y * logpi);
+
+    // log(sin(pi*s/2)) - use stable version
     vec2 pis2 = vec2(s.x * PI * 0.5, s.y * PI * 0.5);
-    vec2 sinTerm = c_sin(pis2);
+    vec2 logSinTerm = c_logsin(pis2);
 
-    // Gamma(1-s)
-    vec2 gammaTerm = c_gamma(s1);
+    // log(Gamma(1-s))
+    vec2 logGammaTerm = c_loggamma(s1);
 
-    // Combine: 2^s * pi^(s-1) * sin(pi*s/2) * Gamma(1-s) * zeta(1-s)
-    vec2 result = c_mul(twoS, piSm1);
-    result = c_mul(result, sinTerm);
-    result = c_mul(result, gammaTerm);
-    result = c_mul(result, zeta1s);
+    // log(zeta(1-s))
+    vec2 logZeta1s = c_log(zeta1s);
 
-    return result;
+    // Sum all log terms
+    vec2 logResult = logTwoS + logPiSm1 + logSinTerm + logGammaTerm + logZeta1s;
+
+    // Exponentiate back
+    return c_exp(logResult);
 }
 
 void main() {

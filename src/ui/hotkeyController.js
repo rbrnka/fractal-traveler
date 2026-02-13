@@ -291,6 +291,11 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
+        case 'KeyZ': // Toggle zeta path (Riemann mode)
+            toggleZetaPath();
+            handled = true;
+            break;
+
         case 'KeyV': // Rossler (temporarily)
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
             handled = true;

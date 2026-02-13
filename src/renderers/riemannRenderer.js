@@ -11,15 +11,15 @@ class RiemannRenderer extends FractalRenderer {
     constructor(canvas) {
         super(canvas);
 
-        this.MAX_TERMS = 500;
+        this.MAX_TERMS = 2000;
         this.DEFAULT_ZOOM = 2e1;
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
         this.DEFAULT_PHASE = [0, 0, 0];
         this.MIN_ZOOM = 4000;
-        // Riemann needs larger pan range to reach zeros at high imaginary values
-        this.MAX_PAN_DISTANCE = 60;
+        // No pan limit for Riemann - allow exploring any region
+        this.MAX_PAN_DISTANCE = Infinity;
 
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
@@ -29,7 +29,7 @@ class RiemannRenderer extends FractalRenderer {
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
         this.contourStrength = 0.15;
-        this.seriesTerms = 100; // Number of terms in eta/zeta series
+        this.seriesTerms = 500; // Number of terms in eta/zeta series
 
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
@@ -86,7 +86,7 @@ class RiemannRenderer extends FractalRenderer {
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
         this.contourStrength = 0.15;
-        this.seriesTerms = 100;
+        this.seriesTerms = 500;
         super.reset();
     }
 

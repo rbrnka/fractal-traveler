@@ -859,11 +859,12 @@ main {
     position: fixed;
     top: 50%;
     left: 0;
-    width: 50vw;
-    height: 2px;
+    width: 50vw; /* Default, overridden by JS */
+    height: 20px;
     pointer-events: none;
     z-index: 999;
     transition: opacity 0.3s ease;
+    transform: translateY(-50%);
 }
 
 #hLineMarker.hline-marker-hidden {
@@ -880,8 +881,9 @@ main {
     background: linear-gradient(
         to right,
         transparent 0%,
-        var(--accent-color, #fff) 15%,
-        var(--accent-color, #fff) 100%
+        var(--accent-color, #fff) 5%,
+        var(--accent-color, #fff) 95%,
+        transparent 100%
     );
     box-shadow: 0 0 20px var(--accent-color, #fff),
                 0 0 40px var(--accent-color, #fff),
@@ -892,7 +894,7 @@ main {
 .hline-marker-label {
     position: absolute;
     top: 50%;
-    left: 20%;
+    right: 20px;
     transform: translateY(-50%) translateY(-20px);
     font-size: 14px;
     font-weight: bold;
@@ -908,17 +910,17 @@ main {
 
 #regionMarker {
     position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 25%;
-    height: 70%;
+    top: 0;
+    left: 0;
+    width: 25%; /* Default, overridden by JS */
+    height: 100vh;
     pointer-events: none;
     z-index: 999;
-    border: 3px solid var(--accent-color, #fff);
-    box-shadow: 0 0 20px var(--accent-color, #fff),
-                0 0 40px var(--accent-color, #fff),
-                inset 0 0 30px rgba(255, 255, 255, 0.1);
+    border-left: 3px solid var(--accent-color, #fff);
+    border-right: 3px solid var(--accent-color, #fff);
+    box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.08),
+                inset 3px 0 20px var(--accent-color, #fff),
+                inset -3px 0 20px var(--accent-color, #fff);
     opacity: 0;
     transition: opacity 0.3s ease;
 }
@@ -942,6 +944,132 @@ main {
     }
 }
 
+/* Segment marker for trivial zeros (multiple points along axis) */
+#segmentMarker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#segmentMarker.segment-marker-hidden {
+    opacity: 0;
+}
+
+.segment-marker-point {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+}
+
+.segment-marker-ring {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent-color, #fff),
+                0 0 20px var(--accent-color, #fff);
+    animation: segmentMarkerPulse 2s ease-in-out infinite;
+}
+
+.segment-marker-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px var(--accent-color, #fff),
+                0 0 16px var(--accent-color, #fff);
+}
+
+@keyframes segmentMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+/* Pair marker for saddle points (two individual points) */
+#pairMarker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#pairMarker.pair-marker-hidden {
+    opacity: 0;
+}
+
+.pair-marker-point {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+}
+
+.pair-marker-ring {
+    width: 60px;
+    height: 60px;
+    border: 2px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--accent-color, #fff),
+                0 0 30px var(--accent-color, #fff);
+    animation: pairMarkerPulse 2s ease-in-out infinite;
+}
+
+.pair-marker-point-2 .pair-marker-ring {
+    animation-delay: 0.5s;
+}
+
+.pair-marker-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent-color, #fff),
+                0 0 20px var(--accent-color, #fff);
+}
+
+@keyframes pairMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        opacity: 0.7;
+    }
+}
+
 /* ========================================
    Axes Overlay (Riemann)
    ======================================== */
@@ -957,6 +1085,20 @@ main {
 }
 
 #axesCanvas.axes-hidden {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#zetaPathCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 6;
+    will-change: transform;
+}
+
+#zetaPathCanvas.zeta-path-hidden {
     opacity: 0;
     transition: opacity 0.2s ease;
 }

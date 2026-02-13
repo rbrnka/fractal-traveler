@@ -3,20 +3,12 @@
   "type": "RIEMANN",
   "views": [
     {
-      "id": "Negative Axis",
+      "id": "X axis",
       "type": "axis",
       "pan": [0, 0],
-      "zoom": 50,
+      "zoom": 30,
       "paletteId": "Default",
-      "description": "The negative real axis showing trivial zeros at -2, -4, -6, ... and special values."
-    },
-    {
-      "id": "The Critical Strip",
-      "type": "symmetry",
-      "pan": [0.5, 0],
-      "zoom": 50,
-      "paletteId": "Default",
-      "description": "The strip 0 < Re(s) < 1 where all non-trivial zeros reside. The Riemann Hypothesis claims they all lie on Re(s) = 1/2."
+      "description": "The real axis with trivial zeros and other interesting points."
     },
     {
       "id": "The Pole",
@@ -59,42 +51,54 @@
       "description": "ζ(3) ≈ 1.202. Proven irrational by Roger Apéry in 1978, still mysterious today."
     },
     {
-      "id": "First Trivial Zero",
+      "id": "Trivial Zeroes",
       "type": "trivial",
       "pan": [-2, 0],
       "zoom": 12,
       "paletteId": "Default",
-      "description": "ζ(−2) = 0. Trivial zeros arise from sin(πs/2) in the functional equation. 'Trivial' because their existence is easily proven."
+      "description": "ζ(−2) = 0. Trivial zeros arise from sin(πs/2) in the functional equation. 'Trivial' because their existence is easily proven.  All negative even integers are zeros—infinitely many.\""
     },
     {
-      "id": "Second Trivial Zero",
-      "type": "trivial",
-      "pan": [-4, 0],
-      "zoom": 12,
+      "id": "The Critical Strip",
+      "type": "overview",
+      "pan": [0.5, 0],
+      "zoom": 20,
       "paletteId": "Default",
-      "description": "ζ(−4) = 0. All negative even integers are zeros—infinitely many."
+      "description": "The strip 0 < Re(s) < 1 where all non-trivial zeros reside."
     },
     {
-      "id": "Saddle Point (Right)",
-      "type": "saddle",
-      "pan": [1, 9.0858],
+      "id": "The Critical Line",
+      "type": "symmetry",
+      "pan": [0.5, 0],
       "zoom": 10,
       "paletteId": "Default",
-      "description": "Where ζ'(s) = 0. Unlike zeros, saddle points are not perfectly symmetric around the critical line."
+      "description": "Riemann Hypothesis claims all non-trivial zeros reside not just within the critical strip but on the line Re(s) = 1/2."
     },
     {
-      "id": "Saddle Point (Left)",
-      "type": "saddle",
-      "pan": [0, 9.0858],
+      "id": "Derivative Zero",
+      "type": "nontrivial",
+      "pan": [2.46, 0],
       "zoom": 10,
       "paletteId": "Default",
-      "description": "The left-hand counterpart to the first saddle point."
+      "description": "The first real zero of the derivative ζ'(s). Exploring these points helps mathematicians understand the distribution of the function's values."
+    },
+    {
+      "id": "Saddle Points",
+      "type": "saddle",
+      "pan": [0.5, 9.0858],
+      "zoom": 10,
+      "paletteId": "Default",
+      "points": [
+        { "re": 1, "im": 9.0858 },
+        { "re": 0, "im": 9.0858 }
+      ],
+      "description": "Where ζ'(s) = 0. Unlike zeros, saddle points are not perfectly symmetric around the critical line but come with pairs."
     },
     {
       "id": "The Gateway Zero",
       "type": "nontrivial",
       "pan": [0.5, 14.1347],
-      "zoom": 8,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "The first non-trivial zero, found by Riemann in 1859. It confirms the Zeta function's link to the distribution of primes."
     },
@@ -102,7 +106,7 @@
       "id": "Gram Point g₁",
       "type": "gram",
       "pan": [0.5, 17.85],
-      "zoom": 10,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "Where Im(ζ(1/2+it)) = 0. Gram points bracket some zeros and help locate them."
     },
@@ -110,7 +114,7 @@
       "id": "The Spacing Benchmark",
       "type": "nontrivial",
       "pan": [0.5, 21.022],
-      "zoom": 8,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "Its distance from the first zero (~6.89) began the study of 'spectral gaps' in number theory."
     },
@@ -118,7 +122,7 @@
       "id": "Gram Point g₂",
       "type": "gram",
       "pan": [0.5, 23.17],
-      "zoom": 10,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "The second Gram point, used in computational verification of zeros."
     },
@@ -126,7 +130,7 @@
       "id": "The Stability Zero",
       "type": "nontrivial",
       "pan": [0.5, 25.0109],
-      "zoom": 8,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2)."
     },
@@ -134,7 +138,7 @@
       "id": "The Chaos Indicator",
       "type": "nontrivial",
       "pan": [0.5, 30.4249],
-      "zoom": 8,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
     },
@@ -142,7 +146,7 @@
       "id": "The Near Twin",
       "type": "nontrivial",
       "pan": [0.5, 32.9351],
-      "zoom": 8,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
     },
@@ -150,7 +154,7 @@
       "id": "Hardy's Milestone",
       "type": "nontrivial",
       "pan": [0.5, 37.5862],
-      "zoom": 8,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "Confirmed by G.H. Hardy in 1914, proving infinitely many zeros exist on the critical line."
     },
@@ -159,7 +163,7 @@
       "id": "The Pre-Computer Limit",
       "type": "nontrivial",
       "pan": [0.5, 40.9187],
-      "zoom": 4,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation."
     },
@@ -167,7 +171,7 @@
       "id": "Zero Cluster",
       "type": "overview",
       "pan": [0.5, 42],
-      "zoom": 18,
+      "zoom": 40,
       "paletteId": "Default",
       "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
     },
@@ -175,7 +179,7 @@
       "id": "The Repulsion Effect",
       "type": "nontrivial",
       "pan": [0.5, 43.3271],
-      "zoom": 4,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms."
     },
@@ -183,7 +187,7 @@
       "id": "The Prime Regulator",
       "type": "nontrivial",
       "pan": [0.5, 48.0051],
-      "zoom": 4,
+      "zoom": 12,
       "paletteId": "Default",
       "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem."
     },
@@ -191,7 +195,7 @@
       "id": "The Gram Point Link",
       "type": "nontrivial",
       "pan": [0.5, 49.7738],
-      "zoom": 6,
+      "zoom": 10,
       "paletteId": "Default",
       "description": "Calculated by J.P. Gram (1903), who developed methods to predict zero locations."
     },
@@ -202,6 +206,22 @@
       "zoom": 20,
       "paletteId": "Default",
       "description": "The symmetry ζ(s) ↔ ζ(1−s) reflects the function across the critical line."
+    },
+    {
+      "id": "Gram's Law Violation",
+      "type": "gram",
+      "pan": [0.5, 282.465],
+      "zoom": 15,
+      "paletteId": "Default",
+      "description": "The first violation of Gram's Law. Here, the expected alternating rhythm of zeros and Gram points breaks down, showing the underlying chaotic nature of the function."
+    },
+    {
+      "id": "Lehmer's Phenomenon",
+      "type": "nontrivial",
+      "pan": [0.5, 7005.085],
+      "zoom": 0.25,
+      "paletteId": "Default",
+      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038. ⚠️ Beyond shader precision limits—rendering is approximate. True visualization requires extended precision arithmetic."
     }
   ],
   "palettes": [

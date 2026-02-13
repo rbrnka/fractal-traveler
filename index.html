@@ -122,9 +122,10 @@
                 <div class="control-row">
                     <span class="control-label">Display:</span>
                     <div class="button-group">
-                        <button type="button" id="criticalLineToggle" class="active" title="Critical Line (,)">Critical Line</button>
-                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Continuation (M)">Analytic Cont.</button>
+                        <button type="button" id="criticalLineToggle" class="active" title="Critical Line (,)">Crit. Line</button>
+                        <button type="button" id="analyticExtToggle" class="active" title="Analytic Continuation (M)">Analytic</button>
                         <button type="button" id="axesToggle" title="Show/Hide Axes (N)">Axes</button>
+                        <button type="button" id="zetaPathToggle" title="Show ζ(½+it) spiral (Z)">ζ</button>
                     </div>
                 </div>
                 <div class="slider-container">
@@ -149,8 +150,8 @@
                 </div>
                 <div class="slider-container">
                     <label for="termsSlider" title="Series terms (mathematical precision)">Terms:</label>
-                    <input type="range" id="termsSlider" class="slider" min="20" max="500" step="10" value="100">
-                    <output class="sliderValue" id="termsValue">100</output>
+                    <input type="range" id="termsSlider" class="slider" min="20" max="2000" step="10" value="500">
+                    <output class="sliderValue" id="termsValue">500</output>
                 </div>
             </div>
 
@@ -273,7 +274,25 @@
     <!-- Region rectangle marker for overview views -->
     <div id="regionMarker" class="region-marker-hidden"></div>
 
+    <!-- Segment marker for trivial zeros (multiple points along axis) -->
+    <div id="segmentMarker" class="segment-marker-hidden">
+        <!-- Points are dynamically positioned via JS -->
+    </div>
+
+    <!-- Pair marker for saddle points (two individual points) -->
+    <div id="pairMarker" class="pair-marker-hidden">
+        <div class="pair-marker-point pair-marker-point-1">
+            <div class="pair-marker-ring"></div>
+            <div class="pair-marker-dot"></div>
+        </div>
+        <div class="pair-marker-point pair-marker-point-2">
+            <div class="pair-marker-ring"></div>
+            <div class="pair-marker-dot"></div>
+        </div>
+    </div>
+
     <canvas id="axesCanvas" class="axes-hidden"></canvas>
+    <canvas id="zetaPathCanvas" class="zeta-path-hidden"></canvas>
 
     <main>
         <canvas id="fractalCanvas" role="img" aria-label="Interactive fractal rendering canvas"></canvas>
