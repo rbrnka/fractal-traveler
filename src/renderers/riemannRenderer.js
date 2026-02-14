@@ -5,6 +5,9 @@ import {updateInfo} from "../ui/ui";
 import presetsData from '../data/riemann.json';
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/riemann.frag';
+// Alternative shaders:
+// import fragmentShaderRaw from '../shaders/riemann-siegel.frag';
+// import fragmentShaderRaw from '../shaders/riemann-borwein.frag';
 
 class RiemannRenderer extends FractalRenderer {
 
@@ -18,6 +21,7 @@ class RiemannRenderer extends FractalRenderer {
         this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
         this.DEFAULT_PHASE = [0, 0, 0];
         this.MIN_ZOOM = 4000;
+        this.MAX_ZOOM = 0.01;
         // No pan limit for Riemann - allow exploring any region
         this.MAX_PAN_DISTANCE = Infinity;
 
