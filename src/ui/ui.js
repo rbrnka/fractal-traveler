@@ -24,6 +24,7 @@ import {
     DEFAULT_BG_COLOR,
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
+    DEFAULT_RIEMANN_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
     FRACTAL_TYPE,
     log,
@@ -46,6 +47,7 @@ import {calculateMandelbrotZoomFromJulia} from "../global/utils.fractal";
 import {RosslerRenderer} from "../renderers/rosslerRenderer";
 import {initTourAudio, startTourMusic, stopTourMusic} from "../global/audioManager";
 import * as zetaPathOverlay from "./zetaPathOverlay";
+import * as axesOverlay from "./axesOverlay";
 
 /**
  * @module UI
@@ -151,6 +153,8 @@ let contourSlider;
 let contourValue;
 let termsSlider;
 let termsValue;
+let riemannDisplayToggleHandler = null;
+let riemannDisplayDocClickHandler = null;
 let viewInfoOverlay;
 let viewInfoTitle;
 let viewInfoValue;
@@ -418,6 +422,8 @@ export function enableRiemannMode() {
     initPresetButtonEvents();
     initPaletteButtonEvents();
     initRiemannControls();
+
+    updateColorTheme(DEFAULT_RIEMANN_THEME_COLOR);
 
     // Initialize tour background music
     initTourAudio('./audio/riemann-tour.mp3');
@@ -2218,11 +2224,7 @@ function initWindowEvents() {
         resizeTimeout = setTimeout(() => {
             fractalApp.resizeCanvas(); // Adjust canvas dimensions
             // Resize and redraw overlays if visible
-            if (axesVisible && axesCanvas) {
-                axesCanvas.width = window.innerWidth;
-                axesCanvas.height = window.innerHeight;
-                drawAxesFull();
-            }
+            axesOverlay.resize();
             zetaPathOverlay.resize();
         }, 200); // Adjust delay as needed
     });
@@ -2367,26 +2369,30 @@ function initRiemannControls() {
         zetaPathToggle.addEventListener('click', handleZetaPathToggle);
     }
 
-    // Initialize zeta path overlay with canvas and renderer
+    // Initialize overlays with canvas and renderer
+    axesOverlay.init(axesCanvas, fractalApp);
     zetaPathOverlay.init(zetaPathCanvas, fractalApp);
 
     // Initialize Riemann display dropdown
     if (riemannDisplayToggle && riemannDisplayMenu) {
-        riemannDisplayToggle.addEventListener('click', (e) => {
+        // Create named handlers so they can be removed later
+        riemannDisplayToggleHandler = (e) => {
             e.stopPropagation();
             closeFractalDropdown();
             closePresetsDropdown();
             closeDivesDropdown();
             closePaletteDropdown();
             toggleRiemannDisplayDropdown();
-        });
+        };
 
-        // Close dropdown when clicking outside (but not on toggle buttons inside)
-        document.addEventListener('click', (e) => {
+        riemannDisplayDocClickHandler = (e) => {
             if (!riemannDisplayDropdown?.contains(e.target)) {
                 closeRiemannDisplayDropdown();
             }
-        });
+        };
+
+        riemannDisplayToggle.addEventListener('click', riemannDisplayToggleHandler);
+        document.addEventListener('click', riemannDisplayDocClickHandler);
     }
 
     // Initialize frequency sliders
@@ -2421,10 +2427,10 @@ function initRiemannControls() {
     }
 
     // Turn axes on by default in Riemann mode
-    if (!axesVisible) {
+    if (!axesOverlay.isVisible()) {
+        axesOverlay.show();
         axesVisible = true;
         if (axesToggle) axesToggle.classList.add('active');
-        showAxes();
     }
 
     log('Initialized.', 'initRiemannControls');
@@ -2461,6 +2467,17 @@ function destroyRiemannControls() {
     if (zetaPathToggle) {
         zetaPathToggle.removeEventListener('click', handleZetaPathToggle);
     }
+
+    // Remove dropdown handlers
+    if (riemannDisplayToggle && riemannDisplayToggleHandler) {
+        riemannDisplayToggle.removeEventListener('click', riemannDisplayToggleHandler);
+        riemannDisplayToggleHandler = null;
+    }
+    if (riemannDisplayDocClickHandler) {
+        document.removeEventListener('click', riemannDisplayDocClickHandler);
+        riemannDisplayDocClickHandler = null;
+    }
+
     // Close dropdown and hide overlays when leaving Riemann mode
     closeRiemannDisplayDropdown();
     hideAxes();
@@ -2515,38 +2532,26 @@ function handleAxesToggle() {
 export function toggleAxes() {
     if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
 
-    axesVisible = !axesVisible;
+    const visible = axesOverlay.toggle();
+    axesVisible = visible;
     if (axesToggle) {
-        axesToggle.classList.toggle('active', axesVisible);
+        axesToggle.classList.toggle('active', visible);
     }
-    if (axesVisible) {
-        showAxes();
-    } else {
-        hideAxes();
-    }
-    log(`Axes: ${axesVisible ? 'ON' : 'OFF'}`);
 }
 
 /**
  * Shows the axes overlay and draws coordinate grid
  */
 function showAxes() {
-    if (!axesCanvas || !axesCtx) return;
-
-    axesCanvas.width = window.innerWidth;
-    axesCanvas.height = window.innerHeight;
-    axesCanvas.classList.remove('axes-hidden');
-
-    drawAxesFull();
+    axesOverlay.show();
+    axesVisible = true;
 }
 
 /**
  * Hides the axes overlay
  */
 function hideAxes() {
-    if (axesCanvas) {
-        axesCanvas.classList.add('axes-hidden');
-    }
+    axesOverlay.hide();
     axesVisible = false;
     if (axesToggle) {
         axesToggle.classList.remove('active');
@@ -2578,146 +2583,11 @@ export function updateZetaPath() {
 }
 
 /**
- * Draws the coordinate axes with numbers
- */
-function drawAxesFull() {
-    if (!axesCtx || !axesCanvas || !fractalApp) return;
-
-    const width = axesCanvas.width;
-    const height = axesCanvas.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-
-    // Clear canvas
-    axesCtx.clearRect(0, 0, width, height);
-
-    // Get current view parameters
-    const pan = fractalApp.pan;
-    const zoom = fractalApp.zoom;
-
-    // Calculate visible range (matching shader: uv = (fragCoord - 0.5*res) / res.y)
-    const aspect = width / height;
-    const halfWidth = zoom * aspect / 2;
-    const halfHeight = zoom / 2;
-    const left = pan[0] - halfWidth;
-    const right = pan[0] + halfWidth;
-    const top = pan[1] + halfHeight;
-    const bottom = pan[1] - halfHeight;
-
-    // Determine good tick spacing based on zoom
-    const tickSpacing = getTickSpacing(zoom);
-
-    // Pixels per fractal unit (matching shader coordinate system)
-    const scale = height / zoom;
-
-    // Calculate main axis positions first (needed for label placement)
-    const realAxisY = centerY - (0 - pan[1]) * scale;  // Im=0 line (horizontal)
-    const imagAxisX = centerX + (0 - pan[0]) * scale;  // Re=0 line (vertical)
-
-    // Clamp label positions to stay on screen with padding
-    const labelPadding = 20;
-    const realAxisLabelY = Math.max(labelPadding, Math.min(height - labelPadding, realAxisY));
-    const imagAxisLabelX = Math.max(labelPadding + 30, Math.min(width - labelPadding - 30, imagAxisX));
-
-    // Style for grid lines (subtle)
-    axesCtx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-    axesCtx.lineWidth = 1;
-    axesCtx.font = '14px monospace';
-    axesCtx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-
-    // Draw vertical grid lines (real axis values) with labels along real axis
-    axesCtx.textAlign = 'center';
-    axesCtx.textBaseline = 'top';
-    const startX = Math.ceil(left / tickSpacing) * tickSpacing;
-    for (let x = startX; x <= right; x += tickSpacing) {
-        const screenX = centerX + (x - pan[0]) * scale;
-        // Draw tick line
-        axesCtx.beginPath();
-        axesCtx.moveTo(screenX, 0);
-        axesCtx.lineTo(screenX, height);
-        axesCtx.stroke();
-
-        // Draw label along the real axis (Im=0), skip zero
-        if (Math.abs(x) > tickSpacing * 0.1) {
-            const label = formatAxisNumber(x);
-            axesCtx.fillText(label, screenX, realAxisLabelY + 5);
-        }
-    }
-
-    // Draw horizontal grid lines (imaginary axis values) with labels along imaginary axis
-    axesCtx.textAlign = 'left';
-    axesCtx.textBaseline = 'middle';
-    const startY = Math.ceil(bottom / tickSpacing) * tickSpacing;
-    for (let y = startY; y <= top; y += tickSpacing) {
-        const screenY = centerY - (y - pan[1]) * scale;
-        // Draw tick line
-        axesCtx.beginPath();
-        axesCtx.moveTo(0, screenY);
-        axesCtx.lineTo(width, screenY);
-        axesCtx.stroke();
-
-        // Draw label along the imaginary axis (Re=0), skip zero
-        if (Math.abs(y) > tickSpacing * 0.1) {
-            const label = formatAxisNumber(y) + 'i';
-            axesCtx.fillText(label, imagAxisLabelX + 5, screenY);
-        }
-    }
-
-    // Draw main axes (thicker, more visible)
-    axesCtx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
-    axesCtx.lineWidth = 2;
-
-    // Real axis (horizontal through Im=0)
-    axesCtx.beginPath();
-    axesCtx.moveTo(0, realAxisY);
-    axesCtx.lineTo(width, realAxisY);
-    axesCtx.stroke();
-
-    // Imaginary axis (vertical through Re=0)
-    axesCtx.beginPath();
-    axesCtx.moveTo(imagAxisX, 0);
-    axesCtx.lineTo(imagAxisX, height);
-    axesCtx.stroke();
-
-    // Draw origin label
-    axesCtx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    axesCtx.textAlign = 'left';
-    axesCtx.textBaseline = 'top';
-    axesCtx.fillText('0', imagAxisX + 5, realAxisY + 5);
-}
-
-/**
- * Calculates appropriate tick spacing based on zoom level
- */
-function getTickSpacing(zoom) {
-    const idealTicks = 8;
-    const rawSpacing = zoom / idealTicks;
-    const magnitude = Math.pow(10, Math.floor(Math.log10(rawSpacing)));
-    const normalized = rawSpacing / magnitude;
-
-    if (normalized < 1.5) return magnitude;
-    if (normalized < 3.5) return 2 * magnitude;
-    if (normalized < 7.5) return 5 * magnitude;
-    return 10 * magnitude;
-}
-
-/**
- * Formats axis number for display
- */
-function formatAxisNumber(n) {
-    if (Number.isInteger(n)) return n.toString();
-    if (Math.abs(n) < 0.01 || Math.abs(n) >= 1000) {
-        return n.toExponential(1);
-    }
-    return n.toFixed(2).replace(/\.?0+$/, '');
-}
-
-/**
  * Updates axes when view changes
  */
 export function updateAxes() {
-    if (!axesVisible || fractalMode !== FRACTAL_TYPE.RIEMANN || !fractalApp) return;
-    drawAxesFull();
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+    axesOverlay.update();
 }
 
 function handleFreqRChange(e) {
