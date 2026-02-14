@@ -11,7 +11,7 @@
       "description": "The real axis with trivial zeros and other interesting points."
     },
     {
-      "id": "The Pole",
+      "id": "Pole",
       "type": "pole",
       "pan": [1.0, 0],
       "zoom": 5,
@@ -19,7 +19,7 @@
       "description": "The only singularity of ζ(s). A simple pole with residue 1, where the function explodes to infinity."
     },
     {
-      "id": "The Origin",
+      "id": "Origin",
       "type": "special",
       "pan": [0, 0],
       "zoom": 8,
@@ -27,7 +27,7 @@
       "description": "ζ(0) = -1/2. This mysterious value connects to the sum of a divergent series 1+1+1+... via analytic continuation."
     },
     {
-      "id": "The Ramanujan Summation",
+      "id": "Ramanujan Summation",
       "type": "special",
       "pan": [-1, 0],
       "zoom": 10,
@@ -35,7 +35,7 @@
       "description": "ζ(−1) = −1/12. This staggering result suggests the sum of all natural numbers is −1/12. It is a cornerstone of String Theory and the Casimir Effect."
     },
     {
-      "id": "The Basel Problem",
+      "id": "Basel Problem",
       "type": "special",
       "pan": [2, 0],
       "zoom": 10,
@@ -59,7 +59,7 @@
       "description": "ζ(−2) = 0. Trivial zeros arise from sin(πs/2) in the functional equation. 'Trivial' because their existence is easily proven.  All negative even integers are zeros—infinitely many.\""
     },
     {
-      "id": "The Critical Strip",
+      "id": "Critical Strip",
       "type": "overview",
       "pan": [0.5, 0],
       "zoom": 20,
@@ -67,7 +67,7 @@
       "description": "The strip 0 < Re(s) < 1 where all non-trivial zeros reside."
     },
     {
-      "id": "The Critical Line",
+      "id": "Critical Line",
       "type": "symmetry",
       "pan": [0.5, 0],
       "zoom": 10,
@@ -95,7 +95,7 @@
       "description": "Where ζ'(s) = 0. Unlike zeros, saddle points are not perfectly symmetric around the critical line but come with pairs."
     },
     {
-      "id": "The Gateway Zero",
+      "id": "Gateway Zero",
       "type": "nontrivial",
       "pan": [0.5, 14.1347],
       "zoom": 12,
@@ -111,7 +111,7 @@
       "description": "Where Im(ζ(1/2+it)) = 0. Gram points bracket some zeros and help locate them."
     },
     {
-      "id": "The Spacing Benchmark",
+      "id": "Spacing Benchmark",
       "type": "nontrivial",
       "pan": [0.5, 21.022],
       "zoom": 10,
@@ -127,7 +127,7 @@
       "description": "The second Gram point, used in computational verification of zeros."
     },
     {
-      "id": "The Stability Zero",
+      "id": "Stability Zero",
       "type": "nontrivial",
       "pan": [0.5, 25.0109],
       "zoom": 10,
@@ -135,7 +135,7 @@
       "description": "Part of the original set that suggested all non-trivial zeros lie on the Critical Line (Re=1/2)."
     },
     {
-      "id": "The Chaos Indicator",
+      "id": "Chaos Indicator",
       "type": "nontrivial",
       "pan": [0.5, 30.4249],
       "zoom": 12,
@@ -143,7 +143,7 @@
       "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
     },
     {
-      "id": "The Near Twin",
+      "id": "Near Twin",
       "type": "nontrivial",
       "pan": [0.5, 32.9351],
       "zoom": 10,
@@ -160,7 +160,7 @@
     },
 
     {
-      "id": "The Pre-Computer Limit",
+      "id": "Pre-Computer Limit",
       "type": "nontrivial",
       "pan": [0.5, 40.9187],
       "zoom": 10,
@@ -176,7 +176,7 @@
       "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
     },
     {
-      "id": "The Repulsion Effect",
+      "id": "Repulsion Effect",
       "type": "nontrivial",
       "pan": [0.5, 43.3271],
       "zoom": 10,
@@ -184,7 +184,7 @@
       "description": "An example of 'level repulsion,' where zeros rarely get too close, similar to energy levels in atoms."
     },
     {
-      "id": "The Prime Regulator",
+      "id": "Prime Regulator",
       "type": "nontrivial",
       "pan": [0.5, 48.0051],
       "zoom": 12,
@@ -192,7 +192,7 @@
       "description": "Higher zeros like this one 'fine-tune' the error term in the Prime Number Theorem."
     },
     {
-      "id": "The Gram Point Link",
+      "id": "Gram Point Link",
       "type": "nontrivial",
       "pan": [0.5, 49.7738],
       "zoom": 10,
@@ -218,10 +218,10 @@
     {
       "id": "Lehmer's Phenomenon",
       "type": "nontrivial",
-      "pan": [0.5, 7007],
+      "pan": [0.5, 7005.082],
       "zoom": 5,
       "paletteId": "Default",
-      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038."
+      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038. Using Double Precision shader for accurate rendering."
     }
   ],
   "palettes": [

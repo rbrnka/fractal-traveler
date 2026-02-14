@@ -407,6 +407,34 @@ button:focus-visible {
     background-image: linear-gradient(#222, #444);
 }
 
+/* Riemann shader dropdown */
+#riemann-shader-dropdown {
+    display: none;
+}
+
+#riemann-shader-dropdown.visible {
+    display: inline-flex;
+}
+
+#riemann-shader-dropdown .dropdown-menu {
+    min-width: 140px;
+    max-width: 180px;
+}
+
+#riemann-shader-dropdown .dropdown-menu button.riemann-shader-option {
+    flex: 1 1 auto;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
+#riemann-shader-dropdown .dropdown-menu button.riemann-shader-option.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #444);
+}
+
 /* ========================================
    Dive Buttons
    ======================================== */
@@ -570,6 +598,13 @@ button.dive.has-palette.active {
     color: #ffcc00;
     text-shadow: 0 0 6px #ffcc00;
     font-size: 10px;
+}
+
+.dp-indicator {
+    color: #00ccff;
+    text-shadow: 0 0 6px #00ccff;
+    font-size: 10px;
+    cursor: help;
 }
 
 #version {

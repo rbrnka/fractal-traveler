@@ -1,15 +1,28 @@
 import FractalRenderer from "./fractalRenderer";
 import {asyncDelay, hexToRGBArray, lerp, normalizeRotation} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, EASE_TYPE, log} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, RIEMANN_DOUBLE_PRECISION_THRESHOLD} from "../global/constants";
 import {updateInfo} from "../ui/ui";
 import presetsData from '../data/riemann.json';
-/** @type {string} */
-import fragmentShaderRaw from '../shaders/riemann.frag';
-// Alternative shaders:
-// import fragmentShaderRaw from '../shaders/riemann-siegel.frag';
-// import fragmentShaderRaw from '../shaders/riemann-borwein.frag';
+
+// Available shaders
+import shaderBorwein from '../shaders/riemann-borwein.frag';
+import shaderSiegel from '../shaders/riemann-siegel.frag';
+import shaderDouble from '../shaders/riemann-double.frag';
+import shaderDefault from '../shaders/riemann.frag';
+
+const SHADER_OPTIONS = {
+    'borwein': { source: shaderBorwein, name: 'Borwein', description: 'Euler-accelerated convergence' },
+    'siegel': { source: shaderSiegel, name: 'Riemann-Siegel', description: 'Optimized for critical line' },
+    'double': { source: shaderDouble, name: 'Double Precision', description: 'High accuracy for large t (slower)' },
+    'default': { source: shaderDefault, name: 'Default (Eta)', description: 'Dirichlet eta series' }
+};
 
 class RiemannRenderer extends FractalRenderer {
+
+    // Static accessor for shader options (for UI)
+    static get SHADER_OPTIONS() {
+        return SHADER_OPTIONS;
+    }
 
     constructor(canvas) {
         super(canvas);
@@ -35,6 +48,12 @@ class RiemannRenderer extends FractalRenderer {
         this.contourStrength = 0.15;
         this.seriesTerms = 500; // Number of terms in eta/zeta series
 
+        // Shader selection
+        this.currentShader = 'borwein';
+        this.fragmentShaderSource = SHADER_OPTIONS[this.currentShader].source;
+        this.autoShaderSwitching = true; // Enable automatic shader switching based on region
+        this.manualShaderOverride = false; // When true, don't auto-switch
+
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
         this.currentPaletteIndex = 0;
@@ -44,7 +63,69 @@ class RiemannRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_TERMS__', this.MAX_TERMS).toString();
+        return this.fragmentShaderSource.replace('__MAX_TERMS__', this.MAX_TERMS).toString();
+    }
+
+    /**
+     * Switches to a different shader algorithm.
+     * @param {string} shaderId - One of: 'borwein', 'siegel', 'double', 'default'
+     * @returns {boolean} - True if shader was changed successfully
+     */
+    /**
+     * Switches to a different shader algorithm (called from UI).
+     * Sets manual override to prevent auto-switching.
+     * @param {string} shaderId - One of: 'borwein', 'siegel', 'double', 'default'
+     * @param {boolean} [isManual=true] - Whether this is a manual user selection
+     * @returns {boolean} - True if shader was changed successfully
+     */
+    setShader(shaderId, isManual = true) {
+        if (!SHADER_OPTIONS[shaderId]) {
+            console.warn(`Unknown shader: ${shaderId}`);
+            return false;
+        }
+
+        if (shaderId === this.currentShader) {
+            if (isManual) this.manualShaderOverride = true;
+            return true; // Already using this shader
+        }
+
+        // Manual selection disables auto-switching
+        if (isManual) {
+            this.manualShaderOverride = true;
+        }
+
+        log(`Switching shader to: ${shaderId}`);
+        this.currentShader = shaderId;
+        this.fragmentShaderSource = SHADER_OPTIONS[shaderId].source;
+
+        // Rebuild the WebGL program with new shader
+        this.rebuildProgram();
+        this.draw();
+
+        return true;
+    }
+
+    /**
+     * Gets info about the current shader.
+     * @returns {{id: string, name: string, description: string}}
+     */
+    getShaderInfo() {
+        const shader = SHADER_OPTIONS[this.currentShader];
+        return {
+            id: this.currentShader,
+            name: shader.name,
+            description: shader.description
+        };
+    }
+
+    /**
+     * Rebuilds the WebGL program (needed after shader change).
+     */
+    rebuildProgram() {
+        // Use the base class initGLProgram which handles shader compilation
+        // The fragmentShaderSource is already updated, so this will recompile
+        this.initGLProgram();
+        log(`Shader rebuilt: ${this.currentShader}`);
     }
 
     /**
@@ -68,6 +149,9 @@ class RiemannRenderer extends FractalRenderer {
     }
 
     draw() {
+        // Auto-switch shader based on viewing region
+        this.checkAutoShaderSwitch();
+
         this.gl.useProgram(this.program);
 
         // Compute dynamic iteration count based on seriesTerms + adaptive quality adjustment
@@ -83,6 +167,37 @@ class RiemannRenderer extends FractalRenderer {
         super.draw();
     }
 
+    /**
+     * Checks if shader should be auto-switched based on current viewing region.
+     * Switches to double precision for high imaginary values (|Im(s)| > threshold).
+     */
+    checkAutoShaderSwitch() {
+        if (!this.autoShaderSwitching || this.manualShaderOverride) return;
+
+        const absImag = Math.abs(this.pan[1]);
+        const needsDoublePrecision = absImag > RIEMANN_DOUBLE_PRECISION_THRESHOLD;
+
+        if (needsDoublePrecision && this.currentShader !== 'double') {
+            log(`Auto-switching to double precision (t=${absImag.toFixed(0)})`);
+            this.setShaderInternal('double');
+        } else if (!needsDoublePrecision && this.currentShader === 'double') {
+            log(`Auto-switching back to borwein (t=${absImag.toFixed(0)})`);
+            this.setShaderInternal('borwein');
+        }
+    }
+
+    /**
+     * Internal shader switch without triggering draw (to avoid recursion).
+     * @param {string} shaderId
+     */
+    setShaderInternal(shaderId) {
+        if (!SHADER_OPTIONS[shaderId] || shaderId === this.currentShader) return;
+
+        this.currentShader = shaderId;
+        this.fragmentShaderSource = SHADER_OPTIONS[shaderId].source;
+        this.rebuildProgram();
+    }
+
     reset() {
         this.frequency = [...this.DEFAULT_FREQUENCY];
         this.phase = [...this.DEFAULT_PHASE];
@@ -91,7 +206,22 @@ class RiemannRenderer extends FractalRenderer {
         this.useAnalyticExtension = true;
         this.contourStrength = 0.15;
         this.seriesTerms = 500;
+
+        // Reset shader to default and enable auto-switching
+        this.manualShaderOverride = false;
+        if (this.currentShader !== 'borwein') {
+            this.setShaderInternal('borwein');
+        }
+
         super.reset();
+    }
+
+    /**
+     * Resets manual shader override, allowing auto-switching again.
+     * Called when navigating to presets.
+     */
+    resetShaderOverride() {
+        this.manualShaderOverride = false;
     }
 
     // region > ANIMATION METHODS
@@ -113,6 +243,9 @@ class RiemannRenderer extends FractalRenderer {
 
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
+
+        // Reset shader override to allow auto-switching during preset navigation
+        this.resetShaderOverride();
 
         const targetPan = preset.pan || this.DEFAULT_PAN;
         const targetZoom = preset.zoom || this.DEFAULT_ZOOM;

@@ -31,6 +31,7 @@ import {
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
+    toggleDoublePrecision,
     toggleHeader,
     toggleZetaPath,
     travelToPreset,
@@ -259,10 +260,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyB': // Julia legacy renderer toggle
+        case 'KeyB': // Julia legacy renderer toggle / Riemann precision toggle
             if (isJuliaMode() && DEBUG_MODE === DEBUG_LEVEL.FULL) {
                 JuliaRenderer.FF_LEGACY_JULIA_RENDERER = !JuliaRenderer.FF_LEGACY_JULIA_RENDERER
                 await switchFractalMode(FRACTAL_TYPE.JULIA);
+            } else if (isRiemannMode()) {
+                toggleDoublePrecision();
             }
             handled = true;
             break;

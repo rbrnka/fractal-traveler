@@ -26,6 +26,7 @@ import {
     DEFAULT_MANDELBROT_THEME_COLOR,
     DEFAULT_RIEMANN_THEME_COLOR,
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
+    FF_RIEMANN_SHADER_DROPDOWN,
     FRACTAL_TYPE,
     log,
     PI
@@ -135,6 +136,9 @@ let riemannControls;
 let riemannDisplayDropdown;
 let riemannDisplayToggle;
 let riemannDisplayMenu;
+let riemannShaderDropdown;
+let riemannShaderToggle;
+let riemannShaderMenu;
 let criticalLineToggle;
 let analyticExtToggle;
 let axesToggle;
@@ -155,6 +159,8 @@ let termsSlider;
 let termsValue;
 let riemannDisplayToggleHandler = null;
 let riemannDisplayDocClickHandler = null;
+let riemannShaderToggleHandler = null;
+let riemannShaderDocClickHandler = null;
 let viewInfoOverlay;
 let viewInfoTitle;
 let viewInfoValue;
@@ -576,6 +582,11 @@ export function updateInfo(force = false) {
     if (fractalApp.adaptiveQualityEnabled && fractalApp.extraIterations < 0) {
         const qualityPct = Math.round(100 + (fractalApp.extraIterations / Math.abs(fractalApp.adaptiveQualityMin)) * 100);
         text += ` <span class="middot">&middot;</span> <span class="aq-indicator">⚡${qualityPct}%</span>`;
+    }
+
+    // Show double precision indicator in Riemann mode
+    if (fractalMode === FRACTAL_TYPE.RIEMANN && fractalApp.currentShader === 'double') {
+        text += ` <span class="middot">&middot;</span> <span class="dp-indicator" title="Double precision shader active">◈DP</span>`;
     }
 
     if (fractalMode === FRACTAL_TYPE.JULIA) {
@@ -1827,6 +1838,7 @@ function initPresetsDropdown() {
         closeDivesDropdown();
         closePaletteDropdown();
         closeRiemannDisplayDropdown();
+        closeRiemannShaderDropdown();
         togglePresetsDropdown();
     });
 
@@ -1938,6 +1950,7 @@ function initFractalDropdown() {
         closeDivesDropdown();
         closePaletteDropdown();
         closeRiemannDisplayDropdown();
+        closeRiemannShaderDropdown();
         toggleFractalDropdown();
     });
 
@@ -1973,6 +1986,7 @@ function initDivesDropdown() {
         closePresetsDropdown();
         closePaletteDropdown();
         closeRiemannDisplayDropdown();
+        closeRiemannShaderDropdown();
         toggleDivesDropdown();
     });
 
@@ -2097,6 +2111,7 @@ function initPaletteDropdown() {
         closePresetsDropdown();
         closeDivesDropdown();
         closeRiemannDisplayDropdown();
+        closeRiemannShaderDropdown();
         togglePaletteDropdown();
     });
 
@@ -2127,6 +2142,49 @@ function closeRiemannDisplayDropdown() {
     }
     if (riemannDisplayToggle) {
         riemannDisplayToggle.textContent = 'Display ▾';
+    }
+}
+
+/** Toggles the Riemann shader dropdown menu */
+function toggleRiemannShaderDropdown() {
+    if (!riemannShaderMenu) return;
+    riemannShaderMenu.classList.toggle('show');
+    const isOpen = riemannShaderMenu.classList.contains('show');
+    if (riemannShaderToggle) {
+        riemannShaderToggle.textContent = isOpen ? 'Shader ▴' : 'Shader ▾';
+    }
+}
+
+/** Closes the Riemann shader dropdown menu */
+function closeRiemannShaderDropdown() {
+    if (riemannShaderMenu) {
+        riemannShaderMenu.classList.remove('show');
+    }
+    if (riemannShaderToggle) {
+        riemannShaderToggle.textContent = 'Shader ▾';
+    }
+}
+
+/** Handles shader selection */
+function handleShaderChange(shaderId) {
+    if (!fractalApp || typeof fractalApp.setShader !== 'function') return;
+
+    const success = fractalApp.setShader(shaderId);
+    if (success) {
+        // Update button states
+        const buttons = riemannShaderMenu?.querySelectorAll('.riemann-shader-option');
+        buttons?.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.shader === shaderId);
+        });
+
+        // Update toggle button text with current shader name
+        const shaderInfo = fractalApp.getShaderInfo();
+        if (riemannShaderToggle && shaderInfo) {
+            riemannShaderToggle.textContent = `${shaderInfo.name} ▾`;
+        }
+
+        closeRiemannShaderDropdown();
+        log(`Switched to shader: ${shaderId}`);
     }
 }
 
@@ -2382,6 +2440,7 @@ function initRiemannControls() {
             closePresetsDropdown();
             closeDivesDropdown();
             closePaletteDropdown();
+            closeRiemannShaderDropdown();
             toggleRiemannDisplayDropdown();
         };
 
@@ -2393,6 +2452,48 @@ function initRiemannControls() {
 
         riemannDisplayToggle.addEventListener('click', riemannDisplayToggleHandler);
         document.addEventListener('click', riemannDisplayDocClickHandler);
+    }
+
+    // Initialize Riemann shader dropdown (only if feature flag is enabled)
+    if (FF_RIEMANN_SHADER_DROPDOWN && riemannShaderDropdown) {
+        riemannShaderDropdown.classList.add('visible');
+
+        // Set initial button text to current shader
+        const shaderInfo = fractalApp.getShaderInfo();
+        if (riemannShaderToggle && shaderInfo) {
+            riemannShaderToggle.textContent = `${shaderInfo.name} ▾`;
+        }
+
+        // Mark the active shader button
+        const buttons = riemannShaderMenu?.querySelectorAll('.riemann-shader-option');
+        buttons?.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.shader === fractalApp.currentShader);
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                handleShaderChange(btn.dataset.shader);
+            });
+        });
+
+        if (riemannShaderToggle && riemannShaderMenu) {
+            riemannShaderToggleHandler = (e) => {
+                e.stopPropagation();
+                closeFractalDropdown();
+                closePresetsDropdown();
+                closeDivesDropdown();
+                closePaletteDropdown();
+                closeRiemannDisplayDropdown();
+                toggleRiemannShaderDropdown();
+            };
+
+            riemannShaderDocClickHandler = (e) => {
+                if (!riemannShaderDropdown?.contains(e.target)) {
+                    closeRiemannShaderDropdown();
+                }
+            };
+
+            riemannShaderToggle.addEventListener('click', riemannShaderToggleHandler);
+            document.addEventListener('click', riemannShaderDocClickHandler);
+        }
     }
 
     // Initialize frequency sliders
@@ -2449,6 +2550,11 @@ function destroyRiemannControls() {
         riemannDisplayDropdown.classList.remove('visible');
     }
 
+    // Hide the shader dropdown in the main toolbar
+    if (riemannShaderDropdown) {
+        riemannShaderDropdown.classList.remove('visible');
+    }
+
     // Clear draw callback
     if (fractalApp) {
         fractalApp.onDrawCallback = null;
@@ -2478,8 +2584,19 @@ function destroyRiemannControls() {
         riemannDisplayDocClickHandler = null;
     }
 
-    // Close dropdown and hide overlays when leaving Riemann mode
+    // Remove shader dropdown handlers
+    if (riemannShaderToggle && riemannShaderToggleHandler) {
+        riemannShaderToggle.removeEventListener('click', riemannShaderToggleHandler);
+        riemannShaderToggleHandler = null;
+    }
+    if (riemannShaderDocClickHandler) {
+        document.removeEventListener('click', riemannShaderDocClickHandler);
+        riemannShaderDocClickHandler = null;
+    }
+
+    // Close dropdowns and hide overlays when leaving Riemann mode
     closeRiemannDisplayDropdown();
+    closeRiemannShaderDropdown();
     hideAxes();
     zetaPathOverlay.hide();
     if (zetaPathToggle) {
@@ -2572,6 +2689,19 @@ export function toggleZetaPath() {
     if (zetaPathToggle) {
         zetaPathToggle.classList.toggle('active', visible);
     }
+}
+
+/**
+ * Toggles between standard (borwein) and double precision shader in Riemann mode.
+ * Sets manual override to prevent auto-switching.
+ */
+export function toggleDoublePrecision() {
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+    if (!fractalApp || typeof fractalApp.setShader !== 'function') return;
+
+    const newShader = fractalApp.currentShader === 'double' ? 'borwein' : 'double';
+    fractalApp.setShader(newShader, true); // true = manual override
+    log(`Double precision: ${newShader === 'double' ? 'ON' : 'OFF'}`);
 }
 
 /**
@@ -3258,6 +3388,9 @@ function bindHTMLElements() {
     riemannDisplayDropdown = document.getElementById('riemann-display-dropdown');
     riemannDisplayToggle = document.getElementById('riemann-display-toggle');
     riemannDisplayMenu = document.getElementById('riemann-display-menu');
+    riemannShaderDropdown = document.getElementById('riemann-shader-dropdown');
+    riemannShaderToggle = document.getElementById('riemann-shader-toggle');
+    riemannShaderMenu = document.getElementById('riemann-shader-menu');
     criticalLineToggle = document.getElementById('criticalLineToggle');
     analyticExtToggle = document.getElementById('analyticExtToggle');
     axesToggle = document.getElementById('axesToggle');

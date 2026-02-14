@@ -89,6 +89,20 @@ export const FF_ADAPTIVE_QUALITY = false;
 export const FF_RIEMANN_TOUR_MUSIC = true;
 
 /**
+ * Shows the manual shader selection dropdown in Riemann mode.
+ * When disabled, shader switching happens automatically based on viewing region.
+ * @type {boolean}
+ */
+export const FF_RIEMANN_SHADER_DROPDOWN = false;
+
+/**
+ * Imaginary value (t) threshold above which the double-precision shader is used.
+ * At t > 1000, regular float precision starts degrading noticeably.
+ * @type {number}
+ */
+export const RIEMANN_DOUBLE_PRECISION_THRESHOLD = 1000;
+
+/**
  * GPU time threshold in ms above which quality will be reduced.
  * @default 40 ms (~25 FPS).
  * @type {number}

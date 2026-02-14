@@ -110,6 +110,15 @@
                             <button type="button" id="zetaPathToggle" class="riemann-option" title="Show ζ(½+it) spiral (Z)">ζ-Path</button>
                         </div>
                     </div>
+                    <div id="riemann-shader-dropdown" class="dropdown">
+                        <button type="button" id="riemann-shader-toggle" class="dropdown-toggle" title="Shader Algorithm">Shader &#x25BE;</button>
+                        <div id="riemann-shader-menu" class="dropdown-menu">
+                            <button type="button" data-shader="borwein" class="riemann-shader-option active" title="Euler-accelerated convergence">Borwein</button>
+                            <button type="button" data-shader="siegel" class="riemann-shader-option" title="Optimized for critical line">Riemann-Siegel</button>
+                            <button type="button" data-shader="double" class="riemann-shader-option" title="High accuracy for large t (slower)">Double Precision</button>
+                            <button type="button" data-shader="default" class="riemann-shader-option" title="Dirichlet eta series">Default (Eta)</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
