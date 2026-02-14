@@ -207,6 +207,11 @@ export const DEFAULT_MANDELBROT_THEME_COLOR = [95 / 255, 134 / 255, 56 / 255];
  */
 export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(DEFAULT_JULIA_PALETTE.keyColor);
 // ---------------------------------------------------------------------------------------------------------------------
+/** Default color used for Riemann mode UI theming (light blue #4FC3F7)
+ * @type {PALETTE}
+ */
+export const DEFAULT_RIEMANN_THEME_COLOR = hexToRGBArray('#4FC3F7');
+// ---------------------------------------------------------------------------------------------------------------------
 /**
  * This is to allow switching between two precisions as the embedded PI constant is too accurate, which is not needed
  * in many cases (rotations etc.)
@@ -233,7 +238,7 @@ export const APP = {
     //@formatter:off
     /** App version — injected from package.json by webpack DefinePlugin */
     version: __APP_VERSION__,
-    prefix: 'Synaptory Fractal ', // Keep the space!
+    prefix: 'Synaptory Chaos ', // Keep the trailing space!
     suffixes: [
         "Traveler", "Atlas", "Lens", "Scout", "Studio", "Lab", "Viewer", "Explorer", "Engine", "Navigator", "Surveyor",
         "Seeker", "Wanderer", "Voyager", "Drifter", "Portal", "Gateway", "Microscope", "Telescope", "Prism", "Cockpit",
