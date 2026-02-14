@@ -203,9 +203,15 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyZ': // Switch between fractals with constant p/c
+        case 'KeyZ': // Switch between fractals with constant p/c OR toggle zeta path
+            // In Riemann mode, Z toggles zeta path
+            if (isRiemannMode()) {
+                toggleZetaPath();
+                handled = true;
+                break;
+            }
+            // In Mandelbrot/Julia mode, Z switches between them with persistence
             if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
-
             await switchFractalTypeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
             handled = true;
             break;
@@ -291,10 +297,6 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyZ': // Toggle zeta path (Riemann mode)
-            toggleZetaPath();
-            handled = true;
-            break;
 
         case 'KeyV': // Rossler (temporarily)
             if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
