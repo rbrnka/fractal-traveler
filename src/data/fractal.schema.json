@@ -224,6 +224,18 @@
         "description": {
           "type": "string",
           "description": "Educational description shown in the tour overlay."
+        },
+        "points": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["re", "im"],
+            "properties": {
+              "re": { "type": "number", "description": "Real part of the point." },
+              "im": { "type": "number", "description": "Imaginary part of the point." }
+            }
+          },
+          "description": "Additional points to mark, e.g., saddle point pairs."
         }
       }
     },
@@ -244,6 +256,14 @@
         "theme": {
           "$ref": "#/definitions/RGB3",
           "description": "RGB multipliers for domain coloring."
+        },
+        "frequency": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave frequencies for each RGB channel."
+        },
+        "phase": {
+          "$ref": "#/definitions/RGB3",
+          "description": "Sine wave phase offsets for each RGB channel."
         }
       }
     },

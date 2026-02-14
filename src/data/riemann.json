@@ -218,10 +218,10 @@
     {
       "id": "Lehmer's Phenomenon",
       "type": "nontrivial",
-      "pan": [0.5, 7005.085],
-      "zoom": 0.25,
+      "pan": [0.5, 7007],
+      "zoom": 5,
       "paletteId": "Default",
-      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038. ⚠️ Beyond shader precision limits—rendering is approximate. True visualization requires extended precision arithmetic."
+      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038."
     }
   ],
   "palettes": [
@@ -229,6 +229,6 @@
     {"id": "Twilight", "keyColor": "#7C4DFF", "theme": [0.7, 0.5, 1.4]},
     {"id": "Thermal", "keyColor": "#FF6D00", "theme": [1.5, 0.8, 0.3]},
     {"id": "Arctic", "keyColor": "#00E5FF", "theme": [0.3, 1.2, 1.5]},
-    {"id": "Monochrome", "keyColor": "#BDBDBD", "theme": [1.0, 1.0, 1.0]}
+    {"id": "Monochrome", "keyColor": "#BDBDBD", "theme": [1.0, 1.0, 1.0], "frequency": [3.0, 3.0, 3.0], "phase": [0, 0, 0]}
   ]
 }
