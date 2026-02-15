@@ -7,7 +7,7 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, hideViewInfo, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
+import {getCurrentPaletteId, hideViewInfo, isJuliaMode, isMandelbrotMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
@@ -405,7 +405,7 @@ function handleMouseDown(event) {
         event.preventDefault();
 
         // Only show Julia preview when in Mandelbrot mode
-        if (!isJuliaMode()) {
+        if (isMandelbrotMode()) {
             isMiddleButtonHeld = true;
 
             // Get fractal coordinates at cursor position
@@ -529,7 +529,7 @@ function handleMouseMove(event) {
     }
 
     // Middle button held - update Julia preview
-    if (event.buttons === 4 && isMiddleButtonHeld && !isJuliaMode()) {
+    if (event.buttons === 4 && isMiddleButtonHeld && isMandelbrotMode()) {
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;

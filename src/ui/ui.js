@@ -328,6 +328,7 @@ export async function switchFractalTypeWithPersistence(targetType) {
 
 export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
 export const isRiemannMode = () => fractalMode === FRACTAL_TYPE.RIEMANN;
+export const isMandelbrotMode = () => fractalMode === FRACTAL_TYPE.MANDELBROT;
 
 /**
  * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
