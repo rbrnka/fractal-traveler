@@ -115,6 +115,7 @@ let editCoordsError;
 let editCoordsApplyBtn;
 let editCoordsCancelBtn;
 let juliaCInputs;
+let rotationInputs;
 let presetsToggle;
 let presetsMenu;
 let divesToggle;
@@ -1325,6 +1326,11 @@ export function showEditCoordsDialog() {
         juliaCInputs.style.display = isJuliaMode() ? 'contents' : 'none';
     }
 
+    // Hide rotation inputs in Riemann mode (rotation not supported)
+    if (rotationInputs) {
+        rotationInputs.style.display = isRiemannMode() ? 'none' : 'contents';
+    }
+
     // Populate individual fields with current values (shortened precision)
     const viewPanX = ddValue(fractalApp.panDD.x);
     const viewPanY = ddValue(fractalApp.panDD.y);
@@ -1332,7 +1338,11 @@ export function showEditCoordsDialog() {
     editPanXInput.value = viewPanX.toFixed(8);
     editPanYInput.value = viewPanY.toFixed(8);
     editZoomInput.value = fractalApp.zoom.toExponential(6);
-    editRotationInput.value = (fractalApp.rotation * 180 / Math.PI).toFixed(2);
+
+    // Only set rotation value when not in Riemann mode
+    if (!isRiemannMode()) {
+        editRotationInput.value = (fractalApp.rotation * 180 / Math.PI).toFixed(2);
+    }
 
     if (isJuliaMode()) {
         editCxInput.value = fractalApp.c[0].toFixed(8);
@@ -1389,8 +1399,11 @@ function parseEditCoordsInput() {
             if (parsed.zoom <= 0) {
                 return {error: 'JSON "zoom" must be positive'};
             }
-            if (typeof parsed.rotation !== 'number' || isNaN(parsed.rotation)) {
-                return {error: 'JSON "rotation" must be a valid number (in radians)'};
+            // Rotation is only required in non-Riemann modes
+            if (!isRiemannMode()) {
+                if (typeof parsed.rotation !== 'number' || isNaN(parsed.rotation)) {
+                    return {error: 'JSON "rotation" must be a valid number (in radians)'};
+                }
             }
 
             // Validate Julia C if in Julia mode
@@ -1410,7 +1423,7 @@ function parseEditCoordsInput() {
             const result = {
                 pan: [parsed.pan[0], parsed.pan[1]],
                 zoom: parsed.zoom,
-                rotation: parsed.rotation
+                rotation: isRiemannMode() ? 0 : parsed.rotation
             };
 
             // Add optional fields if present and non-empty
@@ -1438,19 +1451,21 @@ function parseEditCoordsInput() {
     if (!panXStr) return {error: 'Pan X is required'};
     if (!panYStr) return {error: 'Pan Y is required'};
     if (!zoomStr) return {error: 'Zoom is required'};
-    if (!rotationStr) return {error: 'Rotation is required'};
+    // Rotation is only required in non-Riemann modes
+    if (!isRiemannMode() && !rotationStr) return {error: 'Rotation is required'};
 
     const panX = parseFloat(panXStr);
     const panY = parseFloat(panYStr);
     const zoom = parseFloat(zoomStr);
-    const rotationDeg = parseFloat(rotationStr);
+    // Default to 0 rotation in Riemann mode (rotation not supported)
+    const rotationDeg = isRiemannMode() ? 0 : parseFloat(rotationStr);
 
     // Validate numbers
     if (isNaN(panX)) return {error: `Pan X "${panXStr}" is not a valid number`};
     if (isNaN(panY)) return {error: `Pan Y "${panYStr}" is not a valid number`};
     if (isNaN(zoom)) return {error: `Zoom "${zoomStr}" is not a valid number`};
     if (zoom <= 0) return {error: 'Zoom must be a positive number'};
-    if (isNaN(rotationDeg)) return {error: `Rotation "${rotationStr}" is not a valid number`};
+    if (!isRiemannMode() && isNaN(rotationDeg)) return {error: `Rotation "${rotationStr}" is not a valid number`};
 
     const result = {
         pan: [panX, panY],
@@ -3384,6 +3399,7 @@ function bindHTMLElements() {
     editCoordsApplyBtn = document.getElementById('editCoordsApply');
     editCoordsCancelBtn = document.getElementById('editCoordsCancel');
     juliaCInputs = document.getElementById('juliaCInputs');
+    rotationInputs = document.getElementById('rotationInputs');
     // Riemann Controls elements
     riemannControls = document.getElementById('riemannControls');
     riemannDisplayDropdown = document.getElementById('riemann-display-dropdown');

@@ -1321,7 +1321,8 @@ dialog.dialog-overlay::backdrop {
     margin-bottom: 16px;
 }
 
-#juliaCInputs {
+#juliaCInputs,
+#rotationInputs {
     display: contents;
 }
 

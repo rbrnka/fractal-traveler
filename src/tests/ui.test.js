@@ -141,6 +141,15 @@ describe('UI Module', () => {
         test.todo('validates numeric input');
         test.todo('marks invalid fields');
         test.todo('applyEditedCoords animates to new coordinates');
+
+        describe('Rotation in Riemann mode', () => {
+            test.todo('hides rotation inputs in Riemann mode');
+            test.todo('shows rotation inputs in Mandelbrot mode');
+            test.todo('shows rotation inputs in Julia mode');
+            test.todo('does not require rotation field in Riemann mode');
+            test.todo('defaults rotation to 0 in Riemann mode when parsing');
+            test.todo('does not require rotation in JSON input for Riemann mode');
+        });
     });
 
     describe('copyInfoToClipboard', () => {
