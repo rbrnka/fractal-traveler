@@ -121,8 +121,13 @@ function getTickSpacing(zoom) {
  * @returns {string}
  */
 function formatAxisNumber(n) {
-    if (Number.isInteger(n)) return n.toString();
-    if (Math.abs(n) < 0.01 || Math.abs(n) >= 1000) {
+    // Check if effectively an integer (within floating-point tolerance)
+    const rounded = Math.round(n);
+    if (Math.abs(n - rounded) < 1e-9) {
+        return rounded.toString();
+    }
+    // Use exponential only for very small or very large non-integers
+    if (Math.abs(n) < 0.01 || Math.abs(n) >= 100000) {
         return n.toExponential(1);
     }
     return n.toFixed(2).replace(/\.?0+$/, '');
