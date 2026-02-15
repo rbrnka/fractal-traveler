@@ -321,6 +321,12 @@ button:focus-visible {
     }
 }
 
+/* Presets/Views dropdown */
+#presets-dropdown .dropdown-menu {
+    min-width: 280px;
+    max-width: 400px;
+}
+
 /* Palette dropdown */
 #palette-dropdown .dropdown-menu {
     min-width: 120px;
