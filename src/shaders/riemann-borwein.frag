@@ -209,11 +209,30 @@ vec2 analyticZeta(vec2 s) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main zeta
+// Main zeta - respects analytic extension toggle
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Basic zeta series (only converges for Re(s) > 1)
+vec2 basicZeta(vec2 s) {
+    vec2 sum = vec2(0.0);
+    for (int n = 1; n <= MAX_TERMS; ++n) {
+        if (float(n) >= u_iterations) break;
+        float nf = float(n);
+        float scale = 1.0 / pow(nf, s.x);
+        float angle = -s.y * log(nf);
+        vec2 term = vec2(scale * cos(angle), scale * sin(angle));
+        if (length(term) < 1e-8) break;
+        sum += term;
+    }
+    return sum;
+}
+
 vec2 zeta(vec2 s) {
-    return analyticZeta(s);
+    if (u_useAnalyticExtension) {
+        return analyticZeta(s);
+    } else {
+        return basicZeta(s);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

@@ -2647,12 +2647,15 @@ function handleCriticalLineToggle() {
 }
 
 function handleAnalyticExtToggle() {
-    if (fractalApp.useAnalyticExtension !== undefined) {
-        fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
+    if (fractalMode !== FRACTAL_TYPE.RIEMANN) return;
+    if (fractalApp.useAnalyticExtension === undefined) return;
+
+    fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
+    if (analyticExtToggle) {
         analyticExtToggle.classList.toggle('active', fractalApp.useAnalyticExtension);
-        log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
-        fractalApp.draw();
     }
+    log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
+    fractalApp.draw();
 }
 
 function handleAxesToggle() {

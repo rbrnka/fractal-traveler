@@ -501,7 +501,24 @@ vec2 c_logsin(vec2 z) {
 // Main zeta function - uses double-single RS on critical line
 // ─────────────────────────────────────────────────────────────────────────────
 
-vec2 zeta(vec2 s) {
+// Basic zeta series (only converges for Re(s) > 1)
+vec2 basicZeta(vec2 s) {
+    vec2 sum = vec2(0.0);
+    int terms = int(u_iterations);
+    for (int n = 1; n <= MAX_TERMS; ++n) {
+        if (n >= terms) break;
+        float nf = float(n);
+        float scale = 1.0 / pow(nf, s.x);
+        float angle = -s.y * log(nf);
+        vec2 term = vec2(scale * cos(angle), scale * sin(angle));
+        if (length(term) < 1e-8) break;
+        sum += term;
+    }
+    return sum;
+}
+
+// Full analytic zeta with double-precision Riemann-Siegel optimization
+vec2 analyticZeta(vec2 s) {
     int terms = int(u_iterations);
     float distFromCritical = abs(s.x - 0.5);
 
@@ -541,6 +558,14 @@ vec2 zeta(vec2 s) {
 
     vec2 logResult = logTwoS + logPiSm1 + logSinTerm + logGammaTerm + logZeta1s;
     return c_exp(logResult);
+}
+
+vec2 zeta(vec2 s) {
+    if (u_useAnalyticExtension) {
+        return analyticZeta(s);
+    } else {
+        return basicZeta(s);
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

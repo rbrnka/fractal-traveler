@@ -275,8 +275,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyM':
-            if (fractalApp.useAnalyticExtension !== undefined) {
+        case 'KeyM': // Toggle analytic extension (Riemann mode)
+            if (isRiemannMode() && fractalApp.useAnalyticExtension !== undefined) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
@@ -285,8 +285,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'Comma':
-            if (fractalApp.showCriticalLine !== undefined) {
+        case 'Comma': // Toggle critical line (Riemann mode)
+            if (isRiemannMode() && fractalApp.showCriticalLine !== undefined) {
                 fractalApp.showCriticalLine = !fractalApp.showCriticalLine;
                 log(`Critical line: ${fractalApp.showCriticalLine ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
