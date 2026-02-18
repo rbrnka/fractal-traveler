@@ -101,10 +101,10 @@ function draw() {
     const numPoints = Math.min(5000, Math.max(500, Math.floor(tRange * 20)));
     const dt = (tMax - tMin) / numPoints;
 
-    const terms = renderer.seriesTerms || 100;
+    const terms = renderer.seriesTerms || 500;
 
     // Draw the spiral path
-    ctx.strokeStyle = 'rgba(0, 255, 200, 0.8)';
+    ctx.strokeStyle = 'rgba(0, 255, 0, 0.8)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
 

@@ -100,7 +100,7 @@ html, body {
     user-select: none;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     top: -320px;
-    transition: 0.1s ease-in;
+    transition: height 0.1s ease-out;
 }
 
 #headerContainer.ready {
@@ -110,6 +110,11 @@ html, body {
 #headerContainer.minimized {
     height: 30px;
     overflow: hidden;
+}
+
+#headerContainer.minimized #controlArea {
+    pointer-events: none;
+    opacity: 0;
 }
 
 /* ========================================
@@ -135,7 +140,7 @@ h1 {
    ======================================== */
 
 #controlArea {
-    background: var(--bg-color);
+    /*background: var(--bg-color);*/
     border-radius: 10px;
     width: fit-content;
     position: relative;
@@ -146,6 +151,9 @@ h1 {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    transition: opacity 0.1s ease-out;
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 15px rgba(0,0,0,.1);
 }
 
 .tagline {
@@ -234,6 +242,15 @@ button.active {
 button:focus-visible {
     background-image: linear-gradient(#222, #666);
     text-shadow: 0 0 4px var(--accent-color);
+}
+
+/* Hotkey hint - highlights the first letter in button labels */
+.button-label {
+    display: inline;
+}
+
+.hotkey-hint {
+    color: var(--accent-color);
 }
 
 #persistSwitch {
@@ -354,11 +371,14 @@ button:focus-visible {
 
 .color-cycle-swatch {
     background: conic-gradient(from 0deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b);
-    animation: color-cycle-spin 3s linear infinite;
 }
 
 #palette-cycle.active {
     color: var(--accent-color);
+}
+
+#palette-cycle.active .color-cycle-swatch {
+    animation: color-cycle-spin 3s linear infinite;
 }
 
 /* Fractal mode dropdown */
@@ -481,6 +501,19 @@ button.dive.has-palette.active {
     gap: 5px;
     margin: 5px 0 10px;
     display: none;
+}
+
+/* Mandelbrot Controls */
+#mandelbrotControls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0 10px;
+}
+
+#mandelbrotControls .slider-container {
+    min-width: 280px;
 }
 
 /* Riemann Controls */
@@ -651,7 +684,6 @@ p {
 }
 
 span {
-    font-size: 12px;
     color: #fff;
     text-shadow: 0 0 10px #000;
 }

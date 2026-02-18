@@ -96,6 +96,27 @@ export const FF_RIEMANN_TOUR_MUSIC = true;
 export const FF_RIEMANN_SHADER_DROPDOWN = false;
 
 /**
+ * Shows the RGB frequency and contour strength sliders in Riemann display dropdown.
+ * These are advanced controls for fine-tuning the domain coloring visualization.
+ * @type {boolean}
+ */
+export const FF_RIEMANN_COLOR_SLIDERS = false;
+
+/**
+ * Experimental: Highlights the first letter of all buttons in the header panel.
+ * The first letter is styled with the accent color to indicate keyboard shortcuts.
+ * @type {boolean}
+ */
+export const FF_HOTKEY_HINTS = true;
+
+/**
+ * When enabled, the app name will be randomly generated based on APP.suffixes
+ * @type {boolean}
+ */
+export const FF_RANDOM_APP_NAME = true;
+
+// ---------------------------------------------------------------------------------------------------------------------
+/**
  * Imaginary value (t) threshold above which the double-precision shader is used.
  * At t > 1000, regular float precision starts degrading noticeably.
  * @type {number}

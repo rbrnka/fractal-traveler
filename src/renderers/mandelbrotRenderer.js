@@ -626,9 +626,10 @@ class MandelbrotRenderer extends FractalRenderer {
      * @param {Function} [onPresetComplete] Optional callback when each preset completes
      * @param {Array<PRESET>} [userPresets] Optional array of user-saved presets to include in the demo
      * @param {Function} [onPresetReached] Optional callback(preset, index, total) when preset is reached
+     * @param {Function} [onBeforeTravel] Optional callback called before each travel starts (to hide overlays)
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null, onBeforeTravel = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -673,11 +674,16 @@ class MandelbrotRenderer extends FractalRenderer {
                 break;
             }
 
+            // Hide overlay before starting travel
+            if (onBeforeTravel) {
+                onBeforeTravel();
+            }
+
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
             await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
 
-            // Show overlay at the end of animation
+            // Show overlay at the end of animation (during pause period)
             if (onPresetReached) {
                 onPresetReached(currentPreset, demoIndex, allPresets.length);
             }

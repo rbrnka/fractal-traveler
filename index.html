@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-    <title>Synaptory Chaos Explorer - Mandelbrot & Julia Explorer</title>
+    <title>Synaptory Chaos Explorer - Fractals, Attractors, Math Functions</title>
     <meta name="author" content="Radim Brnka">
-    <meta name="description" content="A GPU-accelerated web application for exploring the Mandelbrot set and Julia sets in real-time, allowing smoothtravel through the infinite complexity of fractal geometry.">
-    <meta name="keywords" content="fractal, Mandelbrot set, Julia set, fractal explorer, fractal zoomer, GPU rendering, WebGL, interactive fractal, real-time fractal, fractal art, mathematics visualization">
+    <meta name="description" content="A GPU-accelerated web application for exploring fractals, attractors and mathematical functions in real-time, allowing smooth travel through the infinite complexity of chaos geometry.">
+    <meta name="keywords" content="fractal, Mandelbrot set, Julia set, Riemann zeta, Rössler attractor, fractal explorer, fractal zoomer, GPU rendering, WebGL, interactive fractal, real-time fractal, fractal art, mathematics visualization, geometry, dimension">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://fractal.brnka.com/">
 
     <!-- Open Graph -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://fractal.brnka.com/">
-    <meta property="og:site_name" content="Synaptory Fractal Traveler">
-    <meta property="og:title" content="Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets">
-    <meta property="og:description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through stunning fractal landscapes.">
+    <meta property="og:site_name" content="Synaptory Chaos Explorer">
+    <meta property="og:title" content="Synaptory Chaos Explorer - Explore Fractals and other chaotic structures.">
+    <meta property="og:description" content="Explore the infinite beauty of Mandelbrot and Julia fractals, Riemann Zeta function or Rössler attractor in real-time with GPU-accelerated rendering. Zoom, pan, and rotate through stunning geometrical landscapes.">
     <meta property="og:image" content="https://fractal.brnka.com/img/og_icon.png">
-    <meta property="og:image:alt" content="Synaptory Fractal Traveler - Julia set fractal rendering">
+    <meta property="og:image:alt" content="Synaptory Chaos Explorer - Julia set display">
     <meta property="og:locale" content="en_US">
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Synaptory Fractal Traveler - Explore Mandelbrot & Julia Sets">
-    <meta name="twitter:description" content="Explore the infinite beauty of Mandelbrot and Julia fractals in real-time with GPU-accelerated rendering.">
+    <meta name="twitter:title" content="Synaptory Chaos Explore - Explore Fractals and other chaotic structures.">
+    <meta name="twitter:description" content="xplore the infinite beauty of Mandelbrot and Julia fractals, Riemann Zeta function or Rössler attractor in real-time with GPU-accelerated rendering.">
     <meta name="twitter:image" content="https://fractal.brnka.com/img/og_icon.png">
-    <meta name="twitter:image:alt" content="Synaptory Fractal Traveler - Julia set fractal rendering">
+    <meta name="twitter:image:alt" content="Synaptory Fractal Traveler - Julia set display">
 
     <meta name="theme-color" content="#000000">
     <link rel="icon" href="img/icon.png" type="image/png">
@@ -41,9 +41,9 @@
     {
         "@context": "https://schema.org",
         "@type": "WebApplication",
-        "name": "Synaptory Fractal Traveler",
+        "name": "Synaptory Chaos Explorer",
         "url": "https://fractal.brnka.com/",
-        "description": "GPU-accelerated real-time fractal explorer for Mandelbrot and Julia sets. Features deep zoom, smooth animations, curated presets, and interactive touch/mouse controls.",
+        "description": "GPU-accelerated real-time chaos explorer of Riemann Zeta function, Mandelbrot/Julia sets and Rössler attractor. Features deep zoom, smooth animations, curated tours, and interactive touch/mouse controls.",
         "applicationCategory": "EducationalApplication",
         "operatingSystem": "Any",
         "browserRequirements": "Requires WebGL support",
@@ -79,18 +79,18 @@
         <h1 id="logo">Synaptory Chaos&nbsp;Explorer</h1>
 
         <nav id="controlArea" aria-label="Fractal controls">
-            <p class="tagline">Developed for interactive exploration and learning.</p>
+            <p class="tagline">Explore the most intriguing borders of mathematics and the nature.</p>
 
             <div class="control-row" id="presets-dives">
                 <div class="button-group">
                     <div id="fractal-dropdown" class="dropdown">
-                        <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Mandelbrot &#x25BE;</button>
+                        <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Fractal &#x25BE;</button>
                         <div id="fractal-modes" class="dropdown-menu"></div>
                     </div>
                     <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings (Y)">&hArr;</button>
 
                     <div id="presets-dropdown" class="dropdown">
-                        <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Fractal Locations">View &#x25BE;</button>
+                        <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Locations">View &#x25BE;</button>
                         <div id="presets" class="dropdown-menu"></div>
                     </div>
                     <div id="dives-dropdown" class="dropdown">
@@ -98,16 +98,16 @@
                         <div id="dives" class="dropdown-menu"></div>
                     </div>
                     <div id="palette-dropdown" class="dropdown">
-                        <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (T)">Palette &#x25BE;</button>
+                        <button type="button" id="palette-toggle" class="dropdown-toggle" title="Change Color Palette (P)" >Palette &#x25BE;</button>
                         <div id="palettes" class="dropdown-menu"></div>
                     </div>
                     <div id="riemann-display-dropdown" class="dropdown">
                         <button type="button" id="riemann-display-toggle" class="dropdown-toggle" title="Display Options">Display &#x25BE;</button>
                         <div id="riemann-display-menu" class="dropdown-menu">
                             <button type="button" id="criticalLineToggle" class="riemann-option active" title="Critical Line (,)">Critical Line</button>
-                            <button type="button" id="analyticExtToggle" class="riemann-option active" title="Analytic Continuation (M)">Analytic Cont.</button>
-                            <button type="button" id="axesToggle" class="riemann-option" title="Show/Hide Axes (N)">Axes</button>
-                            <button type="button" id="zetaPathToggle" class="riemann-option" title="Show ζ(½+it) spiral (Z)">ζ-Path</button>
+                            <button type="button" id="analyticExtToggle" class="riemann-option active" title="Analytic Continuation (M)" >Analytic Cont.</button>
+                            <button type="button" id="axesToggle" class="riemann-option" title="Show/Hide Axes (N)" >Axes</button>
+                            <button type="button" id="zetaPathToggle" class="riemann-option" title="Show ζ(½+it) spiral (Z)" >ζ-Path</button>
                         </div>
                     </div>
                     <div id="riemann-shader-dropdown" class="dropdown">
@@ -119,6 +119,15 @@
                             <button type="button" data-shader="default" class="riemann-shader-option" title="Dirichlet eta series">Default (Eta)</button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Mandelbrot Controls -->
+            <div id="mandelbrotControls">
+                <div class="slider-container">
+                    <label for="iterationsSlider" title="Extra iterations (detail level)">Iterations:</label>
+                    <input type="range" id="iterationsSlider" class="slider" min="-1500" max="1500" step="50" value="0">
+                    <output class="sliderValue" id="iterationsValue">0</output>
                 </div>
             </div>
 
@@ -137,25 +146,27 @@
 
             <!-- Riemann Controls -->
             <div id="riemannControls">
-                <div class="slider-container">
-                    <label for="freqRSlider">R:</label>
-                    <input type="range" id="freqRSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
-                    <output class="sliderValue" id="freqRValue">1.0</output>
-                </div>
-                <div class="slider-container">
-                    <label for="freqGSlider">G:</label>
-                    <input type="range" id="freqGSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
-                    <output class="sliderValue" id="freqGValue">1.0</output>
-                </div>
-                <div class="slider-container">
-                    <label for="freqBSlider">B:</label>
-                    <input type="range" id="freqBSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
-                    <output class="sliderValue" id="freqBValue">1.0</output>
-                </div>
-                <div class="slider-container">
-                    <label for="contourSlider" title="Grid contour visibility">Contour:</label>
-                    <input type="range" id="contourSlider" class="slider" min="0" max="0.5" step="0.01" value="0.15">
-                    <output class="sliderValue" id="contourValue">0.15</output>
+                <div id="riemannColorSliders">
+                    <div class="slider-container">
+                        <label for="freqRSlider">R:</label>
+                        <input type="range" id="freqRSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                        <output class="sliderValue" id="freqRValue">1.0</output>
+                    </div>
+                    <div class="slider-container">
+                        <label for="freqGSlider">G:</label>
+                        <input type="range" id="freqGSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                        <output class="sliderValue" id="freqGValue">1.0</output>
+                    </div>
+                    <div class="slider-container">
+                        <label for="freqBSlider">B:</label>
+                        <input type="range" id="freqBSlider" class="slider" min="0.1" max="5" step="0.1" value="1.0">
+                        <output class="sliderValue" id="freqBValue">1.0</output>
+                    </div>
+                    <div class="slider-container">
+                        <label for="contourSlider" title="Grid contour visibility">Contour:</label>
+                        <input type="range" id="contourSlider" class="slider" min="0" max="0.5" step="0.01" value="0.15">
+                        <output class="sliderValue" id="contourValue">0.15</output>
+                    </div>
                 </div>
                 <div class="slider-container">
                     <label for="termsSlider" title="Series terms (mathematical precision)">Terms:</label>
@@ -205,10 +216,10 @@
 
             <div class="control-row" id="controlButtons">
                 <div class="button-group">
-                    <button type="button" id="demo" title="Start/Stop Tour (D)">Tour</button>
-                    <button type="button" id="screenshot" title="Save Image (Shift+S)">Capture</button>
-                    <button type="button" id="saveView" title="Save current view locally (Alt+S)">Save</button>
-                    <button type="button" id="reset" title="Reset the view (Shift+R)">Reset</button>
+                    <button type="button" id="demo" title="Start/Stop Tour (T)" >Tour</button>
+                    <button type="button" id="screenshot" title="Capture Image (C)" >Capture</button>
+                    <button type="button" id="saveView" title="Save current view locally (S)" >Save</button>
+                    <button type="button" id="reset" title="Reset the view (Shift+R)" >Reset</button>
                 </div>
             </div>
         </nav>
@@ -244,11 +255,11 @@
             </span>&nbsp;<span class="middot">&middot;</span>
             <a target="_blank" rel="noopener" title="Synaptory blog: Unmasking Chaos" href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
             <span class="middot">&middot;</span>
-            <a title="Synaptory Fractal Traveler Gallery" href="https://fractal.brnka.com/gallery/">Gallery</a>
+            <a title="Synaptory Chaos Explorer Gallery" href="https://fractal.brnka.com/gallery/">Gallery</a>
             <span class="middot">&middot;</span>
             <a id="versionLink" target="_blank" rel="noopener" title="GitHub repo" href="https://github.com/rbrnka/fractal-traveler">v2.1</a>
             <span class="middot">&middot;</span>
-            <span id="copy">&copy; 2025-2026</span> <a target="_blank" rel="noopener" title="Fractal Gallery" href="https://brnka.com">R. Brnka</a>
+            <span id="copy">&copy; 2025-2026</span> <a target="_blank" rel="noopener" title="Fractal Gallery" href="https://brnka.com">Radim Brnka</a>
         </footer>
     </header>
 
@@ -304,22 +315,23 @@
     <canvas id="zetaPathCanvas" class="zeta-path-hidden"></canvas>
 
     <main>
-        <canvas id="fractalCanvas" role="img" aria-label="Interactive fractal rendering canvas"></canvas>
+        <canvas id="fractalCanvas" role="img" aria-label="Interactive rendering canvas"></canvas>
         <canvas id="floatingCanvas"></canvas>
         <noscript>
             <div style="color:#fff;background:#000;padding:2em;text-align:center;">
-                <h2>Synaptory Fractal Traveler</h2>
-                <p>This application requires JavaScript and WebGL to render interactive Mandelbrot and Julia set fractals in real-time. Please enable JavaScript to explore the infinite beauty of fractal mathematics.</p>
+                <h2>Synaptory Chaos&nbsp;Explorer</h2>
+                <p>This application requires JavaScript and WebGL to render interactive fractals in real-time. Please enable JavaScript to explore the infinite beauty of fractal mathematics.</p>
             </div>
         </noscript>
     </main>
 
-    <section class="sr-only" aria-label="About Synaptory Fractal Traveler">
-        <h2>Explore Mandelbrot and Julia Fractals in Real-Time</h2>
-        <p>Synaptory Fractal Traveler is a GPU-accelerated web application for exploring the Mandelbrot set and Julia sets in real-time. Built with WebGL, it renders fractals directly on your GPU, allowing smooth zooming, panning, and rotation through the infinite complexity of fractal geometry.</p>
+    <section class="sr-only" aria-label="About Synaptory Chaos Explorer">
+        <h2>Explore the most intriguing borders of mathematics and the nature.</h2>
+        <p>Synaptory Fractal Traveler is a GPU-accelerated web application for exploring the chaotic structures of Mandelbrot and Julia sets, Rossler attractor and Riemann Zeta function in real-time. Built with WebGL, it renders fractals directly on your GPU, allowing smooth zooming, panning, and rotation through the infinite complexity of fractal geometry.</p>
         <p>The Mandelbrot set is one of the most famous objects in mathematics, revealing infinitely detailed structures at every scale. As you zoom deeper, you discover spirals, seahorse valleys, and intricate self-similar patterns that emerge from a simple equation: z = z&sup2; + c. Each point on the Mandelbrot set boundary corresponds to a unique Julia set, and this application lets you explore both in real-time.</p>
         <p>Navigate using mouse controls: scroll to zoom, drag to pan, double-click to center and zoom, or right-drag to rotate. Touch controls are fully supported: pinch to zoom, drag to pan, and use two fingers to rotate. Choose from over 30 curated views showcasing fascinating locations like Seahorse Valley, Misiurewicz Points, and the Corona region. Switch between color palettes including Event Horizon, Aurora, Fire, and Ocean to transform the visual experience.</p>
         <p>Julia set dives animate through parameter space, creating mesmerizing real-time transitions between fractal forms. Save your favorite views locally, capture high-quality screenshots, and share exact coordinates via URL. The adaptive quality system automatically adjusts rendering precision based on your GPU performance.</p>
+        <p>Riemann Zeta mode offers a guided tour through its properties and points, revealing many mysteries tied around one of the biggest mathematical questions of all time related to this magical function.</p>
         <p>Fractal Traveler is free and open-source under the MIT license. Visit the <a href="https://fractal.brnka.com/gallery/">fractal gallery</a> for curated screenshots, read the <a href="https://fractal.brnka.com/docs/">documentation</a>, or explore the source code on <a href="https://github.com/rbrnka/fractal-traveler">GitHub</a>.</p>
     </section>
 

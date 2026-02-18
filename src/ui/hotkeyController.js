@@ -10,13 +10,15 @@
 import {
     captureScreenshot,
     copyInfoToClipboard,
+    cycleToNextFractalMode,
     cycleToNextPreset,
     cycleToPreviousPreset,
     hideViewInfo,
     isAnimationActive,
     isJuliaMode,
     isRiemannMode,
-    randomizeColors,
+    isRosslerMode,
+    cycleColors,
     reset,
     resetAppState,
     showEditCoordsDialog,
@@ -190,12 +192,11 @@ async function onKeyDown(event) {
             break;
 
         case 'KeyR': // Reset
-            if (event.shiftKey) await reset();
-            handled = true;
-            break;
-
-        case 'KeyC': // Copy info to clipboard
-            copyInfoToClipboard();
+            if (event.shiftKey) {
+                fractalApp.resizeCanvas();
+            } else {
+                await reset();
+            }
             handled = true;
             break;
 
@@ -217,16 +218,19 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyT': // Random colors / cycle palettes
+        case 'KeyP': // Random colors / cycle palettes
             if (altKey) {
-                // Alt+T: Reset to first palette (matches UI button behavior)
+                // Alt+P: Reset to first palette (matches UI button behavior)
+                if (fractalApp.paletteCyclingActive) {
+                    fractalApp.stopCurrentColorAnimations();
+                }
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
                 updatePaletteCycleButtonState();
                 syncRiemannControls();
                 syncRosslerControls();
             } else if (event.shiftKey) {
-                // Shift+T: Toggle palette cycling
+                // Shift+P: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
                     // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
@@ -238,25 +242,24 @@ async function onKeyDown(event) {
                 }
                 updatePaletteCycleButtonState();
             } else {
-                // T: Pick a random palette
-                await randomizeColors();
+                // T: Cycle to next palette
+                await cycleColors();
             }
             handled = true;
             break;
 
-        case 'KeyA': // Forced resize
-            fractalApp.resizeCanvas();
+        case 'KeyA': // Toggle AdaptQ
+            fractalApp.toggleAdaptiveQuality();
             handled = true;
             break;
 
-        case 'KeyS': // Screenshot or Save View
-            if (altKey) {
-                // Alt+S: Save current view
-                showSaveViewDialog();
-            } else if (event.shiftKey) {
-                // Shift+S: Screenshot
-                captureScreenshot();
-            }
+        case 'KeyC': // Capture screenshot
+            captureScreenshot();
+            handled = true;
+            break;
+
+        case 'KeyS': // Save View
+            showSaveViewDialog();
             handled = true;
             break;
 
@@ -270,7 +273,7 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyD': // Start/stop demo
+        case 'KeyT': // Start/stop demo
             await toggleDemo();
             handled = true;
             break;
@@ -306,30 +309,52 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyF': // Toggle adaptive quality
-            fractalApp.toggleAdaptiveQuality();
+        case 'KeyF': // Cycle fractal mode / Toggle adaptive quality (Shift)
+            await cycleToNextFractalMode();
             handled = true;
             break;
 
         case 'NumpadAdd': // Numpad + (Shift for soft step)
         case 'Equal': // = or + key
-            if (fractalApp.adaptiveQualityEnabled) {
-                const step = event.shiftKey ? 25 : 100;
-                fractalApp.adjustExtraIterations(step);
+            if (isRiemannMode()) {
+                // Adjust series terms in Riemann mode
+                const step = event.shiftKey ? 10 : 50;
+                fractalApp.seriesTerms = Math.min(fractalApp.MAX_TERMS, fractalApp.seriesTerms + step);
+                syncRiemannControls();
+                fractalApp.draw();
+            } else if (isRosslerMode()) {
+                // Adjust target iterations in Rossler mode
+                const step = event.shiftKey ? 100 : 500;
+                fractalApp.targetIterations = Math.min(fractalApp.MAX_ITER, fractalApp.targetIterations + step);
+                syncRosslerControls();
+                fractalApp.draw();
+            } else {
+                fractalApp.adjustExtraIterations(event.shiftKey ? 25 : 100);
             }
             handled = true;
             break;
 
         case 'NumpadSubtract': // Numpad - (Shift for soft step)
         case 'Minus': // - key
-            if (fractalApp.adaptiveQualityEnabled) {
-                const step = event.shiftKey ? -25 : -100;
-                fractalApp.adjustExtraIterations(step);
+            if (isRiemannMode()) {
+                // Adjust series terms in Riemann mode
+                const step = event.shiftKey ? 10 : 50;
+                fractalApp.seriesTerms = Math.max(20, fractalApp.seriesTerms - step);
+                syncRiemannControls();
+                fractalApp.draw();
+            } else if (isRosslerMode()) {
+                // Adjust target iterations in Rossler mode
+                const step = event.shiftKey ? 100 : 500;
+                fractalApp.targetIterations = Math.max(1000, fractalApp.targetIterations - step);
+                syncRosslerControls();
+                fractalApp.draw();
+            } else {
+                fractalApp.adjustExtraIterations(event.shiftKey ? -25 : -100);
             }
             handled = true;
             break;
 
-        case 'KeyP':
+        case 'KeyD':
             showEditCoordsDialog();
             handled = true;
             break;

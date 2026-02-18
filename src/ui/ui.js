@@ -5,6 +5,7 @@ import {
     esc,
     getAnimationDuration,
     getFractalName,
+    hexToRGBArray,
     isMobileDevice,
     isTouchDevice,
     normalizeRotation,
@@ -25,7 +26,10 @@ import {
     DEFAULT_JULIA_THEME_COLOR,
     DEFAULT_MANDELBROT_THEME_COLOR,
     DEFAULT_RIEMANN_THEME_COLOR,
+    FF_HOTKEY_HINTS,
     FF_PERSISTENT_FRACTAL_SWITCHING_BUTTON_DISPLAYED,
+    FF_RANDOM_APP_NAME,
+    FF_RIEMANN_COLOR_SLIDERS,
     FF_RIEMANN_SHADER_DROPDOWN,
     FRACTAL_TYPE,
     log,
@@ -131,6 +135,11 @@ let allButtons = [];
 let infoLabel;
 let infoText;
 export let debugPanel;
+
+// Mandelbrot controls
+let mandelbrotControls;
+let iterationsSlider;
+let iterationsValue;
 
 // Riemann controls
 let riemannControls;
@@ -330,6 +339,20 @@ export async function switchFractalTypeWithPersistence(targetType) {
 export const isJuliaMode = () => fractalMode === FRACTAL_TYPE.JULIA;
 export const isRiemannMode = () => fractalMode === FRACTAL_TYPE.RIEMANN;
 export const isMandelbrotMode = () => fractalMode === FRACTAL_TYPE.MANDELBROT;
+export const isRosslerMode = () => fractalMode === FRACTAL_TYPE.ROSSLER;
+
+/**
+ * Cycles to the next fractal mode in order: Mandelbrot → Julia → Riemann → Rossler → Mandelbrot
+ */
+export async function cycleToNextFractalMode() {
+    const modes = Object.values(FRACTAL_TYPE);
+    const currentIndex = modes.indexOf(fractalMode);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    const nextMode = modes[nextIndex];
+
+    log(`Cycling fractal mode: ${getFractalName(fractalMode)} → ${getFractalName(nextMode)}`, 'cycleToNextFractalMode');
+    await switchFractalMode(nextMode);
+}
 
 /**
  * Implemented in a way it's not needed to be called at the first render. Everything should be pre-initialized
@@ -356,6 +379,9 @@ export function enableMandelbrotMode() {
     fractalApp = new MandelbrotRenderer(canvas);
     fractalMode = FRACTAL_TYPE.MANDELBROT;
 
+    // Initialize Mandelbrot-specific controls
+    initMandelbrotControls();
+
     // Remove each button from the DOM and reinitialize
     destroyArrayOfButtons(presetButtons);
     if (activePresetIndex !== 0) resetActivePresetIndex();
@@ -365,6 +391,9 @@ export function enableMandelbrotMode() {
     initPaletteButtonEvents();
 
     updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
+    // Reset header backgrounds to CSS defaults (Julia sets inline styles)
+    header.style.background = '';
+    infoLabel.style.background = '';
 
     updatePaletteDropdownState();
 
@@ -391,6 +420,7 @@ export function enableJuliaMode() {
     // Update palette dropdown for new renderer
     initPaletteButtonEvents();
 
+    destroyMandelbrotControls();
     destroyRiemannControls();
     destroyRosslerControls();
 
@@ -403,9 +433,6 @@ export function enableJuliaMode() {
     if (activePresetIndex !== 0) resetActivePresetIndex();
 
     updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
-    // Darker backgrounds for Julia as it renders on white
-    header.style.background = 'rgba(20, 20, 20, 0.8)';
-    infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
     updatePaletteDropdownState();
 
@@ -425,6 +452,7 @@ export function enableRiemannMode() {
 
     destroyJuliaSliders();
     destroyJuliaPreview();
+    destroyMandelbrotControls();
     destroyRosslerControls();
 
     initPresetButtonEvents();
@@ -432,6 +460,9 @@ export function enableRiemannMode() {
     initRiemannControls();
 
     updateColorTheme(DEFAULT_RIEMANN_THEME_COLOR);
+    // Reset header backgrounds to CSS defaults (Julia sets inline styles)
+    header.style.background = '';
+    infoLabel.style.background = '';
 
     // Initialize tour background music
     initTourAudio('./audio/riemann-tour.mp3');
@@ -456,11 +487,22 @@ export function enableRosslerMode() {
 
     destroyJuliaSliders();
     destroyJuliaPreview();
+    destroyMandelbrotControls();
 
     initPresetButtonEvents();
     initPaletteButtonEvents();
     destroyRiemannControls();
     initRosslerControls();
+
+    // Set theme color from first palette
+    const defaultPalette = fractalApp.PALETTES?.[0];
+    if (defaultPalette?.keyColor) {
+        updateColorTheme(hexToRGBArray(defaultPalette.keyColor, 255));
+    }
+
+    // Reset header backgrounds to CSS defaults (Julia sets inline styles)
+    header.style.background = '';
+    infoLabel.style.background = '';
 
     // Show Demo button, hide persist switch (only for Mandelbrot/Julia)
     if (demoButton) demoButton.style.display = 'inline-flex';
@@ -474,23 +516,26 @@ export function updatePaletteDropdownState() {
 
     const palettes = fractalApp.PALETTES || [];
     const currentIndex = fractalApp.currentPaletteIndex;
-    const isCycling = fractalApp.paletteCyclingActive;
+    const isCycling = fractalApp?.paletteCyclingActive || false;
 
     // Update tooltip
     if (palettes.length > 0 && currentIndex >= 0) {
         const currentPalette = palettes[currentIndex];
-        paletteToggle.title = `Current: "${currentPalette.id}" (T to cycle)`;
+        paletteToggle.title = `Current: "${currentPalette.id}" (P to cycle)`;
     } else {
-        paletteToggle.title = 'Change Color Palette (T)';
+        paletteToggle.title = 'Change Color Palette (P)';
     }
 
-    // paletteButtons: [0] = Random, [1] = Palette Cycle, [2+] = palette indices
+    // Update cycle button state using ID (consistent with updatePaletteCycleButtonState)
+    const cycleBtn = document.getElementById('palette-cycle');
+    if (cycleBtn) {
+        cycleBtn.classList.toggle('active', isCycling);
+    }
+
+    // Update palette buttons - highlight current palette
+    // paletteButtons: [0] = Next, [1] = Palette Cycle, [2+] = palette indices
     paletteButtons.forEach((btn, btnIndex) => {
-        if (btnIndex === 1) {
-            // Sync cycle button active state with actual cycling state
-            btn.classList.toggle('active', isCycling);
-        } else if (btnIndex >= 2) {
-            // Palette buttons - highlight current palette
+        if (btnIndex >= 2) {
             const paletteIndex = btnIndex - 2;
             btn.classList.toggle('active', currentIndex === paletteIndex);
         }
@@ -652,12 +697,10 @@ function exitAnimationMode() {
     hideViewInfo();
 
     if (demoButton) {
-        demoButton.innerText = DEMO_BUTTON_DEFAULT_TEXT;
+        demoButton.innerHTML = formatButtonText(DEMO_BUTTON_DEFAULT_TEXT);
         demoButton.classList.remove('active');
     }
 
-    // Re-enable dives dropdown (only one disabled during animations)
-    if (divesToggle) divesToggle.disabled = false;
 
     if (isTouchDevice()) {
         registerTouchEventHandlers();
@@ -690,15 +733,13 @@ function initAnimationMode() {
 
     // resetPresetAndDiveButtons();
     if (demoButton) {
-        demoButton.innerText = DEMO_BUTTON_STOP_TEXT;
+        demoButton.textContent = DEMO_BUTTON_STOP_TEXT;
         demoButton.classList.add('active');
     }
 
-    // Close dropdowns but keep most enabled - clicking them will stop the demo
-    // Only disable dives dropdown during animation
+    // Close dropdowns but keep them enabled - clicking them will stop the animation
     closePresetsDropdown();
     closeDivesDropdown();
-    if (divesToggle) divesToggle.disabled = true;
 
     // Unregister control events
     if (isTouchDevice()) {
@@ -780,7 +821,7 @@ async function startMandelbrotDemo() {
     console.groupCollapsed(`%c startMandelbrotDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
-        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false), hideViewInfo);
 
     hideViewInfo();
     console.log("Demo ended");
@@ -838,7 +879,7 @@ async function startRosslerDemo() {
     console.groupCollapsed(`%c startRosslerDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo(true, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
-        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false), hideViewInfo);
 
     hideViewInfo();
     console.log("Demo ended");
@@ -924,7 +965,7 @@ async function startJuliaDemo() {
     console.groupCollapsed(`%c startJuliaDemo`, CONSOLE_GROUP_STYLE);
 
     await fractalApp.animateDemo(false, updateColorTheme, updatePaletteDropdownState, getUserPresets(),
-        (preset, index, total) => onDemoPresetReached(preset, index, total, false));
+        (preset, index, total) => onDemoPresetReached(preset, index, total, false), hideViewInfo);
     // await fractalApp.animateRandomDemo(); // sin/cos original demo
 
     hideViewInfo();
@@ -1079,23 +1120,23 @@ export async function cycleToPreviousPreset() {
     await travelToPreset(presets, prevIndex);
 }
 
-export async function randomizeColors() {
+export async function cycleColors() {
     const palettes = fractalApp.PALETTES || [];
     if (palettes.length === 0) return;
 
-    // Pick a random palette index different from current if possible
-    let randomIndex;
-    if (palettes.length === 1) {
-        randomIndex = 0;
-    } else {
-        do {
-            randomIndex = Math.floor(Math.random() * palettes.length);
-        } while (randomIndex === fractalApp.currentPaletteIndex);
+    // Stop any active palette cycling first
+    if (fractalApp.paletteCyclingActive) {
+        fractalApp.stopCurrentColorAnimations();
     }
 
-    await fractalApp.applyPaletteByIndex(randomIndex, 250, updateColorTheme);
+    // Cycle to next palette, wrapping around
+    const currentIndex = fractalApp.currentPaletteIndex ?? 0;
+    const nextIndex = (currentIndex + 1) % palettes.length;
+
+    await fractalApp.applyPaletteByIndex(nextIndex, 250, updateColorTheme);
     updatePaletteDropdownState();
     updatePaletteCycleButtonState();
+    syncMandelbrotControls();
     syncRiemannControls();
     syncRosslerControls();
 }
@@ -1125,12 +1166,30 @@ export function toggleHeader(show = null) {
 export async function reset() {
     console.groupCollapsed(`%c reset`, CONSOLE_GROUP_STYLE);
 
-    updateColorTheme(isJuliaMode() ? DEFAULT_JULIA_THEME_COLOR : DEFAULT_MANDELBROT_THEME_COLOR);
+    // Update theme color based on current mode
+    if (isJuliaMode()) {
+        updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
+    } else if (isRiemannMode()) {
+        updateColorTheme(DEFAULT_RIEMANN_THEME_COLOR);
+    } else if (fractalMode === FRACTAL_TYPE.ROSSLER) {
+        // Rossler uses first palette's keyColor
+        const defaultPalette = fractalApp.PALETTES?.[0];
+        if (defaultPalette?.keyColor) {
+            updateColorTheme(hexToRGBArray(defaultPalette.keyColor, 255));
+        }
+    } else {
+        updateColorTheme(DEFAULT_MANDELBROT_THEME_COLOR);
+    }
 
     // Always stop tour music on reset (exitAnimationMode might skip this if !animationActive)
     stopTourMusic();
 
     exitAnimationMode();
+
+    // Stop palette cycling if active
+    if (fractalApp.paletteCyclingActive) {
+        fractalApp.stopCurrentColorAnimations();
+    }
 
     fractalApp.reset();
 
@@ -1141,6 +1200,7 @@ export async function reset() {
     }
 
     // Sync mode-specific controls
+    syncMandelbrotControls();
     syncRiemannControls();
     syncRosslerControls();
 
@@ -1677,7 +1737,7 @@ function initHeaderEvents() {
         }
     });
 
-    logo.innerHTML = DEBUG_MODE > DEBUG_LEVEL.NONE ? APP.randomName : APP.defaultName;
+    logo.innerHTML = FF_RANDOM_APP_NAME ? APP.randomName : APP.defaultName;
 
     document.getElementById("versionLink").innerHTML = `v${APP.version}`;
 
@@ -1834,17 +1894,28 @@ function initPresetButtonEvents() {
     log('Initialized.', 'initPresetButtonEvents');
 }
 
+/** Sets the presets toggle button text with optional hotkey hint */
+function setPresetsToggleText(isOpen) {
+    if (!presetsToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        presetsToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">V</span>iew ${arrow}</span>`;
+    } else {
+        presetsToggle.textContent = `View ${arrow}`;
+    }
+}
+
 /** Toggles the presets dropdown menu */
 function togglePresetsDropdown() {
     presetsMenu.classList.toggle('show');
     const isOpen = presetsMenu.classList.contains('show');
-    presetsToggle.textContent = isOpen ? 'View ▴' : 'View ▾';
+    setPresetsToggleText(isOpen);
 }
 
 /** Closes the presets dropdown menu */
 function closePresetsDropdown() {
     presetsMenu?.classList.remove('show');
-    if (presetsToggle) presetsToggle.textContent = 'View ▾';
+    setPresetsToggleText(false);
 }
 
 function initPresetsDropdown() {
@@ -1878,21 +1949,28 @@ const FRACTAL_MODE_NAMES = {
     [FRACTAL_TYPE.ROSSLER]: 'Rossler'
 };
 
+/** Sets the fractal toggle button text with optional hotkey hint */
+function setFractalToggleText(isOpen) {
+    if (!fractalToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        fractalToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">F</span>ractal ${arrow}</span>`;
+    } else {
+        fractalToggle.textContent = `Fractal ${arrow}`;
+    }
+}
+
 /** Toggles the fractal mode dropdown menu */
 function toggleFractalDropdown() {
     fractalModesMenu.classList.toggle('show');
     const isOpen = fractalModesMenu.classList.contains('show');
-    const currentName = FRACTAL_MODE_NAMES[fractalMode] || 'Mandelbrot';
-    fractalToggle.textContent = isOpen ? `${currentName} ▴` : `${currentName} ▾`;
+    setFractalToggleText(isOpen);
 }
 
 /** Closes the fractal mode dropdown menu */
 function closeFractalDropdown() {
     fractalModesMenu?.classList.remove('show');
-    if (fractalToggle) {
-        const currentName = FRACTAL_MODE_NAMES[fractalMode] || 'Mandelbrot';
-        fractalToggle.textContent = `${currentName} ▾`;
-    }
+    setFractalToggleText(false);
 }
 
 /**
@@ -1900,10 +1978,7 @@ function closeFractalDropdown() {
  * @param {FRACTAL_TYPE} mode
  */
 function updateFractalDropdownState(mode) {
-    if (fractalToggle) {
-        const modeName = FRACTAL_MODE_NAMES[mode] || 'Mandelbrot';
-        fractalToggle.textContent = `${modeName} ▾`;
-    }
+    setFractalToggleText(false);
 
     // Update button active states
     fractalModeButtons.forEach((btn, index) => {
@@ -1982,17 +2057,28 @@ function initFractalDropdown() {
 
 // endregion -----------------------------------------------------------------------------------------------------------
 
+/** Sets the dives toggle button text with optional hotkey hint */
+function setDivesToggleText(isOpen) {
+    if (!divesToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        divesToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">D</span>ive ${arrow}</span>`;
+    } else {
+        divesToggle.textContent = `Dive ${arrow}`;
+    }
+}
+
 /** Toggles the dives dropdown menu */
 function toggleDivesDropdown() {
     divesMenu.classList.toggle('show');
     const isOpen = divesMenu.classList.contains('show');
-    divesToggle.textContent = isOpen ? 'Dive ▴' : 'Dive ▾';
+    setDivesToggleText(isOpen);
 }
 
 /** Closes the dives dropdown menu */
 function closeDivesDropdown() {
     divesMenu?.classList.remove('show');
-    if (divesToggle) divesToggle.textContent = 'Dive ▾';
+    setDivesToggleText(false);
 }
 
 function initDivesDropdown() {
@@ -2016,17 +2102,32 @@ function initDivesDropdown() {
     log('Initialized.', 'initDivesDropdown');
 }
 
+/** Sets the palette toggle button text with optional hotkey hint */
+function setPaletteToggleText(isOpen) {
+    if (!paletteToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        paletteToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">P</span>alette ${arrow}</span>`;
+    } else {
+        paletteToggle.textContent = `Palette ${arrow}`;
+    }
+}
+
 /** Toggles the palette dropdown menu */
 function togglePaletteDropdown() {
     paletteMenu.classList.toggle('show');
     const isOpen = paletteMenu.classList.contains('show');
-    paletteToggle.textContent = isOpen ? 'Palette ▴' : 'Palette ▾';
+    setPaletteToggleText(isOpen);
+    // Sync button states when opening dropdown
+    if (isOpen) {
+        updatePaletteDropdownState();
+    }
 }
 
 /** Closes the palette dropdown menu */
 function closePaletteDropdown() {
     paletteMenu.classList.remove('show');
-    paletteToggle.textContent = 'Palette ▾';
+    setPaletteToggleText(false);
 }
 
 function initPaletteButtonEvents() {
@@ -2035,18 +2136,18 @@ function initPaletteButtonEvents() {
 
     const palettes = fractalApp.PALETTES || [];
 
-    // Always add "Random" option first
-    const randomBtn = document.createElement('button');
-    randomBtn.id = 'palette-random';
-    randomBtn.className = 'palette';
-    randomBtn.title = 'Pick a random palette (T)';
-    randomBtn.innerHTML = '<span class="color-swatch" style="background: linear-gradient(135deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);"></span>Random';
-    randomBtn.addEventListener('click', async () => {
+    // Always add "Next" option first (cycles through palettes sequentially)
+    const nextBtn = document.createElement('button');
+    nextBtn.id = 'palette-next';
+    nextBtn.className = 'palette';
+    nextBtn.title = 'Next palette (T)';
+    nextBtn.innerHTML = '<span class="color-swatch" style="background: linear-gradient(90deg, #666 50%, #999 50%);"></span>Next';
+    nextBtn.addEventListener('click', async () => {
         closePaletteDropdown();
-        await randomizeColors();
+        await cycleColors();
     });
-    paletteMenu.appendChild(randomBtn);
-    paletteButtons.push(randomBtn);
+    paletteMenu.appendChild(nextBtn);
+    paletteButtons.push(nextBtn);
 
     // Add "Color Cycle" option (Shift+T functionality)
     const cycleBtn = document.createElement('button');
@@ -2104,6 +2205,10 @@ function initPaletteButtonEvents() {
 
         btn.addEventListener('click', async () => {
             closePaletteDropdown();
+            // Stop any active palette cycling
+            if (fractalApp.paletteCyclingActive) {
+                fractalApp.stopCurrentColorAnimations();
+            }
             await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
             updatePaletteDropdownState();
             updatePaletteCycleButtonState();
@@ -2141,14 +2246,23 @@ function initPaletteDropdown() {
     log('Initialized.', 'initPaletteDropdown');
 }
 
+/** Sets the Riemann display toggle button text with optional hotkey hint */
+function setRiemannDisplayToggleText(isOpen) {
+    if (!riemannDisplayToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        riemannDisplayToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">D</span>isplay ${arrow}</span>`;
+    } else {
+        riemannDisplayToggle.textContent = `Display ${arrow}`;
+    }
+}
+
 /** Toggles the Riemann display dropdown menu */
 function toggleRiemannDisplayDropdown() {
     if (!riemannDisplayMenu) return;
     riemannDisplayMenu.classList.toggle('show');
     const isOpen = riemannDisplayMenu.classList.contains('show');
-    if (riemannDisplayToggle) {
-        riemannDisplayToggle.textContent = isOpen ? 'Display ▴' : 'Display ▾';
-    }
+    setRiemannDisplayToggleText(isOpen);
 }
 
 /** Closes the Riemann display dropdown menu */
@@ -2156,8 +2270,19 @@ function closeRiemannDisplayDropdown() {
     if (riemannDisplayMenu) {
         riemannDisplayMenu.classList.remove('show');
     }
-    if (riemannDisplayToggle) {
-        riemannDisplayToggle.textContent = 'Display ▾';
+    setRiemannDisplayToggleText(false);
+}
+
+/** Sets the Riemann shader toggle button text with optional hotkey hint */
+function setRiemannShaderToggleText(text, isOpen) {
+    if (!riemannShaderToggle) return;
+    const arrow = isOpen ? '▴' : '▾';
+    if (FF_HOTKEY_HINTS) {
+        const firstChar = text.charAt(0);
+        const rest = text.substring(1);
+        riemannShaderToggle.innerHTML = `<span class="button-label"><span class="hotkey-hint">${firstChar}</span>${rest} ${arrow}</span>`;
+    } else {
+        riemannShaderToggle.textContent = `${text} ${arrow}`;
     }
 }
 
@@ -2166,9 +2291,7 @@ function toggleRiemannShaderDropdown() {
     if (!riemannShaderMenu) return;
     riemannShaderMenu.classList.toggle('show');
     const isOpen = riemannShaderMenu.classList.contains('show');
-    if (riemannShaderToggle) {
-        riemannShaderToggle.textContent = isOpen ? 'Shader ▴' : 'Shader ▾';
-    }
+    setRiemannShaderToggleText('Shader', isOpen);
 }
 
 /** Closes the Riemann shader dropdown menu */
@@ -2176,9 +2299,7 @@ function closeRiemannShaderDropdown() {
     if (riemannShaderMenu) {
         riemannShaderMenu.classList.remove('show');
     }
-    if (riemannShaderToggle) {
-        riemannShaderToggle.textContent = 'Shader ▾';
-    }
+    setRiemannShaderToggleText('Shader', false);
 }
 
 /** Handles shader selection */
@@ -2195,8 +2316,8 @@ function handleShaderChange(shaderId) {
 
         // Update toggle button text with current shader name
         const shaderInfo = fractalApp.getShaderInfo();
-        if (riemannShaderToggle && shaderInfo) {
-            riemannShaderToggle.textContent = `${shaderInfo.name} ▾`;
+        if (shaderInfo) {
+            setRiemannShaderToggleText(shaderInfo.name, false);
         }
 
         closeRiemannShaderDropdown();
@@ -2400,6 +2521,80 @@ export function copyInfoToClipboard() {
     });
 }
 
+// region > MANDELBROT CONTROLS ----------------------------------------------------------------------------------------
+
+/**
+ * Initializes Mandelbrot-specific UI controls
+ */
+function initMandelbrotControls() {
+    if (!mandelbrotControls) return;
+
+    // Show the controls
+    mandelbrotControls.style.display = 'flex';
+
+    // Initialize iterations slider
+    if (iterationsSlider) {
+        const initialValue = fractalApp.extraIterations || 0;
+        iterationsSlider.value = initialValue;
+        iterationsValue.textContent = formatIterationsValue(initialValue);
+        iterationsSlider.addEventListener('input', handleIterationsChange);
+    }
+
+    // Set up sync callback - updates slider to reflect adaptQ changes
+    fractalApp.onDrawCallback = syncMandelbrotControls;
+
+    log('Initialized.', 'initMandelbrotControls');
+}
+
+/**
+ * Destroys Mandelbrot-specific UI controls and hides them
+ */
+function destroyMandelbrotControls() {
+    if (mandelbrotControls) {
+        mandelbrotControls.style.display = 'none';
+    }
+
+    // Clear draw callback
+    if (fractalApp) {
+        fractalApp.onDrawCallback = null;
+    }
+
+    if (iterationsSlider) {
+        iterationsSlider.removeEventListener('input', handleIterationsChange);
+    }
+
+    log('Destroyed.', 'destroyMandelbrotControls');
+}
+
+function formatIterationsValue(value) {
+    return value >= 0 ? `+${value}` : value.toString();
+}
+
+function handleIterationsChange(e) {
+    const value = parseInt(e.target.value, 10);
+    fractalApp.extraIterations = value;
+    iterationsValue.textContent = formatIterationsValue(value);
+    fractalApp.draw();
+}
+
+/**
+ * Syncs Mandelbrot UI controls with renderer state.
+ * Called on every draw to reflect adaptive quality changes.
+ */
+function syncMandelbrotControls() {
+    if (fractalMode !== FRACTAL_TYPE.MANDELBROT) return;
+    if (!iterationsSlider) return;
+
+    const currentValue = fractalApp.extraIterations || 0;
+    // Only update if value changed (avoid unnecessary DOM updates)
+    if (parseInt(iterationsSlider.value, 10) !== currentValue) {
+        iterationsSlider.value = currentValue;
+        iterationsValue.textContent = formatIterationsValue(currentValue);
+    }
+}
+
+// endregion -----------------------------------------------------------------------------------------------------------
+
 // region > RIEMANN CONTROLS -------------------------------------------------------------------------------------------
 
 /**
@@ -2476,8 +2671,8 @@ function initRiemannControls() {
 
         // Set initial button text to current shader
         const shaderInfo = fractalApp.getShaderInfo();
-        if (riemannShaderToggle && shaderInfo) {
-            riemannShaderToggle.textContent = `${shaderInfo.name} ▾`;
+        if (shaderInfo) {
+            setRiemannShaderToggleText(shaderInfo.name, false);
         }
 
         // Mark the active shader button
@@ -2512,29 +2707,37 @@ function initRiemannControls() {
         }
     }
 
-    // Initialize frequency sliders
-    if (freqRSlider) {
-        freqRSlider.value = fractalApp.frequency[0];
-        freqRValue.textContent = fractalApp.frequency[0].toFixed(1);
-        freqRSlider.addEventListener('input', handleFreqRChange);
+    // Show/hide color sliders based on feature flag
+    const riemannColorSliders = document.getElementById('riemannColorSliders');
+    if (riemannColorSliders) {
+        riemannColorSliders.style.display = FF_RIEMANN_COLOR_SLIDERS ? 'block' : 'none';
     }
 
-    if (freqGSlider) {
-        freqGSlider.value = fractalApp.frequency[1];
-        freqGValue.textContent = fractalApp.frequency[1].toFixed(1);
-        freqGSlider.addEventListener('input', handleFreqGChange);
-    }
+    // Initialize frequency sliders (only if visible)
+    if (FF_RIEMANN_COLOR_SLIDERS) {
+        if (freqRSlider) {
+            freqRSlider.value = fractalApp.frequency[0];
+            freqRValue.textContent = fractalApp.frequency[0].toFixed(1);
+            freqRSlider.addEventListener('input', handleFreqRChange);
+        }
 
-    if (freqBSlider) {
-        freqBSlider.value = fractalApp.frequency[2];
-        freqBValue.textContent = fractalApp.frequency[2].toFixed(1);
-        freqBSlider.addEventListener('input', handleFreqBChange);
-    }
+        if (freqGSlider) {
+            freqGSlider.value = fractalApp.frequency[1];
+            freqGValue.textContent = fractalApp.frequency[1].toFixed(1);
+            freqGSlider.addEventListener('input', handleFreqGChange);
+        }
 
-    if (contourSlider) {
-        contourSlider.value = fractalApp.contourStrength;
-        contourValue.textContent = fractalApp.contourStrength.toFixed(2);
-        contourSlider.addEventListener('input', handleContourChange);
+        if (freqBSlider) {
+            freqBSlider.value = fractalApp.frequency[2];
+            freqBValue.textContent = fractalApp.frequency[2].toFixed(1);
+            freqBSlider.addEventListener('input', handleFreqBChange);
+        }
+
+        if (contourSlider) {
+            contourSlider.value = fractalApp.contourStrength;
+            contourValue.textContent = fractalApp.contourStrength.toFixed(2);
+            contourSlider.addEventListener('input', handleContourChange);
+        }
     }
 
     if (termsSlider) {
@@ -3363,6 +3566,53 @@ export function syncRosslerControls() {
 
 // endregion -----------------------------------------------------------------------------------------------------------
 
+/**
+ * Formats button text with hotkey hint styling on the first letter.
+ * @param {string} text - The button text
+ * @returns {string} HTML string with hotkey hint markup, or plain text if FF_HOTKEY_HINTS is disabled
+ */
+function formatButtonText(text) {
+    if (!FF_HOTKEY_HINTS || !text) return text;
+    const firstChar = text.charAt(0);
+    const rest = text.substring(1);
+    return `<span class="button-label"><span class="hotkey-hint">${firstChar}</span>${rest}</span>`;
+}
+
+/**
+ * Highlights the first letter of all buttons in the header panel.
+ * Wraps the first letter in a span with the hotkey-hint class.
+ * Only runs if FF_HOTKEY_HINTS feature flag is enabled.
+ */
+function applyHotkeyHints() {
+    if (!FF_HOTKEY_HINTS) return;
+
+    const header = document.getElementById('headerContainer');
+    if (!header) return;
+
+    const buttons = header.querySelectorAll('button');
+    buttons.forEach(button => {
+        // Skip buttons that have child elements (like color swatches)
+        const hasComplexContent = button.querySelector('span, div, img');
+        if (hasComplexContent) return;
+
+        const text = button.textContent;
+        if (!text || !text.trim()) return;
+
+        // Find the first letter and wrap it, keeping everything in a single wrapper
+        const match = text.match(/^(\s*)([a-zA-Z])/);
+        if (match) {
+            const leadingSpace = match[1];
+            const firstChar = match[2];
+            const rest = text.substring(leadingSpace.length + 1);
+
+            // Wrap everything in a single span to prevent flex column from splitting content
+            button.innerHTML = `<span class="button-label">${leadingSpace}<span class="hotkey-hint">${firstChar}</span>${rest}</span>`;
+        }
+    });
+
+    log('Hotkey hints applied.', 'applyHotkeyHints');
+}
+
 function bindHTMLElements() {
     // Element binding
     fractalToggle = document.getElementById('fractal-toggle');
@@ -3403,6 +3653,10 @@ function bindHTMLElements() {
     editCoordsCancelBtn = document.getElementById('editCoordsCancel');
     juliaCInputs = document.getElementById('juliaCInputs');
     rotationInputs = document.getElementById('rotationInputs');
+    // Mandelbrot Controls elements
+    mandelbrotControls = document.getElementById('mandelbrotControls');
+    iterationsSlider = document.getElementById('iterationsSlider');
+    iterationsValue = document.getElementById('iterationsValue');
     // Riemann Controls elements
     riemannControls = document.getElementById('riemannControls');
     riemannDisplayDropdown = document.getElementById('riemann-display-dropdown');
@@ -3476,6 +3730,7 @@ export async function initUI(fractalRenderer) {
     canvas = fractalApp.canvas;
 
     bindHTMLElements();
+    applyHotkeyHints();
 
     if (fractalRenderer instanceof JuliaRenderer) {
         fractalMode = FRACTAL_TYPE.JULIA;
@@ -3486,9 +3741,6 @@ export async function initUI(fractalRenderer) {
 
         updateColorTheme(DEFAULT_JULIA_THEME_COLOR);
         updateFractalDropdownState(FRACTAL_TYPE.JULIA);
-        // Darker backgrounds for Julia as it renders on white
-        header.style.background = 'rgba(20, 20, 20, 0.8)';
-        infoLabel.style.background = 'rgba(20, 20, 20, 0.8)';
 
         window.location.hash = '#julia'; // Update URL hash
     } else if (fractalRenderer instanceof RiemannRenderer) {
@@ -3521,6 +3773,7 @@ export async function initUI(fractalRenderer) {
         // Mandelbrot mode
         fractalMode = FRACTAL_TYPE.MANDELBROT;
         updateFractalDropdownState(FRACTAL_TYPE.MANDELBROT);
+        initMandelbrotControls();
         initJuliaPreview();
     }
 
