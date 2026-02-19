@@ -84,7 +84,7 @@ Check out the latest [release notes](https://github.com/rbrnka/fractal-traveler/
 Live app: **https://fractal.brnka.com/**
 
 If you find something beautiful:
-1. Hit `Shift+S` for a clean screenshot.
-2. Hit `Alt+S`to save it locally.
-3. Hit `C` to copy coordinates and share it in the discussion (or anywhere you like).
+1. Hit `C` for a clean screenshot.
+2. Hit `S`to save it locally.
+3. Hit `D` to copy coordinates and share it in the discussion (or anywhere you like).
 

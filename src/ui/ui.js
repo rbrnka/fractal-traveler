@@ -1121,6 +1121,17 @@ export async function cycleToPreviousPreset() {
     await travelToPreset(presets, prevIndex);
 }
 
+/**
+ * Cycles to the next dive (wraps around). Julia mode only.
+ */
+export async function cycleToNextDive() {
+    const dives = fractalApp?.DIVES || [];
+    if (dives.length === 0) return;
+
+    const nextIndex = (activeJuliaDiveIndex + 1) % dives.length;
+    await startJuliaDive(dives, nextIndex);
+}
+
 export async function cycleColors() {
     const palettes = fractalApp.PALETTES || [];
     if (palettes.length === 0) return;
@@ -2259,7 +2270,7 @@ function setRiemannDisplayToggleText(isOpen) {
 }
 
 /** Toggles the Riemann display dropdown menu */
-function toggleRiemannDisplayDropdown() {
+export function toggleRiemannDisplayDropdown() {
     if (!riemannDisplayMenu) return;
     riemannDisplayMenu.classList.toggle('show');
     const isOpen = riemannDisplayMenu.classList.contains('show');
@@ -3437,11 +3448,11 @@ function initRosslerControls() {
             rosslerFreqRSlider.addEventListener('input', handleRosslerFreqRChange);
         }
 
-    if (rosslerFreqGSlider) {
-        rosslerFreqGSlider.value = fractalApp.frequency[1];
-        rosslerFreqGValue.textContent = fractalApp.frequency[1].toFixed(2);
-        rosslerFreqGSlider.addEventListener('input', handleRosslerFreqGChange);
-    }
+        if (rosslerFreqGSlider) {
+            rosslerFreqGSlider.value = fractalApp.frequency[1];
+            rosslerFreqGValue.textContent = fractalApp.frequency[1].toFixed(2);
+            rosslerFreqGSlider.addEventListener('input', handleRosslerFreqGChange);
+        }
 
         if (rosslerFreqBSlider) {
             rosslerFreqBSlider.value = fractalApp.frequency[2];
@@ -3603,6 +3614,9 @@ function applyHotkeyHints() {
         // Skip buttons that have child elements (like color swatches)
         const hasComplexContent = button.querySelector('span, div, img');
         if (hasComplexContent) return;
+
+        // Skip Riemann display dropdown options (they have their own hotkeys shown in tooltips)
+        if (button.classList.contains('riemann-option')) return;
 
         const text = button.textContent;
         if (!text || !text.trim()) return;

@@ -84,17 +84,17 @@
             <div class="control-row" id="presets-dives">
                 <div class="button-group">
                     <div id="fractal-dropdown" class="dropdown">
-                        <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode">Fractal &#x25BE;</button>
+                        <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode (F)">Fractal &#x25BE;</button>
                         <div id="fractal-modes" class="dropdown-menu"></div>
                     </div>
-                    <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings (Y)">&hArr;</button>
+                    <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings (Y)">&udarr;</button>
 
                     <div id="presets-dropdown" class="dropdown">
-                        <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Locations">View &#x25BE;</button>
+                        <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Locations (V)">View &#x25BE;</button>
                         <div id="presets" class="dropdown-menu"></div>
                     </div>
                     <div id="dives-dropdown" class="dropdown">
-                        <button type="button" id="dives-toggle" class="dropdown-toggle" title="Real-time Fractal Calculations">Dive &#x25BE;</button>
+                        <button type="button" id="dives-toggle" class="dropdown-toggle" title="Real-time Fractal Calculations (D)">Dive &#x25BE;</button>
                         <div id="dives" class="dropdown-menu"></div>
                     </div>
                     <div id="palette-dropdown" class="dropdown">
@@ -192,20 +192,6 @@
                     <input type="range" id="rosslerCSlider" class="slider" min="3.0" max="12.0" step="0.1" value="5.7">
                     <output class="sliderValue" id="rosslerCValue">5.7</output>
                 </div>
-                <div class="slider-container">
-                    <label for="rosslerFreqRSlider" title="Red frequency">R:</label>
-                    <input type="range" id="rosslerFreqRSlider" class="slider" min="0.1" max="10" step="0.1" value="3.14">
-                    <output class="sliderValue" id="rosslerFreqRValue">3.14</output>
-                </div>
-                <div class="slider-container">
-                    <label for="rosslerFreqGSlider" title="Green frequency">G:</label>
-                    <input type="range" id="rosslerFreqGSlider" class="slider" min="0.1" max="10" step="0.1" value="6.28">
-                    <output class="sliderValue" id="rosslerFreqGValue">6.28</output>
-                </div>
-                <div class="slider-container">
-                    <label for="rosslerFreqBSlider" title="Blue frequency">B:</label>
-                    <input type="range" id="rosslerFreqBSlider" class="slider" min="0.1" max="10" step="0.1" value="1.72">
-                    <output class="sliderValue" id="rosslerFreqBValue">1.72</output>
                 <div id="rosslerColorSliders">
                     <div class="slider-container">
                         <label for="rosslerFreqRSlider" title="Red frequency">R:</label>
@@ -221,6 +207,7 @@
                         <label for="rosslerFreqBSlider" title="Blue frequency">B:</label>
                         <input type="range" id="rosslerFreqBSlider" class="slider" min="0.1" max="10" step="0.1" value="1.72">
                         <output class="sliderValue" id="rosslerFreqBValue">1.72</output>
+                    </div>
                 </div>
                 <div class="slider-container">
                     <label for="rosslerIterSlider" title="Iteration count (detail level)">Iter:</label>
@@ -234,40 +221,53 @@
                     <button type="button" id="demo" title="Start/Stop Tour (T)" >Tour</button>
                     <button type="button" id="screenshot" title="Capture Image (C)" >Capture</button>
                     <button type="button" id="saveView" title="Save current view locally (S)" >Save</button>
-                    <button type="button" id="reset" title="Reset the view (Shift+R)" >Reset</button>
+                    <button type="button" id="reset" title="Reset the view (R)" >Reset</button>
                 </div>
             </div>
         </nav>
 
         <footer class="header-footer">
-            <span id="controlsHint" class="hint-trigger">Controls
-                <span class="hint-tooltip">
-                    <span class="hint-content mouse-controls">
-                        <span class="hint-section">
-                            <strong>Mouse</strong>
-                            <span class="hint-row"><kbd>Scroll</kbd> Zoom</span>
-                            <span class="hint-row"><kbd>Drag</kbd> Pan</span>
-                            <span class="hint-row"><kbd>Click</kbd> Center</span>
-                            <span class="hint-row"><kbd>Dbl-click</kbd> Zoom &amp; Pan</span>
-                            <span class="hint-row"><kbd>Right drag</kbd> Rotate</span>
-                            <span class="hint-row"><kbd>Hold</kbd> Cont. zoom</span>
-                            <span class="hint-row"><kbd>Middle</kbd> Julia preview</span>
-                        </span>
-                    </span>
-                    <span class="hint-content touch-controls">
-                        <span class="hint-section">
-                            <strong>Touch</strong>
-                            <span class="hint-row"><kbd>Pinch</kbd> Zoom</span>
-                            <span class="hint-row"><kbd>Drag</kbd> Pan</span>
-                            <span class="hint-row"><kbd>Tap</kbd> Center</span>
-                            <span class="hint-row"><kbd>Dbl-tap</kbd> Zoom in</span>
-                            <span class="hint-row"><kbd>2-finger</kbd> Rotate</span>
-                            <span class="hint-row"><kbd>Hold</kbd> Cont. zoom</span>
-                        </span>
-                    </span>
-                    <a class="hint-link" target="_blank" rel="noopener" href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Full Controls &rarr;</a>
+           <span id="controlsHint" class="hint-trigger">Controls
+    <span class="hint-tooltip">
+        <span class="hint-columns">
+            <span class="hint-content mouse-controls">
+                <span class="hint-section">
+                    <strong>Mouse</strong>
+                    <span class="hint-row"><kbd>Scroll</kbd> Zoom</span>
+                    <span class="hint-row"><kbd>Drag</kbd> Pan</span>
+                    <span class="hint-row"><kbd>Click</kbd> Center</span>
+                    <span class="hint-row"><kbd>Hold</kbd> Zoom</span>
+                    <span class="hint-row"><kbd>Dbl-click</kbd> Zoom &amp; Pan</span>
+                    <span class="hint-row"><kbd>Right drag</kbd> Rotate</span>
+                    <span class="hint-row"><kbd>Middle</kbd> Julia preview</span>
                 </span>
-            </span>&nbsp;<span class="middot">&middot;</span>
+            </span>
+            <span class="hint-content keyboard-controls">
+                <span class="hint-section">
+                    <strong>Keyboard</strong>
+                    <span class="hint-row"><kbd>Arrows</kbd> Pan (<kbd>Shift</kbd> slow)</span>
+                    <span class="hint-row"><kbd>Space</kbd> Zoom (<kbd>Alt</kbd> out)</span>
+                    <span class="hint-row"><kbd>Q</kbd> / <kbd>W</kbd> Rotate</span>
+                    <span class="hint-row"><kbd>O</kbd> Switch/Zeta | <kbd>E</kbd> Edit</span>
+                    <span class="hint-row"><kbd>P</kbd> Palette (<kbd>Shift</kbd> cycle)</span>
+                    <span class="hint-row"><kbd>K</kbd> Axes | <kbd>+/-</kbd> Iterations</span>
+                    <span class="hint-row"><kbd>C</kbd> Capture (<kbd>Ctrl</kbd> Copy)</span>
+                </span>
+            </span>
+        </span>
+        <span class="hint-content touch-controls">
+            <span class="hint-section">
+                <strong>Touch</strong>
+                <span class="hint-row"><kbd>Pinch</kbd> Zoom</span>
+                <span class="hint-row"><kbd>Drag</kbd> Pan</span>
+                <span class="hint-row"><kbd>Tap</kbd> Center</span>
+                <span class="hint-row"><kbd>2-finger</kbd> Rotate</span>
+                <span class="hint-row"><kbd>Hold</kbd> Cont. zoom</span>
+            </span>
+        </span>
+        <a class="hint-link" target="_blank" rel="noopener" href="https://github.com/rbrnka/fractal-traveler/wiki/Controls">Full Controls &rarr;</a>
+    </span>
+</span>&nbsp;<span class="middot">&middot;</span>
             <a target="_blank" rel="noopener" title="Synaptory blog: Unmasking Chaos" href="https://synaptory.substack.com/p/unmasking-chaos?r=2qbtpc&utm_campaign=post&utm_medium=web&triedRedirect=true">Blog</a>
             <span class="middot">&middot;</span>
             <a title="Synaptory Chaos Explorer Gallery" href="https://fractal.brnka.com/gallery/">Gallery</a>

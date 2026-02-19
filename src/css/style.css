@@ -1480,17 +1480,15 @@ button.preset.user-preset::before {
 
 .hint-tooltip {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: fixed;
+    top: 135px;
+    left: 50%;
+    transform: translateX(-50%);
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.85));
     backdrop-filter: blur(10px);
     border: 1px solid rgb(from var(--accent-color) r g b / 0.4);
     border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 8px;
-    min-width: 180px;
-    max-width: 200px;
+    padding: 12px 18px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 15px rgb(from var(--accent-color) r g b / 0.15);
     z-index: 100000;
     text-align: left;
@@ -1509,7 +1507,8 @@ button.preset.user-preset::before {
     content: '';
     position: absolute;
     bottom: 100%;
-    left: 30px;
+    left: 50%;
+    transform: translateX(-50%);
     border: 6px solid transparent;
     border-bottom-color: rgb(from var(--accent-color) r g b / 0.4);
 }
@@ -1523,8 +1522,12 @@ button.preset.user-preset::before {
     height: 15px;
 }
 
+.hint-columns {
+    display: flex;
+    gap: 24px;
+}
+
 .hint-section {
-    display: block;
     margin-bottom: 8px;
 }
 
@@ -1567,19 +1570,25 @@ button.preset.user-preset::before {
 .hint-link {
     display: block;
     text-align: center;
+    margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     transition: text-shadow 0.2s;
 }
 
-/* Show mouse controls on non-touch devices */
-.mouse-controls {
+/* Show mouse and keyboard controls on non-touch devices */
+.mouse-controls,
+.keyboard-controls {
     display: block;
 }
 
-/* Touch devices: show touch controls, hide mouse controls */
+/* Touch devices: show touch controls, hide mouse/keyboard controls */
 @media (pointer: coarse) {
-    .mouse-controls {
+    .mouse-controls,
+    .keyboard-controls {
+        display: none;
+    }
+    .hint-columns {
         display: none;
     }
     .touch-controls {

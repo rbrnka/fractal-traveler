@@ -154,22 +154,22 @@ describe('HotKeyController', () => {
         expect(ui.updatePaletteDropdownState).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"P" cycles to next palette', async () => {
-        document.dispatchEvent(charPressedEvent('p'));
+    test('"C" copies the text to clipboard', async () => {
+        document.dispatchEvent(charPressedEvent('c', false, true, false));
         await Promise.resolve();
-        expect(ui.cycleColors).toHaveBeenCalled();
+        expect(ui.copyInfoToClipboard).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('"E" toggles the guiding lines', async () => {
-        document.dispatchEvent(charPressedEvent('e'));
+        document.dispatchEvent(charPressedEvent('u'));
         await Promise.resolve();
         expect(ui.toggleCenterLines).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"A" toggles adaptive quality', async () => {
-        document.dispatchEvent(charPressedEvent('a'));
+    test('"Shift+R" forces resize', async () => {
+        document.dispatchEvent(charPressedEvent('r', true));
         await Promise.resolve();
-        expect(fractalApp.toggleAdaptiveQuality).toHaveBeenCalled();
+        expect(fractalApp.resizeCanvas).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('"L" toggles the debug panel', async () => {
@@ -178,8 +178,8 @@ describe('HotKeyController', () => {
         expect(ui.toggleDebugMode).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"D" opens the edit coords dialog', async () => {
-        document.dispatchEvent(charPressedEvent('d'));
+    test('"E" opens the edit coords dialog', async () => {
+        document.dispatchEvent(charPressedEvent('e'));
         await Promise.resolve();
         expect(ui.showEditCoordsDialog).toHaveBeenCalled();
     });

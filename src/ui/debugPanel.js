@@ -470,7 +470,7 @@ export class DebugPanel {
         const targetFps = Math.round(1000 / ADAPTIVE_QUALITY_THRESHOLD_LOW);
 
         if (!enabled) {
-            return `<span class="dbg-title">adaptQ</span>: <span class="dbg-dim">OFF</span> <span class="dbg-dim">(F to toggle)</span>`;
+            return `<span class="dbg-title">adaptQ</span>: <span class="dbg-dim">OFF</span> <span class="dbg-dim">(A to toggle)</span>`;
         }
 
         const extraIters = this.fractalApp.extraIterations || 0;

@@ -93,8 +93,8 @@ describe('UI Module', () => {
         test.todo('shows cycle button as active when cycling');
     });
 
-    describe('randomizeColors', () => {
-        test.todo('picks random palette different from current');
+    describe('cycleColors', () => {
+        test.todo('cycles to next palette sequentially');
         test.todo('applies palette with transition');
         test.todo('updates dropdown state after change');
     });

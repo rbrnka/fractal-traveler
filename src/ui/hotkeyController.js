@@ -10,6 +10,8 @@
 import {
     captureScreenshot,
     copyInfoToClipboard,
+    cycleColors,
+    cycleToNextDive,
     cycleToNextFractalMode,
     cycleToNextPreset,
     cycleToPreviousPreset,
@@ -18,7 +20,6 @@ import {
     isJuliaMode,
     isRiemannMode,
     isRosslerMode,
-    cycleColors,
     reset,
     resetAppState,
     showEditCoordsDialog,
@@ -35,6 +36,7 @@ import {
     toggleDemo,
     toggleDoublePrecision,
     toggleHeader,
+    toggleRiemannDisplayDropdown,
     toggleZetaPath,
     travelToPreset,
     updateColorTheme,
@@ -186,8 +188,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyE': // Debug lines
-            toggleCenterLines();
+        case 'KeyE': // Edit coords dialog
+            showEditCoordsDialog();
             handled = true;
             break;
 
@@ -205,7 +207,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyZ': // Switch between fractals with constant p/c OR toggle zeta path
+        case 'KeyK': // Debug lines
+            toggleCenterLines();
+            handled = true;
+            break;
+
+        case 'KeyO': // Switch between fractals with constant p/c OR toggle zeta path
             // In Riemann mode, Z toggles zeta path
             if (isRiemannMode()) {
                 toggleZetaPath();
@@ -253,8 +260,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyC': // Capture screenshot
-            captureScreenshot();
+        case 'KeyC': // Copy info / Capture screenshot
+            if (event.ctrlKey) {
+                copyInfoToClipboard();
+            } else {
+                captureScreenshot();
+            }
             handled = true;
             break;
 
@@ -304,8 +315,8 @@ async function onKeyDown(event) {
             break;
 
 
-        case 'KeyV': // Rossler (temporarily)
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
+        case 'KeyV': // Cycle to next view/preset
+            await cycleToNextPreset();
             handled = true;
             break;
 
@@ -354,8 +365,12 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyD':
-            showEditCoordsDialog();
+        case 'KeyD': // Cycle dives (Julia) / Toggle display dropdown (Riemann) / Edit coords (others)
+            if (isJuliaMode()) {
+                await cycleToNextDive();
+            } else if (isRiemannMode()) {
+                toggleRiemannDisplayDropdown();
+            }
             handled = true;
             break;
 
