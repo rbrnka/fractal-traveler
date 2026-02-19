@@ -103,6 +103,13 @@ export const FF_RIEMANN_SHADER_DROPDOWN = false;
 export const FF_RIEMANN_COLOR_SLIDERS = false;
 
 /**
+ * Shows the RGB frequency sliders in Rossler attractor mode.
+ * These control the color mapping frequencies for the attractor visualization.
+ * @type {boolean}
+ */
+export const FF_ROSSLER_COLOR_SLIDERS = false;
+
+/**
  * Experimental: Highlights the first letter of all buttons in the header panel.
  * The first letter is styled with the accent color to indicate keyboard shortcuts.
  * @type {boolean}

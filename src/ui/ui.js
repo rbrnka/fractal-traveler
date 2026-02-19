@@ -31,6 +31,7 @@ import {
     FF_RANDOM_APP_NAME,
     FF_RIEMANN_COLOR_SLIDERS,
     FF_RIEMANN_SHADER_DROPDOWN,
+    FF_ROSSLER_COLOR_SLIDERS,
     FRACTAL_TYPE,
     log,
     PI
@@ -3403,6 +3404,12 @@ function initRosslerControls() {
     // Show the controls
     rosslerControls.style.display = 'flex';
 
+    // Show/hide color sliders based on feature flag
+    const rosslerColorSliders = document.getElementById('rosslerColorSliders');
+    if (rosslerColorSliders) {
+        rosslerColorSliders.style.display = FF_ROSSLER_COLOR_SLIDERS ? 'block' : 'none';
+    }
+
     // Initialize parameter sliders (a, b, c)
     if (rosslerASlider) {
         rosslerASlider.value = fractalApp.params[0];
@@ -3422,12 +3429,13 @@ function initRosslerControls() {
         rosslerCSlider.addEventListener('input', handleRosslerCChange);
     }
 
-    // Initialize frequency sliders
-    if (rosslerFreqRSlider) {
-        rosslerFreqRSlider.value = fractalApp.frequency[0];
-        rosslerFreqRValue.textContent = fractalApp.frequency[0].toFixed(2);
-        rosslerFreqRSlider.addEventListener('input', handleRosslerFreqRChange);
-    }
+    // Initialize frequency sliders (only if visible)
+    if (FF_ROSSLER_COLOR_SLIDERS) {
+        if (rosslerFreqRSlider) {
+            rosslerFreqRSlider.value = fractalApp.frequency[0];
+            rosslerFreqRValue.textContent = fractalApp.frequency[0].toFixed(2);
+            rosslerFreqRSlider.addEventListener('input', handleRosslerFreqRChange);
+        }
 
     if (rosslerFreqGSlider) {
         rosslerFreqGSlider.value = fractalApp.frequency[1];
@@ -3435,10 +3443,11 @@ function initRosslerControls() {
         rosslerFreqGSlider.addEventListener('input', handleRosslerFreqGChange);
     }
 
-    if (rosslerFreqBSlider) {
-        rosslerFreqBSlider.value = fractalApp.frequency[2];
-        rosslerFreqBValue.textContent = fractalApp.frequency[2].toFixed(2);
-        rosslerFreqBSlider.addEventListener('input', handleRosslerFreqBChange);
+        if (rosslerFreqBSlider) {
+            rosslerFreqBSlider.value = fractalApp.frequency[2];
+            rosslerFreqBValue.textContent = fractalApp.frequency[2].toFixed(2);
+            rosslerFreqBSlider.addEventListener('input', handleRosslerFreqBChange);
+        }
     }
 
     // Initialize iterations slider
