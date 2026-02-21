@@ -6,7 +6,7 @@ import {
     log,
     LOG_LEVEL
 } from "../global/constants";
-import {getFractalMode, isAnimationActive, isJuliaMode} from "./ui";
+import {getFractalMode, isAnimationActive, isJuliaMode, isRiemannMode, isRosslerMode} from "./ui";
 
 /**
  * Debug Panel
@@ -423,7 +423,7 @@ export class DebugPanel {
             <span class="dbg-dim">───────────────────────────────────────────────────────</span><br/>
             <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
             <span class="dbg-title">GPU</span>: ${esc(gpuRenderer)} <span class="dbg-dim">(${esc(gpuVendor)})</span><br/>
-            <span class="dbg-title">Mode:</span> ${esc(getFractalMode())} <span class="dbg-dim">|</span> <span class="dbg-title">Canvas:</span> ${esc(this.canvas.width)}x${esc(this.canvas.height)} <span class="dbg-dim">(dpr=${esc(dpr)})</span><br/>
+            <span class="dbg-title">Mode:</span> ${esc(getFractalMode())} <span class="dbg-dim">|</span> <span class="dbg-title">Shader:</span> ${esc(this._getShaderName())} <span class="dbg-dim">|</span> <span class="dbg-title">Canvas:</span> ${esc(this.canvas.width)}x${esc(this.canvas.height)} <span class="dbg-dim">(dpr=${esc(dpr)})</span><br/>
             <br/>
             <span class="dbg-title">———— Transform ————</span><br/>
             <span class="dbg-title">pan</span>=[${esc(viewPanX.toFixed(18))}, ${esc(viewPanY.toFixed(18))}]<br/>
@@ -522,6 +522,33 @@ export class DebugPanel {
         }
 
         return `${gpuSmooth.toFixed(2)}ms`;
+    }
+
+    /**
+     * Gets the current shader name for the active renderer.
+     * @returns {string} Shader name or identifier
+     */
+    _getShaderName() {
+        if (!this.fractalApp) return 'n/a';
+
+        if (isRiemannMode()) {
+            // Riemann has multiple shaders (borwein, siegel)
+            const shaderInfo = this.fractalApp.getShaderInfo?.();
+            return shaderInfo?.name || this.fractalApp.currentShader || 'unknown';
+        }
+
+        if (isJuliaMode()) {
+            // Julia has legacy vs perturbation shader
+            const isLegacy = this.fractalApp.constructor?.FF_LEGACY_JULIA_RENDERER;
+            return isLegacy ? 'Legacy' : 'Perturbation';
+        }
+
+        if (isRosslerMode()) {
+            return 'Default';
+        }
+
+        // Mandelbrot
+        return 'Default';
     }
 
     /** Toggle the visibility of the debug panel. */
