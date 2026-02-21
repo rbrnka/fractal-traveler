@@ -298,7 +298,18 @@ export async function switchFractalMode(mode, preset = null) {
         updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
     }
 
-    console.log(`Switched to ${mode === FRACTAL_TYPE.MANDELBROT ? 'Mandelbrot' : 'Julia'}`);
+    // Show quick info with mode name
+    const modeNames = {
+        [FRACTAL_TYPE.MANDELBROT]: 'Mandelbrot',
+        [FRACTAL_TYPE.JULIA]: 'Julia',
+        [FRACTAL_TYPE.RIEMANN]: 'Riemann Zeta',
+        [FRACTAL_TYPE.ROSSLER]: 'Rossler'
+    };
+    const modeName = modeNames[mode] || 'Unknown';
+    const palette = fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+    showQuickInfo(`${modeName} mode`, null, palette?.keyColor);
+
+    console.log(`Switched to ${modeName}`);
     console.groupEnd();
 }
 
@@ -547,6 +558,22 @@ export function updatePaletteDropdownState() {
             btn.classList.toggle('active', currentIndex === paletteIndex);
         }
     });
+}
+
+/**
+ * Updates palette dropdown state and shows quick info overlay for palette cycling.
+ * Used as callback for startPaletteCycling.
+ */
+export function updatePaletteDropdownStateWithInfo() {
+    updatePaletteDropdownState();
+
+    // Show quick info for current palette
+    const palettes = fractalApp?.PALETTES || [];
+    const currentIndex = fractalApp?.currentPaletteIndex ?? 0;
+    const palette = palettes[currentIndex];
+    if (palette) {
+        showQuickInfo(palette.id, null, palette.keyColor);
+    }
 }
 
 /**
@@ -915,6 +942,11 @@ export async function startJuliaDive(dives, index) {
 
     const dive = dives[index];
 
+    // Show quick info with dive name at start
+    const palette = fractalApp.PALETTES?.find(p => p.id === dive.paletteId) ||
+                    fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+    showQuickInfo(dive.id || `Dive ${index + 1}`, dive.description, palette?.keyColor, 3000);
+
     // Stop palette cycling if dive has a defined palette
     if (dive.paletteId) {
         fractalApp.stopCurrentColorAnimations();
@@ -1157,6 +1189,12 @@ export async function cycleColors() {
     syncMandelbrotControls();
     syncRiemannControls();
     syncRosslerControls();
+
+    // Show quick info with palette name
+    const palette = palettes[nextIndex];
+    if (palette) {
+        showQuickInfo(palette.id, null, palette.keyColor);
+    }
 }
 
 export function captureScreenshot() {
@@ -2180,7 +2218,7 @@ function initPaletteButtonEvents() {
             syncRosslerControls();
         } else {
             closePaletteDropdown();
-            await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownState);
+            await fractalApp.startPaletteCycling(5000, 2000, updateColorTheme, updatePaletteDropdownStateWithInfo);
         }
         // Ensure button state is synced
         updatePaletteCycleButtonState();
@@ -2231,6 +2269,8 @@ function initPaletteButtonEvents() {
             updatePaletteDropdownState();
             updatePaletteCycleButtonState();
             syncRiemannControls();
+            // Show quick info with palette name
+            showQuickInfo(palette.id, null, palette.keyColor);
         });
 
         paletteMenu.appendChild(btn);
@@ -3063,6 +3103,11 @@ function showViewInfo(preset, index, total, isRiemann = false) {
         }
     }
 
+    // Restore progress display (may have been hidden by showQuickInfo)
+    if (viewInfoProgress) {
+        viewInfoProgress.style.display = '';
+    }
+
     if (viewInfoCurrent) {
         viewInfoCurrent.textContent = (index + 1).toString();
     }
@@ -3343,6 +3388,69 @@ export function hideViewInfo() {
         viewInfoOverlay.classList.add('view-info-hidden');
     }
     hideAllMarkers();
+}
+
+let quickInfoTimeout = null;
+
+/**
+ * Shows a quick info overlay for palette changes, mode switches, and dive starts.
+ * Auto-hides after the specified duration.
+ * @param {string} title - The title to display (e.g., palette name, mode name)
+ * @param {string} [description] - Optional description
+ * @param {string} [color] - Optional accent color (hex)
+ * @param {number} [duration=2000] - Auto-hide delay in ms
+ */
+export function showQuickInfo(title, description = null, color = null, duration = 2000) {
+    if (!viewInfoOverlay) return;
+
+    // Clear any pending hide timeout
+    if (quickInfoTimeout) {
+        clearTimeout(quickInfoTimeout);
+        quickInfoTimeout = null;
+    }
+
+    // Set title
+    if (viewInfoTitle) {
+        viewInfoTitle.textContent = title;
+    }
+
+    // Hide value (not used for quick info)
+    if (viewInfoValue) {
+        viewInfoValue.style.display = 'none';
+    }
+
+    // Set or hide description
+    if (viewInfoDescription) {
+        if (description) {
+            viewInfoDescription.textContent = description;
+            viewInfoDescription.style.display = '';
+        } else {
+            viewInfoDescription.style.display = 'none';
+        }
+    }
+
+    // Hide progress counter (not relevant for quick info)
+    if (viewInfoProgress) {
+        viewInfoProgress.style.display = 'none';
+    }
+
+    // Apply accent color
+    if (color) {
+        viewInfoOverlay.style.borderColor = color;
+        if (viewInfoTitle) viewInfoTitle.style.color = color;
+    } else {
+        viewInfoOverlay.style.borderColor = '';
+        if (viewInfoTitle) viewInfoTitle.style.color = '';
+    }
+
+    // Show overlay
+    viewInfoOverlay.classList.remove('view-info-hidden');
+
+    // Auto-hide after duration
+    quickInfoTimeout = setTimeout(() => {
+        hideViewInfo();
+        quickInfoTimeout = null;
+    }, duration);
 }
 
 /**
@@ -3719,6 +3827,7 @@ function bindHTMLElements() {
     viewInfoDescription = document.getElementById('viewInfoDescription');
     viewInfoCurrent = document.getElementById('viewInfoCurrent');
     viewInfoTotal = document.getElementById('viewInfoTotal');
+    viewInfoProgress = document.getElementById('viewInfoProgress');
     pointMarker = document.getElementById('pointMarker');
     lineMarker = document.getElementById('lineMarker');
     lineMarkerLabel = lineMarker?.querySelector('.line-marker-label');

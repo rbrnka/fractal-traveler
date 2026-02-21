@@ -23,6 +23,7 @@ import {
     reset,
     resetAppState,
     showEditCoordsDialog,
+    showQuickInfo,
     showSaveViewDialog,
     startJuliaDive,
     switchFractalMode,
@@ -42,6 +43,7 @@ import {
     updateColorTheme,
     updatePaletteCycleButtonState,
     updatePaletteDropdownState,
+    updatePaletteDropdownStateWithInfo,
 } from "./ui";
 import {
     CONSOLE_GROUP_STYLE,
@@ -236,6 +238,11 @@ async function onKeyDown(event) {
                 updatePaletteCycleButtonState();
                 syncRiemannControls();
                 syncRosslerControls();
+                // Show quick info for reset palette
+                const palette = fractalApp.PALETTES?.[0];
+                if (palette) {
+                    showQuickInfo(palette.id, null, palette.keyColor);
+                }
             } else if (event.shiftKey) {
                 // Shift+P: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
@@ -245,7 +252,7 @@ async function onKeyDown(event) {
                     syncRosslerControls();
                 } else {
                     // Start cycling
-                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
+                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownStateWithInfo);
                 }
                 updatePaletteCycleButtonState();
             } else {
