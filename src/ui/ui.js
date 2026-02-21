@@ -178,6 +178,7 @@ let viewInfoValue;
 let viewInfoDescription;
 let viewInfoCurrent;
 let viewInfoTotal;
+let viewInfoProgress;
 let pointMarker;
 let lineMarker;
 let lineMarkerLabel;
@@ -226,6 +227,11 @@ export async function switchFractalMode(mode, preset = null) {
         if (DEBUG_MODE === DEBUG_LEVEL.NONE) return;
     }
 
+    // Stop all running animations before switching
+    fractalApp.stopDemo?.();
+    fractalApp.stopZeroTour?.();
+    fractalApp.stopCurrentColorAnimations?.();
+    hideViewInfo();
     exitAnimationMode();
 
     fractalApp.destroy();
