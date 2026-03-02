@@ -547,8 +547,17 @@ export class DebugPanel {
             return 'Default';
         }
 
-        // Mandelbrot
-        return 'Default';
+        // Mandelbrot - check for shader info (series vs perturbation)
+        const shaderInfo = this.fractalApp.getShaderInfo?.();
+        if (shaderInfo) {
+            // Include skip iteration info for series shader
+            if (shaderInfo.id === 'series' && shaderInfo.skipIter > 0) {
+                return `${shaderInfo.name} (skip:${shaderInfo.skipIter})`;
+            }
+            return shaderInfo.name;
+        }
+
+        return 'Perturbation';
     }
 
     /** Toggle the visibility of the debug panel. */
