@@ -105,7 +105,7 @@
     {
       "id": "Gram Point g₁",
       "type": "gram",
-      "pan": [0.5, 17.85],
+      "pan": [0.5, 17.8456],
       "zoom": 12,
       "paletteId": "Default",
       "description": "Where Im(ζ(1/2+it)) = 0. Gram points bracket some zeros and help locate them."
@@ -143,14 +143,6 @@
       "description": "Exhibits the irregular, 'random matrix' behavior typical of complex quantum systems."
     },
     {
-      "id": "Near Twin",
-      "type": "nontrivial",
-      "pan": [0.5, 32.9351],
-      "zoom": 10,
-      "paletteId": "Default",
-      "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
-    },
-    {
       "id": "Hardy's Milestone",
       "type": "nontrivial",
       "pan": [0.5, 37.5862],
@@ -170,7 +162,7 @@
     {
       "id": "Zero Cluster",
       "type": "overview",
-      "pan": [0.5, 42],
+      "pan": [0.5, 129.58],
       "zoom": 40,
       "paletteId": "Default",
       "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
@@ -200,14 +192,6 @@
       "description": "Calculated by J.P. Gram (1903), who developed methods to predict zero locations."
     },
     {
-      "id": "Functional Equation",
-      "type": "symmetry",
-      "pan": [0.5, 0],
-      "zoom": 20,
-      "paletteId": "Default",
-      "description": "The symmetry ζ(s) ↔ ζ(1−s) reflects the function across the critical line."
-    },
-    {
       "id": "Gram's Law Violation",
       "type": "gram",
       "pan": [0.5, 282.465],
@@ -216,19 +200,80 @@
       "description": "The first violation of Gram's Law. Here, the expected alternating rhythm of zeros and Gram points breaks down, showing the underlying chaotic nature of the function."
     },
     {
+      "id": "Titchmarsh's Last Zero",
+      "type": "nontrivial",
+      "pan": [0.5, 1468.82],
+      "zoom": 5,
+      "paletteId": "Default",
+      "description": "This is the 1041th and last of the zeroes found and calculated by hand in 1936 by E. C. Titchmarsh."
+    },
+    {
+      "id": "Turing's Last Zero",
+      "type": "nontrivial",
+      "pan": [0.5, 1540.572],
+      "zoom": 5,
+      "paletteId": "Default",
+      "description": "First computerized attempt by Alan Turing in 1950 using the Manchester Mark 1 computer leading to discovery of the 1104th zero."
+    },
+    {
       "id": "Lehmer's Phenomenon",
       "type": "nontrivial",
       "pan": [0.5, 7005.082],
       "zoom": 5,
       "paletteId": "Default",
-      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038. Using Double Precision shader for accurate rendering."
+      "description": "Two zeros at t≈7005.063 and t≈7005.101 separated by only 0.038 represent 6709th and 6710th zero that are unusually close to each other."
+    },
+    {
+      "id": "ZetaGrid",
+      "type": "nontrivial",
+      "pan": [0.5, 3.2e13],
+      "zoom": 5,
+      "paletteId": "Default",
+      "description": "První masivní využití distribuovaných výpočtů (podobně jako SETI@home).\nMilník: Dobrovolníci na svých PC ověřili prvních 10 bilionů (10¹³) nul. Vědecky nepřijmuto. OUT OF RENDERING BOUNDS!"
+    },
+    {
+      "id": "Platt & Trudgian",
+      "type": "nontrivial",
+      "pan": [0.5, 3.2e13],
+      "zoom": 5,
+      "paletteId": "Default",
+      "description": "Použili metodu pásmového ověřování (interval arithmetic), která dává 100% matematickou jistotu, že žádná nula nebyla vynechána. Vědecky příjmuto. OUT OF RENDERING BOUNDS!"
     }
   ],
   "palettes": [
     {"id": "Default", "keyColor": "#4FC3F7", "theme": [1, 1, 1]},
+    {"id": "Spectral", "keyColor": "#FF1744", "theme": [1.2, 1.0, 0.8], "frequency": [8.0, 6.5, 5.0], "phase": [0, 0.33, 0.67]},
     {"id": "Twilight", "keyColor": "#7C4DFF", "theme": [0.7, 0.5, 1.4]},
+    {"id": "Quantum", "keyColor": "#00BFA5", "theme": [0.9, 1.3, 1.1], "frequency": [7.0, 9.0, 11.0], "phase": [0.5, 0, 0.25]},
     {"id": "Thermal", "keyColor": "#FF6D00", "theme": [1.5, 0.8, 0.3]},
+    {"id": "Prism", "keyColor": "#E040FB", "theme": [1.1, 0.9, 1.2], "frequency": [5.5, 7.5, 9.5], "phase": [0.15, 0.45, 0.75]},
     {"id": "Arctic", "keyColor": "#00E5FF", "theme": [0.3, 1.2, 1.5]},
     {"id": "Monochrome", "keyColor": "#BDBDBD", "theme": [1.0, 1.0, 1.0], "frequency": [3.0, 3.0, 3.0], "phase": [0, 0, 0]}
+  ],
+  "removed": [
+    {
+      "id": "Near Twin",
+      "type": "nontrivial",
+      "pan": [0.5, 32.9351],
+      "zoom": 10,
+      "paletteId": "Default",
+      "description": "Part of an unusually tight cluster, demonstrating that zeros do not appear at regular intervals."
+    },
+    {
+      "id": "Functional Equation",
+      "type": "symmetry",
+      "pan": [0.5, 0],
+      "zoom": 20,
+      "paletteId": "Default",
+      "description": "The symmetry ζ(s) ↔ ζ(1−s) reflects the function across the critical line."
+    },
+    {
+      "id": "X",
+      "type": "nontrivial",
+      "pan": [0.5, 9691668],
+      "zoom": 5,
+      "paletteId": "Default",
+      "description": "Test"
+    }
   ]
 }
