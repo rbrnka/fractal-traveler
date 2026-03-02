@@ -87,7 +87,7 @@
                         <button type="button" id="fractal-toggle" class="dropdown-toggle" title="Switch Fractal Mode (F)">Fractal &#x25BE;</button>
                         <div id="fractal-modes" class="dropdown-menu"></div>
                     </div>
-                    <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings (Y)">&udarr;</button>
+                    <button type="button" id="persistSwitch" title="Switches between Mandelbrot and Julia with persistent settings (O)">&udarr;</button>
 
                     <div id="presets-dropdown" class="dropdown">
                         <button type="button" id="presets-toggle" class="dropdown-toggle" title="Interesting Locations (V)">View &#x25BE;</button>
@@ -178,17 +178,17 @@
             <!-- Rossler Controls -->
             <div id="rosslerControls">
                 <div class="slider-container">
-                    <label for="rosslerASlider" title="Parameter a - spiral tightness">Spiral:</label>
+                    <label for="rosslerASlider" title="Spiral tightness">Spiral:</label>
                     <input type="range" id="rosslerASlider" class="slider" min="0.1" max="0.5" step="0.01" value="0.2">
                     <output class="sliderValue" id="rosslerAValue">0.20</output>
                 </div>
                 <div class="slider-container">
-                    <label for="rosslerBSlider" title="Parameter b - z-axis behavior">Z:</label>
+                    <label for="rosslerBSlider" title="Z-axis behavior">Z:</label>
                     <input type="range" id="rosslerBSlider" class="slider" min="0.1" max="0.5" step="0.01" value="0.2">
                     <output class="sliderValue" id="rosslerBValue">0.20</output>
                 </div>
                 <div class="slider-container">
-                    <label for="rosslerCSlider" title="Parameter c - chaos level (most interesting!)">Chaos:</label>
+                    <label for="rosslerCSlider" title="Chaos level (most interesting!)">Chaos:</label>
                     <input type="range" id="rosslerCSlider" class="slider" min="3.0" max="12.0" step="0.1" value="5.7">
                     <output class="sliderValue" id="rosslerCValue">5.7</output>
                 </div>

@@ -18,6 +18,7 @@ import {
     hideViewInfo,
     isAnimationActive,
     isJuliaMode,
+    isMandelbrotMode,
     isRiemannMode,
     isRosslerMode,
     reset,
@@ -214,14 +215,14 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyO': // Switch between fractals with constant p/c OR toggle zeta path
-            // In Riemann mode, Z toggles zeta path
+        case 'KeyO': // Switch between fractals with constant p/c OR toggle zeta path OR toggle shader
+            // In Riemann mode, O toggles zeta path
             if (isRiemannMode()) {
                 toggleZetaPath();
                 handled = true;
                 break;
             }
-            // In Mandelbrot/Julia mode, Z switches between them with persistence
+            // In Mandelbrot/Julia mode, switch between them with persistence
             if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
             await switchFractalTypeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
             handled = true;
@@ -287,6 +288,16 @@ async function onKeyDown(event) {
                 await switchFractalMode(FRACTAL_TYPE.JULIA);
             } else if (isRiemannMode()) {
                 toggleDoublePrecision();
+            } else if (isMandelbrotMode()) {
+                // In Mandelbrot mode toggle between perturbation and series shader
+                fractalApp.toggleShader?.();
+                const shaderInfo = fractalApp.getShaderInfo?.();
+                if (shaderInfo) {
+                    const palette = fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+                    showQuickInfo(`Shader: ${shaderInfo.name}`, shaderInfo.description, palette?.keyColor);
+                }
+                handled = true;
+                break;
             }
             handled = true;
             break;

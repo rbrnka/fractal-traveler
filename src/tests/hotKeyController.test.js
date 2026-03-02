@@ -160,8 +160,8 @@ describe('HotKeyController', () => {
         expect(ui.copyInfoToClipboard).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"E" toggles the guiding lines', async () => {
-        document.dispatchEvent(charPressedEvent('u'));
+    test('"K" toggles the guiding lines', async () => {
+        document.dispatchEvent(charPressedEvent('k'));
         await Promise.resolve();
         expect(ui.toggleCenterLines).toHaveBeenCalled();
     });
