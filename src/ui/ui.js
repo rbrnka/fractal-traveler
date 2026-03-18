@@ -1242,6 +1242,9 @@ export async function reset() {
 
     exitAnimationMode();
 
+    // Hide view info overlay and markers (exitAnimationMode skips this if !animationActive)
+    hideViewInfo();
+
     // Stop palette cycling if active
     if (fractalApp.paletteCyclingActive) {
         fractalApp.stopCurrentColorAnimations();
