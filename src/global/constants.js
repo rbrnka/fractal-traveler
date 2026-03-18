@@ -287,6 +287,6 @@ export const APP = {
         "Forge", "Workshop", "Reactor", "Core", "Kernel", "Matrix", "Plane", "Realm", "Horizon", "Iterator"
     ],
     get randomName() { return this.prefix + this.suffixes[Math.floor(Math.random() * this.suffixes.length)]; },
-    get defaultName() { return this.prefix + this.suffixes[0]; }
+    get defaultName() { return this.prefix + this.suffixes[7]; }
     //@formatter:on
 }
