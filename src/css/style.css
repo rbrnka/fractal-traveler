@@ -144,6 +144,7 @@ h1 {
     border-radius: 10px;
     width: fit-content;
     position: relative;
+    z-index: 10;
     margin: 0 10px;
     padding: 4px 20px 8px;
     cursor: auto;
@@ -340,8 +341,8 @@ button:focus-visible {
 
 /* Presets/Views dropdown */
 #presets-dropdown .dropdown-menu {
-    min-width: 280px;
-    max-width: 400px;
+    min-width: 360px;
+    max-width: 480px;
 }
 
 /* Palette dropdown */
@@ -623,6 +624,8 @@ button.dive.has-palette.active {
    ======================================== */
 
 .header-footer {
+    position: relative;
+    z-index: 1;
     font-size: 11px;
     margin: 5px 0 3px;
     color: #ccc;
@@ -1464,6 +1467,7 @@ button.preset.user-preset::before {
 
 .hint-trigger {
     position: relative;
+    z-index: 1;
     display: inline-block;
     cursor: help;
     text-underline-offset: 2px;
