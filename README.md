@@ -1,4 +1,5 @@
- <h1 align="center"><img width="1080" height="110" alt="image" src="https://github.com/user-attachments/assets/d22da54b-adc4-4fcf-882e-8d7bd2187661" /></h1>
+ <h1 align="center"><img width="829" height="84" alt="image" src="https://github.com/user-attachments/assets/f7403a8c-304e-4996-8aae-a68412b19f63" /></h1>
+
 
 <p align="center">
   <a href="https://fractal.brnka.com/" title="Open the live app">
@@ -6,8 +7,8 @@
   </a>
 </p>
 <p align="center">
-  A real-time Mandelbrot & Julia explorer built with modern JavaScript + WebGL.<br/>
-  Smooth deep-zoom navigation, palette play, curated presets, and animated “dives”.
+  A real-time chaos explorer built with modern JavaScript + WebGL.<br/>
+  Smooth deep-zoom navigation, palette play, curated presets, animated dives and tours.
 </p>
 
 <p align="center">
@@ -35,12 +36,12 @@
 
 ## About
 
-**Synaptory Fractal Traveler** is an interactive exploration and learning experience for the **Mandelbrot set** and its 
-companion **Julia sets**. It renders on the GPU (WebGL) and is designed around one simple goal:
+**Synaptory Chaos Explorer** is an interactive exploration and learning experience for the **Mandelbrot set**, its
+companion **Julia sets**, the **Riemann Zeta function**, and the **Rössler Attractor**. It is designed around one simple goal:
 
-> Make the beauty of “fractal travel” available for everyone to enjoy. 
+> Make the beauty of chaos and fractal travel available for everyone to enjoy. 
 
-You can zoom, pan, rotate, recolor, take screenshots, share coordinates/links, and jump through curated presets that highlight the set’s interesting locations.
+You can zoom, pan, rotate, recolor, take screenshots, share coordinates/links, and jump through curated presets that highlight interesting locations.
 
 Read more in [Wiki](https://github.com/rbrnka/fractal-traveler/wiki).
 
@@ -48,34 +49,38 @@ Read more in [Wiki](https://github.com/rbrnka/fractal-traveler/wiki).
 
 ## Features
 
-- **Modern & responsive UI** optimized for 60 FPS experience in wide range of devices, including mobile.
-- **Double-double precision fractal rendering** (~1e-15 regular zoom, up to ~1e-35 in Re=0 locations)
-- **Mandelbrot + Julia modes** with fast switching, optional relative switching, and live Julia preview
-- **Real-time exploration**: zoom / pan / rotate with mouse, keyboard, or touch
-- **Views & Dives**
-    - Views: instant jumps to interesting locations
-    - Dives: looped animated “tours” (Julia-only)
-- **Demo**: Automatic vacation plan for you to sit back and enjoy guided tour through the fractal world.
-- **Palette support**
-    - Several attractive palettes for you to choose from
-    - Recolor / theme switching
-    - Optional cyclic palette animation
-    - Palette editor is available in case you want to create your own
-- **Shareable exploration**
-    - Generate a link and share
-    - Copy exact coordinates to clipboard
-    - Save your favorite locations locally
-- **Rich controls**
-   - Use one hand, a keyboard, or both at the same time to fully control the entire experience.
-- **Utilities**
-  - Clean screenshots without UI (with watermark coordinates)
-  - Optional debug panel / guides
-- **Development Support**
-  - npm packaged
-  - Ready for local deployment and experimentation
-  - Palette editor available
+- **Modern & responsive UI** optimized for 60 FPS experience on a wide range of devices, including mobile.
+- **Double-double precision rendering** (~10⁻¹⁵ regular zoom, up to ~10⁻³⁵ in Re=0 locations)
+- **Real-time exploration**: zoom, pan, and rotate with mouse, keyboard, or touch
+- **Demo/Tour mode**: Sit back and enjoy a guided tour through the fractal world
+- **Palette support**: Multiple color schemes with optional cyclic animation
+- **Shareable exploration**: Generate links, copy coordinates, save favorite views locally
+- **Controls**: Mouse, keyboard, and touch — see [full controls reference](https://github.com/rbrnka/fractal-traveler/wiki/Controls)
+- **Screenshots**: Clean exports with watermark coordinates
 
-Check out the latest [release notes](https://github.com/rbrnka/fractal-traveler/releases/tag/2.0).
+### Fractal Modes
+
+#### Mandelbrot Set
+- Deep zoom exploration with double-double precision (up to ~10⁻³⁵)
+- Two rendering modes: Perturbation and Series Approximation
+- Curated views highlighting interesting locations
+
+#### Julia Sets
+- Interactive C parameter control via sliders
+- Live Julia preview on middle-click in Mandelbrot mode
+- Animated "dives" through c-parameter space
+
+#### Riemann Zeta Function
+- Domain coloring visualization with multiple shader modes
+- Zero Tour: animated journey through critical line zeros
+- Mathematical annotations (trivial zeros, pole, Basel Problem, Apéry's constant, etc.)
+
+#### Rössler Attractor
+- 3D chaotic system visualization
+- Adjustable parameters (a, b, c coefficients)
+- Phase space exploration
+
+Check out the latest [release notes](https://github.com/rbrnka/fractal-traveler/releases).
 
 ---
 
