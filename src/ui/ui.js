@@ -2057,7 +2057,7 @@ function initFractalModeButtons() {
         { type: FRACTAL_TYPE.MANDELBROT, name: 'Mandelbrot', title: 'Mandelbrot set explorer' },
         { type: FRACTAL_TYPE.JULIA, name: 'Julia', title: 'Julia set explorer' },
         { type: FRACTAL_TYPE.RIEMANN, name: 'Riemann', title: 'Riemann Zeta function visualization' },
-        // { type: FRACTAL_TYPE.ROSSLER, name: 'Rosslerᴮᴱᵀᴬ', title: 'Rossler attractor' }
+        { type: FRACTAL_TYPE.ROSSLER, name: 'Rosslerᴮᴱᵀᴬ', title: 'Rossler attractor' }
     ];
 
     modes.forEach((mode) => {
