@@ -7,7 +7,15 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, hideViewInfo, isJuliaMode, isRiemannMode, resetAppState, updateInfo} from './ui.js';
+import {
+    getCurrentPaletteId,
+    hideViewInfo,
+    isJuliaMode,
+    isRiemannMode,
+    isRosslerMode,
+    resetAppState,
+    updateInfo
+} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 import {clampPanDelta} from "./mouseEventHandlers";
 
@@ -513,13 +521,15 @@ function handleTouchEnd(event) {
                     // Centering action using delta-based pan:
                     fractalApp.animatePanBy(deltaPan, 400).then(() => {
                         resetAppState();
-                        // Get the updated fractal coordinates after pan
-                        const [newFx, newFy] = fractalApp.screenToFractal(touchX, touchY);
-                        if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1], getCurrentPaletteId());
-                        } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation, null, null, getCurrentPaletteId());
-                        }
+                        // Determine current mode for URL
+                        let currentMode = FRACTAL_TYPE.MANDELBROT;
+                        if (isJuliaMode()) currentMode = FRACTAL_TYPE.JULIA;
+                        else if (isRiemannMode()) currentMode = FRACTAL_TYPE.RIEMANN;
+                        else if (isRosslerMode()) currentMode = FRACTAL_TYPE.ROSSLER;
+
+                        const cx = isJuliaMode() ? fractalApp.c[0] : null;
+                        const cy = isJuliaMode() ? fractalApp.c[1] : null;
+                        updateURLParams(currentMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, cx, cy, getCurrentPaletteId());
                     });
 
                     touchClickTimeout = null;
