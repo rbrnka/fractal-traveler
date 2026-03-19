@@ -265,6 +265,13 @@ async function onKeyDown(event) {
 
         case 'KeyA': // Toggle AdaptQ
             fractalApp.toggleAdaptiveQuality();
+            const aqEnabled = fractalApp.adaptiveQualityEnabled;
+            const aqPalette = fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+            showQuickInfo(
+                `Adaptive Quality: ${aqEnabled ? 'ON' : 'OFF'}`,
+                aqEnabled ? 'Dynamically adjusts iterations for performance' : 'Fixed iteration count',
+                aqPalette?.keyColor
+            );
             handled = true;
             break;
 
