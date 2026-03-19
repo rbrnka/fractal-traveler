@@ -93,3 +93,5 @@ If you find something beautiful:
 2. Hit `S`to save it locally.
 3. Hit `D` to copy coordinates and share it in the discussion (or anywhere you like).
 
+or fork and deploy your own instance.
+
