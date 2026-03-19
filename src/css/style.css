@@ -100,7 +100,7 @@ html, body {
     user-select: none;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     top: -320px;
-    transition: 0.1s ease-in;
+    transition: height 0.1s ease-out;
 }
 
 #headerContainer.ready {
@@ -110,6 +110,11 @@ html, body {
 #headerContainer.minimized {
     height: 30px;
     overflow: hidden;
+}
+
+#headerContainer.minimized #controlArea {
+    pointer-events: none;
+    opacity: 0;
 }
 
 /* ========================================
@@ -135,10 +140,11 @@ h1 {
    ======================================== */
 
 #controlArea {
-    background: var(--bg-color);
+    /*background: var(--bg-color);*/
     border-radius: 10px;
     width: fit-content;
     position: relative;
+    z-index: 10;
     margin: 0 10px;
     padding: 4px 20px 8px;
     cursor: auto;
@@ -146,10 +152,13 @@ h1 {
     flex-direction: column;
     align-items: center;
     gap: 4px;
+    transition: opacity 0.1s ease-out;
+    backdrop-filter: blur(10px);
+    box-shadow: inset 0 0 15px rgba(0,0,0,.1);
 }
 
 .tagline {
-    margin: 2px 0 4px;
+    margin: 2px 0 2px 0;
     color: #ccc;
     font-size: 12px;
     line-height: 14px;
@@ -231,15 +240,18 @@ button.active {
     text-shadow: 0 0 4px var(--accent-color);
 }
 
-button:focus {
+button:focus-visible {
     background-image: linear-gradient(#222, #666);
     text-shadow: 0 0 4px var(--accent-color);
 }
 
-/* Fractal Switch Buttons */
-#fractal-switch .button-group button {
-    height: 30px;
-    min-width: 80px;
+/* Hotkey hint - highlights the first letter in button labels */
+.button-label {
+    display: inline;
+}
+
+.hotkey-hint {
+    color: var(--accent-color);
 }
 
 #persistSwitch {
@@ -248,7 +260,7 @@ button:focus {
     display: none;
 }
 
-#persistSwitch:focus {
+#persistSwitch:focus-visible {
     background-image: linear-gradient(#000, #222);
 }
 
@@ -327,6 +339,12 @@ button:focus {
     }
 }
 
+/* Presets/Views dropdown */
+#presets-dropdown .dropdown-menu {
+    min-width: 360px;
+    max-width: 480px;
+}
+
 /* Palette dropdown */
 #palette-dropdown .dropdown-menu {
     min-width: 120px;
@@ -354,11 +372,14 @@ button:focus {
 
 .color-cycle-swatch {
     background: conic-gradient(from 0deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3, #ff6b6b);
-    animation: color-cycle-spin 3s linear infinite;
 }
 
 #palette-cycle.active {
     color: var(--accent-color);
+}
+
+#palette-cycle.active .color-cycle-swatch {
+    animation: color-cycle-spin 3s linear infinite;
 }
 
 /* Fractal mode dropdown */
@@ -383,6 +404,62 @@ button:focus {
 
 #fractal-toggle {
     min-width: 100px;
+}
+
+/* Riemann display dropdown */
+#riemann-display-dropdown {
+    display: none;
+}
+
+#riemann-display-dropdown.visible {
+    display: inline-flex;
+}
+
+#riemann-display-dropdown .dropdown-menu {
+    min-width: 120px;
+    max-width: 160px;
+}
+
+#riemann-display-dropdown .dropdown-menu button.riemann-option {
+    flex: 1 1 auto;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
+#riemann-display-dropdown .dropdown-menu button.riemann-option.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #444);
+}
+
+/* Riemann shader dropdown */
+#riemann-shader-dropdown {
+    display: none;
+}
+
+#riemann-shader-dropdown.visible {
+    display: inline-flex;
+}
+
+#riemann-shader-dropdown .dropdown-menu {
+    min-width: 140px;
+    max-width: 180px;
+}
+
+#riemann-shader-dropdown .dropdown-menu button.riemann-shader-option {
+    flex: 1 1 auto;
+    min-width: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
+#riemann-shader-dropdown .dropdown-menu button.riemann-shader-option.active {
+    color: var(--accent-color);
+    background-image: linear-gradient(#222, #444);
 }
 
 /* ========================================
@@ -427,6 +504,19 @@ button.dive.has-palette.active {
     display: none;
 }
 
+/* Mandelbrot Controls */
+#mandelbrotControls {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin: 5px 0 10px;
+}
+
+#mandelbrotControls .slider-container {
+    min-width: 280px;
+}
+
 /* Riemann Controls */
 #riemannControls {
     display: none;
@@ -450,10 +540,6 @@ button.dive.has-palette.active {
 
 #rosslerControls .slider-container {
     min-width: 280px;
-}
-
-#zeroTour {
-    display: none;
 }
 
 .slider-container {
@@ -538,6 +624,8 @@ button.dive.has-palette.active {
    ======================================== */
 
 .header-footer {
+    position: relative;
+    z-index: 1;
     font-size: 11px;
     margin: 5px 0 3px;
     color: #ccc;
@@ -552,6 +640,13 @@ button.dive.has-palette.active {
     color: #ffcc00;
     text-shadow: 0 0 6px #ffcc00;
     font-size: 10px;
+}
+
+.dp-indicator {
+    color: #00ccff;
+    text-shadow: 0 0 6px #00ccff;
+    font-size: 10px;
+    cursor: help;
 }
 
 #version {
@@ -592,7 +687,6 @@ p {
 }
 
 span {
-    font-size: 12px;
     color: #fff;
     text-shadow: 0 0 10px #000;
 }
@@ -744,32 +838,400 @@ main {
 }
 
 /* ========================================
+   Point Marker (Tour Visual Aid)
+   ======================================== */
+
+#pointMarker {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#pointMarker.point-marker-hidden {
+    opacity: 0;
+}
+
+.point-marker-ring {
+    width: 80px;
+    height: 80px;
+    border: 3px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: pointMarkerPulse 2s ease-in-out infinite;
+    box-shadow: 0 0 20px var(--accent-color, #fff),
+                0 0 40px var(--accent-color, #fff),
+                inset 0 0 15px rgba(255, 255, 255, 0.15);
+}
+
+.point-marker-dot {
+    width: 12px;
+    height: 12px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--accent-color, #fff),
+                0 0 30px var(--accent-color, #fff);
+}
+
+@keyframes pointMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.4);
+        opacity: 0.5;
+    }
+}
+
+/* ========================================
+   Line Marker (Symmetry/Axis Views)
+   ======================================== */
+
+#lineMarker {
+    position: fixed;
+    top: 0;
+    left: 50%;
+    width: 2px;
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#lineMarker.line-marker-hidden {
+    opacity: 0;
+}
+
+.line-marker-line {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        transparent 0%,
+        var(--accent-color, #fff) 8%,
+        var(--accent-color, #fff) 92%,
+        transparent 100%
+    );
+    box-shadow: 0 0 20px var(--accent-color, #fff),
+                0 0 40px var(--accent-color, #fff),
+                0 0 60px var(--accent-color, #fff);
+    animation: lineMarkerPulse 2s ease-in-out infinite;
+}
+
+.line-marker-label {
+    position: absolute;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%) translateX(20px);
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--accent-color, #fff);
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(0,0,0,0.9),
+                 0 0 20px rgba(0,0,0,0.7);
+}
+
+@keyframes lineMarkerPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ========================================
+   Horizontal Line Marker (Real Axis Views)
+   ======================================== */
+
+#hLineMarker {
+    position: fixed;
+    top: 50%;
+    left: 0;
+    width: 50vw; /* Default, overridden by JS */
+    height: 20px;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+    transform: translateY(-50%);
+}
+
+#hLineMarker.hline-marker-hidden {
+    opacity: 0;
+}
+
+.hline-marker-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(
+        to right,
+        transparent 0%,
+        var(--accent-color, #fff) 5%,
+        var(--accent-color, #fff) 95%,
+        transparent 100%
+    );
+    box-shadow: 0 0 20px var(--accent-color, #fff),
+                0 0 40px var(--accent-color, #fff),
+                0 0 60px var(--accent-color, #fff);
+    animation: lineMarkerPulse 2s ease-in-out infinite;
+}
+
+.hline-marker-label {
+    position: absolute;
+    top: 50%;
+    right: 20px;
+    transform: translateY(-50%) translateY(-20px);
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--accent-color, #fff);
+    white-space: nowrap;
+    text-shadow: 0 0 10px rgba(0,0,0,0.9),
+                 0 0 20px rgba(0,0,0,0.7);
+}
+
+/* ========================================
+   Region Marker (Overview Views)
+   ======================================== */
+
+#regionMarker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 25%; /* Default, overridden by JS */
+    height: 100vh;
+    pointer-events: none;
+    z-index: 999;
+    border-left: 3px solid var(--accent-color, #fff);
+    border-right: 3px solid var(--accent-color, #fff);
+    box-shadow: inset 0 0 40px rgba(255, 255, 255, 0.08),
+                inset 3px 0 20px var(--accent-color, #fff),
+                inset -3px 0 20px var(--accent-color, #fff);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#regionMarker:not(.region-marker-hidden) {
+    opacity: 1;
+    animation: regionMarkerPulse 2s ease-in-out infinite;
+}
+
+#regionMarker.region-marker-hidden {
+    opacity: 0;
+    animation: none;
+}
+
+@keyframes regionMarkerPulse {
+    0%, 100% {
+        opacity: 0.9;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Segment marker for trivial zeros (multiple points along axis) */
+#segmentMarker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#segmentMarker.segment-marker-hidden {
+    opacity: 0;
+}
+
+.segment-marker-point {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    transform: translate(-50%, -50%);
+}
+
+.segment-marker-ring {
+    width: 40px;
+    height: 40px;
+    border: 2px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent-color, #fff),
+                0 0 20px var(--accent-color, #fff);
+    animation: segmentMarkerPulse 2s ease-in-out infinite;
+}
+
+.segment-marker-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 8px var(--accent-color, #fff),
+                0 0 16px var(--accent-color, #fff);
+}
+
+@keyframes segmentMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.7;
+    }
+}
+
+/* Pair marker for saddle points (two individual points) */
+#pairMarker {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 999;
+    transition: opacity 0.3s ease;
+}
+
+#pairMarker.pair-marker-hidden {
+    opacity: 0;
+}
+
+.pair-marker-point {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    transform: translate(-50%, -50%);
+}
+
+.pair-marker-ring {
+    width: 60px;
+    height: 60px;
+    border: 2px solid var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--accent-color, #fff),
+                0 0 30px var(--accent-color, #fff);
+    animation: pairMarkerPulse 2s ease-in-out infinite;
+}
+
+.pair-marker-point-2 .pair-marker-ring {
+    animation-delay: 0.5s;
+}
+
+.pair-marker-dot {
+    width: 10px;
+    height: 10px;
+    background: var(--accent-color, #fff);
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 10px var(--accent-color, #fff),
+                0 0 20px var(--accent-color, #fff);
+}
+
+@keyframes pairMarkerPulse {
+    0%, 100% {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translate(-50%, -50%) scale(1.15);
+        opacity: 0.7;
+    }
+}
+
+/* ========================================
+   Axes Overlay (Riemann)
+   ======================================== */
+
+#axesCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 5;
+    will-change: transform;
+    color: #0f0;
+}
+
+#axesCanvas.axes-hidden {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+#zetaPathCanvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    pointer-events: none;
+    z-index: 6;
+    will-change: transform;
+}
+
+#zetaPathCanvas.zeta-path-hidden {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+/* ========================================
    Center Guidelines
    ======================================== */
 
-.centerLine {
+#verticalLine, #horizontalLine {
     position: absolute;
     pointer-events: none;
     z-index: 1000;
     display: none;
 }
 
-.verticalLine {
+#verticalLine {
     height: 100vh;
     left: 50%;
     top: 0;
     transform: translateX(-50%);
     border-left: 2px dashed #666;
-    background: transparent;
 }
 
-.horizontalLine {
+#horizontalLine {
     width: 100vw;
     top: 50%;
     left: 0;
     transform: translateY(-50%);
     border-top: 2px dashed #666;
-    background: transparent;
 }
 
 /* ========================================
@@ -894,6 +1356,11 @@ dialog.dialog-overlay::backdrop {
     margin-bottom: 16px;
 }
 
+#juliaCInputs,
+#rotationInputs {
+    display: contents;
+}
+
 .coord-input-grid label {
     margin: 0;
     text-align: right;
@@ -1000,6 +1467,7 @@ button.preset.user-preset::before {
 
 .hint-trigger {
     position: relative;
+    z-index: 1;
     display: inline-block;
     cursor: help;
     text-underline-offset: 2px;
@@ -1016,17 +1484,15 @@ button.preset.user-preset::before {
 
 .hint-tooltip {
     display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
+    position: fixed;
+    top: 135px;
+    left: 50%;
+    transform: translateX(-50%);
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.85));
     backdrop-filter: blur(10px);
     border: 1px solid rgb(from var(--accent-color) r g b / 0.4);
     border-radius: 10px;
-    padding: 12px 14px;
-    margin-top: 8px;
-    min-width: 180px;
-    max-width: 200px;
+    padding: 12px 18px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8), 0 0 15px rgb(from var(--accent-color) r g b / 0.15);
     z-index: 100000;
     text-align: left;
@@ -1045,7 +1511,8 @@ button.preset.user-preset::before {
     content: '';
     position: absolute;
     bottom: 100%;
-    left: 30px;
+    left: 50%;
+    transform: translateX(-50%);
     border: 6px solid transparent;
     border-bottom-color: rgb(from var(--accent-color) r g b / 0.4);
 }
@@ -1059,8 +1526,12 @@ button.preset.user-preset::before {
     height: 15px;
 }
 
+.hint-columns {
+    display: flex;
+    gap: 24px;
+}
+
 .hint-section {
-    display: block;
     margin-bottom: 8px;
 }
 
@@ -1103,19 +1574,25 @@ button.preset.user-preset::before {
 .hint-link {
     display: block;
     text-align: center;
+    margin-top: 8px;
     padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
     transition: text-shadow 0.2s;
 }
 
-/* Show mouse controls on non-touch devices */
-.mouse-controls {
+/* Show mouse and keyboard controls on non-touch devices */
+.mouse-controls,
+.keyboard-controls {
     display: block;
 }
 
-/* Touch devices: show touch controls, hide mouse controls */
+/* Touch devices: show touch controls, hide mouse/keyboard controls */
 @media (pointer: coarse) {
-    .mouse-controls {
+    .mouse-controls,
+    .keyboard-controls {
+        display: none;
+    }
+    .hint-columns {
         display: none;
     }
     .touch-controls {
@@ -1137,6 +1614,41 @@ button.preset.user-preset::before {
 /* ========================================
    Responsive: Scale header on narrow screens
    ======================================== */
+
+@media screen and (max-width: 600px) {
+    #viewInfoOverlay {
+        bottom: 24px;
+        left: 8px;
+        right: 8px;
+        transform: none;
+        max-width: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+    }
+
+    #viewInfoOverlay.view-info-hidden {
+        transform: translateY(20px);
+    }
+
+    #viewInfoTitle {
+        font-size: 13px;
+        margin-bottom: 2px;
+    }
+
+    #viewInfoValue {
+        font-size: 10px;
+        margin-bottom: 2px;
+    }
+
+    #viewInfoDescription {
+        font-size: 10px;
+    }
+
+    #viewInfoProgress {
+        margin-top: 6px;
+        font-size: 9px;
+    }
+}
 
 @media screen and (max-width: 440px) {
     #headerContainer {

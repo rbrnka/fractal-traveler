@@ -7,7 +7,15 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {
+    getCurrentPaletteId,
+    hideViewInfo,
+    isJuliaMode,
+    isRiemannMode,
+    isRosslerMode,
+    resetAppState,
+    updateInfo
+} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, FRACTAL_TYPE} from "../global/constants";
 import {clampPanDelta} from "./mouseEventHandlers";
 
@@ -135,6 +143,9 @@ export function unregisterTouchEventHandlers() {
 function startLongPressZoomIn() {
     if (longPressZoomActive) return;
     longPressZoomActive = true;
+
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
 
     function zoomLoop() {
         if (!longPressZoomActive || !fractalApp) return;
@@ -291,6 +302,8 @@ function handleTouchMove(event) {
                 clearTimeout(touchClickTimeout);
                 touchClickTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
         if (isTouchDragging) {
@@ -314,8 +327,11 @@ function handleTouchMove(event) {
             const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent dragging out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
 
                 fractalApp.addPan(deltaX, deltaY);
                 markOrbitDirtySafe();
@@ -335,6 +351,11 @@ function handleTouchMove(event) {
     // Two-finger pinch: pan + zoom + rotation around midpoint
     if (event.touches.length === 2) {
         event.preventDefault();
+
+        // Hide preset overlay on first pinch (no longer accurate)
+        if (!isPinching) {
+            hideViewInfo();
+        }
         isPinching = true;
 
         const touch0 = event.touches[0];
@@ -377,8 +398,12 @@ function handleTouchMove(event) {
             const [vNowX, vNowY] = fractalApp.screenToViewVector(centerX, centerY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent pinch-panning out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
+
                 fractalApp.addPan(deltaX, deltaY);
             }
         }
@@ -399,10 +424,12 @@ function handleTouchMove(event) {
         // Apply zoom (without anchor adjustment since we handled pan separately)
         fractalApp.zoom = targetZoom;
 
-        // Rotation (incremental, like mouse right-drag)
-        const angleDifference = currentAngle - pinchStartAngle;
-        if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
-            fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
+        // Rotation (incremental, like mouse right-drag) - disabled in Riemann mode
+        if (!isRiemannMode()) {
+            const angleDifference = currentAngle - pinchStartAngle;
+            if (Math.abs(angleDifference) > ROTATION_THRESHOLD) {
+                fractalApp.rotation = normalizeRotation(fractalApp.rotation + angleDifference * ROTATION_SENSITIVITY);
+            }
         }
 
         // Update baselines for next frame
@@ -494,13 +521,15 @@ function handleTouchEnd(event) {
                     // Centering action using delta-based pan:
                     fractalApp.animatePanBy(deltaPan, 400).then(() => {
                         resetAppState();
-                        // Get the updated fractal coordinates after pan
-                        const [newFx, newFy] = fractalApp.screenToFractal(touchX, touchY);
-                        if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1], getCurrentPaletteId());
-                        } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation, null, null, getCurrentPaletteId());
-                        }
+                        // Determine current mode for URL
+                        let currentMode = FRACTAL_TYPE.MANDELBROT;
+                        if (isJuliaMode()) currentMode = FRACTAL_TYPE.JULIA;
+                        else if (isRiemannMode()) currentMode = FRACTAL_TYPE.RIEMANN;
+                        else if (isRosslerMode()) currentMode = FRACTAL_TYPE.ROSSLER;
+
+                        const cx = isJuliaMode() ? fractalApp.c[0] : null;
+                        const cy = isJuliaMode() ? fractalApp.c[1] : null;
+                        updateURLParams(currentMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, cx, cy, getCurrentPaletteId());
                     });
 
                     touchClickTimeout = null;

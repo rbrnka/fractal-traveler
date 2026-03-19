@@ -9,7 +9,7 @@
 import {JuliaRenderer} from "../renderers/juliaRenderer";
 import {APP, CONSOLE_GROUP_STYLE, SCREENSHOT_JPEG_COMPRESSION_QUALITY} from "../global/constants";
 import {expandComplexToString} from "../global/utils";
-import {isJuliaMode} from "./ui";
+import {getFractalMode} from "./ui";
 
 /**
  * Generates filename based on current timestamp
@@ -21,13 +21,22 @@ function getFilename() {
     return `fractal-${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}.jpg`;
 }
 
+/** Fractal mode display names for watermark (keys match getFractalMode() output) */
+const WATERMARK_FRACTAL_NAMES = {
+    'MANDELBROT': 'Mandelbrot',
+    'JULIA': 'Julia',
+    'RIEMANN': 'Riemann ζ',
+    'ROSSLER': 'Rössler'
+};
+
 /**
  * Returns watermark text lines for current fractal type and its properties.
  * @param {FractalRenderer} fractalApp
  * @return {{line1: string, line2: string}}
  */
 function getWatermarkLines(fractalApp) {
-    const fractalType = isJuliaMode() ? 'Julia' : 'Mandelbrot';
+    const modeKey = getFractalMode();
+    const fractalType = WATERMARK_FRACTAL_NAMES[modeKey] || modeKey;
     const line1 = APP.defaultName;
     const line2 = `${fractalType}: p=${expandComplexToString(fractalApp.pan.slice(), 6)}, zoom=${fractalApp.zoom.toExponential(2)}` +
         `${(fractalApp instanceof JuliaRenderer) ? `, c=${expandComplexToString(fractalApp.c)}` : ``}`;

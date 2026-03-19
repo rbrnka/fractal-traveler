@@ -4,6 +4,12 @@ import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, PI} from "../global/constants";
 import presetsData from '../data/mandelbrot.json';
 /** @type {string} */
 import fragmentShaderRaw from '../shaders/mandelbrot.frag';
+import fragmentShaderSeries from '../shaders/mandelbrot.series.frag';
+
+const SHADER_OPTIONS = {
+    'perturbation': { source: fragmentShaderRaw, name: 'Perturbation', description: 'Standard perturbation method' },
+    'series': { source: fragmentShaderSeries, name: 'Series Approx', description: 'Series approximation + perturbation' }
+};
 
 /**
  * MandelbrotRenderer (Rebased Perturbation)
@@ -15,6 +21,10 @@ import fragmentShaderRaw from '../shaders/mandelbrot.frag';
  * @license MIT
  */
 class MandelbrotRenderer extends FractalRenderer {
+
+    static get SHADER_OPTIONS() {
+        return SHADER_OPTIONS;
+    }
 
     constructor(canvas) {
         super(canvas);
@@ -40,10 +50,19 @@ class MandelbrotRenderer extends FractalRenderer {
         // Hysteresis state for rebasing
         this.rebaseArmed = true;
 
+        // Shader switching
+        this.currentShader = 'perturbation';
+        this.fragmentShaderSource = SHADER_OPTIONS[this.currentShader].source;
+
         // WebGL resources
         this.orbitTex = null;
         this.orbitData = null;
         this.floatTexExt = null;
+
+        // Series approximation resources
+        this.coeffTex = null;
+        this.coeffData = null;  // Stores A and B coefficients
+        this.skipIter = 0;      // Iteration to skip to using series
 
         /** Mandelbrot-specific presets */
         this.PRESETS = presetsData.views;
@@ -66,11 +85,36 @@ class MandelbrotRenderer extends FractalRenderer {
 
     markOrbitDirty = () => this.orbitDirty = true;
 
+    createFragmentShaderSource() {
+        return this.fragmentShaderSource.replace('__MAX_ITER__', this.MAX_ITER).toString();
+    }
+
     /**
-     * Called by FractalRenderer.initGLProgram() after program creation + common uniform cache.
-     * Creates float texture, allocates orbit buffer, and binds texture unit.
+     * Called after GL program is created.
+     * Caches Mandelbrot-specific uniform locations and sets up orbit texture.
+     * @override
      */
     onProgramCreated() {
+        super.onProgramCreated();
+
+        // Mandelbrot-specific uniform locations
+        // delta pan hi/lo (viewPan - refPan, computed on JS side for precision)
+        this.deltaPanHLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_h');
+        this.deltaPanLLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_l');
+
+        // zoom hi/lo
+        this.zoomHLoc = this.gl.getUniformLocation(this.program, 'u_zoom_h');
+        this.zoomLLoc = this.gl.getUniformLocation(this.program, 'u_zoom_l');
+
+        // orbit texture uniforms
+        this.orbitTexLoc = this.gl.getUniformLocation(this.program, 'u_orbitTex');
+        this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
+
+        // color parameters
+        this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
+        this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
+
+        // Set up orbit texture
         this.floatTexExt = this.gl.getExtension("OES_texture_float");
         if (!this.floatTexExt) {
             console.error('Missing OES_texture_float. Perturbation orbit texture upload requires it.');
@@ -92,31 +136,30 @@ class MandelbrotRenderer extends FractalRenderer {
         if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
         if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
 
+        // Series approximation uniforms (only present in series shader)
+        this.coeffTexLoc = this.gl.getUniformLocation(this.program, 'u_coeffTex');
+        this.coeffWLoc = this.gl.getUniformLocation(this.program, 'u_coeffW');
+        this.skipIterLoc = this.gl.getUniformLocation(this.program, 'u_skipIter');
+
+        // Set up coefficient texture for series approximation
+        if (this.currentShader === 'series') {
+            this.coeffTex = this.gl.createTexture();
+            this.gl.activeTexture(this.gl.TEXTURE1);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.coeffTex);
+
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MIN_FILTER, this.gl.NEAREST);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_MAG_FILTER, this.gl.NEAREST);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_S, this.gl.CLAMP_TO_EDGE);
+            this.gl.texParameteri(this.gl.TEXTURE_2D, this.gl.TEXTURE_WRAP_T, this.gl.CLAMP_TO_EDGE);
+
+            // Coefficients: 2 rows (A, B) x MAX_ITER columns x 4 floats (hi_x, lo_x, hi_y, lo_y)
+            this.coeffData = new Float32Array(this.MAX_ITER * 4 * 2);
+
+            if (this.coeffTexLoc) this.gl.uniform1i(this.coeffTexLoc, 1);
+            if (this.coeffWLoc) this.gl.uniform1f(this.coeffWLoc, this.MAX_ITER);
+        }
+
         this.orbitDirty = true;
-    }
-
-    createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
-    }
-
-    updateUniforms() {
-        super.updateUniforms();
-
-        // delta pan hi/lo (viewPan - refPan, computed on JS side for precision)
-        this.deltaPanHLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_h');
-        this.deltaPanLLoc = this.gl.getUniformLocation(this.program, 'u_delta_pan_l');
-
-        // zoom hi/lo
-        this.zoomHLoc = this.gl.getUniformLocation(this.program, 'u_zoom_h');
-        this.zoomLLoc = this.gl.getUniformLocation(this.program, 'u_zoom_l');
-
-        // orbit texture uniforms
-        this.orbitTexLoc = this.gl.getUniformLocation(this.program, 'u_orbitTex');
-        this.orbitWLoc = this.gl.getUniformLocation(this.program, 'u_orbitW');
-
-        // color parameters
-        this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
-        this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
     }
 
     /** Reference picking + orbit build */
@@ -216,6 +259,20 @@ class MandelbrotRenderer extends FractalRenderer {
 
         let zx = 0.0, zy = 0.0;
 
+        // Series approximation coefficients (complex numbers)
+        // A_{n+1} = 2 * zref_n * A_n + 1
+        // B_{n+1} = 2 * zref_n * B_n + A_n²
+        let Ax = 0.0, Ay = 0.0;  // A starts at 0
+        let Bx = 0.0, By = 0.0;  // B starts at 0
+
+        // Track when series becomes unreliable
+        // Series is valid while |B * dc²| << |A * dc|
+        // We estimate dc_max based on zoom and view size
+        const dcMax = this.zoom * 0.5;  // Half view width
+        let lastValidSkip = 0;
+
+        const useSeriesShader = this.currentShader === 'series' && this.coeffData;
+
         for (let n = 0; n < this.MAX_ITER; n++) {
             const sx = splitFloat(zx);
             const sy = splitFloat(zy);
@@ -226,8 +283,66 @@ class MandelbrotRenderer extends FractalRenderer {
             this.orbitData[idx + 2] = sy.high;
             this.orbitData[idx + 3] = sy.low;
 
+            // Store coefficients if using series shader
+            if (useSeriesShader) {
+                const sAx = splitFloat(Ax);
+                const sAy = splitFloat(Ay);
+                const sBx = splitFloat(Bx);
+                const sBy = splitFloat(By);
+
+                // Row 0: A coefficients
+                const idxA = n * 4;
+                this.coeffData[idxA] = sAx.high;
+                this.coeffData[idxA + 1] = sAx.low;
+                this.coeffData[idxA + 2] = sAy.high;
+                this.coeffData[idxA + 3] = sAy.low;
+
+                // Row 1: B coefficients (offset by MAX_ITER * 4)
+                const idxB = this.MAX_ITER * 4 + n * 4;
+                this.coeffData[idxB] = sBx.high;
+                this.coeffData[idxB + 1] = sBx.low;
+                this.coeffData[idxB + 2] = sBy.high;
+                this.coeffData[idxB + 3] = sBy.low;
+
+                // Check series validity: |B * dc²| should be much smaller than |A * dc|
+                const Amag = Math.sqrt(Ax * Ax + Ay * Ay);
+                const Bmag = Math.sqrt(Bx * Bx + By * By);
+                const termA = Amag * dcMax;
+                const termB = Bmag * dcMax * dcMax;
+
+                // Series is valid if B term is less than 1% of A term
+                // and A term is not too small (avoid division issues)
+                if (termA > 1e-20 && termB < termA * 0.01) {
+                    lastValidSkip = n;
+                }
+            }
+
+            // Iterate z
             const zx2 = zx * zx - zy * zy + cx;
             const zy2 = 2.0 * zx * zy + cy;
+
+            // Update series coefficients before updating z
+            // A_{n+1} = 2 * z_n * A_n + 1
+            // Complex multiplication: (zx + i*zy) * (Ax + i*Ay) = (zx*Ax - zy*Ay) + i*(zx*Ay + zy*Ax)
+            const twoZAx = 2.0 * (zx * Ax - zy * Ay);
+            const twoZAy = 2.0 * (zx * Ay + zy * Ax);
+            const newAx = twoZAx + 1.0;
+            const newAy = twoZAy;
+
+            // B_{n+1} = 2 * z_n * B_n + A_n²
+            const twoZBx = 2.0 * (zx * Bx - zy * By);
+            const twoZBy = 2.0 * (zx * By + zy * Bx);
+            // A² = (Ax + i*Ay)² = (Ax² - Ay²) + i*(2*Ax*Ay)
+            const A2x = Ax * Ax - Ay * Ay;
+            const A2y = 2.0 * Ax * Ay;
+            const newBx = twoZBx + A2x;
+            const newBy = twoZBy + A2y;
+
+            Ax = newAx;
+            Ay = newAy;
+            Bx = newBx;
+            By = newBy;
+
             zx = zx2;
             zy = zy2;
 
@@ -242,14 +357,38 @@ class MandelbrotRenderer extends FractalRenderer {
                     this.orbitData[j + 2] = fy.high;
                     this.orbitData[j + 3] = fy.low;
                 }
+
+                // Fill remaining coefficients with last values
+                if (useSeriesShader) {
+                    const sAx = splitFloat(Ax);
+                    const sAy = splitFloat(Ay);
+                    const sBx = splitFloat(Bx);
+                    const sBy = splitFloat(By);
+                    for (let k = n + 1; k < this.MAX_ITER; k++) {
+                        const idxA = k * 4;
+                        this.coeffData[idxA] = sAx.high;
+                        this.coeffData[idxA + 1] = sAx.low;
+                        this.coeffData[idxA + 2] = sAy.high;
+                        this.coeffData[idxA + 3] = sAy.low;
+
+                        const idxB = this.MAX_ITER * 4 + k * 4;
+                        this.coeffData[idxB] = sBx.high;
+                        this.coeffData[idxB + 1] = sBx.low;
+                        this.coeffData[idxB + 2] = sBy.high;
+                        this.coeffData[idxB + 3] = sBy.low;
+                    }
+                }
                 break;
             }
         }
 
+        // Store the valid skip iteration
+        this.skipIter = lastValidSkip;
+
+        // Upload orbit texture
         this.gl.activeTexture(this.gl.TEXTURE0);
         this.gl.bindTexture(this.gl.TEXTURE_2D, this.orbitTex);
 
-        // Upload 1D orbit texture: width=MAX_ITER, height=1
         this.gl.texImage2D(
             this.gl.TEXTURE_2D,
             0,
@@ -264,6 +403,28 @@ class MandelbrotRenderer extends FractalRenderer {
 
         if (this.orbitTexLoc) this.gl.uniform1i(this.orbitTexLoc, 0);
         if (this.orbitWLoc) this.gl.uniform1f(this.orbitWLoc, this.MAX_ITER);
+
+        // Upload coefficient texture if using series shader
+        if (useSeriesShader && this.coeffTex) {
+            this.gl.activeTexture(this.gl.TEXTURE1);
+            this.gl.bindTexture(this.gl.TEXTURE_2D, this.coeffTex);
+
+            // Upload as 2-row texture: width=MAX_ITER, height=2
+            this.gl.texImage2D(
+                this.gl.TEXTURE_2D,
+                0,
+                this.gl.RGBA,
+                this.MAX_ITER,
+                2,
+                0,
+                this.gl.RGBA,
+                this.gl.FLOAT,
+                this.coeffData
+            );
+
+            if (this.coeffTexLoc) this.gl.uniform1i(this.coeffTexLoc, 1);
+            if (this.coeffWLoc) this.gl.uniform1f(this.coeffWLoc, this.MAX_ITER);
+        }
     }
 
     /**
@@ -307,6 +468,11 @@ class MandelbrotRenderer extends FractalRenderer {
         if (this.frequencyLoc) this.gl.uniform3fv(this.frequencyLoc, this.frequency);
         if (this.phaseLoc) this.gl.uniform3fv(this.phaseLoc, this.phase);
 
+        // Upload skip iteration for series shader
+        if (this.skipIterLoc && this.currentShader === 'series') {
+            this.gl.uniform1f(this.skipIterLoc, this.skipIter);
+        }
+
         super.draw();
     }
 
@@ -317,6 +483,59 @@ class MandelbrotRenderer extends FractalRenderer {
         // Rebase threshold is proportional to zoom (view scale).
         // 0.75 is consistent with the Julia policy.
         return Math.hypot(dx, dy) > this.zoom * 0.75;
+    }
+
+    /**
+     * Switches to a different shader.
+     * @param {string} shaderId - 'perturbation' or 'series'
+     * @returns {boolean} True if switch was successful
+     */
+    switchShader(shaderId) {
+        if (!SHADER_OPTIONS[shaderId]) {
+            console.warn(`Unknown shader: ${shaderId}`);
+            return false;
+        }
+
+        if (shaderId === this.currentShader) {
+            return true;  // Already using this shader
+        }
+
+        log(`Switching Mandelbrot shader: ${this.currentShader} → ${shaderId}`);
+
+        this.currentShader = shaderId;
+        this.fragmentShaderSource = SHADER_OPTIONS[shaderId].source;
+
+        // Rebuild the WebGL program with new shader
+        this.initGLProgram();
+        this.onProgramCreated();
+
+        // Force orbit recomputation to generate coefficients if needed
+        this.orbitDirty = true;
+        this.draw();
+
+        return true;
+    }
+
+    /**
+     * Gets information about the current shader.
+     * @returns {{id: string, name: string, description: string, skipIter: number}}
+     */
+    getShaderInfo() {
+        const shader = SHADER_OPTIONS[this.currentShader];
+        return {
+            id: this.currentShader,
+            name: shader.name,
+            description: shader.description,
+            skipIter: this.skipIter
+        };
+    }
+
+    /**
+     * Toggles between perturbation and series shader.
+     */
+    toggleShader() {
+        const newShader = this.currentShader === 'perturbation' ? 'series' : 'perturbation';
+        this.switchShader(newShader);
     }
 
     /**
@@ -625,9 +844,10 @@ class MandelbrotRenderer extends FractalRenderer {
      * @param {Function} [onPresetComplete] Optional callback when each preset completes
      * @param {Array<PRESET>} [userPresets] Optional array of user-saved presets to include in the demo
      * @param {Function} [onPresetReached] Optional callback(preset, index, total) when preset is reached
+     * @param {Function} [onBeforeTravel] Optional callback called before each travel starts (to hide overlays)
      * @return {Promise<void>}
      */
-    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null) {
+    async animateDemo(random = true, coloringCallback = null, onPresetComplete = null, userPresets = [], onPresetReached = null, onBeforeTravel = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateDemo`, CONSOLE_GROUP_STYLE);
         this.stopAllNonColorAnimations();
 
@@ -672,14 +892,19 @@ class MandelbrotRenderer extends FractalRenderer {
                 break;
             }
 
+            // Hide overlay before starting travel
+            if (onBeforeTravel) {
+                onBeforeTravel();
+            }
+
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
-            // Show overlay at the start of animation
+            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
+
+            // Show overlay at the end of animation (during pause period)
             if (onPresetReached) {
                 onPresetReached(currentPreset, demoIndex, allPresets.length);
             }
-
-            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
 
             // Call completion callback to update UI state
             if (onPresetComplete) {

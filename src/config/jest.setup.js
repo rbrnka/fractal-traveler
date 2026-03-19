@@ -153,6 +153,14 @@ global.createMockFractalApp = (canvas = null) => {
         stopCurrentColorAnimations: jest.fn(),
         startPaletteCycling: jest.fn(),
         applyPaletteByIndex: jest.fn(),
+        toggleAdaptiveQuality: jest.fn(),
+        adjustExtraIterations: jest.fn(),
+
+        // Riemann/Rossler specific
+        seriesTerms: 500,
+        MAX_TERMS: 2000,
+        targetIterations: 5000,
+        MAX_ITER: 15000,
 
         noteInteraction: jest.fn(),
         markOrbitDirty: jest.fn(),
@@ -208,6 +216,8 @@ global.createMockUI = () => {
         switchFractalMode: jest.fn(() => Promise.resolve()),
         switchFractalTypeWithPersistence: jest.fn(() => Promise.resolve()),
         isJuliaMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.JULIA),
+        isRiemannMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.RIEMANN),
+        isRosslerMode: jest.fn(() => mockUI.fractalMode === FRACTAL_TYPE.ROSSLER),
         enableJuliaMode: jest.fn(() => {
             mockUI.fractalMode = FRACTAL_TYPE.JULIA;
         }),
@@ -220,7 +230,7 @@ global.createMockUI = () => {
         updatePaletteDropdownState: jest.fn(),
         updateColorTheme: jest.fn(),
         updatePaletteCycleButtonState: jest.fn(),
-        randomizeColors: jest.fn(),
+        cycleColors: jest.fn(),
 
         // State management
         resetAppState: jest.fn(),
@@ -239,6 +249,15 @@ global.createMockUI = () => {
         toggleDebugMode: jest.fn(),
         toggleCenterLines: jest.fn(),
         toggleHeader: jest.fn(),
+        toggleAxes: jest.fn(),
+
+        // Riemann/Rossler sync
+        syncRiemannControls: jest.fn(),
+        syncRiemannToggleStates: jest.fn(),
+        syncRosslerControls: jest.fn(),
+
+        // View info overlay
+        hideViewInfo: jest.fn(),
 
         // Screenshots and dialogs
         captureScreenshot: jest.fn(),

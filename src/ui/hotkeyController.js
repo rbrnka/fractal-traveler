@@ -10,12 +10,21 @@
 import {
     captureScreenshot,
     copyInfoToClipboard,
+    cycleColors,
+    cycleToNextDive,
+    cycleToNextFractalMode,
+    cycleToNextPreset,
+    cycleToPreviousPreset,
+    hideViewInfo,
     isAnimationActive,
     isJuliaMode,
-    randomizeColors,
+    isMandelbrotMode,
+    isRiemannMode,
+    isRosslerMode,
     reset,
     resetAppState,
     showEditCoordsDialog,
+    showQuickInfo,
     showSaveViewDialog,
     startJuliaDive,
     switchFractalMode,
@@ -23,14 +32,19 @@ import {
     syncRiemannControls,
     syncRiemannToggleStates,
     syncRosslerControls,
+    toggleAxes,
     toggleCenterLines,
     toggleDebugMode,
     toggleDemo,
+    toggleDoublePrecision,
     toggleHeader,
+    toggleRiemannDisplayDropdown,
+    toggleZetaPath,
     travelToPreset,
     updateColorTheme,
     updatePaletteCycleButtonState,
     updatePaletteDropdownState,
+    updatePaletteDropdownStateWithInfo,
 } from "./ui";
 import {
     CONSOLE_GROUP_STYLE,
@@ -163,28 +177,31 @@ async function onKeyDown(event) {
         case 'KeyQ': // Rotation counter-clockwise
             rotationDirection = ROTATION_DIRECTION.CCW;
         case 'KeyW': // Rotation clockwise
+            // Disable rotation in Riemann mode (breaks axes alignment)
+            if (isRiemannMode()) break;
             if (rotationActive) {
                 fractalApp.stopCurrentRotationAnimation();
                 rotationActive = false;
             } else {
+                // Hide preset overlay on interaction (no longer accurate)
+                hideViewInfo();
                 rotationActive = true;
                 await fractalApp.animateInfiniteRotation(rotationDirection, rotationSpeed);
             }
             handled = true;
             break;
 
-        case 'KeyE': // Debug lines
-            toggleCenterLines();
+        case 'KeyE': // Edit coords dialog
+            showEditCoordsDialog();
             handled = true;
             break;
 
         case 'KeyR': // Reset
-            if (event.shiftKey) await reset();
-            handled = true;
-            break;
-
-        case 'KeyC': // Copy info to clipboard
-            copyInfoToClipboard();
+            if (event.shiftKey) {
+                fractalApp.resizeCanvas();
+            } else {
+                await reset();
+            }
             handled = true;
             break;
 
@@ -193,23 +210,42 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyZ': // Switch between fractals with constant p/c
-            if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
+        case 'KeyK': // Debug lines
+            toggleCenterLines();
+            handled = true;
+            break;
 
+        case 'KeyO': // Switch between fractals with constant p/c OR toggle zeta path OR toggle shader
+            // In Riemann mode, O toggles zeta path
+            if (isRiemannMode()) {
+                toggleZetaPath();
+                handled = true;
+                break;
+            }
+            // In Mandelbrot/Julia mode, switch between them with persistence
+            if (!FF_PERSISTENT_FRACTAL_SWITCHING) break;
             await switchFractalTypeWithPersistence(isJuliaMode() ? FRACTAL_TYPE.MANDELBROT : FRACTAL_TYPE.JULIA);
             handled = true;
             break;
 
-        case 'KeyT': // Random colors / cycle palettes
+        case 'KeyP': // Random colors / cycle palettes
             if (altKey) {
-                // Alt+T: Reset to first palette (matches UI button behavior)
+                // Alt+P: Reset to first palette (matches UI button behavior)
+                if (fractalApp.paletteCyclingActive) {
+                    fractalApp.stopCurrentColorAnimations();
+                }
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
                 updatePaletteCycleButtonState();
                 syncRiemannControls();
                 syncRosslerControls();
+                // Show quick info for reset palette
+                const palette = fractalApp.PALETTES?.[0];
+                if (palette) {
+                    showQuickInfo(palette.id, null, palette.keyColor);
+                }
             } else if (event.shiftKey) {
-                // Shift+T: Toggle palette cycling
+                // Shift+P: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
                     // Stop cycling
                     fractalApp.stopCurrentColorAnimations();
@@ -217,47 +253,69 @@ async function onKeyDown(event) {
                     syncRosslerControls();
                 } else {
                     // Start cycling
-                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownState);
+                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownStateWithInfo);
                 }
                 updatePaletteCycleButtonState();
             } else {
-                // T: Pick a random palette
-                await randomizeColors();
+                // T: Cycle to next palette
+                await cycleColors();
             }
             handled = true;
             break;
 
-        case 'KeyA': // Forced resize
-            fractalApp.resizeCanvas();
+        case 'KeyA': // Toggle AdaptQ
+            fractalApp.toggleAdaptiveQuality();
+            const aqEnabled = fractalApp.adaptiveQualityEnabled;
+            const aqPalette = fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+            showQuickInfo(
+                `Adaptive Quality: ${aqEnabled ? 'ON' : 'OFF'}`,
+                aqEnabled ? 'Dynamically adjusts iterations for performance' : 'Fixed iteration count',
+                aqPalette?.keyColor
+            );
             handled = true;
             break;
 
-        case 'KeyS': // Screenshot or Save View
-            if (altKey) {
-                // Alt+S: Save current view
-                showSaveViewDialog();
-            } else if (event.shiftKey) {
-                // Shift+S: Screenshot
+        case 'KeyC': // Copy info / Capture screenshot
+            if (event.ctrlKey) {
+                copyInfoToClipboard();
+            } else {
                 captureScreenshot();
             }
             handled = true;
             break;
 
-        case 'KeyB': // Julia legacy renderer toggle
+        case 'KeyS': // Save View
+            showSaveViewDialog();
+            handled = true;
+            break;
+
+        case 'KeyB': // Julia legacy renderer toggle / Riemann precision toggle
             if (isJuliaMode() && DEBUG_MODE === DEBUG_LEVEL.FULL) {
                 JuliaRenderer.FF_LEGACY_JULIA_RENDERER = !JuliaRenderer.FF_LEGACY_JULIA_RENDERER
                 await switchFractalMode(FRACTAL_TYPE.JULIA);
+            } else if (isRiemannMode()) {
+                toggleDoublePrecision();
+            } else if (isMandelbrotMode()) {
+                // In Mandelbrot mode toggle between perturbation and series shader
+                fractalApp.toggleShader?.();
+                const shaderInfo = fractalApp.getShaderInfo?.();
+                if (shaderInfo) {
+                    const palette = fractalApp.PALETTES?.[fractalApp.currentPaletteIndex ?? 0];
+                    showQuickInfo(`Shader: ${shaderInfo.name}`, shaderInfo.description, palette?.keyColor);
+                }
+                handled = true;
+                break;
             }
             handled = true;
             break;
 
-        case 'KeyD': // Start/stop demo
+        case 'KeyT': // Start/stop demo
             await toggleDemo();
             handled = true;
             break;
 
-        case 'KeyN':
-            if (fractalApp.useAnalyticExtension !== undefined) {
+        case 'KeyM': // Toggle analytic extension (Riemann mode)
+            if (isRiemannMode() && fractalApp.useAnalyticExtension !== undefined) {
                 fractalApp.useAnalyticExtension = !fractalApp.useAnalyticExtension;
                 log(`Analytic Extension: ${fractalApp.useAnalyticExtension ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
@@ -266,8 +324,8 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'Comma':
-            if (fractalApp.showCriticalLine !== undefined) {
+        case 'Comma': // Toggle critical line (Riemann mode)
+            if (isRiemannMode() && fractalApp.showCriticalLine !== undefined) {
                 fractalApp.showCriticalLine = !fractalApp.showCriticalLine;
                 log(`Critical line: ${fractalApp.showCriticalLine ? 'ON' : 'OFF'}`);
                 fractalApp.draw();
@@ -276,36 +334,68 @@ async function onKeyDown(event) {
             handled = true;
             break;
 
-        case 'KeyV': // Rossler Mode
-            if (DEBUG_MODE === DEBUG_LEVEL.FULL) await switchFractalMode(FRACTAL_TYPE.ROSSLER);
+        case 'KeyN': // Toggle axes (Riemann mode)
+            toggleAxes();
             handled = true;
             break;
 
-        case 'KeyF': // Toggle adaptive quality
-            fractalApp.toggleAdaptiveQuality();
+
+        case 'KeyV': // Cycle to next view/preset
+            await cycleToNextPreset();
+            handled = true;
+            break;
+
+        case 'KeyF': // Cycle fractal mode / Toggle adaptive quality (Shift)
+            await cycleToNextFractalMode();
             handled = true;
             break;
 
         case 'NumpadAdd': // Numpad + (Shift for soft step)
         case 'Equal': // = or + key
-            if (fractalApp.adaptiveQualityEnabled) {
-                const step = event.shiftKey ? 25 : 100;
-                fractalApp.adjustExtraIterations(step);
+            if (isRiemannMode()) {
+                // Adjust series terms in Riemann mode
+                const step = event.shiftKey ? 10 : 50;
+                fractalApp.seriesTerms = Math.min(fractalApp.MAX_TERMS, fractalApp.seriesTerms + step);
+                syncRiemannControls();
+                fractalApp.draw();
+            } else if (isRosslerMode()) {
+                // Adjust target iterations in Rossler mode
+                const step = event.shiftKey ? 100 : 500;
+                fractalApp.targetIterations = Math.min(fractalApp.MAX_ITER, fractalApp.targetIterations + step);
+                syncRosslerControls();
+                fractalApp.draw();
+            } else {
+                fractalApp.adjustExtraIterations(event.shiftKey ? 25 : 100);
             }
             handled = true;
             break;
 
         case 'NumpadSubtract': // Numpad - (Shift for soft step)
         case 'Minus': // - key
-            if (fractalApp.adaptiveQualityEnabled) {
-                const step = event.shiftKey ? -25 : -100;
-                fractalApp.adjustExtraIterations(step);
+            if (isRiemannMode()) {
+                // Adjust series terms in Riemann mode
+                const step = event.shiftKey ? 10 : 50;
+                fractalApp.seriesTerms = Math.max(20, fractalApp.seriesTerms - step);
+                syncRiemannControls();
+                fractalApp.draw();
+            } else if (isRosslerMode()) {
+                // Adjust target iterations in Rossler mode
+                const step = event.shiftKey ? 100 : 500;
+                fractalApp.targetIterations = Math.max(1000, fractalApp.targetIterations - step);
+                syncRosslerControls();
+                fractalApp.draw();
+            } else {
+                fractalApp.adjustExtraIterations(event.shiftKey ? -25 : -100);
             }
             handled = true;
             break;
 
-        case 'KeyP':
-            showEditCoordsDialog();
+        case 'KeyD': // Cycle dives (Julia) / Toggle display dropdown (Riemann) / Edit coords (others)
+            if (isJuliaMode()) {
+                await cycleToNextDive();
+            } else if (isRiemannMode()) {
+                toggleRiemannDisplayDropdown();
+            }
             handled = true;
             break;
 
@@ -334,6 +424,9 @@ async function onKeyDown(event) {
             break;
 
         case "Space":
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
+
             const increment = event.shiftKey ? ZOOM_ANIMATION_SMOOTH_STEP : ZOOM_ANIMATION_STEP;
             const zoomFactor = (event.ctrlKey || altKey) ? (1 + increment) : (1 - increment);
 
@@ -349,6 +442,16 @@ async function onKeyDown(event) {
 
         case "Enter":
             toggleHeader();
+            handled = true;
+            break;
+
+        case "PageDown": // Next preset
+            await cycleToNextPreset();
+            handled = true;
+            break;
+
+        case "PageUp": // Previous preset
+            await cycleToPreviousPreset();
             handled = true;
             break;
 
@@ -368,6 +471,8 @@ async function onKeyDown(event) {
 
     // Handling pan changes
     if (deltaPanX || deltaPanY) {
+        // Hide preset overlay on interaction (no longer accurate)
+        hideViewInfo();
         let r = fractalApp.rotation;
 
         // Reflect the zoom factor for consistent pan speed at different zoom levels
@@ -382,6 +487,9 @@ async function onKeyDown(event) {
 
     // Handling C changes
     if ((deltaCx || deltaCy) && isJuliaMode()) {
+        // Hide preset overlay on interaction (no longer accurate)
+        hideViewInfo();
+
         const effectiveDeltaCx = deltaCx * fractalApp.zoom;
         const effectiveDeltaCy = deltaCy * fractalApp.zoom;
 

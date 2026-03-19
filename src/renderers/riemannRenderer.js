@@ -1,23 +1,42 @@
 import FractalRenderer from "./fractalRenderer";
 import {asyncDelay, hexToRGBArray, lerp, normalizeRotation} from "../global/utils";
-import {CONSOLE_GROUP_STYLE, EASE_TYPE, log} from "../global/constants";
+import {CONSOLE_GROUP_STYLE, EASE_TYPE, log, RIEMANN_DOUBLE_PRECISION_THRESHOLD} from "../global/constants";
 import {updateInfo} from "../ui/ui";
 import presetsData from '../data/riemann.json';
-/** @type {string} */
-import fragmentShaderRaw from '../shaders/riemann.frag';
+
+// Available shaders
+import shaderBorwein from '../shaders/riemann-borwein.frag';
+import shaderSiegel from '../shaders/riemann-siegel.frag';
+import shaderDouble from '../shaders/riemann-double.frag';
+import shaderDefault from '../shaders/riemann.frag';
+
+const SHADER_OPTIONS = {
+    'borwein': { source: shaderBorwein, name: 'Borwein', description: 'Euler-accelerated convergence' },
+    'siegel': { source: shaderSiegel, name: 'Riemann-Siegel', description: 'Optimized for critical line' },
+    'double': { source: shaderDouble, name: 'Double Precision', description: 'High accuracy for large t (slower)' },
+    'default': { source: shaderDefault, name: 'Default (Eta)', description: 'Dirichlet eta series' }
+};
 
 class RiemannRenderer extends FractalRenderer {
+
+    // Static accessor for shader options (for UI)
+    static get SHADER_OPTIONS() {
+        return SHADER_OPTIONS;
+    }
 
     constructor(canvas) {
         super(canvas);
 
-        this.MAX_TERMS = 500;
-        this.DEFAULT_ZOOM = 50;
+        this.MAX_TERMS = 2000;
+        this.DEFAULT_ZOOM = 2e1;
         this.DEFAULT_ROTATION = 0;
         this.DEFAULT_PALETTE = [1.0, 1.0, 1.0];
         this.DEFAULT_FREQUENCY = [3.5, 5.0, 0.1];
         this.DEFAULT_PHASE = [0, 0, 0];
         this.MIN_ZOOM = 4000;
+        this.MAX_ZOOM = 0.01;
+        // No pan limit for Riemann - allow exploring any region
+        this.MAX_PAN_DISTANCE = Infinity;
 
         this.zoom = this.DEFAULT_ZOOM;
         this.rotation = this.DEFAULT_ROTATION;
@@ -27,11 +46,16 @@ class RiemannRenderer extends FractalRenderer {
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
         this.contourStrength = 0.15;
-        this.seriesTerms = 100; // Number of terms in eta/zeta series
+        this.seriesTerms = 500; // Number of terms in eta/zeta series
+
+        // Shader selection
+        this.currentShader = 'borwein';
+        this.fragmentShaderSource = SHADER_OPTIONS[this.currentShader].source;
+        this.autoShaderSwitching = true; // Enable automatic shader switching based on region
+        this.manualShaderOverride = false; // When true, don't auto-switch
 
         this.PRESETS = presetsData.views || [];
         this.PALETTES = presetsData.palettes || [];
-        this.TOUR = presetsData.tour || [];
         this.currentPaletteIndex = 0;
         this.zeroTourActive = false;
 
@@ -39,19 +63,80 @@ class RiemannRenderer extends FractalRenderer {
     }
 
     createFragmentShaderSource() {
-        return fragmentShaderRaw.replace('__MAX_TERMS__', this.MAX_TERMS).toString();
+        return this.fragmentShaderSource.replace('__MAX_TERMS__', this.MAX_TERMS).toString();
     }
 
+    /**
+     * Switches to a different shader algorithm.
+     * @param {string} shaderId - One of: 'borwein', 'siegel', 'double', 'default'
+     * @returns {boolean} - True if shader was changed successfully
+     */
+    /**
+     * Switches to a different shader algorithm (called from UI).
+     * Sets manual override to prevent auto-switching.
+     * @param {string} shaderId - One of: 'borwein', 'siegel', 'double', 'default'
+     * @param {boolean} [isManual=true] - Whether this is a manual user selection
+     * @returns {boolean} - True if shader was changed successfully
+     */
+    setShader(shaderId, isManual = true) {
+        if (!SHADER_OPTIONS[shaderId]) {
+            console.warn(`Unknown shader: ${shaderId}`);
+            return false;
+        }
+
+        if (shaderId === this.currentShader) {
+            if (isManual) this.manualShaderOverride = true;
+            return true; // Already using this shader
+        }
+
+        // Manual selection disables auto-switching
+        if (isManual) {
+            this.manualShaderOverride = true;
+        }
+
+        log(`Switching shader to: ${shaderId}`);
+        this.currentShader = shaderId;
+        this.fragmentShaderSource = SHADER_OPTIONS[shaderId].source;
+
+        // Rebuild the WebGL program with new shader
+        this.rebuildProgram();
+        this.draw();
+
+        return true;
+    }
+
+    /**
+     * Gets info about the current shader.
+     * @returns {{id: string, name: string, description: string}}
+     */
+    getShaderInfo() {
+        const shader = SHADER_OPTIONS[this.currentShader];
+        return {
+            id: this.currentShader,
+            name: shader.name,
+            description: shader.description
+        };
+    }
+
+    /**
+     * Rebuilds the WebGL program (needed after shader change).
+     */
+    rebuildProgram() {
+        // Use the base class initGLProgram which handles shader compilation
+        // The fragmentShaderSource is already updated, so this will recompile
+        this.initGLProgram();
+        log(`Shader rebuilt: ${this.currentShader}`);
+    }
+
+    /**
+     * Called after GL program is created.
+     * Caches Riemann-specific uniform locations.
+     * @override
+     */
     onProgramCreated() {
-        // No additional resources needed
-    }
+        super.onProgramCreated();
 
-    needsRebase() {
-        return false;
-    }
-
-    updateUniforms() {
-        super.updateUniforms();
+        // Riemann-specific uniform locations
         this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
         this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
         this.showCriticalLineLoc = this.gl.getUniformLocation(this.program, 'u_showCriticalLine');
@@ -59,7 +144,14 @@ class RiemannRenderer extends FractalRenderer {
         this.contourStrengthLoc = this.gl.getUniformLocation(this.program, 'u_contourStrength');
     }
 
+    needsRebase() {
+        return false;
+    }
+
     draw() {
+        // Auto-switch shader based on viewing region
+        this.checkAutoShaderSwitch();
+
         this.gl.useProgram(this.program);
 
         // Compute dynamic iteration count based on seriesTerms + adaptive quality adjustment
@@ -75,6 +167,37 @@ class RiemannRenderer extends FractalRenderer {
         super.draw();
     }
 
+    /**
+     * Checks if shader should be auto-switched based on current viewing region.
+     * Switches to double precision for high imaginary values (|Im(s)| > threshold).
+     */
+    checkAutoShaderSwitch() {
+        if (!this.autoShaderSwitching || this.manualShaderOverride) return;
+
+        const absImag = Math.abs(this.pan[1]);
+        const needsDoublePrecision = absImag > RIEMANN_DOUBLE_PRECISION_THRESHOLD;
+
+        if (needsDoublePrecision && this.currentShader !== 'double') {
+            log(`Auto-switching to double precision (t=${absImag.toFixed(0)})`);
+            this.setShaderInternal('double');
+        } else if (!needsDoublePrecision && this.currentShader === 'double') {
+            log(`Auto-switching back to borwein (t=${absImag.toFixed(0)})`);
+            this.setShaderInternal('borwein');
+        }
+    }
+
+    /**
+     * Internal shader switch without triggering draw (to avoid recursion).
+     * @param {string} shaderId
+     */
+    setShaderInternal(shaderId) {
+        if (!SHADER_OPTIONS[shaderId] || shaderId === this.currentShader) return;
+
+        this.currentShader = shaderId;
+        this.fragmentShaderSource = SHADER_OPTIONS[shaderId].source;
+        this.rebuildProgram();
+    }
+
     reset() {
         this.frequency = [...this.DEFAULT_FREQUENCY];
         this.phase = [...this.DEFAULT_PHASE];
@@ -82,8 +205,23 @@ class RiemannRenderer extends FractalRenderer {
         this.showCriticalLine = true;
         this.useAnalyticExtension = true;
         this.contourStrength = 0.15;
-        this.seriesTerms = 100;
+        this.seriesTerms = 500;
+
+        // Reset shader to default and enable auto-switching
+        this.manualShaderOverride = false;
+        if (this.currentShader !== 'borwein') {
+            this.setShaderInternal('borwein');
+        }
+
         super.reset();
+    }
+
+    /**
+     * Resets manual shader override, allowing auto-switching again.
+     * Called when navigating to presets.
+     */
+    resetShaderOverride() {
+        this.manualShaderOverride = false;
     }
 
     // region > ANIMATION METHODS
@@ -105,6 +243,9 @@ class RiemannRenderer extends FractalRenderer {
 
         this.stopAllNonColorAnimations();
         this.stopCurrentColorAnimations();
+
+        // Reset shader override to allow auto-switching during preset navigation
+        this.resetShaderOverride();
 
         const targetPan = preset.pan || this.DEFAULT_PAN;
         const targetZoom = preset.zoom || this.DEFAULT_ZOOM;
@@ -254,7 +395,7 @@ class RiemannRenderer extends FractalRenderer {
 
             await this.animateTravelToPreset(currentPreset, 1000, 1000, 1000, coloringCallback);
 
-            // Show overlay at the start of animation
+            // Show overlay at the end of animation
             if (onPresetReached) {
                 onPresetReached(currentPreset, demoIndex, allPresets.length);
             }
@@ -273,31 +414,38 @@ class RiemannRenderer extends FractalRenderer {
      * Includes the pole, trivial zeros, special values, saddle points, gram points, and non-trivial zeros.
      * @param {Function} [onPointReached=null] - Callback when each point is reached (point, index)
      * @param {number} [holdDuration=4000] - How long to hold at each point (ms)
+     * @param {Function} [onBeforeTravel=null] - Callback before traveling to next point (to hide overlay)
      * @return {Promise<void>}
      */
-    async animateZeroTour(onPointReached = null, holdDuration = 4000) {
+    async animateZeroTour(onPointReached = null, holdDuration = 4000, onBeforeTravel = null) {
         console.groupCollapsed(`%c ${this.constructor.name}: animateZeroTour`, CONSOLE_GROUP_STYLE);
 
         this.stopAllNonColorAnimations();
         this.zeroTourActive = true;
 
-        for (let i = 0; i < this.TOUR.length && this.zeroTourActive; i++) {
-            const point = this.TOUR[i];
+        for (let i = 0; i < this.PRESETS.length && this.zeroTourActive; i++) {
+            const point = this.PRESETS[i];
+            const zoom = point.zoom || 8;
             const preset = {
                 pan: point.pan,
-                zoom: point.zoom || 8,
+                zoom: zoom,
                 rotation: 0,
                 paletteId: point.paletteId || 'Default'
             };
 
-            log(`Traveling to ${point.type}: ${i + 1}/${this.TOUR.length}: ${point.name}`);
+            log(`Traveling to ${point.type}: ${i + 1}/${this.PRESETS.length}: ${point.id}`);
 
-            // Show overlay at the start of animation
-            if (onPointReached && this.zeroTourActive) {
-                onPointReached(point, i);
+            // Hide overlay/markers before starting travel
+            if (onBeforeTravel) {
+                onBeforeTravel();
             }
 
             await this.animateTravelToPreset(preset, 2000, 1000, 2500);
+
+            // Show overlay at the end of animation
+            if (onPointReached && this.zeroTourActive) {
+                onPointReached(point, i);
+            }
 
             if (this.zeroTourActive) {
                 await asyncDelay(holdDuration);

@@ -82,6 +82,55 @@ export const FF_DEMO_ALWAYS_RESETS = false;
 export const FF_ADAPTIVE_QUALITY = false;
 
 /**
+ * Enables atmospheric background music during the Riemann zeta tour.
+ * Requires an audio file at src/audio/riemann-tour.mp3
+ * @type {boolean}
+ */
+export const FF_RIEMANN_TOUR_MUSIC = true;
+
+/**
+ * Shows the manual shader selection dropdown in Riemann mode.
+ * When disabled, shader switching happens automatically based on viewing region.
+ * @type {boolean}
+ */
+export const FF_RIEMANN_SHADER_DROPDOWN = false;
+
+/**
+ * Shows the RGB frequency and contour strength sliders in Riemann display dropdown.
+ * These are advanced controls for fine-tuning the domain coloring visualization.
+ * @type {boolean}
+ */
+export const FF_RIEMANN_COLOR_SLIDERS = false;
+
+/**
+ * Shows the RGB frequency sliders in Rossler attractor mode.
+ * These control the color mapping frequencies for the attractor visualization.
+ * @type {boolean}
+ */
+export const FF_ROSSLER_COLOR_SLIDERS = false;
+
+/**
+ * Experimental: Highlights the first letter of all buttons in the header panel.
+ * The first letter is styled with the accent color to indicate keyboard shortcuts.
+ * @type {boolean}
+ */
+export const FF_HOTKEY_HINTS = true;
+
+/**
+ * When enabled, the app name will be randomly generated based on APP.suffixes
+ * @type {boolean}
+ */
+export const FF_RANDOM_APP_NAME = true;
+
+// ---------------------------------------------------------------------------------------------------------------------
+/**
+ * Imaginary value (t) threshold above which the double-precision shader is used.
+ * At t > 1000, regular float precision starts degrading noticeably.
+ * @type {number}
+ */
+export const RIEMANN_DOUBLE_PRECISION_THRESHOLD = 1000;
+
+/**
  * GPU time threshold in ms above which quality will be reduced.
  * @default 40 ms (~25 FPS).
  * @type {number}
@@ -200,6 +249,11 @@ export const DEFAULT_MANDELBROT_THEME_COLOR = [95 / 255, 134 / 255, 56 / 255];
  */
 export const DEFAULT_JULIA_THEME_COLOR = hexToRGBArray(DEFAULT_JULIA_PALETTE.keyColor);
 // ---------------------------------------------------------------------------------------------------------------------
+/** Default color used for Riemann mode UI theming (light blue #4FC3F7)
+ * @type {PALETTE}
+ */
+export const DEFAULT_RIEMANN_THEME_COLOR = hexToRGBArray('#4FC3F7');
+// ---------------------------------------------------------------------------------------------------------------------
 /**
  * This is to allow switching between two precisions as the embedded PI constant is too accurate, which is not needed
  * in many cases (rotations etc.)
@@ -226,13 +280,13 @@ export const APP = {
     //@formatter:off
     /** App version — injected from package.json by webpack DefinePlugin */
     version: __APP_VERSION__,
-    prefix: 'Synaptory Fractal ', // Keep the space!
+    prefix: 'Synaptory Chaos ', // Keep the trailing space!
     suffixes: [
         "Traveler", "Atlas", "Lens", "Scout", "Studio", "Lab", "Viewer", "Explorer", "Engine", "Navigator", "Surveyor",
         "Seeker", "Wanderer", "Voyager", "Drifter", "Portal", "Gateway", "Microscope", "Telescope", "Prism", "Cockpit",
         "Forge", "Workshop", "Reactor", "Core", "Kernel", "Matrix", "Plane", "Realm", "Horizon", "Iterator"
     ],
     get randomName() { return this.prefix + this.suffixes[Math.floor(Math.random() * this.suffixes.length)]; },
-    get defaultName() { return this.prefix + this.suffixes[0]; }
+    get defaultName() { return this.prefix + this.suffixes[7]; }
     //@formatter:on
 }

@@ -46,7 +46,7 @@ if (is_dir($libraryFsPath) && is_readable($libraryFsPath)) {
   <meta property="og:image" content="img/icon.png">
   <meta name="theme-color" content="#000000">
 
-  <title>Synaptory Fractal Gallery</title>
+  <title>Synaptory Chaos Explorer Gallery</title>
 
   <script src="https://cdn.tailwindcss.com"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
@@ -183,7 +183,7 @@ if (is_dir($libraryFsPath) && is_readable($libraryFsPath)) {
 
   <header class="px-4 py-2 sm:px-8 sm:py-3 md:px-12 md:py-4 border-b border-white/5 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-4 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-40">
     <a href="https://fractal.brnka.com" class="min-w-0 no-underline hover:opacity-80 transition-opacity">
-      <h1 class="gallery-h1">Synaptory Fractal Traveler</h1>
+      <h1 class="gallery-h1">Synaptory Chaos Explorer</h1>
       <p class="brand-font text-[8pt] sm:text-[10pt] tracking-[0.18em] text-white italic uppercase mt-0.5 sm:mt-1">Gallery</p>
     </a>
     <div class="text-[12px] sm:text-[14px] font-mono text-zinc-400 border border-zinc-800 px-3 py-1 rounded-full uppercase self-start sm:self-auto shrink-0">

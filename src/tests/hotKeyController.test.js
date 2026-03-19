@@ -117,26 +117,26 @@ describe('HotKeyController', () => {
         expect(fractalApp.animateZoomToNoPan).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"Shift+R" resets the app', async () => {
-        document.dispatchEvent(charPressedEvent('r', true));
+    test('"R" resets the app', async () => {
+        document.dispatchEvent(charPressedEvent('r'));
         await Promise.resolve();
         expect(ui.reset).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"Alt+S" invokes the view save dialog', async () => {
-        document.dispatchEvent(charPressedEvent('s', false, false, true));
+    test('"S" invokes the view save dialog', async () => {
+        document.dispatchEvent(charPressedEvent('s'));
         await Promise.resolve();
         expect(ui.showSaveViewDialog).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"Shift+S" captures the screenshot', async () => {
-        document.dispatchEvent(charPressedEvent('s', true));
+    test('"C" captures the screenshot', async () => {
+        document.dispatchEvent(charPressedEvent('c'));
         await Promise.resolve();
         expect(ui.captureScreenshot).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"Shift+T" triggers palette cycling', async () => {
-        document.dispatchEvent(charPressedEvent('t', true));
+    test('"Shift+P" triggers palette cycling', async () => {
+        document.dispatchEvent(charPressedEvent('p', true));
         await Promise.resolve();
 
         if (fractalApp.paletteCyclingActive) {
@@ -146,8 +146,8 @@ describe('HotKeyController', () => {
         }
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"Alt+T" resets the palette', async () => {
-        document.dispatchEvent(charPressedEvent('t', false, false, true));
+    test('"Alt+P" resets the palette', async () => {
+        document.dispatchEvent(charPressedEvent('p', false, false, true));
         await Promise.resolve();
 
         expect(fractalApp.applyPaletteByIndex).toHaveBeenCalled();
@@ -155,19 +155,19 @@ describe('HotKeyController', () => {
     });
     // -----------------------------------------------------------------------------------------------------------------
     test('"C" copies the text to clipboard', async () => {
-        document.dispatchEvent(charPressedEvent('c'));
+        document.dispatchEvent(charPressedEvent('c', false, true, false));
         await Promise.resolve();
         expect(ui.copyInfoToClipboard).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"E" toggles the guiding lines', async () => {
-        document.dispatchEvent(charPressedEvent('e'));
+    test('"K" toggles the guiding lines', async () => {
+        document.dispatchEvent(charPressedEvent('k'));
         await Promise.resolve();
         expect(ui.toggleCenterLines).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"A" forces resize', async () => {
-        document.dispatchEvent(charPressedEvent('a'));
+    test('"Shift+R" forces resize', async () => {
+        document.dispatchEvent(charPressedEvent('r', true));
         await Promise.resolve();
         expect(fractalApp.resizeCanvas).toHaveBeenCalled();
     });
@@ -178,8 +178,8 @@ describe('HotKeyController', () => {
         expect(ui.toggleDebugMode).toHaveBeenCalled();
     });
     // -----------------------------------------------------------------------------------------------------------------
-    test('"P" opens the edit coords dialog', async () => {
-        document.dispatchEvent(charPressedEvent('p'));
+    test('"E" opens the edit coords dialog', async () => {
+        document.dispatchEvent(charPressedEvent('e'));
         await Promise.resolve();
         expect(ui.showEditCoordsDialog).toHaveBeenCalled();
     });
@@ -202,7 +202,63 @@ describe('HotKeyController', () => {
         document.dispatchEvent(event);
         await Promise.resolve();
 
-        // randomization should NOT have been called
-        expect(ui.randomizeColors).not.toHaveBeenCalled();
+        // color cycling should NOT have been called
+        expect(ui.cycleColors).not.toHaveBeenCalled();
+    });
+    // -----------------------------------------------------------------------------------------------------------------
+    describe('Riemann mode hotkeys', () => {
+        test('"M" toggles analytic extension in Riemann mode', async () => {
+            // Set up Riemann mode
+            ui.isRiemannMode.mockReturnValue(true);
+            fractalApp.useAnalyticExtension = true;
+
+            document.dispatchEvent(charPressedEvent('m'));
+            await Promise.resolve();
+
+            expect(fractalApp.useAnalyticExtension).toBe(false);
+            expect(fractalApp.draw).toHaveBeenCalled();
+            expect(ui.syncRiemannToggleStates).toHaveBeenCalled();
+        });
+
+        test('"M" does nothing in non-Riemann modes', async () => {
+            // Set up non-Riemann mode
+            ui.isRiemannMode.mockReturnValue(false);
+            fractalApp.useAnalyticExtension = true;
+            fractalApp.draw.mockClear();
+
+            document.dispatchEvent(charPressedEvent('m'));
+            await Promise.resolve();
+
+            // Should not toggle or redraw
+            expect(fractalApp.useAnalyticExtension).toBe(true);
+            expect(fractalApp.draw).not.toHaveBeenCalled();
+        });
+
+        test('"," toggles critical line in Riemann mode', async () => {
+            // Set up Riemann mode
+            ui.isRiemannMode.mockReturnValue(true);
+            fractalApp.showCriticalLine = true;
+
+            document.dispatchEvent(defaultKeyboardEvent('Comma'));
+            await Promise.resolve();
+
+            expect(fractalApp.showCriticalLine).toBe(false);
+            expect(fractalApp.draw).toHaveBeenCalled();
+            expect(ui.syncRiemannToggleStates).toHaveBeenCalled();
+        });
+
+        test('"," does nothing in non-Riemann modes', async () => {
+            // Set up non-Riemann mode
+            ui.isRiemannMode.mockReturnValue(false);
+            fractalApp.showCriticalLine = true;
+            fractalApp.draw.mockClear();
+
+            document.dispatchEvent(defaultKeyboardEvent('Comma'));
+            await Promise.resolve();
+
+            // Should not toggle or redraw
+            expect(fractalApp.showCriticalLine).toBe(true);
+            expect(fractalApp.draw).not.toHaveBeenCalled();
+        });
     });
 });

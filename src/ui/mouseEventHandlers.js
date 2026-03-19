@@ -7,7 +7,16 @@
  */
 
 import {normalizeRotation, updateURLParams} from '../global/utils.js';
-import {getCurrentPaletteId, isJuliaMode, resetAppState, updateInfo} from './ui.js';
+import {
+    getCurrentPaletteId,
+    hideViewInfo,
+    isJuliaMode,
+    isMandelbrotMode,
+    isRiemannMode,
+    isRosslerMode,
+    resetAppState,
+    updateInfo
+} from './ui.js';
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_MODE, EASE_TYPE, FRACTAL_TYPE} from "../global/constants";
 import {hideJuliaPreview, initJuliaPreview, showJuliaPreview, updateJuliaPreview} from "./juliaPreview";
 
@@ -17,7 +26,7 @@ const DOUBLE_CLICK_THRESHOLD = 300;
 const DRAG_THRESHOLD = 5;
 const ZOOM_STEP = 0.05; // double-click zoom in/out
 const ROTATION_SENSITIVITY = 0.01;
-/** Maximum distance from origin to prevent panning out of view */
+/** Default maximum distance from origin to prevent panning out of view */
 export const MAX_PAN_DISTANCE = 3.5; // Fractals are contained within ~radius 2, allow some margin
 
 /** Long press zoom configuration */
@@ -84,13 +93,16 @@ export function clampPanDelta(currentPan, deltaPan) {
     const newPanY = currentPan[1] + deltaPan[1];
     const distance = Math.sqrt(newPanX * newPanX + newPanY * newPanY);
 
+    // Use renderer's MAX_PAN_DISTANCE if available, otherwise use default
+    const maxPan = fractalApp?.MAX_PAN_DISTANCE ?? MAX_PAN_DISTANCE;
+
     // If within bounds, return unchanged
-    if (distance <= MAX_PAN_DISTANCE) {
+    if (distance <= maxPan) {
         return deltaPan;
     }
 
     // Clamp to max distance by scaling back the new position
-    const scale = MAX_PAN_DISTANCE / distance;
+    const scale = maxPan / distance;
     const clampedPanX = newPanX * scale;
     const clampedPanY = newPanY * scale;
 
@@ -98,7 +110,7 @@ export function clampPanDelta(currentPan, deltaPan) {
     const clampedDeltaX = clampedPanX - currentPan[0];
     const clampedDeltaY = clampedPanY - currentPan[1];
 
-    console.log(`%c clampPanDelta: %c Pan would exceed bounds (distance: ${distance.toFixed(2)} > ${MAX_PAN_DISTANCE}). Clamping to [${clampedDeltaX.toFixed(4)}, ${clampedDeltaY.toFixed(4)}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
+    console.log(`%c clampPanDelta: %c Pan would exceed bounds (distance: ${distance.toFixed(2)} > ${maxPan}). Clamping to [${clampedDeltaX.toFixed(4)}, ${clampedDeltaY.toFixed(4)}]`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
     return [clampedDeltaX, clampedDeltaY];
 }
@@ -190,6 +202,9 @@ function startLongPressZoomIn() {
     longPressZoomActive = true;
     canvas.style.cursor = 'zoom-in';
 
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
+
     function zoomLoop() {
         if (!longPressZoomActive || !fractalApp) return;
 
@@ -240,6 +255,9 @@ function startLongPressZoomOut() {
     if (rightLongPressZoomActive) return;
     rightLongPressZoomActive = true;
     canvas.style.cursor = 'zoom-out';
+
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
 
     function zoomLoop() {
         if (!rightLongPressZoomActive || !fractalApp) return;
@@ -320,6 +338,9 @@ function flushWheelZoom() {
 function handleWheel(event) {
     event.preventDefault();
 
+    // Hide preset overlay on interaction (no longer accurate)
+    hideViewInfo();
+
     // Cache rect on first wheel event of a gesture to avoid sub-pixel jitter
     if (!hasWheelRect) {
         const rect = fractalApp.canvas.getBoundingClientRect();
@@ -393,7 +414,7 @@ function handleMouseDown(event) {
         event.preventDefault();
 
         // Only show Julia preview when in Mandelbrot mode
-        if (!isJuliaMode()) {
+        if (isMandelbrotMode()) {
             isMiddleButtonHeld = true;
 
             // Get fractal coordinates at cursor position
@@ -428,6 +449,8 @@ function handleMouseMove(event) {
                 clearTimeout(longPressTimeout);
                 longPressTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
         if (isDragging) {
@@ -457,8 +480,11 @@ function handleMouseMove(event) {
             const [vNowX,  vNowY ] = fractalApp.screenToViewVector(nowRelX, nowRelY);
 
             if (Number.isFinite(fractalApp.zoom)) {
-                const deltaX = (vLastX - vNowX) * fractalApp.zoom;
-                const deltaY = (vLastY - vNowY) * fractalApp.zoom;
+                let deltaX = (vLastX - vNowX) * fractalApp.zoom;
+                let deltaY = (vLastY - vNowY) * fractalApp.zoom;
+
+                // Clamp to prevent dragging out of view
+                [deltaX, deltaY] = clampPanDelta(fractalApp.pan, [deltaX, deltaY]);
 
                 fractalApp.addPan(deltaX, deltaY);
                 // Mark orbit dirty (deferred rebuild)
@@ -492,9 +518,12 @@ function handleMouseMove(event) {
                 clearTimeout(rightLongPressTimeout);
                 rightLongPressTimeout = null;
             }
+            // Hide preset overlay on interaction (no longer accurate)
+            hideViewInfo();
         }
 
-        if (isRightDragging) {
+        // Disable rotation in Riemann mode (breaks axes alignment)
+        if (isRightDragging && !isRiemannMode()) {
             event.preventDefault();
             const deltaX = event.clientX - startX;
 
@@ -509,7 +538,7 @@ function handleMouseMove(event) {
     }
 
     // Middle button held - update Julia preview
-    if (event.buttons === 4 && isMiddleButtonHeld && !isJuliaMode()) {
+    if (event.buttons === 4 && isMiddleButtonHeld && isMandelbrotMode()) {
         const rect = canvas.getBoundingClientRect();
         const mouseX = event.clientX - rect.left;
         const mouseY = event.clientY - rect.top;
@@ -601,13 +630,15 @@ function handleMouseUp(event) {
                     // Centering action using delta-based pan:
                     fractalApp.animatePanBy(deltaPan, 500).then(() => {
                         resetAppState();
-                        // Get the updated fractal coordinates after pan
-                        const [newFx, newFy] = fractalApp.screenToFractal(mouseX, mouseY);
-                        if (isJuliaMode()) {
-                            updateURLParams(FRACTAL_TYPE.JULIA, newFx, newFy, fractalApp.zoom, fractalApp.rotation, fractalApp.c[0], fractalApp.c[1], getCurrentPaletteId());
-                        } else {
-                            updateURLParams(FRACTAL_TYPE.MANDELBROT, newFx, newFy, fractalApp.zoom, fractalApp.rotation, null, null, getCurrentPaletteId());
-                        }
+                        // Determine current mode for URL
+                        let currentMode = FRACTAL_TYPE.MANDELBROT;
+                        if (isJuliaMode()) currentMode = FRACTAL_TYPE.JULIA;
+                        else if (isRiemannMode()) currentMode = FRACTAL_TYPE.RIEMANN;
+                        else if (isRosslerMode()) currentMode = FRACTAL_TYPE.ROSSLER;
+
+                        const cx = isJuliaMode() ? fractalApp.c[0] : null;
+                        const cy = isJuliaMode() ? fractalApp.c[1] : null;
+                        updateURLParams(currentMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, cx, cy, getCurrentPaletteId());
                     });
 
                     navigator.clipboard.writeText(window.location.href).then(

@@ -56,20 +56,23 @@ export class RosslerRenderer extends FractalRenderer {
         return fragmentShaderRaw.replace('__MAX_ITER__', this.MAX_ITER).toString();
     }
 
+    /**
+     * Called after GL program is created.
+     * Caches Rossler-specific uniform locations.
+     * @override
+     */
     onProgramCreated() {
-        // No additional resources needed (no orbit texture like Mandelbrot)
-    }
+        super.onProgramCreated();
 
-    needsRebase() {
-        return false; // No perturbation orbit
-    }
-
-    updateUniforms() {
-        super.updateUniforms();
+        // Rossler-specific uniform locations
         this.paramsLoc = this.gl.getUniformLocation(this.program, 'u_params');
         this.frequencyLoc = this.gl.getUniformLocation(this.program, 'u_frequency');
         this.phaseLoc = this.gl.getUniformLocation(this.program, 'u_phase');
         this.iterationsLoc = this.gl.getUniformLocation(this.program, 'u_iterations');
+    }
+
+    needsRebase() {
+        return false; // No perturbation orbit
     }
 
     draw() {
@@ -278,12 +281,12 @@ export class RosslerRenderer extends FractalRenderer {
 
             console.log(`Animating to preset ${demoIndex}/${allPresets.length}: "${currentPreset.id}"`);
 
-            // Show overlay at the start of animation
+            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
+
+            // Show overlay at the end of animation
             if (onPresetReached) {
                 onPresetReached(currentPreset, demoIndex, allPresets.length);
             }
-
-            await this.animateTravelToPreset(currentPreset, 3000, 1000, 3000, coloringCallback);
 
             if (onPresetComplete) onPresetComplete();
 

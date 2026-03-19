@@ -80,6 +80,11 @@ module.exports = (env, argv) => {
                         to: 'img'
                     },
                     {
+                        from: path.resolve(__dirname, 'src/audio'),
+                        to: 'audio',
+                        noErrorOnMissing: true // Don't fail if audio folder doesn't exist yet
+                    },
+                    {
                         from: path.resolve(__dirname, 'robots.txt'),
                         to: 'robots.txt'
                     },
