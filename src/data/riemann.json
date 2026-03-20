@@ -160,14 +160,6 @@
       "description": "Marks the boundary of what 19th-century mathematicians could verify through manual calculation."
     },
     {
-      "id": "The Zero Cluster",
-      "type": "overview",
-      "pan": [0.5, 129.58],
-      "zoom": 40,
-      "paletteId": "Default",
-      "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
-    },
-    {
       "id": "The Repulsion Effect",
       "type": "nontrivial",
       "pan": [0.5, 43.3271],
@@ -190,6 +182,14 @@
       "zoom": 10,
       "paletteId": "Default",
       "description": "Calculated by J.P. Gram (1903), who developed methods to predict zero locations."
+    },
+    {
+      "id": "The Zero Cluster",
+      "type": "overview",
+      "pan": [0.5, 129.58],
+      "zoom": 40,
+      "paletteId": "Default",
+      "description": "A cluster of consecutive zeros showing the irregular spacing pattern."
     },
     {
       "id": "Gram's Law Violation",
