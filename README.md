@@ -1,5 +1,4 @@
- <h1 align="center"><img width="829" height="84" alt="image" src="https://github.com/user-attachments/assets/f7403a8c-304e-4996-8aae-a68412b19f63" /></h1>
-
+<h1 align="center"><img width="829" height="84" alt="image" src="https://github.com/user-attachments/assets/f7403a8c-304e-4996-8aae-a68412b19f63" /></h1>
 
 <p align="center">
   <a href="https://fractal.brnka.com/" title="Open the live app">
