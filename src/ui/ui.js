@@ -898,7 +898,7 @@ async function startRiemannDemo() {
     // Start the zero tour with callback
     await fractalApp.animateZeroTour((point, index) => {
         showViewInfo(point, index, totalPoints, true);
-    }, 7000, hideViewInfo);
+    }, 9000, hideViewInfo);
 
     // Stop music when tour ends
     await stopTourMusic();
