@@ -230,7 +230,7 @@ export async function switchFractalMode(mode, preset = null) {
     // Stop all running animations before switching
     fractalApp.stopDemo?.();
     fractalApp.stopZeroTour?.();
-    fractalApp.stopCurrentColorAnimations?.();
+    fractalApp.stopCurrentColorAnimations?.(true); // Force stop even during transition
     hideViewInfo();
     exitAnimationMode();
 
@@ -814,7 +814,7 @@ export async function toggleDemo() {
 
     // Stop palette cycling if active before starting demo
     if (fractalApp.paletteCyclingActive) {
-        fractalApp.stopCurrentColorAnimations();
+        fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
         updatePaletteCycleButtonState();
     }
 
@@ -949,7 +949,7 @@ export async function startJuliaDive(dives, index) {
 
     // Stop palette cycling if dive has a defined palette
     if (dive.paletteId) {
-        fractalApp.stopCurrentColorAnimations();
+        fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
         updatePaletteCycleButtonState();
     }
 
@@ -1176,7 +1176,7 @@ export async function cycleColors() {
 
     // Stop any active palette cycling first
     if (fractalApp.paletteCyclingActive) {
-        fractalApp.stopCurrentColorAnimations();
+        fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
     }
 
     // Cycle to next palette, wrapping around
@@ -1247,7 +1247,7 @@ export async function reset() {
 
     // Stop palette cycling if active
     if (fractalApp.paletteCyclingActive) {
-        fractalApp.stopCurrentColorAnimations();
+        fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
     }
 
     fractalApp.reset();
@@ -2216,7 +2216,7 @@ function initPaletteButtonEvents() {
     cycleBtn.innerHTML = '<span class="color-swatch color-cycle-swatch"></span>Palette Cycle';
     cycleBtn.addEventListener('click', async () => {
         if (fractalApp.paletteCyclingActive) {
-            fractalApp.stopCurrentColorAnimations();
+            fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
             syncRiemannControls();
             syncRosslerControls();
         } else {
@@ -2266,7 +2266,7 @@ function initPaletteButtonEvents() {
             closePaletteDropdown();
             // Stop any active palette cycling
             if (fractalApp.paletteCyclingActive) {
-                fractalApp.stopCurrentColorAnimations();
+                fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
             }
             await fractalApp.applyPaletteByIndex(index, 250, updateColorTheme);
             updatePaletteDropdownState();

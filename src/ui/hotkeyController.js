@@ -232,7 +232,7 @@ async function onKeyDown(event) {
             if (altKey) {
                 // Alt+P: Reset to first palette (matches UI button behavior)
                 if (fractalApp.paletteCyclingActive) {
-                    fractalApp.stopCurrentColorAnimations();
+                    fractalApp.stopCurrentColorAnimations(true); // Force stop even during transition
                 }
                 await fractalApp.applyPaletteByIndex(0, 250, updateColorTheme);
                 updatePaletteDropdownState();
@@ -247,13 +247,17 @@ async function onKeyDown(event) {
             } else if (event.shiftKey) {
                 // Shift+P: Toggle palette cycling
                 if (fractalApp.paletteCyclingActive) {
-                    // Stop cycling
-                    fractalApp.stopCurrentColorAnimations();
+                    // Stop cycling - force stop even during transition
+                    fractalApp.stopCurrentColorAnimations(true);
                     syncRiemannControls();
                     syncRosslerControls();
                 } else {
                     // Start cycling
-                    fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownStateWithInfo);
+                    if (isRiemannMode()) {
+                        fractalApp.startPaletteCycling(5000, 0, updateColorTheme, updatePaletteDropdownStateWithInfo);
+                    } else {
+                        fractalApp.startPaletteCycling(2000, 3000, updateColorTheme, updatePaletteDropdownStateWithInfo);
+                    }
                 }
                 updatePaletteCycleButtonState();
             } else {

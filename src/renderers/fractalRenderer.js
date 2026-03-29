@@ -654,15 +654,18 @@ class FractalRenderer extends Renderer {
         }
     }
 
-    /** Stops currently running color animation */
-    stopCurrentColorAnimations() {
+    /**
+     * Stops currently running color animation
+     * @param {boolean} [force=false] - If true, stops cycling even during a palette transition (for user-initiated stops)
+     */
+    stopCurrentColorAnimations(force = false) {
         console.log(`%c ${this.constructor.name}: %c stopCurrentColorAnimation`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
 
         // Track if we're stopping an active cycle
-        const wasActivelyCycling = this.paletteCyclingActive && !this._inPaletteCycleTransition;
+        const wasActivelyCycling = this.paletteCyclingActive && (force || !this._inPaletteCycleTransition);
 
-        // Stop palette cycling if active (but not during internal palette transition)
-        if (this.paletteCyclingActive && !this._inPaletteCycleTransition) {
+        // Stop palette cycling if active (but not during internal palette transition, unless forced)
+        if (this.paletteCyclingActive && (force || !this._inPaletteCycleTransition)) {
             this.paletteCyclingActive = false;
             if (this.paletteCyclingTimeoutId) {
                 clearTimeout(this.paletteCyclingTimeoutId);
