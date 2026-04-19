@@ -3972,6 +3972,10 @@ export async function initUI(fractalRenderer) {
     if (controlsHint) {
         controlsHint.addEventListener("click", (e) => {
             if (window.matchMedia("(pointer: coarse)").matches) {
+                // Allow clicks on links inside the tooltip to work normally
+                if (e.target.tagName === 'A' || e.target.closest('a')) {
+                    return;
+                }
                 e.preventDefault();
                 e.stopPropagation();
                 controlsHint.classList.toggle("active");
