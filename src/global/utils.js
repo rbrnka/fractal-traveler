@@ -20,8 +20,9 @@ let urlParamsSet = false;
  * @param {number} zoom
  * @param {number} rotation
  * @param {string|null} paletteId optional palette ID
+ * @param {string|null} presetId optional preset ID for showing view info on URL load
  */
-export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null, paletteId = null) {
+export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = null, paletteId = null, presetId = null) {
     const formatNumber = (value) => {
         if (value == null) return null;
         // 15–17 digits is where JS double precision is meaningfully preserved.
@@ -38,6 +39,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
         cx: formatNumber(cx),
         cy: formatNumber(cy),
         palette: paletteId,
+        preset: presetId,
     };
 
     if (DEBUG_MODE) console.log(`%c updateURLParams: %c Setting URL: ${JSON.stringify(params)}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);
@@ -61,7 +63,7 @@ export function updateURLParams(mode, px, py, zoom, rotation, cx = null, cy = nu
         case FRACTAL_TYPE.JULIA: hashPath = '#julia'; break;
         case FRACTAL_TYPE.RIEMANN: hashPath = '#zeta'; break;
         case FRACTAL_TYPE.ROSSLER: hashPath = '#ross'; break;
-        default: hashPath = '#'; break;
+        default: break;
     }
     window.history.pushState({}, '', `${hashPath}?view=${encodedParams}`);
 
@@ -125,6 +127,7 @@ export function loadFractalParamsFromURL() {
             cx: decodedParams.cx != null ? parseFloat(decodedParams.cx) : null,
             cy: decodedParams.cy != null ? parseFloat(decodedParams.cy) : null,
             paletteId: decodedParams.palette || null,
+            presetId: decodedParams.preset || null,
         };
     } catch (e) {
         console.error(`%c loadFractalParamsFromURL: %c Error decoding URL parameters: ${e}`, CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE);

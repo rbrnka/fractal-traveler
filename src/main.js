@@ -12,7 +12,14 @@ import {JuliaRenderer} from "./renderers/juliaRenderer";
 import MandelbrotRenderer from "./renderers/mandelbrotRenderer";
 import RiemannRenderer from "./renderers/riemannRenderer";
 import {RosslerRenderer} from "./renderers/rosslerRenderer";
-import {initUI, resetActivePresetIndex, resetPresetAndDiveButtonStates, updateInfo} from "./ui/ui";
+import {
+    hideViewInfo,
+    initUI,
+    resetActivePresetIndex,
+    resetPresetAndDiveButtonStates,
+    showViewInfo,
+    updateInfo
+} from "./ui/ui";
 import {asyncDelay, clearURLParams, loadFractalParamsFromURL} from "./global/utils";
 import {CONSOLE_GROUP_STYLE, CONSOLE_MESSAGE_STYLE, DEBUG_LEVEL, DEBUG_MODE, FRACTAL_TYPE} from "./global/constants";
 
@@ -112,6 +119,23 @@ async function initFractalApp() {
     if (validMandelbrotTravelPreset || validJuliaTravelPreset) {
         resetPresetAndDiveButtonStates();
         resetActivePresetIndex();
+
+        // Show view info overlay if URL contains a preset ID
+        if (params.presetId && fractalApp.PRESETS) {
+            const presets = fractalApp.PRESETS;
+            const matchedPreset = presets.find(p => p.id === params.presetId || p.name === params.presetId);
+            if (matchedPreset) {
+                const index = matchedPreset.index ?? presets.indexOf(matchedPreset);
+                const isRiemann = params.mode === FRACTAL_TYPE.RIEMANN;
+                showViewInfo(matchedPreset, index, presets.length, isRiemann);
+
+                // Auto-hide overlay after delay
+                const hideDelay = isRiemann ? 10000 : 5000;
+                setTimeout(() => {
+                    hideViewInfo();
+                }, hideDelay);
+            }
+        }
     }
 
     console.groupEnd();

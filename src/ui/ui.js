@@ -1071,7 +1071,7 @@ export async function travelToPreset(presets, index) {
     updatePaletteDropdownState();
 
     exitAnimationMode();
-    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
+    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId(), preset.id || preset.name);
 
     // Show overlay after travel completes (showViewInfo handles marker display based on view type)
     showViewInfo(preset, index, presets.length, isRiemann);
@@ -3067,7 +3067,7 @@ function handleTermsChange(e) {
  * @param {number} total - Total number of items
  * @param {boolean} [isRiemann=false] - Whether this is Riemann mode (show coordinates differently)
  */
-function showViewInfo(preset, index, total, isRiemann = false) {
+export function showViewInfo(preset, index, total, isRiemann = false) {
     if (!viewInfoOverlay) return;
 
     // Get the title - use 'name' for tour points, 'id' for regular presets
