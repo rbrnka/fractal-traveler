@@ -2029,14 +2029,6 @@ function initPresetsDropdown() {
 
 // region > FRACTAL MODE DROPDOWN --------------------------------------------------------------------------------------
 
-/** Fractal mode display names */
-const FRACTAL_MODE_NAMES = {
-    [FRACTAL_TYPE.MANDELBROT]: 'Mandelbrot',
-    [FRACTAL_TYPE.JULIA]: 'Julia',
-    [FRACTAL_TYPE.RIEMANN]: 'Riemann',
-    [FRACTAL_TYPE.ROSSLER]: 'Rossler'
-};
-
 /** Sets the fractal toggle button text with optional hotkey hint */
 function setFractalToggleText(isOpen) {
     if (!fractalToggle) return;
