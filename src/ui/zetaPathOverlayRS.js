@@ -353,10 +353,14 @@ export function init(canvasElement, fractalRenderer) {
  * Shows the overlay
  */
 export function show() {
-    if (!canvas || !ctx) return;
+    if (!canvas || !ctx || !renderer) return;
 
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Match the renderer's canvas size (includes DPI scaling)
+    canvas.width = renderer.canvas.width;
+    canvas.height = renderer.canvas.height;
+    // Set CSS display size to match viewport (like the main canvas)
+    canvas.style.width = '100vw';
+    canvas.style.height = '100vh';
     canvas.classList.remove('zeta-path-hidden');
     visible = true;
 
@@ -399,9 +403,11 @@ export function update() {
  * Resizes the canvas and redraws
  */
 export function resize() {
-    if (!visible || !canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    if (!visible || !canvas || !renderer) return;
+    // Match the renderer's canvas size (includes DPI scaling)
+    canvas.width = renderer.canvas.width;
+    canvas.height = renderer.canvas.height;
+    // CSS display size is already set to 100vw/100vh
     draw();
 }
 

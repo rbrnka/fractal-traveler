@@ -1071,7 +1071,7 @@ export async function travelToPreset(presets, index) {
     updatePaletteDropdownState();
 
     exitAnimationMode();
-    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId());
+    updateURLParams(fractalMode, fractalApp.pan[0], fractalApp.pan[1], fractalApp.zoom, fractalApp.rotation, fractalApp.c ? fractalApp.c[0] : null, fractalApp.c ? fractalApp.c[1] : null, getCurrentPaletteId(), preset.id || preset.name);
 
     // Show overlay after travel completes (showViewInfo handles marker display based on view type)
     showViewInfo(preset, index, presets.length, isRiemann);
@@ -1833,7 +1833,36 @@ function initControlButtonEvents() {
 
     screenshotButton.addEventListener('click', captureScreenshot);
 
+    // First-visit inviting effect for Tour button
+    initTourButtonInvite();
+
     log('Initialized.', 'initControlButtonEvents');
+}
+
+/**
+ * Adds an inviting glow effect to the Tour button on first visit.
+ * The effect is removed once the user clicks the Tour button.
+ */
+function initTourButtonInvite() {
+    const VISITED_KEY = 'fractal-traveler-visited';
+    const TTL_DAYS = 7;
+    const TTL_MS = TTL_DAYS * 24 * 60 * 60 * 1000;
+
+    const storedTime = localStorage.getItem(VISITED_KEY);
+    const isExpired = !storedTime || (Date.now() - parseInt(storedTime, 10)) > TTL_MS;
+
+    if (isExpired) {
+        demoButton.classList.add('inviting');
+
+        // Remove the inviting class and mark as visited when Tour is clicked
+        const removeInvite = () => {
+            demoButton.classList.remove('inviting');
+            localStorage.setItem(VISITED_KEY, Date.now().toString());
+            demoButton.removeEventListener('click', removeInvite);
+        };
+
+        demoButton.addEventListener('click', removeInvite);
+    }
 }
 
 function initPresetButtonEvents() {
@@ -1999,14 +2028,6 @@ function initPresetsDropdown() {
 }
 
 // region > FRACTAL MODE DROPDOWN --------------------------------------------------------------------------------------
-
-/** Fractal mode display names */
-const FRACTAL_MODE_NAMES = {
-    [FRACTAL_TYPE.MANDELBROT]: 'Mandelbrot',
-    [FRACTAL_TYPE.JULIA]: 'Julia',
-    [FRACTAL_TYPE.RIEMANN]: 'Riemann',
-    [FRACTAL_TYPE.ROSSLER]: 'Rossler'
-};
 
 /** Sets the fractal toggle button text with optional hotkey hint */
 function setFractalToggleText(isOpen) {
@@ -3046,7 +3067,7 @@ function handleTermsChange(e) {
  * @param {number} total - Total number of items
  * @param {boolean} [isRiemann=false] - Whether this is Riemann mode (show coordinates differently)
  */
-function showViewInfo(preset, index, total, isRiemann = false) {
+export function showViewInfo(preset, index, total, isRiemann = false) {
     if (!viewInfoOverlay) return;
 
     // Get the title - use 'name' for tour points, 'id' for regular presets

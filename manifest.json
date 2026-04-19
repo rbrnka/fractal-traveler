@@ -1,7 +1,7 @@
 {
-    "name": "Synaptory Fractal Traveler",
-    "short_name": "Fractal Traveler",
-    "description": "GPU-accelerated real-time fractal explorer for Mandelbrot and Julia sets. Zoom, pan, and rotate through infinite fractal landscapes.",
+    "name": "Synaptory Chaos Explorer",
+    "short_name": "Chaos Explorer",
+    "description": "GPU-accelerated real-time chaos explorer for Mandelbrot/Julia sets, Riemann Zeta function, and Rössler attractor. Zoom, pan, and rotate through infinite chaotic landscapes.",
     "start_url": "/",
     "display": "standalone",
     "background_color": "#000000",

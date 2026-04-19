@@ -1,7 +1,7 @@
 {
   "name": "fractal-traveler",
   "version": "2.2",
-  "description": "Synaptory Fractal Traveler",
+  "description": "Synaptory Chaos Explorer",
   "scripts": {
     "build-prod": "webpack --mode production",
     "build-dev-nowatch": "webpack --mode development",
