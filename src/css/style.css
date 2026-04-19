@@ -1503,7 +1503,7 @@ button.preset.user-preset::before {
 .hint-tooltip {
     display: none;
     position: fixed;
-    top: 135px;
+    top: 176px;
     left: 50%;
     transform: translateX(-50%);
     background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), rgba(0, 0, 0, 0.85));
@@ -1529,7 +1529,7 @@ button.preset.user-preset::before {
     content: '';
     position: absolute;
     bottom: 100%;
-    left: 50%;
+    left: 7%;
     transform: translateX(-50%);
     border: 6px solid transparent;
     border-bottom-color: rgb(from var(--accent-color) r g b / 0.4);
@@ -1541,7 +1541,7 @@ button.preset.user-preset::before {
     bottom: 100%;
     left: 0;
     width: 100%;
-    height: 15px;
+    height: 40px;
 }
 
 .hint-columns {
@@ -1615,6 +1615,15 @@ button.preset.user-preset::before {
     }
     .touch-controls {
         display: block;
+    }
+
+    .hint-tooltip {
+        left: 20px;
+        transform: none;
+    }
+
+    .hint-tooltip::after {
+        left: 50%;
     }
 
     .hint-trigger:hover .hint-tooltip {
