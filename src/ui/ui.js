@@ -1833,7 +1833,36 @@ function initControlButtonEvents() {
 
     screenshotButton.addEventListener('click', captureScreenshot);
 
+    // First-visit inviting effect for Tour button
+    initTourButtonInvite();
+
     log('Initialized.', 'initControlButtonEvents');
+}
+
+/**
+ * Adds an inviting glow effect to the Tour button on first visit.
+ * The effect is removed once the user clicks the Tour button.
+ */
+function initTourButtonInvite() {
+    const VISITED_KEY = 'fractal-traveler-visited';
+    const TTL_DAYS = 7;
+    const TTL_MS = TTL_DAYS * 24 * 60 * 60 * 1000;
+
+    const storedTime = localStorage.getItem(VISITED_KEY);
+    const isExpired = !storedTime || (Date.now() - parseInt(storedTime, 10)) > TTL_MS;
+
+    if (isExpired) {
+        demoButton.classList.add('inviting');
+
+        // Remove the inviting class and mark as visited when Tour is clicked
+        const removeInvite = () => {
+            demoButton.classList.remove('inviting');
+            localStorage.setItem(VISITED_KEY, Date.now().toString());
+            demoButton.removeEventListener('click', removeInvite);
+        };
+
+        demoButton.addEventListener('click', removeInvite);
+    }
 }
 
 function initPresetButtonEvents() {

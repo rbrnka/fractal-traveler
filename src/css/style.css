@@ -70,6 +70,17 @@ html, body {
     }
 }
 
+@keyframes button-glow-pulse {
+    0%, 100% {
+        box-shadow: 0 0 4px var(--accent-color), 0 0 8px var(--accent-color);
+        text-shadow: 0 0 4px var(--accent-color);
+    }
+    50% {
+        box-shadow: 0 0 8px var(--accent-color), 0 0 16px var(--accent-color), 0 0 24px var(--accent-color);
+        text-shadow: 0 0 8px var(--accent-color), 0 0 12px var(--accent-color);
+    }
+}
+
 @keyframes color-cycle-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
@@ -243,6 +254,13 @@ button.active {
 button:focus-visible {
     background-image: linear-gradient(#222, #666);
     text-shadow: 0 0 4px var(--accent-color);
+}
+
+/* First-visit inviting glow effect for Tour button */
+button.inviting {
+    animation: button-glow-pulse 2s ease-in-out infinite;
+    color: var(--accent-color);
+    opacity: 1;
 }
 
 /* Hotkey hint - highlights the first letter in button labels */
