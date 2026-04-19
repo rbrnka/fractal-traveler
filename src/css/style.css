@@ -1618,12 +1618,13 @@ button.preset.user-preset::before {
     }
 
     .hint-tooltip {
-        left: 20px;
-        transform: none;
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: calc(100vw - 32px);
     }
 
     .hint-tooltip::after {
-        left: 50%;
+        display: none;
     }
 
     .hint-trigger:hover .hint-tooltip {
