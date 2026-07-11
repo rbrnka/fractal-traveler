@@ -51,7 +51,8 @@
     {"id": "Grayscale", "keyColor": "#888888", "theme": [1, 1, 1], "frequency": [6.2, 6.2, 6.2], "phase": [0e+0, 0e+0, 0e+0]},
     {"id": "Red Giant", "keyColor": "#ca3d06", "theme": [1.4, 1.2, 0.2], "frequency": [3, 3.5, 1.5], "phase": [0e+0, 4.7, 0e+0]},
     {"id": "Neon", "keyColor": "#c872ff", "theme": [0.8, 1, 2.9], "frequency": [6.2, 5.1, 1.5], "phase": [0e+0, 3, 0e+0]},
-    {"id": "Paranoia", "keyColor": "#04fa00", "theme": [2.6, 1, 1.9], "frequency": [10, 10, 6], "phase": [3, 4.7, 3.3]}
+    {"id": "Paranoia", "keyColor": "#04fa00", "theme": [2.6, 1, 1.9], "frequency": [10, 10, 6], "phase": [3, 4.7, 3.3]},
+    {"id": "Nocturnal", "keyColor": "#4B00DB", "theme": [0.30, 1.00, 1.00], "frequency": [4.20, 1.00, 2.20], "phase": [0.00, 0.00, 0.00]}
   ],
   "removed": [
     {"id": "Tip of the spear", "speed": 10, "pan": [-1.9990961121566266, 2.8541655645072767e-16], "rotation": 5.4382185221694925, "zoom": 1.2995863762636767e-13},
