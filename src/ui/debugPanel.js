@@ -415,45 +415,42 @@ export class DebugPanel {
             ? ((performance.now() - lastInteraction) / 1000).toFixed(1) + 's ago'
             : 'n/a';
 
-        const gpuVendor = this.gpu.unmaskedVendor || this.gpu.vendor || "unknown";
-        const gpuRenderer = this.gpu.unmaskedRenderer || this.gpu.renderer || "unknown";
-
         this.debugInfo.innerHTML = `
             <span class="dbg-title" id="copyDebugInfo">DEBUG PANEL</span><span class="dbg-dim"> ('L' to toggle, middle-click to copy)</span><br/>
             <span class="dbg-dim">───────────────────────────────────────────────────────</span><br/>
-            <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)} range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
+            <span class="dbg-title">FRAG highp</span>: precision=${esc(hpInfo.precision)}, range=[${esc(hpInfo.rangeMin)}, ${esc(hpInfo.rangeMax)}]<br/>
             <span class="dbg-title">GPU</span>: ${esc(gpuRenderer)} <span class="dbg-dim">(${esc(gpuVendor)})</span><br/>
-            <span class="dbg-title">Mode:</span> ${esc(getFractalMode())} <span class="dbg-dim">|</span> <span class="dbg-title">Shader:</span> ${esc(this._getShaderName())} <span class="dbg-dim">|</span> <span class="dbg-title">Canvas:</span> ${esc(this.canvas.width)}x${esc(this.canvas.height)} <span class="dbg-dim">(dpr=${esc(dpr)})</span><br/>
-            <br/>
+            <span class="dbg-title">Shader:</span> ${esc(this._getShaderName())}<br/>
+            <span class="dbg-title">Canvas:</span> ${esc(this.canvas.width)}x${esc(this.canvas.height)} <span class="dbg-dim">(dpr=${esc(dpr)})</span><br/>
+            <span class="dbg-title">Mode:</span> ${esc(getFractalMode())}<br/>
             <span class="dbg-title">———— Transform ————</span><br/>
-            <span class="dbg-title">pan</span>=[${esc(viewPanX.toFixed(18))}, ${esc(viewPanY.toFixed(18))}]<br/>
-            <span class="dbg-dim">  DD.x: hi=${esc(ddXhi.toExponential(6))} lo=${esc(ddXlo.toExponential(6))}</span><br/>
-            <span class="dbg-dim">  DD.y: hi=${esc(ddYhi.toExponential(6))} lo=${esc(ddYlo.toExponential(6))}</span><br/>
+            <span class="dbg-title">pan</span>=[${esc(viewPanX.toPrecision(18)).trimEnd()}, ${esc(viewPanY.toFixed(18))}]<br/>
+            <span class="dbg-dim">- DD.x: hi=${esc(ddXhi.toExponential(6))} lo=${esc(ddXlo.toExponential(6))}</span><br/>
+            <span class="dbg-dim">- DD.y: hi=${esc(ddYhi.toExponential(6))} lo=${esc(ddYlo.toExponential(6))}</span><br/>
             <span class="dbg-title">zoom</span>=${esc(zoom.toExponential(6))} <span class="dbg-dim">(1e-${esc(zoomBucket)})</span><br/>
             <span class="dbg-title">rotation</span>=${esc(rotationDeg.toFixed(2))}° <span class="dbg-dim">(${esc(rotationRad.toFixed(4))} rad)</span><br/>
             ${isJuliaMode() ? `<span class="dbg-title">c</span>=[${esc(cx.toFixed(12))}, ${esc(cy.toFixed(12))}]<br/>` : ''}
-            <br/>
-            <span class="dbg-title">———— Coloring ————</span><br/>
-            <span class="dbg-title">palette</span>: <span class="${paletteIdx === -1 ? 'dbg-warn' : 'dbg-ok'}">${esc(paletteName)}</span> <span class="dbg-dim">(idx=${esc(paletteIdx)})</span><br/>
-            <span class="dbg-title">theme</span>=[${colorPalette.map(v => v.toFixed(3)).join(', ')}]<br/>
-            ${hasFreqPhase ? `<span class="dbg-title">freq</span>=${esc(freqStr)} <span class="dbg-title">phase</span>=${esc(phaseStr)}<br/>` : ''}
-            <br/>
+<!--            <span class="dbg-title">———— Coloring ————</span><br/>-->
+            <!--            <span class="dbg-title">theme</span>=[${colorPalette.map(v => v.toFixed(3)).join(', ')}]<br/>-->
+<!--            ${hasFreqPhase ? `<span class="dbg-title">freq</span>=${esc(freqStr)} <span class="dbg-title">phase</span>=${esc(phaseStr)}<br/>` : ''}-->
             <span class="dbg-title">———— State ————</span><br/>
-            <span class="dbg-title">animations</span>: <span class="${animState.length > 0 ? 'dbg-warn' : 'dbg-ok'}">${esc(animStatus)}</span> ${isAnim ? '<span class="dbg-badge dbg-warn">ANIM</span>' : ''}<br/>
             <span class="dbg-title">iters</span>=${esc(this.fractalApp.iterations)} <span class="dbg-dim">(max=${esc(this.fractalApp.MAX_ITER)})</span><br/>
-            <span class="dbg-title">orbit</span>=<span class="${this.fractalApp.orbitDirty ? 'dbg-warn' : 'dbg-ok'}">${esc(orbitStatus)}</span><br/>
+            <span class="dbg-title">palette</span>: <span class="${paletteIdx === -1 ? 'dbg-warn' : 'dbg-ok'}">${esc(paletteName)}</span> <span class="dbg-dim">(idx=${esc(paletteIdx)})</span><br/>
+            <span class="dbg-title">animations</span>: <span class="${animState.length > 0 ? 'dbg-warn' : 'dbg-ok'}">${esc(animStatus)}</span> ${isAnim ? '<span class="dbg-badge dbg-warn">ANIM</span>' : ''}<br/>
+            <span class="dbg-title">orbit</span>: <span class="${this.fractalApp.orbitDirty ? 'dbg-warn' : 'dbg-ok'}">${esc(orbitStatus)}</span><br/>
             <span class="dbg-title">lastInput</span>: <span class="dbg-dim">${esc(timeSinceInteraction)}</span><br/>
-            <br/>
             <span class="dbg-title">———— Precision ————</span><br/>
             <span class="dbg-title">health</span>:<span class="dbg-badge ${levelClass(healthLevel)}">${score}/100</span><span class="dbg-dim">${esc(worst)}</span><br/>
             px/unit=<span class="${levelClass(scaleLevel)}">${esc(pxPerUnit.toExponential(2))}</span> <span class="dbg-dim">|</span> log2(pan/z)=<span class="${levelClass(panLevel)}">${esc(mantissaUsedApprox.toFixed(1))}</span><br/>
             ref drift=<span class="${levelClass(driftLevel)}">${esc(driftViewUnits.toFixed(4))}</span> <span class="dbg-dim">view-units</span><br/>
-            <br/>
             <span class="dbg-title">———— Performance ————</span><br/>
             <span class="dbg-title">renderFPS</span>=<span class="${levelClass(fpsLevel)}">${esc(this.perf.renderFps.toFixed(1))}</span> <span class="dbg-dim">(rAF=${esc(this.perf.fps.toFixed(0))})</span><br/>
             <span class="dbg-title">GPU</span>=<span class="${levelClass(gpuLevel)}">${this._renderGpuTime(gpuSmooth)}</span> <span class="dbg-dim">${esc(gpuHint)}</span><br/>
             ${this._renderAdaptiveQuality()}<br/>
             `;
+        const gpuVendor = this.gpu.unmaskedVendor || this.gpu.vendor || "unknown";
+
+        const gpuRenderer = this.gpu.unmaskedRenderer || this.gpu.renderer || "unknown";
 
         requestAnimationFrame(this.update);
     };
